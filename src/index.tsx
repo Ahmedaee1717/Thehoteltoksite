@@ -92,31 +92,39 @@ app.get('/blog', async (c) => {
                   
                   <div class="blog-grid">
                       ${results.length > 0 ? results.map((post: any) => `
-                          <a href="/blog/${post.slug}" class="blog-card">
-                              ${post.featured_image ? `
-                                  <div class="blog-card-image">
+                          <article class="blog-card">
+                              <div class="blog-card-image">
+                                  <span class="blog-card-category">Insights</span>
+                                  ${post.featured_image ? `
                                       <img src="${post.featured_image}" alt="${post.title}" loading="lazy">
-                                  </div>
-                              ` : `
-                                  <div class="blog-card-image blog-card-image-placeholder">
-                                      <div class="blog-card-image-text">${post.title.charAt(0)}</div>
-                                  </div>
-                              `}
-                              <div class="blog-card-content">
-                                  <div class="blog-card-meta">
-                                      <span class="blog-card-author">${post.author}</span>
-                                      <span class="blog-card-date">${new Date(post.published_at || post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                                  </div>
-                                  <h2 class="blog-card-title">${post.title}</h2>
-                                  ${post.excerpt ? `<p class="blog-card-excerpt">${post.excerpt}</p>` : ''}
+                                  ` : `
+                                      <div class="blog-card-image-placeholder">
+                                          <div class="blog-card-image-text">${post.title.charAt(0)}</div>
+                                      </div>
+                                  `}
                               </div>
-                          </a>
+                              <div class="blog-card-content">
+                                  <h3 class="blog-card-title">${post.title}</h3>
+                                  <div class="blog-card-meta">
+                                      <span class="blog-card-author">By ${post.author}</span>
+                                      <span class="blog-card-date">${new Date(post.published_at || post.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                                  </div>
+                                  ${post.excerpt ? `<p class="blog-card-excerpt">${post.excerpt}</p>` : ''}
+                                  <a href="/blog/${post.slug}" class="blog-card-link">Read more</a>
+                              </div>
+                          </article>
                       `).join('') : `
                           <div class="blog-empty">
                               <p>No posts published yet. Check back soon for insights and updates.</p>
                           </div>
                       `}
                   </div>
+                  
+                  ${results.length > 0 ? `
+                      <div class="blog-pagination">
+                          <button class="btn-load-more" disabled>Load more posts</button>
+                      </div>
+                  ` : ''}
               </div>
           </section>
 
