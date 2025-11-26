@@ -241,30 +241,144 @@ app.get('/blog/:slug', async (c) => {
 
           <!-- Blog Post -->
           <article id="blog-post">
-              <div class="container">
-                  <div class="blog-post-header">
-                      <div class="blog-post-meta">
-                          <a href="/blog" class="back-link">← Back to Insights</a>
-                          <div class="blog-post-info">
-                              <span class="blog-post-author">${post.author}</span>
-                              <span class="blog-post-date">${new Date(post.published_at || post.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+              <div class="container blog-post-container">
+                  <!-- Main Content Column -->
+                  <div class="blog-post-main">
+                      <!-- Breadcrumb -->
+                      <nav class="breadcrumb">
+                          <a href="/">Home</a>
+                          <span class="separator">›</span>
+                          <a href="/blog">Insights & News</a>
+                          <span class="separator">›</span>
+                          <span>Insights</span>
+                      </nav>
+                      
+                      <!-- Article Header -->
+                      <div class="article-header">
+                          <div class="article-category">INSIGHTS</div>
+                          <h1 class="article-title">${post.title}</h1>
+                          <div class="article-meta">
+                              <span>By ${post.author}</span>
+                              <span class="meta-separator">·</span>
+                              <span>${new Date(post.published_at || post.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                              <span class="meta-separator">·</span>
+                              <span>${Math.ceil(post.content.split(' ').length / 200)} min read</span>
+                          </div>
+                          
+                          <!-- Social Share -->
+                          <div class="social-share">
+                              <a href="https://www.linkedin.com/sharing/share-offsite/?url=https://investaycapital.com/blog/${slug}" target="_blank" class="share-btn" title="Share on LinkedIn">
+                                  <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                              </a>
+                              <a href="https://twitter.com/intent/tweet?url=https://investaycapital.com/blog/${slug}&text=${encodeURIComponent(post.title)}" target="_blank" class="share-btn" title="Share on X">
+                                  <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                              </a>
+                              <a href="mailto:?subject=${encodeURIComponent(post.title)}&body=Check out this article: https://investaycapital.com/blog/${slug}" class="share-btn" title="Share via Email">
+                                  <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                              </a>
                           </div>
                       </div>
-                      <h1 class="blog-post-title">${post.title}</h1>
-                      ${post.excerpt ? `<p class="blog-post-excerpt">${post.excerpt}</p>` : ''}
-                  </div>
-                  
-                  ${post.featured_image ? `
-                      <div class="blog-post-featured-image">
-                          <img src="${post.featured_image}" alt="${post.title}">
+                      
+                      <!-- Featured Image -->
+                      ${post.featured_image ? `
+                          <div class="article-featured-image">
+                              <img src="${post.featured_image}" alt="${post.title}">
+                          </div>
+                      ` : ''}
+                      
+                      <!-- Article Body -->
+                      <div class="article-body">
+                          ${post.content}
                       </div>
-                  ` : ''}
-                  
-                  <div class="blog-post-content">
-                      ${post.content}
+                      
+                      <!-- Author Box -->
+                      <div class="author-box">
+                          <div class="author-avatar">
+                              <span>${post.author.charAt(0)}</span>
+                          </div>
+                          <div class="author-info">
+                              <h3 class="author-name">${post.author}</h3>
+                              <p class="author-title">Research & Analysis</p>
+                              <p class="author-bio">Delivering institutional-grade insights on digital infrastructure and hospitality asset markets.</p>
+                          </div>
+                      </div>
+                      
+                      <!-- Post Navigation -->
+                      <div class="post-navigation">
+                          <a href="/blog" class="nav-link nav-prev">
+                              <span class="nav-label">← Previous Article</span>
+                              <span class="nav-title">Return to Insights</span>
+                          </a>
+                          <a href="/blog" class="nav-link nav-next">
+                              <span class="nav-label">Next Article →</span>
+                              <span class="nav-title">View More Insights</span>
+                          </a>
+                      </div>
                   </div>
+                  
+                  <!-- Sidebar Column -->
+                  <aside class="blog-post-sidebar">
+                      <!-- Recent Insights Widget -->
+                      <div class="sidebar-widget">
+                          <h3 class="widget-title">Recent Insights</h3>
+                          <div class="recent-posts" id="recent-posts-widget">
+                              <p class="widget-loading">Loading...</p>
+                          </div>
+                      </div>
+                      
+                      <!-- Categories Widget -->
+                      <div class="sidebar-widget">
+                          <h3 class="widget-title">Categories</h3>
+                          <ul class="category-list">
+                              <li><a href="/blog">All Insights</a></li>
+                              <li><a href="/blog">Institutional Infrastructure</a></li>
+                              <li><a href="/blog">Hospitality Technology</a></li>
+                              <li><a href="/blog">Digital Assets</a></li>
+                              <li><a href="/blog">Market Analysis</a></li>
+                          </ul>
+                      </div>
+                      
+                      <!-- Newsletter Widget -->
+                      <div class="sidebar-widget newsletter-widget">
+                          <h3 class="widget-title">Stay Informed</h3>
+                          <p class="newsletter-desc">Receive institutional insights and analysis delivered to your inbox.</p>
+                          <form class="newsletter-form" onsubmit="event.preventDefault(); alert('Newsletter signup coming soon!');">
+                              <input type="email" placeholder="Your email" required>
+                              <button type="submit" class="btn btn-primary">Subscribe</button>
+                          </form>
+                      </div>
+                  </aside>
               </div>
           </article>
+          
+          <script>
+              // Load recent posts for sidebar
+              fetch('/api/blog')
+                  .then(res => res.json())
+                  .then(data => {
+                      const widget = document.getElementById('recent-posts-widget');
+                      if (data.success && data.posts.length > 0) {
+                          widget.innerHTML = data.posts.slice(0, 5).map(post => \`
+                              <a href="/blog/\${post.slug}" class="recent-post-item">
+                                  \${post.featured_image ? \`
+                                      <img src="\${post.featured_image}" alt="\${post.title}">
+                                  \` : \`
+                                      <div class="recent-post-placeholder">\${post.title.charAt(0)}</div>
+                                  \`}
+                                  <div class="recent-post-content">
+                                      <h4>\${post.title}</h4>
+                                      <span class="recent-post-date">\${new Date(post.published_at || post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                  </div>
+                              </a>
+                          \`).join('');
+                      } else {
+                          widget.innerHTML = '<p class="widget-empty">No recent posts</p>';
+                      }
+                  })
+                  .catch(() => {
+                      document.getElementById('recent-posts-widget').innerHTML = '<p class="widget-error">Failed to load</p>';
+                  });
+          </script>
 
           <!-- Footer -->
           <footer>
