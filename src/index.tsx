@@ -92,24 +92,25 @@ app.get('/blog', async (c) => {
                   
                   <div class="blog-grid">
                       ${results.length > 0 ? results.map((post: any) => `
-                          <article class="blog-card">
+                          <a href="/blog/${post.slug}" class="blog-card">
                               ${post.featured_image ? `
                                   <div class="blog-card-image">
-                                      <img src="${post.featured_image}" alt="${post.title}">
+                                      <img src="${post.featured_image}" alt="${post.title}" loading="lazy">
                                   </div>
-                              ` : ''}
+                              ` : `
+                                  <div class="blog-card-image blog-card-image-placeholder">
+                                      <div class="blog-card-image-text">${post.title.charAt(0)}</div>
+                                  </div>
+                              `}
                               <div class="blog-card-content">
                                   <div class="blog-card-meta">
                                       <span class="blog-card-author">${post.author}</span>
-                                      <span class="blog-card-date">${new Date(post.published_at || post.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                      <span class="blog-card-date">${new Date(post.published_at || post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                                   </div>
-                                  <h2 class="blog-card-title">
-                                      <a href="/blog/${post.slug}">${post.title}</a>
-                                  </h2>
+                                  <h2 class="blog-card-title">${post.title}</h2>
                                   ${post.excerpt ? `<p class="blog-card-excerpt">${post.excerpt}</p>` : ''}
-                                  <a href="/blog/${post.slug}" class="blog-card-link">Read More →</a>
                               </div>
-                          </article>
+                          </a>
                       `).join('') : `
                           <div class="blog-empty">
                               <p>No posts published yet. Check back soon for insights and updates.</p>
