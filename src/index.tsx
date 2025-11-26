@@ -3,10 +3,13 @@ import { cors } from 'hono/cors'
 import { serveStatic } from 'hono/cloudflare-workers'
 import { blogRoutes } from './routes/blog'
 import { adminRoutes } from './routes/admin'
+import { aiAdminRoutes } from './routes/ai-admin'
 import { homePage } from './pages/home'
+import { answerQuestion } from './services/ai-optimizer'
 
 type Bindings = {
   DB: D1Database;
+  OPENAI_API_KEY?: string;
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -20,6 +23,62 @@ app.use('/static/*', serveStatic({ root: './public' }))
 // API routes
 app.route('/api/blog', blogRoutes)
 app.route('/api/admin', adminRoutes)
+app.route('/api/ai', aiAdminRoutes)
+
+// AI Q&A Endpoint - semantic search and question answering
+app.post('/api/ai-answer', async (c) => {
+  const { DB, OPENAI_API_KEY } = c.env;
+  
+  try {
+    const { question } = await c.req.json();
+    
+    if (!question || typeof question !== 'string') {
+      return c.json({ 
+        success: false, 
+        error: 'Question is required and must be a string' 
+      }, 400);
+    }
+
+    // Fetch all published articles with AI embeddings
+    const { results } = await DB.prepare(`
+      SELECT id, title, slug, content, ai_summary, ai_excerpt, ai_faq, 
+             ai_embedding_vector, ai_include_in_knowledge_base
+      FROM blog_posts
+      WHERE status = 'published' 
+        AND ai_include_in_knowledge_base = 1
+        AND ai_embedding_vector IS NOT NULL
+    `).all();
+
+    if (!results || results.length === 0) {
+      return c.json({
+        success: true,
+        answer: 'I don\'t have enough information to answer that question yet. Please check back as we add more content.',
+        sources: []
+      });
+    }
+
+    const { answer, sources } = await answerQuestion(question, results, OPENAI_API_KEY);
+
+    return c.json({
+      success: true,
+      answer,
+      sources: sources.map(s => ({
+        title: s.title,
+        url: `/blog/${s.slug}`,
+        relevance: s.score
+      }))
+    });
+  } catch (error: any) {
+    console.error('AI answer error:', error);
+    
+    // Graceful failure - don't expose internal errors to users
+    return c.json({
+      success: false,
+      error: 'Unable to process your question at this time. Please try again later.',
+      details: error.message
+    }, 500);
+  }
+})
 
 // Home page
 app.get('/', homePage)
@@ -193,9 +252,9 @@ app.get('/blog/:slug', async (c) => {
           <meta name="twitter:description" content="${metaDescription}">
           <meta name="twitter:image" content="${ogImage}">
           
-          <!-- Structured Data -->
+          <!-- Structured Data (AI-generated or default) -->
           <script type="application/ld+json">
-          {
+          ${post.ai_schema_json || `{
             "@context": "https://schema.org",
             "@type": "Article",
             "headline": "${post.title.replace(/"/g, '\\"')}",
@@ -215,7 +274,7 @@ app.get('/blog/:slug', async (c) => {
                 "url": "https://investaycapital.com/static/logo.png"
               }
             }
-          }
+          }`}
           </script>
           
           <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -547,6 +606,59 @@ app.get('/admin/dashboard', (c) => {
                                 <label for="post-og-image">Open Graph Image URL</label>
                                 <input type="url" id="post-og-image" name="og_image">
                                 <small>Image for social media sharing (1200x630 recommended)</small>
+                            </div>
+                        </div>
+                        
+                        <div class="form-section">
+                            <h3>AI Optimization</h3>
+                            <p class="section-description">Automatically optimize content for AI systems, LLMs, and semantic search engines.</p>
+                            
+                            <div id="ai-status-box" class="ai-status-box" style="display: none;">
+                                <div class="ai-status-item">
+                                    <span class="ai-status-label">Summary:</span>
+                                    <span id="ai-status-summary" class="ai-status-value">Not generated</span>
+                                </div>
+                                <div class="ai-status-item">
+                                    <span class="ai-status-label">FAQ:</span>
+                                    <span id="ai-status-faq" class="ai-status-value">Not generated</span>
+                                </div>
+                                <div class="ai-status-item">
+                                    <span class="ai-status-label">Schema:</span>
+                                    <span id="ai-status-schema" class="ai-status-value">Not generated</span>
+                                </div>
+                                <div class="ai-status-item">
+                                    <span class="ai-status-label">Embedding:</span>
+                                    <span id="ai-status-embedding" class="ai-status-value">Not generated</span>
+                                </div>
+                                <div class="ai-status-item">
+                                    <span class="ai-status-label">Last Processed:</span>
+                                    <span id="ai-status-processed" class="ai-status-value">Never</span>
+                                </div>
+                            </div>
+                            
+                            <div class="ai-actions">
+                                <button type="button" id="ai-optimize-all-btn" class="btn btn-secondary" style="margin-bottom: 10px;">
+                                    🤖 One-Click AI Optimization
+                                </button>
+                                <div class="ai-individual-actions">
+                                    <button type="button" id="ai-generate-summary-btn" class="btn btn-sm btn-secondary">Generate Summary</button>
+                                    <button type="button" id="ai-generate-faq-btn" class="btn btn-sm btn-secondary">Generate FAQ</button>
+                                    <button type="button" id="ai-generate-schema-btn" class="btn btn-sm btn-secondary">Generate Schema</button>
+                                    <button type="button" id="ai-generate-embedding-btn" class="btn btn-sm btn-secondary">Generate Embedding</button>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group" style="margin-top: 20px;">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="ai-include-kb" name="ai_include_in_knowledge_base">
+                                    Include in Knowledge Base (for AI Q&A)
+                                </label>
+                                <small>When enabled, this content will be used to answer visitor questions via AI.</small>
+                            </div>
+                            
+                            <div id="ai-result-box" class="ai-result-box" style="display: none;">
+                                <h4>AI Optimization Result</h4>
+                                <pre id="ai-result-text"></pre>
                             </div>
                         </div>
                         

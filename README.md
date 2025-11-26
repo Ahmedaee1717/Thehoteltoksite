@@ -85,6 +85,41 @@
 - **Semantic HTML**: Proper article markup
 - **Image Optimization**: Alt tags and proper sizing
 
+### ✅ **NEW: AI Awareness Features** 🤖
+1. **AI Optimization Admin Panel**
+   - One-click AI optimization for blog posts
+   - Generate AI summaries, excerpts, FAQs, and embeddings
+   - Individual or batch AI generation controls
+   - Knowledge base toggle for Q&A integration
+   - Real-time AI status indicators
+
+2. **AI-Generated Content Fields**
+   - `ai_summary`: 2-3 sentence neutral summary for AI systems
+   - `ai_excerpt`: 1-2 sentence quotable excerpt
+   - `ai_primary_topic`: Main topic classification
+   - `ai_key_entities`: Entity extraction for knowledge graphs
+   - `ai_faq`: 4-6 Q&A pairs for featured snippets
+   - `ai_schema_json`: Auto-generated Schema.org JSON-LD
+   - `ai_embedding_vector`: 1536-dimension semantic search vector
+
+3. **AI Q&A Endpoint** (`/api/ai-answer`)
+   - Semantic search across published content
+   - RAG (Retrieval-Augmented Generation) powered answers
+   - Source attribution with relevance scores
+   - Compliance guardrails (no financial promises)
+
+4. **Compliance & Guardrails**
+   - Automatic filtering of prohibited terms
+   - Neutral, factual tone enforcement
+   - Focus on technology/infrastructure (not investment promotion)
+   - Professional institutional messaging
+
+5. **Public Features**
+   - AI-generated Schema.org markup injection
+   - FAQ-enhanced structured data
+   - Semantic HTML for AI parsing
+   - Knowledge base for visitor Q&A
+
 ## Functional Entry URIs
 
 ### Public Pages
@@ -105,16 +140,34 @@
 | `/admin/dashboard` | GET | Admin dashboard (requires auth) |
 
 ### API Endpoints
+
+#### Public API
 | Path | Method | Description |
 |------|--------|-------------|
 | `/api/blog` | GET | Get all published posts (JSON) |
 | `/api/blog/:slug` | GET | Get single published post (JSON) |
+| `/api/ai-answer` | POST | AI Q&A endpoint (semantic search + RAG) |
+
+#### Admin API
+| Path | Method | Description |
+|------|--------|-------------|
 | `/api/admin/login` | POST | Admin login |
 | `/api/admin/posts` | GET | Get all posts (including drafts) |
 | `/api/admin/posts` | POST | Create new post |
 | `/api/admin/posts/:id` | GET | Get single post by ID |
 | `/api/admin/posts/:id` | PUT | Update post |
 | `/api/admin/posts/:id` | DELETE | Delete post |
+
+#### AI Optimization API (Admin)
+| Path | Method | Description |
+|------|--------|-------------|
+| `/api/ai/posts/:id/optimize-all` | POST | Full AI optimization (summary, FAQ, schema, embedding) |
+| `/api/ai/posts/:id/generate-summary` | POST | Generate AI summary and excerpt |
+| `/api/ai/posts/:id/generate-faq` | POST | Generate AI FAQ items |
+| `/api/ai/posts/:id/generate-schema` | POST | Generate Schema.org JSON-LD |
+| `/api/ai/posts/:id/generate-embedding` | POST | Generate embedding vector |
+| `/api/ai/posts/:id/toggle-knowledge-base` | PUT | Toggle knowledge base inclusion |
+| `/api/ai/posts/:id/ai-status` | GET | Get AI optimization status |
 
 ## Data Architecture
 
@@ -135,6 +188,17 @@ meta_title       TEXT
 meta_description TEXT (150-160 chars recommended)
 meta_keywords    TEXT (comma-separated)
 og_image         TEXT (1200x630 recommended)
+
+-- AI Awareness Fields (NEW)
+ai_primary_topic          TEXT (2-4 words, e.g. "hotel tokenization")
+ai_key_entities           TEXT (JSON array of key entities)
+ai_summary                TEXT (2-3 sentence neutral summary)
+ai_excerpt                TEXT (1-2 sentence quotable excerpt)
+ai_faq                    TEXT (JSON array of Q&A pairs)
+ai_schema_json            TEXT (Schema.org JSON-LD)
+ai_embedding_vector       TEXT (JSON array, 1536 dimensions)
+ai_last_processed_at      DATETIME
+ai_include_in_knowledge_base INTEGER (0 or 1, default: 1)
 
 -- Status
 status          TEXT (draft|published|archived)
@@ -311,6 +375,9 @@ npm run deploy:prod
 - [ ] Draft preview before publishing
 - [ ] Scheduled post publishing
 - [ ] Post analytics (views, engagement)
+- [ ] **Automatic AI optimization hooks** (currently manual via button)
+- [ ] Rate limiting for AI Q&A endpoint
+- [ ] AI optimization cost tracking
 
 ## Recommended Next Steps
 
@@ -400,7 +467,23 @@ webapp/
 - **Database**: D1 (requires setup before deployment)
 
 ## Environment Variables
-None required for current implementation. All configuration in `wrangler.jsonc`.
+
+### Required for AI Features
+- `OPENAI_API_KEY` - Your OpenAI API key for AI optimization features
+
+### Setup
+
+**Local Development** (`.dev.vars` file):
+```bash
+OPENAI_API_KEY=sk-...your-key-here...
+```
+
+**Production** (Cloudflare Pages Secrets):
+```bash
+npx wrangler pages secret put OPENAI_API_KEY --project-name webapp
+```
+
+**Note**: AI features are optional. Without `OPENAI_API_KEY`, blog system works normally but AI optimization will fail gracefully.
 
 ## Admin Credentials
 - **Username**: `admin`

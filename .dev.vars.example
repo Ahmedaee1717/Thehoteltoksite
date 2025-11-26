@@ -1,0 +1,6 @@
+# OpenAI API Key for AI Awareness Features
+# Get your key from: https://platform.openai.com/api-keys
+OPENAI_API_KEY=sk-your-openai-api-key-here
+
+# Copy this file to .dev.vars and add your actual API key
+# .dev.vars is in .gitignore and will not be committed

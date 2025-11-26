@@ -277,4 +277,259 @@ function resetPostForm() {
     document.getElementById('post-form-title').textContent = 'Create New Post';
     document.getElementById('delete-post-btn').style.display = 'none';
     document.getElementById('post-author').value = 'Investay Capital';
+    
+    // Hide AI status box
+    document.getElementById('ai-status-box').style.display = 'none';
+    document.getElementById('ai-result-box').style.display = 'none';
+}
+
+// AI Optimization Functions
+async function loadAIStatus(postId) {
+    try {
+        const response = await fetch(`/api/ai/posts/${postId}/ai-status`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const statusBox = document.getElementById('ai-status-box');
+            statusBox.style.display = 'block';
+            
+            document.getElementById('ai-status-summary').textContent = data.data.has_summary ? '✅ Generated' : '❌ Not generated';
+            document.getElementById('ai-status-faq').textContent = data.data.has_faq ? `✅ Generated (${data.data.faq?.length || 0} items)` : '❌ Not generated';
+            document.getElementById('ai-status-schema').textContent = data.data.has_schema ? '✅ Generated' : '❌ Not generated';
+            document.getElementById('ai-status-embedding').textContent = data.data.has_embedding ? '✅ Generated' : '❌ Not generated';
+            document.getElementById('ai-status-processed').textContent = data.data.last_processed ? new Date(data.data.last_processed).toLocaleString() : 'Never';
+            
+            document.getElementById('ai-include-kb').checked = data.data.in_knowledge_base;
+        }
+    } catch (error) {
+        console.error('Error loading AI status:', error);
+    }
+}
+
+async function aiOptimizeAll() {
+    if (!currentPost) {
+        alert('Please save the post first before running AI optimization');
+        return;
+    }
+    
+    const btn = document.getElementById('ai-optimize-all-btn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⏳ Processing... (this may take 30-60 seconds)';
+    
+    try {
+        const response = await fetch(`/api/ai/posts/${currentPost.id}/optimize-all`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✅ AI Optimization Complete!\n\nGenerated:\n- Summary & Excerpt\n- FAQ (' + data.data.faq_count + ' items)\n- Schema.org JSON-LD\n- Embedding Vector (' + data.data.embedding_dimension + ' dimensions)');
+            
+            // Show result
+            document.getElementById('ai-result-box').style.display = 'block';
+            document.getElementById('ai-result-text').textContent = JSON.stringify(data.data, null, 2);
+            
+            // Reload AI status
+            loadAIStatus(currentPost.id);
+        } else {
+            alert('❌ AI Optimization Failed:\n' + data.error);
+        }
+    } catch (error) {
+        console.error('Error in AI optimization:', error);
+        alert('❌ AI Optimization Error:\n' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+    }
+}
+
+async function aiGenerateSummary() {
+    if (!currentPost) {
+        alert('Please save the post first');
+        return;
+    }
+    
+    const btn = document.getElementById('ai-generate-summary-btn');
+    btn.disabled = true;
+    btn.textContent = 'Processing...';
+    
+    try {
+        const response = await fetch(`/api/ai/posts/${currentPost.id}/generate-summary`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✅ Summary & Excerpt Generated!\n\nSummary: ' + data.data.summary);
+            loadAIStatus(currentPost.id);
+        } else {
+            alert('❌ Failed: ' + data.error);
+        }
+    } catch (error) {
+        alert('❌ Error: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generate Summary';
+    }
+}
+
+async function aiGenerateFAQ() {
+    if (!currentPost) {
+        alert('Please save the post first');
+        return;
+    }
+    
+    const btn = document.getElementById('ai-generate-faq-btn');
+    btn.disabled = true;
+    btn.textContent = 'Processing...';
+    
+    try {
+        const response = await fetch(`/api/ai/posts/${currentPost.id}/generate-faq`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✅ FAQ Generated (' + data.data.faq.length + ' items)');
+            loadAIStatus(currentPost.id);
+        } else {
+            alert('❌ Failed: ' + data.error);
+        }
+    } catch (error) {
+        alert('❌ Error: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generate FAQ';
+    }
+}
+
+async function aiGenerateSchema() {
+    if (!currentPost) {
+        alert('Please save the post first');
+        return;
+    }
+    
+    const btn = document.getElementById('ai-generate-schema-btn');
+    btn.disabled = true;
+    btn.textContent = 'Processing...';
+    
+    try {
+        const response = await fetch(`/api/ai/posts/${currentPost.id}/generate-schema`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✅ Schema JSON-LD Generated!');
+            loadAIStatus(currentPost.id);
+        } else {
+            alert('❌ Failed: ' + data.error);
+        }
+    } catch (error) {
+        alert('❌ Error: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generate Schema';
+    }
+}
+
+async function aiGenerateEmbedding() {
+    if (!currentPost) {
+        alert('Please save the post first');
+        return;
+    }
+    
+    const btn = document.getElementById('ai-generate-embedding-btn');
+    btn.disabled = true;
+    btn.textContent = 'Processing...';
+    
+    try {
+        const response = await fetch(`/api/ai/posts/${currentPost.id}/generate-embedding`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✅ Embedding Generated (' + data.data.dimension + ' dimensions)');
+            loadAIStatus(currentPost.id);
+        } else {
+            alert('❌ Failed: ' + data.error);
+        }
+    } catch (error) {
+        alert('❌ Error: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generate Embedding';
+    }
+}
+
+async function toggleKnowledgeBase() {
+    if (!currentPost) return;
+    
+    const checkbox = document.getElementById('ai-include-kb');
+    
+    try {
+        const response = await fetch(`/api/ai/posts/${currentPost.id}/toggle-knowledge-base`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ include: checkbox.checked })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log('Knowledge base setting updated');
+        }
+    } catch (error) {
+        console.error('Error updating knowledge base setting:', error);
+    }
+}
+
+// Setup AI optimization buttons
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('ai-optimize-all-btn').addEventListener('click', aiOptimizeAll);
+    document.getElementById('ai-generate-summary-btn').addEventListener('click', aiGenerateSummary);
+    document.getElementById('ai-generate-faq-btn').addEventListener('click', aiGenerateFAQ);
+    document.getElementById('ai-generate-schema-btn').addEventListener('click', aiGenerateSchema);
+    document.getElementById('ai-generate-embedding-btn').addEventListener('click', aiGenerateEmbedding);
+    document.getElementById('ai-include-kb').addEventListener('change', toggleKnowledgeBase);
+});
+
+// Modified fillPostForm to load AI status
+const originalFillPostForm = fillPostForm;
+fillPostForm = function(post) {
+    originalFillPostForm(post);
+    if (post.id) {
+        loadAIStatus(post.id);
+        document.getElementById('ai-include-kb').checked = post.ai_include_in_knowledge_base === 1;
+    }
 }
