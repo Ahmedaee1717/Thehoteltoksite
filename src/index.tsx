@@ -699,4 +699,73 @@ app.get('/admin/dashboard', (c) => {
   `);
 });
 
+// Sitemap for SEO
+app.get('/sitemap.xml', async (c) => {
+  const { DB } = c.env;
+  
+  try {
+    const { results } = await DB.prepare(`
+      SELECT slug, published_at, created_at
+      FROM blog_posts
+      WHERE status = 'published'
+      ORDER BY published_at DESC, created_at DESC
+    `).all();
+
+    const baseUrl = 'https://investaycapital.com';
+    const now = new Date().toISOString().split('T')[0];
+    
+    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Home Page -->
+  <url>
+    <loc>${baseUrl}</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  
+  <!-- Blog Listing -->
+  <url>
+    <loc>${baseUrl}/blog</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  
+  <!-- Blog Posts -->
+  ${results?.map((post: any) => {
+    const lastmod = post.published_at || post.created_at;
+    return `  <url>
+    <loc>${baseUrl}/blog/${post.slug}</loc>
+    <lastmod>${lastmod.split(' ')[0]}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>`;
+  }).join('\n')}
+</urlset>`;
+
+    c.header('Content-Type', 'application/xml');
+    return c.body(sitemap);
+  } catch (error) {
+    console.error('Sitemap generation error:', error);
+    return c.text('Error generating sitemap', 500);
+  }
+});
+
+// Robots.txt for SEO
+app.get('/robots.txt', (c) => {
+  const robotsTxt = `User-agent: *
+Allow: /
+Allow: /blog
+Allow: /blog/*
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /api/*
+
+Sitemap: https://investaycapital.com/sitemap.xml`;
+
+  c.header('Content-Type', 'text/plain');
+  return c.body(robotsTxt);
+});
+
 export default app

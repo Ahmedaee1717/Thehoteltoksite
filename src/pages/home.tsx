@@ -28,6 +28,29 @@ export const homePage = (c: Context) => {
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@300;400;500;600;700&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="/static/styles.css">
         <link rel="canonical" href="https://investaycapital.com">
+        
+        <!-- Analytics Placeholder - Add your tracking IDs -->
+        <!-- Google Analytics 4: Replace GA_MEASUREMENT_ID with your actual ID -->
+        <!-- 
+        <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+        <script>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'GA_MEASUREMENT_ID');
+        </script>
+        -->
+        
+        <!-- Microsoft Clarity: Replace PROJECT_ID with your actual ID -->
+        <!-- 
+        <script type="text/javascript">
+          (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+          })(window, document, "clarity", "script", "PROJECT_ID");
+        </script>
+        -->
     </head>
     <body>
         <!-- Animated Background -->
