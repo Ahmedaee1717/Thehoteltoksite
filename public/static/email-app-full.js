@@ -713,12 +713,23 @@ window.addEventListener('DOMContentLoaded', function() {
           return;
         }
         try {
-          await API.sendEmail({ from: user, to, subject, body, useAI: true });
-          alert('Email sent!');
+          console.log('Sending email:', { from: user, to, subject, body });
+          const result = await API.sendEmail({ from: user, to, subject, body, useAI: true });
+          console.log('Send result:', result);
+          
+          if (result.success && result.emailSent) {
+            alert('✅ Email sent successfully via Mailgun!\n\nMessage ID: ' + result.messageId);
+          } else if (result.success && !result.emailSent) {
+            alert('⚠️ Email saved but not sent:\n\n' + (result.mailgunError || 'Check Mailgun configuration'));
+          } else {
+            alert('❌ Failed to send:\n\n' + (result.error || 'Unknown error'));
+          }
+          
           onSent();
           onClose();
         } catch (error) {
-          alert('Failed to send');
+          console.error('Send error:', error);
+          alert('❌ Network error: ' + error.message);
         }
       };
       
