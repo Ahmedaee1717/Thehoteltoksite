@@ -118,8 +118,8 @@ app.get('/mail', (c) => {
       <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
       <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
       
-      <!-- Complete Email App with ALL FEATURES -->
-      <script src="/static/email-app-simple.js"></script>
+      <!-- ULTRA PREMIUM EMAIL APP - DARK MODE -->
+      <script src="/static/email-app-premium.js"></script>
     </body>
     </html>
   `)
