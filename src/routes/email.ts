@@ -2,11 +2,17 @@
 import { Hono } from 'hono'
 import { generateId } from '../utils/id'
 import { generateEmbedding, categorizeEmail, summarizeEmail, extractActionItems } from '../services/ai-email'
+import { createMailgunService } from '../lib/mailgun'
 
 type Bindings = {
   DB: D1Database;
   OPENAI_API_KEY?: string;
   R2_BUCKET?: R2Bucket;
+  MAILGUN_API_KEY?: string;
+  MAILGUN_DOMAIN?: string;
+  MAILGUN_REGION?: string;
+  MAILGUN_FROM_EMAIL?: string;
+  MAILGUN_FROM_NAME?: string;
 }
 
 const emailRoutes = new Hono<{ Bindings: Bindings }>()
@@ -45,7 +51,7 @@ emailRoutes.get('/inbox', async (c) => {
 // Send a new email
 // ============================================
 emailRoutes.post('/send', async (c) => {
-  const { DB, OPENAI_API_KEY } = c.env;
+  const { DB, OPENAI_API_KEY, MAILGUN_API_KEY, MAILGUN_DOMAIN, MAILGUN_REGION, MAILGUN_FROM_EMAIL, MAILGUN_FROM_NAME } = c.env;
   
   try {
     const { 
@@ -83,6 +89,75 @@ emailRoutes.post('/send', async (c) => {
       }
     }
     
+    // Send email via Mailgun
+    let mailgunSuccess = false;
+    let mailgunError = null;
+    let mailgunMessageId = null;
+    
+    if (MAILGUN_API_KEY && MAILGUN_DOMAIN) {
+      try {
+        const mailgunService = createMailgunService({
+          apiKey: MAILGUN_API_KEY,
+          domain: MAILGUN_DOMAIN,
+          region: MAILGUN_REGION as 'US' | 'EU' || 'US',
+          fromEmail: MAILGUN_FROM_EMAIL || from,
+          fromName: MAILGUN_FROM_NAME || 'InvestMail'
+        });
+        
+        // Create HTML version of email
+        const htmlBody = `
+          <html>
+            <head>
+              <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .email-container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .email-header { border-bottom: 2px solid #0066cc; padding-bottom: 10px; margin-bottom: 20px; }
+                .email-body { white-space: pre-wrap; }
+                .email-footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ccc; font-size: 12px; color: #666; }
+              </style>
+            </head>
+            <body>
+              <div class="email-container">
+                <div class="email-header">
+                  <h2 style="margin: 0; color: #0066cc;">${subject}</h2>
+                </div>
+                <div class="email-body">
+                  ${body.replace(/\n/g, '<br>')}
+                </div>
+                <div class="email-footer">
+                  <p>Sent via InvestMail</p>
+                </div>
+              </div>
+            </body>
+          </html>
+        `;
+        
+        const result = await mailgunService.sendEmail({
+          to,
+          subject,
+          text: body,
+          html: htmlBody,
+          cc,
+          bcc
+        });
+        
+        if (result.success) {
+          mailgunSuccess = true;
+          mailgunMessageId = result.messageId;
+          console.log('✅ Email sent via Mailgun:', result.messageId);
+        } else {
+          mailgunError = result.error;
+          console.error('❌ Mailgun send failed:', result.error);
+        }
+      } catch (mailgunException: any) {
+        mailgunError = mailgunException.message;
+        console.error('❌ Mailgun exception:', mailgunException);
+      }
+    } else {
+      mailgunError = 'Mailgun not configured';
+      console.warn('⚠️ Mailgun credentials not found in environment');
+    }
+    
     // Store email in database
     await DB.prepare(`
       INSERT INTO emails (
@@ -99,16 +174,13 @@ emailRoutes.post('/send', async (c) => {
       bcc ? JSON.stringify(bcc) : null,
       subject,
       body,
-      body, // TODO: Convert to HTML
+      body,
       body.substring(0, 150),
       category,
       aiSummary,
       aiActionItems ? JSON.stringify(aiActionItems) : null,
       embeddingVector ? JSON.stringify(embeddingVector) : null
     ).run();
-    
-    // TODO: Actually send email via Mailgun/Resend
-    // For now, just store in database
     
     // Track analytics
     await DB.prepare(`
@@ -117,9 +189,15 @@ emailRoutes.post('/send', async (c) => {
     `).bind(generateId('anl'), from, emailId).run();
     
     return c.json({ 
-      success: true, 
+      success: true,
+      emailSent: mailgunSuccess,
       emailId,
-      message: 'Email sent successfully' 
+      messageId: mailgunMessageId,
+      message: mailgunSuccess 
+        ? '✅ Email sent successfully via Mailgun and saved to database' 
+        : '⚠️ Email saved to database but could not be sent via Mailgun',
+      mailgunError: mailgunError || undefined,
+      warning: !mailgunSuccess ? 'Check Mailgun configuration' : undefined
     });
   } catch (error: any) {
     console.error('Send email error:', error);
