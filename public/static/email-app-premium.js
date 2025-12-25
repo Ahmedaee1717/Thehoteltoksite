@@ -19,6 +19,9 @@ window.addEventListener('DOMContentLoaded', function() {
     function EmailApp() {
       const [view, setView] = useState('inbox');
       const [emails, setEmails] = useState([]);
+      const [tasks, setTasks] = useState([]);
+      const [contacts, setContacts] = useState([]);
+      const [deals, setDeals] = useState([]);
       const [loading, setLoading] = useState(false);
       const [showCompose, setShowCompose] = useState(false);
       const [selectedEmail, setSelectedEmail] = useState(null);
@@ -43,6 +46,25 @@ window.addEventListener('DOMContentLoaded', function() {
             const response = await fetch(url);
             const data = await response.json();
             setEmails(data.emails || data.drafts || []);
+          }
+          
+          // Load CRM data
+          if (view === 'crm') {
+            const [contactsRes, dealsRes] = await Promise.all([
+              fetch(`/api/crm/contacts?user=${user}`),
+              fetch(`/api/crm/deals?user=${user}`)
+            ]);
+            const contactsData = await contactsRes.json();
+            const dealsData = await dealsRes.json();
+            setContacts(contactsData.contacts || []);
+            setDeals(dealsData.deals || []);
+          }
+          
+          // Load Tasks data
+          if (view === 'tasks') {
+            const tasksRes = await fetch(`/api/tasks?user=${user}`);
+            const tasksData = await tasksRes.json();
+            setTasks(tasksData.tasks || []);
           }
         } catch (error) {
           console.error('Load error:', error);
@@ -80,7 +102,11 @@ window.addEventListener('DOMContentLoaded', function() {
         { id: 'drafts', icon: '📝', label: 'Drafts', gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
         { id: 'spam', icon: '🚫', label: 'Spam', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
         { id: 'trash', icon: '🗑️', label: 'Trash', gradient: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)' },
-        { id: 'archived', icon: '📦', label: 'Archive', gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' }
+        { id: 'archived', icon: '📦', label: 'Archive', gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' },
+        { id: 'tasks', icon: '✅', label: 'Tasks', gradient: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)' },
+        { id: 'crm', icon: '👥', label: 'CRM', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
+        { id: 'analytics', icon: '📊', label: 'Analytics', gradient: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)' },
+        { id: 'team', icon: '👔', label: 'Team', gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' }
       ];
       
       return h('div', { 
@@ -465,8 +491,124 @@ window.addEventListener('DOMContentLoaded', function() {
                   animation: 'spin 1s linear infinite'
                 }
               }),
-              'Loading your emails...'
+              `Loading your ${view}...`
             ) :
+            // CRM View
+            view === 'crm' ? h('div', { style: { display: 'flex', gap: '24px' } },
+              // Contacts
+              h('div', { style: { flex: 1 } },
+                h('h3', { style: { color: '#C9A962', marginBottom: '16px', fontSize: '18px' } }, '👥 Contacts'),
+                h('div', { style: { display: 'grid', gap: '12px' } },
+                  contacts.map((contact, i) =>
+                    h('div', {
+                      key: contact.id || i,
+                      style: {
+                        padding: '16px',
+                        background: 'rgba(26, 31, 58, 0.6)',
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s'
+                      },
+                      onMouseEnter: (e) => {
+                        e.currentTarget.style.borderColor = 'rgba(201, 169, 98, 0.3)';
+                        e.currentTarget.style.transform = 'translateX(4px)';
+                      },
+                      onMouseLeave: (e) => {
+                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                        e.currentTarget.style.transform = 'translateX(0)';
+                      }
+                    },
+                      h('div', { style: { fontWeight: '600', color: 'rgba(255, 255, 255, 0.9)', marginBottom: '4px' } }, contact.name),
+                      h('div', { style: { fontSize: '13px', color: 'rgba(255, 255, 255, 0.5)' } }, contact.email),
+                      contact.company && h('div', { style: { fontSize: '12px', color: '#C9A962', marginTop: '4px' } }, contact.company)
+                    )
+                  )
+                )
+              ),
+              // Deals
+              h('div', { style: { flex: 1 } },
+                h('h3', { style: { color: '#C9A962', marginBottom: '16px', fontSize: '18px' } }, '💼 Deals'),
+                h('div', { style: { display: 'grid', gap: '12px' } },
+                  deals.map((deal, i) =>
+                    h('div', {
+                      key: deal.id || i,
+                      style: {
+                        padding: '16px',
+                        background: 'rgba(26, 31, 58, 0.6)',
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        borderRadius: '12px'
+                      }
+                    },
+                      h('div', { style: { fontWeight: '600', color: 'rgba(255, 255, 255, 0.9)', marginBottom: '4px' } }, deal.title),
+                      h('div', { style: { fontSize: '13px', color: 'rgba(255, 255, 255, 0.5)' } }, 
+                        deal.value ? `$${deal.value.toLocaleString()}` : 'No value'
+                      ),
+                      h('div', { style: { fontSize: '12px', color: '#C9A962', marginTop: '4px' } }, deal.stage || 'New')
+                    )
+                  )
+                )
+              )
+            ) :
+            // Tasks View
+            view === 'tasks' ? h('div', {},
+              h('h3', { style: { color: '#C9A962', marginBottom: '16px', fontSize: '18px' } }, '✅ Your Tasks'),
+              h('div', { style: { display: 'grid', gap: '12px' } },
+                tasks.map((task, i) =>
+                  h('div', {
+                    key: task.id || i,
+                    style: {
+                      padding: '20px',
+                      background: 'rgba(26, 31, 58, 0.6)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s'
+                    },
+                    onMouseEnter: (e) => {
+                      e.currentTarget.style.borderColor = 'rgba(201, 169, 98, 0.3)';
+                      e.currentTarget.style.transform = 'translateX(4px)';
+                    },
+                    onMouseLeave: (e) => {
+                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                      e.currentTarget.style.transform = 'translateX(0)';
+                    }
+                  },
+                    h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' } },
+                      h('span', { style: { fontWeight: '600', color: 'rgba(255, 255, 255, 0.9)' } }, task.title),
+                      h('span', { 
+                        style: { 
+                          fontSize: '11px', 
+                          padding: '4px 12px', 
+                          borderRadius: '12px',
+                          background: task.status === 'completed' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(234, 179, 8, 0.2)',
+                          color: task.status === 'completed' ? '#22c55e' : '#eab308'
+                        } 
+                      }, task.status || 'pending')
+                    ),
+                    task.description && h('div', { style: { fontSize: '13px', color: 'rgba(255, 255, 255, 0.5)' } }, task.description),
+                    task.due_date && h('div', { style: { fontSize: '12px', color: '#C9A962', marginTop: '8px' } }, 
+                      `⏰ Due: ${new Date(task.due_date).toLocaleDateString()}`
+                    )
+                  )
+                )
+              )
+            ) :
+            // Analytics View
+            view === 'analytics' ? h('div', {},
+              h('h3', { style: { color: '#C9A962', marginBottom: '24px', fontSize: '24px', fontWeight: '700' } }, '📊 Analytics Dashboard'),
+              h('div', { style: { textAlign: 'center', padding: '60px', color: 'rgba(255, 255, 255, 0.5)' } },
+                'Analytics dashboard coming soon...'
+              )
+            ) :
+            // Team View
+            view === 'team' ? h('div', {},
+              h('h3', { style: { color: '#C9A962', marginBottom: '24px', fontSize: '24px', fontWeight: '700' } }, '👔 Team Collaboration'),
+              h('div', { style: { textAlign: 'center', padding: '60px', color: 'rgba(255, 255, 255, 0.5)' } },
+                'Team collaboration features coming soon...'
+              )
+            ) :
+            // Email views
             emails.length === 0 ? h('div', { 
               style: { 
                 textAlign: 'center', 

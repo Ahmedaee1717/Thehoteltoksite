@@ -1,0 +1,6 @@
+-- Insert test emails
+INSERT INTO emails (id, thread_id, from_email, from_name, to_email, to_name, subject, body_text, body_html, snippet, category, priority, sentiment, is_read, is_starred, is_archived, sent_at, received_at)
+VALUES 
+  ('eml_001', 'thr_001', 'alice@example.com', 'Alice Johnson', 'admin@investaycapital.com', 'Admin', 'Q4 Investment Report', 'Please find attached the Q4 investment report...', '<p>Please find attached the Q4 investment report...</p>', 'Please find attached the Q4 investment...', 'inbox', 2, 'positive', 0, 1, 0, datetime('now', '-2 hours'), datetime('now', '-2 hours')),
+  ('eml_002', 'thr_002', 'bob@investaycapital.com', 'Bob Smith', 'admin@investaycapital.com', 'Admin', 'Meeting Tomorrow', 'Don''t forget we have a meeting tomorrow at 10 AM.', '<p>Don''t forget we have a meeting tomorrow at 10 AM.</p>', 'Don''t forget we have a meeting tomorrow...', 'inbox', 1, 'neutral', 1, 0, 0, datetime('now', '-1 hour'), datetime('now', '-1 hour')),
+  ('eml_003', 'thr_003', 'admin@investaycapital.com', 'Admin', 'client@example.com', 'Client', 'Investment Proposal', 'Thank you for your interest. Here is our investment proposal...', '<p>Thank you for your interest. Here is our investment proposal...</p>', 'Thank you for your interest. Here is...', 'sent', 0, 'positive', 1, 0, 0, datetime('now', '-3 hours'), NULL);

@@ -132,33 +132,6 @@ emailRoutes.get('/trash', async (c) => {
 });
 
 // ============================================
-// GET /api/email/drafts
-// Get draft emails for a user
-// ============================================
-emailRoutes.get('/drafts', async (c) => {
-  const { DB } = c.env;
-  const userEmail = c.req.query('user') || 'admin@investaycapital.com';
-  
-  try {
-    const { results } = await DB.prepare(`
-      SELECT 
-        id, thread_id, from_email, from_name, to_email, subject,
-        body_text, snippet, category, priority, is_read, is_starred,
-        labels, created_at, updated_at
-      FROM email_drafts
-      WHERE user_email = ?
-      ORDER BY updated_at DESC
-      LIMIT 50
-    `).bind(userEmail).all();
-    
-    return c.json({ success: true, drafts: results });
-  } catch (error: any) {
-    console.error('Drafts fetch error:', error);
-    return c.json({ success: false, error: error.message }, 500);
-  }
-});
-
-// ============================================
 // GET /api/email/archived
 // Get archived emails for a user
 // ============================================
@@ -647,10 +620,11 @@ emailRoutes.get('/drafts', async (c) => {
   try {
     const { results } = await DB.prepare(`
       SELECT 
-        id, from_email, to_email, subject, body, created_at, updated_at
-      FROM emails
-      WHERE from_email = ? AND category = 'draft'
-      ORDER BY updated_at DESC
+        id, user_email, to_email, cc, bcc, subject, body_text, body_html, 
+        attachments, ai_suggestions, last_edited_at, created_at
+      FROM email_drafts
+      WHERE user_email = ?
+      ORDER BY last_edited_at DESC
       LIMIT 20
     `).bind(userEmail).all();
     
