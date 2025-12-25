@@ -118,8 +118,8 @@ app.get('/mail', (c) => {
       <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
       <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
       
-      <!-- Complete Email App with All Features -->
-      <script src="/static/email-app-working.js"></script>
+      <!-- Complete Email App with ALL 8 FEATURES -->
+      <script src="/static/email-app-full.js"></script>
     </body>
     </html>
   `)
