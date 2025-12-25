@@ -107,9 +107,9 @@ app.get('/mail', (c) => {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>InvestMail - Internal Email System</title>
+      <title>InvestMail - Complete Email System with Advanced Features</title>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:wght@400;600;700&display=swap" rel="stylesheet">
-      <link href="/static/email-app.css" rel="stylesheet">
+      <link href="/static/email-app-complete.css" rel="stylesheet">
     </head>
     <body>
       <div id="email-root"></div>
@@ -118,8 +118,8 @@ app.get('/mail', (c) => {
       <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
       <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
       
-      <!-- Email App -->
-      <script defer src="/static/email-app.js"></script>
+      <!-- Complete Email App with All Features -->
+      <script defer src="/static/email-app-complete.js"></script>
     </body>
     </html>
   `)
