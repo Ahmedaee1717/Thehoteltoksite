@@ -23,6 +23,26 @@ window.addEventListener('DOMContentLoaded', function() {
         const res = await fetch(`/api/email/inbox?user=${user}`);
         return res.json();
       },
+      async getSent(user) {
+        const res = await fetch(`/api/email/sent?user=${user}`);
+        return res.json();
+      },
+      async getSpam(user) {
+        const res = await fetch(`/api/email/spam?user=${user}`);
+        return res.json();
+      },
+      async getTrash(user) {
+        const res = await fetch(`/api/email/trash?user=${user}`);
+        return res.json();
+      },
+      async getDrafts(user) {
+        const res = await fetch(`/api/email/drafts?user=${user}`);
+        return res.json();
+      },
+      async getArchived(user) {
+        const res = await fetch(`/api/email/archived?user=${user}`);
+        return res.json();
+      },
       async sendEmail(data) {
         const res = await fetch('/api/email/send', {
           method: 'POST',
@@ -214,6 +234,21 @@ window.addEventListener('DOMContentLoaded', function() {
               ? await API.getPriorityInbox(user)
               : await API.getInbox(user);
             setEmails(data.emails || []);
+          } else if (view === 'sent') {
+            const data = await API.getSent(user);
+            setEmails(data.emails || []);
+          } else if (view === 'spam') {
+            const data = await API.getSpam(user);
+            setEmails(data.emails || []);
+          } else if (view === 'trash') {
+            const data = await API.getTrash(user);
+            setEmails(data.emails || []);
+          } else if (view === 'drafts') {
+            const data = await API.getDrafts(user);
+            setEmails(data.drafts || []);
+          } else if (view === 'archived') {
+            const data = await API.getArchived(user);
+            setEmails(data.emails || []);
           } else if (view === 'tasks') {
             const data = await API.getTasks(user);
             setTasks(data.tasks || []);
@@ -333,6 +368,7 @@ window.addEventListener('DOMContentLoaded', function() {
                   }
                 }, item.badge)
               )
+            })
             )
           ),
           
@@ -768,273 +804,4 @@ window.addEventListener('DOMContentLoaded', function() {
               alignItems: 'center'
             }
           },
-            h('h2', { style: { margin: 0, fontSize: '20px' } }, 'Compose Email'),
-            h('button', {
-              onClick: onClose,
-              style: {
-                background: 'none',
-                border: 'none',
-                fontSize: '24px',
-                cursor: 'pointer',
-                color: '#9ca3af'
-              }
-            }, '×')
-          ),
-          h('div', { style: { padding: '24px' } },
-            h('input', {
-              type: 'email',
-              placeholder: 'To',
-              value: to,
-              onChange: (e) => setTo(e.target.value),
-              style: inputStyle
-            }),
-            h('input', {
-              type: 'text',
-              placeholder: 'Subject',
-              value: subject,
-              onChange: (e) => setSubject(e.target.value),
-              style: inputStyle
-            }),
-            h('textarea', {
-              placeholder: 'Write your message...',
-              value: body,
-              onChange: (e) => setBody(e.target.value),
-              rows: 10,
-              style: { ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }
-            }),
-            h('div', { style: { display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px' } },
-              h('button', { onClick: onClose, style: btnStyle('#f3f4f6', '#374151') }, 'Cancel'),
-              h('button', { onClick: send, style: btnStyle('#C9A962', 'white') }, 'Send')
-            )
-          )
-        )
-      );
-    }
-    
-    function TaskFormModal({ onClose, user, API, onCreated }) {
-      const [title, setTitle] = useState('');
-      const [priority, setPriority] = useState('medium');
-      const h = React.createElement;
-      
-      const create = async () => {
-        if (!title) {
-          alert('Please enter task title');
-          return;
-        }
-        try {
-          await API.createTaskFromEmail(null, user, { title, priority, description: '' });
-          alert('Task created!');
-          onCreated();
-          onClose();
-        } catch (error) {
-          alert('Failed to create task');
-        }
-      };
-      
-      return h('div', {
-        onClick: onClose,
-        style: modalOverlayStyle
-      },
-        h('div', {
-          onClick: (e) => e.stopPropagation(),
-          style: modalStyle
-        },
-          h('h3', { style: { margin: '0 0 20px 0' } }, 'New Task'),
-          h('input', {
-            placeholder: 'Task title',
-            value: title,
-            onChange: (e) => setTitle(e.target.value),
-            style: inputStyle
-          }),
-          h('select', {
-            value: priority,
-            onChange: (e) => setPriority(e.target.value),
-            style: inputStyle
-          },
-            h('option', { value: 'low' }, 'Low Priority'),
-            h('option', { value: 'medium' }, 'Medium Priority'),
-            h('option', { value: 'high' }, 'High Priority'),
-            h('option', { value: 'urgent' }, 'Urgent')
-          ),
-          h('div', { style: { display: 'flex', gap: '12px', marginTop: '20px' } },
-            h('button', { onClick: onClose, style: btnStyle('#f3f4f6', '#374151') }, 'Cancel'),
-            h('button', { onClick: create, style: btnStyle('#C9A962', 'white') }, 'Create')
-          )
-        )
-      );
-    }
-    
-    function ContactFormModal({ onClose, user, API, onCreated }) {
-      const [name, setName] = useState('');
-      const [email, setEmail] = useState('');
-      const [company, setCompany] = useState('');
-      const h = React.createElement;
-      
-      const create = async () => {
-        if (!name || !email) {
-          alert('Please enter name and email');
-          return;
-        }
-        try {
-          await API.createContact({ userEmail: user, name, email, company, contactType: 'client' });
-          alert('Contact created!');
-          onCreated();
-          onClose();
-        } catch (error) {
-          alert('Failed to create contact');
-        }
-      };
-      
-      return h('div', {
-        onClick: onClose,
-        style: modalOverlayStyle
-      },
-        h('div', {
-          onClick: (e) => e.stopPropagation(),
-          style: modalStyle
-        },
-          h('h3', { style: { margin: '0 0 20px 0' } }, 'New Contact'),
-          h('input', {
-            placeholder: 'Name',
-            value: name,
-            onChange: (e) => setName(e.target.value),
-            style: inputStyle
-          }),
-          h('input', {
-            placeholder: 'Email',
-            type: 'email',
-            value: email,
-            onChange: (e) => setEmail(e.target.value),
-            style: inputStyle
-          }),
-          h('input', {
-            placeholder: 'Company (optional)',
-            value: company,
-            onChange: (e) => setCompany(e.target.value),
-            style: inputStyle
-          }),
-          h('div', { style: { display: 'flex', gap: '12px', marginTop: '20px' } },
-            h('button', { onClick: onClose, style: btnStyle('#f3f4f6', '#374151') }, 'Cancel'),
-            h('button', { onClick: create, style: btnStyle('#C9A962', 'white') }, 'Create')
-          )
-        )
-      );
-    }
-    
-    function MeetingFormModal({ onClose, user, API, onCreated }) {
-      const [title, setTitle] = useState('');
-      const [date, setDate] = useState('');
-      const h = React.createElement;
-      
-      const create = async () => {
-        if (!title || !date) {
-          alert('Please enter title and date');
-          return;
-        }
-        try {
-          await API.createMeeting({ userEmail: user, title, proposedDate: date, meetingType: 'general' });
-          alert('Meeting created!');
-          onCreated();
-          onClose();
-        } catch (error) {
-          alert('Failed to create meeting');
-        }
-      };
-      
-      return h('div', {
-        onClick: onClose,
-        style: modalOverlayStyle
-      },
-        h('div', {
-          onClick: (e) => e.stopPropagation(),
-          style: modalStyle
-        },
-          h('h3', { style: { margin: '0 0 20px 0' } }, 'New Meeting'),
-          h('input', {
-            placeholder: 'Meeting title',
-            value: title,
-            onChange: (e) => setTitle(e.target.value),
-            style: inputStyle
-          }),
-          h('input', {
-            type: 'datetime-local',
-            value: date,
-            onChange: (e) => setDate(e.target.value),
-            style: inputStyle
-          }),
-          h('div', { style: { display: 'flex', gap: '12px', marginTop: '20px' } },
-            h('button', { onClick: onClose, style: btnStyle('#f3f4f6', '#374151') }, 'Cancel'),
-            h('button', { onClick: create, style: btnStyle('#C9A962', 'white') }, 'Create')
-          )
-        )
-      );
-    }
-    
-    // ============================================
-    // STYLES
-    // ============================================
-    const btnStyle = (bg, color) => ({
-      background: bg,
-      color: color,
-      border: bg === '#f3f4f6' ? '1px solid #d1d5db' : 'none',
-      padding: '10px 20px',
-      borderRadius: '8px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      fontSize: '14px',
-      transition: 'all 0.2s'
-    });
-    
-    const centerStyle = {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      textAlign: 'center',
-      padding: '60px 20px',
-      color: '#6b7280'
-    };
-    
-    const inputStyle = {
-      width: '100%',
-      padding: '12px',
-      border: '1px solid #d1d5db',
-      borderRadius: '6px',
-      marginBottom: '16px',
-      fontSize: '14px'
-    };
-    
-    const modalOverlayStyle = {
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0,0,0,0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000
-    };
-    
-    const modalStyle = {
-      background: 'white',
-      padding: '24px',
-      borderRadius: '12px',
-      width: '400px',
-      boxShadow: '0 20px 50px rgba(0,0,0,0.3)'
-    };
-    
-    // ============================================
-    // RENDER
-    // ============================================
-    const root = document.getElementById('email-root');
-    if (root) {
-      console.log('Rendering complete InvestMail app...');
-      ReactDOM.render(h(EmailApp), root);
-      console.log('✅ ALL FEATURES LOADED!');
-    }
-  }
-  
-  initApp();
-});
+            h('h2', { style: { margin: 0, fontSize

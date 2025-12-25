@@ -34,6 +34,7 @@ emailRoutes.get('/inbox', async (c) => {
       FROM emails
       WHERE to_email = ? 
         AND category != 'trash' 
+        AND category != 'spam'
         AND is_archived = 0
       ORDER BY received_at DESC
       LIMIT 50
@@ -42,6 +43,146 @@ emailRoutes.get('/inbox', async (c) => {
     return c.json({ success: true, emails: results });
   } catch (error: any) {
     console.error('Inbox fetch error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================
+// GET /api/email/sent
+// Get sent emails for a user
+// ============================================
+emailRoutes.get('/sent', async (c) => {
+  const { DB } = c.env;
+  const userEmail = c.req.query('user') || 'admin@investaycapital.com';
+  
+  try {
+    const { results } = await DB.prepare(`
+      SELECT 
+        id, thread_id, from_email, from_name, to_email, subject,
+        snippet, category, priority, sentiment, is_read, is_starred,
+        is_archived, labels, received_at, sent_at
+      FROM emails
+      WHERE from_email = ? 
+        AND category != 'trash'
+      ORDER BY sent_at DESC
+      LIMIT 50
+    `).bind(userEmail).all();
+    
+    return c.json({ success: true, emails: results });
+  } catch (error: any) {
+    console.error('Sent fetch error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================
+// GET /api/email/spam
+// Get spam emails for a user
+// ============================================
+emailRoutes.get('/spam', async (c) => {
+  const { DB } = c.env;
+  const userEmail = c.req.query('user') || 'admin@investaycapital.com';
+  
+  try {
+    const { results } = await DB.prepare(`
+      SELECT 
+        id, thread_id, from_email, from_name, to_email, subject,
+        snippet, category, priority, sentiment, is_read, is_starred,
+        is_archived, labels, received_at, sent_at
+      FROM emails
+      WHERE to_email = ? 
+        AND category = 'spam'
+      ORDER BY received_at DESC
+      LIMIT 50
+    `).bind(userEmail).all();
+    
+    return c.json({ success: true, emails: results });
+  } catch (error: any) {
+    console.error('Spam fetch error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================
+// GET /api/email/trash
+// Get trashed emails for a user
+// ============================================
+emailRoutes.get('/trash', async (c) => {
+  const { DB } = c.env;
+  const userEmail = c.req.query('user') || 'admin@investaycapital.com';
+  
+  try {
+    const { results } = await DB.prepare(`
+      SELECT 
+        id, thread_id, from_email, from_name, to_email, subject,
+        snippet, category, priority, sentiment, is_read, is_starred,
+        is_archived, labels, received_at, sent_at
+      FROM emails
+      WHERE (to_email = ? OR from_email = ?)
+        AND category = 'trash'
+      ORDER BY received_at DESC
+      LIMIT 50
+    `).bind(userEmail, userEmail).all();
+    
+    return c.json({ success: true, emails: results });
+  } catch (error: any) {
+    console.error('Trash fetch error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================
+// GET /api/email/drafts
+// Get draft emails for a user
+// ============================================
+emailRoutes.get('/drafts', async (c) => {
+  const { DB } = c.env;
+  const userEmail = c.req.query('user') || 'admin@investaycapital.com';
+  
+  try {
+    const { results } = await DB.prepare(`
+      SELECT 
+        id, thread_id, from_email, from_name, to_email, subject,
+        body_text, snippet, category, priority, is_read, is_starred,
+        labels, created_at, updated_at
+      FROM email_drafts
+      WHERE user_email = ?
+      ORDER BY updated_at DESC
+      LIMIT 50
+    `).bind(userEmail).all();
+    
+    return c.json({ success: true, drafts: results });
+  } catch (error: any) {
+    console.error('Drafts fetch error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================
+// GET /api/email/archived
+// Get archived emails for a user
+// ============================================
+emailRoutes.get('/archived', async (c) => {
+  const { DB } = c.env;
+  const userEmail = c.req.query('user') || 'admin@investaycapital.com';
+  
+  try {
+    const { results } = await DB.prepare(`
+      SELECT 
+        id, thread_id, from_email, from_name, to_email, subject,
+        snippet, category, priority, sentiment, is_read, is_starred,
+        is_archived, labels, received_at, sent_at
+      FROM emails
+      WHERE (to_email = ? OR from_email = ?)
+        AND is_archived = 1
+        AND category != 'trash'
+      ORDER BY received_at DESC
+      LIMIT 50
+    `).bind(userEmail, userEmail).all();
+    
+    return c.json({ success: true, emails: results });
+  } catch (error: any) {
+    console.error('Archived fetch error:', error);
     return c.json({ success: false, error: error.message }, 500);
   }
 });
