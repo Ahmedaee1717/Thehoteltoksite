@@ -368,7 +368,8 @@ window.addEventListener('DOMContentLoaded', function() {
                   }
                 }, item.badge)
               )
-            )))
+            )
+          ),
             )
           ),
           
