@@ -83,6 +83,29 @@ app.post('/api/ai-answer', async (c) => {
   }
 })
 
+// Email client page
+app.get('/mail', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>InvestMail - Internal Email System</title>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:wght@400;600;700&display=swap" rel="stylesheet">
+      <link href="/static/email-app.css" rel="stylesheet">
+    </head>
+    <body>
+      <div id="email-root"></div>
+      
+      <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+      <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+      <script src="/static/email-app.js"></script>
+    </body>
+    </html>
+  `)
+})
+
 // Home page
 app.get('/', homePage)
 

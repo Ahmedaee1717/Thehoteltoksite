@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InvestMail - Internal Email System</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/email-client.css">
+</head>
+<body>
+    <div id="email-app">
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="loading-screen">
+            <div class="loader-container">
+                <div class="loader"></div>
+                <p>Loading InvestMail...</p>
+            </div>
+        </div>
+
+        <!-- Main App Container -->
+        <div id="app-container" class="app-container" style="display: none;">
+            
+            <!-- Sidebar Navigation -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <div class="logo">
+                        <i class="fas fa-envelope-open-text"></i>
+                        <h1>InvestMail</h1>
+                    </div>
+                    <button id="compose-btn" class="compose-btn">
+                        <i class="fas fa-pen"></i>
+                        <span>Compose</span>
+                    </button>
+                </div>
+
+                <nav class="nav-menu">
+                    <a href="#" class="nav-item active" data-view="inbox">
+                        <i class="fas fa-inbox"></i>
+                        <span>Inbox</span>
+                        <span class="count" id="inbox-count">0</span>
+                    </a>
+                    <a href="#" class="nav-item" data-view="sent">
+                        <i class="fas fa-paper-plane"></i>
+                        <span>Sent</span>
+                    </a>
+                    <a href="#" class="nav-item" data-view="drafts">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Drafts</span>
+                    </a>
+                    <a href="#" class="nav-item" data-view="starred">
+                        <i class="fas fa-star"></i>
+                        <span>Starred</span>
+                    </a>
+                    <a href="#" class="nav-item" data-view="archived">
+                        <i class="fas fa-archive"></i>
+                        <span>Archived</span>
+                    </a>
+                    <a href="#" class="nav-item" data-view="trash">
+                        <i class="fas fa-trash"></i>
+                        <span>Trash</span>
+                    </a>
+                </nav>
+
+                <div class="categories-section">
+                    <h3>Categories</h3>
+                    <div class="categories-list">
+                        <a href="#" class="category-item" data-category="all">
+                            <span class="cat-dot cat-all"></span>
+                            <span>All Mail</span>
+                        </a>
+                        <a href="#" class="category-item" data-category="project">
+                            <span class="cat-dot cat-project"></span>
+                            <span>Projects</span>
+                        </a>
+                        <a href="#" class="category-item" data-category="meeting">
+                            <span class="cat-dot cat-meeting"></span>
+                            <span>Meetings</span>
+                        </a>
+                        <a href="#" class="category-item" data-category="client">
+                            <span class="cat-dot cat-client"></span>
+                            <span>Clients</span>
+                        </a>
+                        <a href="#" class="category-item" data-category="urgent">
+                            <span class="cat-dot cat-urgent"></span>
+                            <span>Urgent</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="sidebar-footer">
+                    <a href="#" class="nav-item" data-view="analytics">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Analytics</span>
+                    </a>
+                    <a href="#" class="nav-item" data-view="settings">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="main-content">
+                
+                <!-- Top Bar -->
+                <div class="top-bar">
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="search-input" placeholder="Search emails (AI-powered semantic search)...">
+                        <button id="search-btn" class="icon-btn" title="Advanced Search">
+                            <i class="fas fa-sliders-h"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="user-menu">
+                        <button class="icon-btn" title="Notifications">
+                            <i class="fas fa-bell"></i>
+                            <span class="badge">3</span>
+                        </button>
+                        <div class="user-profile">
+                            <img src="https://ui-avatars.com/api/?name=Admin+User&background=d4af37&color=1a1a1a&bold=true" alt="User">
+                            <span id="current-user">admin@investaycapital.com</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Email List View -->
+                <div id="email-list-view" class="email-list-view">
+                    <div class="view-header">
+                        <div class="view-title">
+                            <h2 id="view-title">Inbox</h2>
+                            <span id="email-count" class="email-count">0 emails</span>
+                        </div>
+                        
+                        <div class="view-actions">
+                            <div class="filter-buttons">
+                                <button class="filter-btn active" data-filter="all">
+                                    <i class="fas fa-envelope"></i> All
+                                </button>
+                                <button class="filter-btn" data-filter="unread">
+                                    <i class="fas fa-envelope-open"></i> Unread
+                                </button>
+                                <button class="filter-btn" data-filter="attachments">
+                                    <i class="fas fa-paperclip"></i> Has Attachments
+                                </button>
+                            </div>
+                            
+                            <button class="icon-btn" id="refresh-btn" title="Refresh">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Email List -->
+                    <div id="email-list" class="email-list">
+                        <!-- Email items will be dynamically inserted here -->
+                    </div>
+                </div>
+
+                <!-- Email Detail View -->
+                <div id="email-detail-view" class="email-detail-view" style="display: none;">
+                    <!-- Email detail content will be dynamically inserted -->
+                </div>
+
+                <!-- Analytics View -->
+                <div id="analytics-view" class="analytics-view" style="display: none;">
+                    <!-- Analytics content will be dynamically inserted -->
+                </div>
+
+                <!-- Settings View -->
+                <div id="settings-view" class="settings-view" style="display: none;">
+                    <!-- Settings content will be dynamically inserted -->
+                </div>
+
+            </main>
+        </div>
+
+        <!-- Compose Modal -->
+        <div id="compose-modal" class="modal-overlay" style="display: none;">
+            <div class="compose-modal">
+                <div class="modal-header">
+                    <h3>New Message</h3>
+                    <div class="modal-actions">
+                        <button class="icon-btn" id="minimize-compose" title="Minimize">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <button class="icon-btn" id="close-compose" title="Close">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="modal-body">
+                    <form id="compose-form">
+                        <div class="form-group">
+                            <label>To:</label>
+                            <input type="email" id="compose-to" placeholder="recipient@investaycapital.com" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Subject:</label>
+                            <input type="text" id="compose-subject" placeholder="Email subject" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Message:</label>
+                            <textarea id="compose-body" rows="12" placeholder="Write your message..." required></textarea>
+                        </div>
+
+                        <!-- AI Assistant Panel -->
+                        <div class="ai-assistant-panel">
+                            <div class="ai-header">
+                                <i class="fas fa-robot"></i>
+                                <span>AI Writing Assistant</span>
+                            </div>
+                            <div class="ai-actions">
+                                <button type="button" class="ai-btn" data-action="improve">
+                                    <i class="fas fa-magic"></i> Improve
+                                </button>
+                                <button type="button" class="ai-btn" data-action="expand">
+                                    <i class="fas fa-expand-arrows-alt"></i> Expand
+                                </button>
+                                <button type="button" class="ai-btn" data-action="shorten">
+                                    <i class="fas fa-compress-arrows-alt"></i> Shorten
+                                </button>
+                                <button type="button" class="ai-btn" data-action="professional">
+                                    <i class="fas fa-briefcase"></i> Professional
+                                </button>
+                                <button type="button" class="ai-btn" data-action="friendly">
+                                    <i class="fas fa-smile"></i> Friendly
+                                </button>
+                                <button type="button" class="ai-btn" data-action="translate">
+                                    <i class="fas fa-language"></i> Translate
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" id="attach-file" class="btn-secondary">
+                        <i class="fas fa-paperclip"></i> Attach
+                    </button>
+                    <div class="footer-actions">
+                        <button type="button" id="save-draft" class="btn-secondary">
+                            Save Draft
+                        </button>
+                        <button type="submit" id="send-email" class="btn-primary" form="compose-form">
+                            <i class="fas fa-paper-plane"></i> Send
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/plugin/relativeTime.js"></script>
+    <script>dayjs.extend(window.dayjs_plugin_relativeTime)</script>
+    <script src="/static/email-client.js"></script>
+</body>
+</html>
