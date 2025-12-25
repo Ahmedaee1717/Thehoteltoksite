@@ -98,9 +98,12 @@ app.get('/mail', (c) => {
     <body>
       <div id="email-root"></div>
       
-      <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-      <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-      <script src="/static/email-app.js"></script>
+      <!-- React Library -->
+      <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+      <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+      
+      <!-- Email App -->
+      <script defer src="/static/email-app.js"></script>
     </body>
     </html>
   `)
