@@ -4,12 +4,14 @@ import { serveStatic } from 'hono/cloudflare-workers'
 import { blogRoutes } from './routes/blog'
 import { adminRoutes } from './routes/admin'
 import { aiAdminRoutes } from './routes/ai-admin'
+import { emailRoutes } from './routes/email'
 import { homePage } from './pages/home'
 import { answerQuestion } from './services/ai-optimizer'
 
 type Bindings = {
   DB: D1Database;
   OPENAI_API_KEY?: string;
+  R2_BUCKET?: R2Bucket;
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -24,6 +26,7 @@ app.use('/static/*', serveStatic({ root: './public' }))
 app.route('/api/blog', blogRoutes)
 app.route('/api/admin', adminRoutes)
 app.route('/api/ai', aiAdminRoutes)
+app.route('/api/email', emailRoutes)
 
 // AI Q&A Endpoint - semantic search and question answering
 app.post('/api/ai-answer', async (c) => {
