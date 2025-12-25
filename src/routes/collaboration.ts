@@ -1,368 +1,632 @@
-import { Hono } from 'hono'
-import type { CloudflareBindings } from '../types/cloudflare'
+import { Hono } from 'hono';
 
-const collab = new Hono<{ Bindings: CloudflareBindings }>()
+const collaborationRoutes = new Hono<{ Bindings: { DB: D1Database } }>();
 
-// ===== TEAM NOTES =====
+// Utility to generate IDs
+const generateId = (prefix: string) => `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-// Get notes for email
-collab.get('/notes/:emailId', async (c) => {
-  const emailId = c.req.param('emailId')
+// ============================================
+// INTERNAL COMMENTS API
+// ============================================
+
+// POST /api/collaboration/comments
+// Add internal comment to email
+collaborationRoutes.post('/comments', async (c) => {
+  const { DB } = c.env;
   
   try {
-    const { results } = await c.env.DB.prepare(`
-      SELECT * FROM team_notes
+    const { 
+      email_id, 
+      thread_id,
+      author_email, 
+      author_name, 
+      comment_text,
+      comment_type = 'comment',
+      mentions,
+      tags,
+      priority,
+      parent_comment_id 
+    } = await c.req.json();
+    
+    if (!email_id || !author_email || !comment_text) {
+      return c.json({ 
+        success: false, 
+        error: 'Missing required fields: email_id, author_email, comment_text' 
+      }, 400);
+    }
+    
+    const commentId = generateId('cmt');
+    
+    await DB.prepare(`
+      INSERT INTO email_internal_comments (
+        id, email_id, thread_id, author_email, author_name, 
+        comment_text, comment_type, mentions, tags, priority, parent_comment_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      commentId, email_id, thread_id || null, author_email, author_name || null,
+      comment_text, comment_type || 'comment', mentions ? JSON.stringify(mentions) : null,
+      tags ? JSON.stringify(tags) : null, priority || null, parent_comment_id || null
+    ).run();
+    
+    // Track activity
+    await DB.prepare(`
+      INSERT INTO email_activity_tracking (
+        id, email_id, thread_id, user_email, user_name, activity_type, activity_data
+      ) VALUES (?, ?, ?, ?, ?, 'commented', ?)
+    `).bind(
+      generateId('act'), email_id, thread_id || null, author_email, author_name || null,
+      JSON.stringify({ comment_id: commentId, comment_type: comment_type || 'comment' })
+    ).run();
+    
+    // Update collaboration stats
+    await DB.prepare(`
+      INSERT INTO email_collaboration_stats (id, email_id, total_comments, last_activity_at)
+      VALUES (?, ?, 1, CURRENT_TIMESTAMP)
+      ON CONFLICT(email_id) DO UPDATE SET 
+        total_comments = total_comments + 1,
+        unresolved_comments = CASE WHEN ? = 'comment' THEN unresolved_comments + 1 ELSE unresolved_comments END,
+        last_activity_at = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP
+    `).bind(generateId('stat'), email_id, comment_type || 'comment').run();
+    
+    return c.json({ success: true, comment_id: commentId });
+  } catch (error: any) {
+    console.error('Add comment error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// GET /api/collaboration/comments/:email_id
+// Get all comments for an email
+collaborationRoutes.get('/comments/:email_id', async (c) => {
+  const { DB } = c.env;
+  const emailId = c.req.param('email_id');
+  
+  try {
+    const { results } = await DB.prepare(`
+      SELECT 
+        id, email_id, thread_id, author_email, author_name,
+        comment_text, comment_type, mentions, tags, priority,
+        is_resolved, is_private, parent_comment_id,
+        created_at, updated_at, edited_at
+      FROM email_internal_comments
+      WHERE email_id = ?
+      ORDER BY created_at ASC
+    `).bind(emailId).all();
+    
+    return c.json({ success: true, comments: results });
+  } catch (error: any) {
+    console.error('Get comments error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// PUT /api/collaboration/comments/:id/resolve
+// Mark comment as resolved
+collaborationRoutes.put('/comments/:id/resolve', async (c) => {
+  const { DB } = c.env;
+  const commentId = c.req.param('id');
+  
+  try {
+    await DB.prepare(`
+      UPDATE email_internal_comments
+      SET is_resolved = 1, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(commentId).run();
+    
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error('Resolve comment error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// DELETE /api/collaboration/comments/:id
+// Delete a comment
+collaborationRoutes.delete('/comments/:id', async (c) => {
+  const { DB } = c.env;
+  const commentId = c.req.param('id');
+  
+  try {
+    await DB.prepare(`
+      DELETE FROM email_internal_comments WHERE id = ?
+    `).bind(commentId).run();
+    
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error('Delete comment error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================
+// ACTIVITY TRACKING API
+// ============================================
+
+// POST /api/collaboration/activity
+// Track email activity
+collaborationRoutes.post('/activity', async (c) => {
+  const { DB } = c.env;
+  
+  try {
+    const { 
+      email_id, 
+      thread_id,
+      user_email, 
+      user_name, 
+      activity_type,
+      activity_data,
+      user_agent,
+      ip_address
+    } = await c.req.json();
+    
+    if (!email_id || !user_email || !activity_type) {
+      return c.json({ 
+        success: false, 
+        error: 'Missing required fields: email_id, user_email, activity_type' 
+      }, 400);
+    }
+    
+    const activityId = generateId('act');
+    
+    await DB.prepare(`
+      INSERT INTO email_activity_tracking (
+        id, email_id, thread_id, user_email, user_name,
+        activity_type, activity_data, user_agent, ip_address
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      activityId, email_id, thread_id, user_email, user_name,
+      activity_type, activity_data ? JSON.stringify(activity_data) : null,
+      user_agent, ip_address
+    ).run();
+    
+    // Update collaboration stats
+    await DB.prepare(`
+      INSERT INTO email_collaboration_stats (id, email_id, total_activities, last_activity_at)
+      VALUES (?, ?, 1, CURRENT_TIMESTAMP)
+      ON CONFLICT(email_id) DO UPDATE SET 
+        total_activities = total_activities + 1,
+        total_views = CASE WHEN ? = 'viewed' THEN total_views + 1 ELSE total_views END,
+        last_activity_at = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP
+    `).bind(generateId('stat'), email_id, activity_type).run();
+    
+    return c.json({ success: true, activity_id: activityId });
+  } catch (error: any) {
+    console.error('Track activity error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// GET /api/collaboration/activity/:email_id
+// Get activity log for an email
+collaborationRoutes.get('/activity/:email_id', async (c) => {
+  const { DB } = c.env;
+  const emailId = c.req.param('email_id');
+  
+  try {
+    const { results } = await DB.prepare(`
+      SELECT 
+        id, email_id, user_email, user_name,
+        activity_type, activity_data, created_at
+      FROM email_activity_tracking
       WHERE email_id = ?
       ORDER BY created_at DESC
-    `).bind(emailId).all()
+      LIMIT 100
+    `).bind(emailId).all();
     
-    return c.json({ notes: results || [] })
+    return c.json({ success: true, activities: results });
   } catch (error: any) {
-    console.error('Error fetching notes:', error)
-    return c.json({ error: 'Failed to fetch notes', details: error.message }, 500)
+    console.error('Get activity error:', error);
+    return c.json({ success: false, error: error.message }, 500);
   }
-})
+});
 
-// Add note to email
-collab.post('/notes', async (c) => {
-  try {
-    const { emailId, userEmail, content, visibility } = await c.req.json()
-    
-    if (!emailId || !userEmail || !content) {
-      return c.json({ error: 'emailId, userEmail and content are required' }, 400)
-    }
-    
-    const result = await c.env.DB.prepare(`
-      INSERT INTO team_notes (
-        email_id, user_email, content, visibility
-      ) VALUES (?, ?, ?, ?)
-    `).bind(emailId, userEmail, content, visibility || 'team').run()
-    
-    return c.json({ 
-      success: true, 
-      noteId: result.meta.last_row_id,
-      message: 'Note added successfully' 
-    })
-  } catch (error: any) {
-    console.error('Error adding note:', error)
-    return c.json({ error: 'Failed to add note', details: error.message }, 500)
-  }
-})
+// ============================================
+// PRESENCE TRACKING API
+// ============================================
 
-// Update note
-collab.put('/notes/:id', async (c) => {
-  const noteId = c.req.param('id')
+// POST /api/collaboration/presence
+// Update user presence
+collaborationRoutes.post('/presence', async (c) => {
+  const { DB } = c.env;
   
   try {
-    const { content, visibility } = await c.req.json()
+    const { 
+      email_id, 
+      user_email, 
+      user_name, 
+      presence_type,
+      cursor_position
+    } = await c.req.json();
     
-    const updates: string[] = []
-    const params: any[] = []
-    
-    if (content !== undefined) {
-      updates.push('content = ?')
-      params.push(content)
-    }
-    if (visibility !== undefined) {
-      updates.push('visibility = ?')
-      params.push(visibility)
-    }
-    
-    params.push(noteId)
-    
-    await c.env.DB.prepare(`
-      UPDATE team_notes 
-      SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).bind(...params).run()
-    
-    return c.json({ success: true, message: 'Note updated successfully' })
-  } catch (error: any) {
-    console.error('Error updating note:', error)
-    return c.json({ error: 'Failed to update note', details: error.message }, 500)
-  }
-})
-
-// Delete note
-collab.delete('/notes/:id', async (c) => {
-  const noteId = c.req.param('id')
-  
-  try {
-    await c.env.DB.prepare('DELETE FROM team_notes WHERE id = ?').bind(noteId).run()
-    return c.json({ success: true, message: 'Note deleted successfully' })
-  } catch (error: any) {
-    console.error('Error deleting note:', error)
-    return c.json({ error: 'Failed to delete note', details: error.message }, 500)
-  }
-})
-
-// ===== EMAIL DELEGATION =====
-
-// Get delegated emails for user
-collab.get('/delegations', async (c) => {
-  const userEmail = c.req.query('userEmail') || 'admin@investaycapital.com'
-  const type = c.req.query('type') // delegated_by_me, delegated_to_me
-  
-  try {
-    let query = `
-      SELECT d.*, 
-        e.subject, e.from_email, e.created_at as email_created_at,
-        from_user.name as from_user_name,
-        to_user.name as to_user_name
-      FROM email_delegations d
-      LEFT JOIN emails e ON d.email_id = e.id
-      LEFT JOIN crm_contacts from_user ON d.from_user = from_user.email
-      LEFT JOIN crm_contacts to_user ON d.to_user = to_user.email
-      WHERE d.status = 'pending'
-    `
-    const params: any[] = []
-    
-    if (type === 'delegated_by_me') {
-      query += ' AND d.from_user = ?'
-      params.push(userEmail)
-    } else if (type === 'delegated_to_me') {
-      query += ' AND d.to_user = ?'
-      params.push(userEmail)
-    } else {
-      query += ' AND (d.from_user = ? OR d.to_user = ?)'
-      params.push(userEmail, userEmail)
+    if (!email_id || !user_email || !presence_type) {
+      return c.json({ 
+        success: false, 
+        error: 'Missing required fields: email_id, user_email, presence_type' 
+      }, 400);
     }
     
-    query += ' ORDER BY d.created_at DESC'
+    const presenceId = generateId('prs');
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
     
-    const { results } = await c.env.DB.prepare(query).bind(...params).all()
-    
-    return c.json({ delegations: results || [] })
-  } catch (error: any) {
-    console.error('Error fetching delegations:', error)
-    return c.json({ error: 'Failed to fetch delegations', details: error.message }, 500)
-  }
-})
-
-// Delegate email
-collab.post('/delegations', async (c) => {
-  try {
-    const { emailId, fromUser, toUser, message, dueDate, priority } = await c.req.json()
-    
-    if (!emailId || !fromUser || !toUser) {
-      return c.json({ error: 'emailId, fromUser and toUser are required' }, 400)
-    }
-    
-    const result = await c.env.DB.prepare(`
-      INSERT INTO email_delegations (
-        email_id, from_user, to_user, message, due_date, priority, status
-      ) VALUES (?, ?, ?, ?, ?, ?, 'pending')
-    `).bind(emailId, fromUser, toUser, message || '', dueDate || null, priority || 'medium').run()
-    
-    return c.json({ 
-      success: true, 
-      delegationId: result.meta.last_row_id,
-      message: 'Email delegated successfully' 
-    })
-  } catch (error: any) {
-    console.error('Error delegating email:', error)
-    return c.json({ error: 'Failed to delegate email', details: error.message }, 500)
-  }
-})
-
-// Complete delegation
-collab.put('/delegations/:id/complete', async (c) => {
-  const delegationId = c.req.param('id')
-  
-  try {
-    const { response } = await c.req.json()
-    
-    await c.env.DB.prepare(`
-      UPDATE email_delegations 
-      SET status = 'completed', response = ?, completed_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).bind(response || '', delegationId).run()
-    
-    return c.json({ success: true, message: 'Delegation completed' })
-  } catch (error: any) {
-    console.error('Error completing delegation:', error)
-    return c.json({ error: 'Failed to complete delegation', details: error.message }, 500)
-  }
-})
-
-// ===== APPROVAL WORKFLOWS =====
-
-// Get pending approvals
-collab.get('/approvals', async (c) => {
-  const userEmail = c.req.query('userEmail') || 'admin@investaycapital.com'
-  const type = c.req.query('type') // requested_by_me, approval_required
-  
-  try {
-    let query = `
-      SELECT a.*, 
-        e.subject, e.from_email, e.to_email,
-        requester.name as requester_name
-      FROM approval_workflows a
-      LEFT JOIN emails e ON a.email_id = e.id
-      LEFT JOIN crm_contacts requester ON a.requester_email = requester.email
-      WHERE a.status = 'pending'
-    `
-    const params: any[] = []
-    
-    if (type === 'requested_by_me') {
-      query += ' AND a.requester_email = ?'
-      params.push(userEmail)
-    } else if (type === 'approval_required') {
-      query += ' AND a.approver_email = ?'
-      params.push(userEmail)
-    } else {
-      query += ' AND (a.requester_email = ? OR a.approver_email = ?)'
-      params.push(userEmail, userEmail)
-    }
-    
-    query += ' ORDER BY a.created_at DESC'
-    
-    const { results } = await c.env.DB.prepare(query).bind(...params).all()
-    
-    return c.json({ approvals: results || [] })
-  } catch (error: any) {
-    console.error('Error fetching approvals:', error)
-    return c.json({ error: 'Failed to fetch approvals', details: error.message }, 500)
-  }
-})
-
-// Request approval
-collab.post('/approvals', async (c) => {
-  try {
-    const { emailId, requesterEmail, approverEmail, approvalType, message, priority } = await c.req.json()
-    
-    if (!emailId || !requesterEmail || !approverEmail) {
-      return c.json({ error: 'emailId, requesterEmail and approverEmail are required' }, 400)
-    }
-    
-    const result = await c.env.DB.prepare(`
-      INSERT INTO approval_workflows (
-        email_id, requester_email, approver_email, approval_type, 
-        message, priority, status
-      ) VALUES (?, ?, ?, ?, ?, ?, 'pending')
+    // Upsert presence
+    await DB.prepare(`
+      INSERT INTO email_presence (
+        id, email_id, user_email, user_name, presence_type,
+        cursor_position, is_active, last_seen_at, expires_at
+      ) VALUES (?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, ?)
+      ON CONFLICT(email_id, user_email, presence_type) DO UPDATE SET
+        is_active = 1,
+        cursor_position = ?,
+        last_seen_at = CURRENT_TIMESTAMP,
+        expires_at = ?
     `).bind(
-      emailId, requesterEmail, approverEmail, approvalType || 'send', 
-      message || '', priority || 'medium'
-    ).run()
+      presenceId, email_id, user_email, user_name, presence_type,
+      cursor_position, expiresAt.toISOString(),
+      cursor_position, expiresAt.toISOString()
+    ).run();
     
-    return c.json({ 
-      success: true, 
-      approvalId: result.meta.last_row_id,
-      message: 'Approval requested successfully' 
-    })
+    return c.json({ success: true, presence_id: presenceId });
   } catch (error: any) {
-    console.error('Error requesting approval:', error)
-    return c.json({ error: 'Failed to request approval', details: error.message }, 500)
+    console.error('Update presence error:', error);
+    return c.json({ success: false, error: error.message }, 500);
   }
-})
+});
 
-// Approve/Reject
-collab.put('/approvals/:id', async (c) => {
-  const approvalId = c.req.param('id')
+// GET /api/collaboration/presence/:email_id
+// Get active viewers for an email
+collaborationRoutes.get('/presence/:email_id', async (c) => {
+  const { DB } = c.env;
+  const emailId = c.req.param('email_id');
   
   try {
-    const { status, comments } = await c.req.json()
+    // Clean expired presence first
+    await DB.prepare(`
+      UPDATE email_presence
+      SET is_active = 0
+      WHERE expires_at < CURRENT_TIMESTAMP AND is_active = 1
+    `).run();
     
-    if (!status || !['approved', 'rejected'].includes(status)) {
-      return c.json({ error: 'status must be "approved" or "rejected"' }, 400)
+    const { results } = await DB.prepare(`
+      SELECT 
+        user_email, user_name, presence_type, cursor_position, last_seen_at
+      FROM email_presence
+      WHERE email_id = ? AND is_active = 1
+      ORDER BY last_seen_at DESC
+    `).bind(emailId).all();
+    
+    return c.json({ success: true, presence: results });
+  } catch (error: any) {
+    console.error('Get presence error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================
+// COLLABORATIVE DRAFTS API
+// ============================================
+
+// POST /api/collaboration/draft-session
+// Create collaborative draft session
+collaborationRoutes.post('/draft-session', async (c) => {
+  const { DB } = c.env;
+  
+  try {
+    const { 
+      draft_id, 
+      session_name,
+      created_by,
+      base_content
+    } = await c.req.json();
+    
+    if (!draft_id || !created_by) {
+      return c.json({ 
+        success: false, 
+        error: 'Missing required fields: draft_id, created_by' 
+      }, 400);
     }
     
-    await c.env.DB.prepare(`
-      UPDATE approval_workflows 
-      SET status = ?, comments = ?, processed_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).bind(status, comments || '', approvalId).run()
+    const sessionId = generateId('ses');
     
-    return c.json({ success: true, message: `Approval ${status}` })
+    await DB.prepare(`
+      INSERT INTO collaborative_draft_sessions (
+        id, draft_id, session_name, created_by, base_content
+      ) VALUES (?, ?, ?, ?, ?)
+    `).bind(sessionId, draft_id, session_name, created_by, base_content).run();
+    
+    return c.json({ success: true, session_id: sessionId });
   } catch (error: any) {
-    console.error('Error processing approval:', error)
-    return c.json({ error: 'Failed to process approval', details: error.message }, 500)
+    console.error('Create session error:', error);
+    return c.json({ success: false, error: error.message }, 500);
   }
-})
+});
 
-// ===== TEAM INBOXES =====
-
-// Get team inbox emails
-collab.get('/team-inboxes/:team', async (c) => {
-  const team = c.req.param('team')
-  const userEmail = c.req.query('userEmail') || 'admin@investaycapital.com'
+// POST /api/collaboration/draft-session/:id/lock
+// Acquire write lock for draft
+collaborationRoutes.post('/draft-session/:id/lock', async (c) => {
+  const { DB } = c.env;
+  const sessionId = c.req.param('id');
   
   try {
-    const { results } = await c.env.DB.prepare(`
-      SELECT ti.*, e.subject, e.from_email, e.created_at as email_created_at,
-        assignee.name as assignee_name
-      FROM team_inboxes ti
-      LEFT JOIN emails e ON ti.email_id = e.id
-      LEFT JOIN crm_contacts assignee ON ti.assigned_to = assignee.email
-      WHERE ti.team_name = ?
-      ORDER BY ti.assigned_at DESC
-    `).bind(team).all()
+    const { user_email } = await c.req.json();
     
-    return c.json({ emails: results || [] })
+    if (!user_email) {
+      return c.json({ success: false, error: 'Missing user_email' }, 400);
+    }
+    
+    const lockExpiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
+    
+    // Try to acquire lock
+    const result = await DB.prepare(`
+      UPDATE collaborative_draft_sessions
+      SET locked_by = ?, locked_at = CURRENT_TIMESTAMP, lock_expires_at = ?
+      WHERE id = ? AND (locked_by IS NULL OR lock_expires_at < CURRENT_TIMESTAMP)
+    `).bind(user_email, lockExpiresAt.toISOString(), sessionId).run();
+    
+    if (result.meta.changes === 0) {
+      return c.json({ success: false, error: 'Lock already held by another user' }, 409);
+    }
+    
+    return c.json({ success: true, lock_expires_at: lockExpiresAt });
   } catch (error: any) {
-    console.error('Error fetching team inbox:', error)
-    return c.json({ error: 'Failed to fetch team inbox', details: error.message }, 500)
+    console.error('Acquire lock error:', error);
+    return c.json({ success: false, error: error.message }, 500);
   }
-})
+});
 
+// POST /api/collaboration/draft-session/:id/edit
+// Record draft edit
+collaborationRoutes.post('/draft-session/:id/edit', async (c) => {
+  const { DB } = c.env;
+  const sessionId = c.req.param('id');
+  
+  try {
+    const { 
+      draft_id,
+      editor_email,
+      editor_name,
+      change_type,
+      content_before,
+      content_after,
+      diff_data,
+      change_description,
+      change_position
+    } = await c.req.json();
+    
+    if (!draft_id || !editor_email || !change_type) {
+      return c.json({ 
+        success: false, 
+        error: 'Missing required fields: draft_id, editor_email, change_type' 
+      }, 400);
+    }
+    
+    // Get current version
+    const session = await DB.prepare(`
+      SELECT current_version FROM collaborative_draft_sessions WHERE id = ?
+    `).bind(sessionId).first() as any;
+    
+    const newVersion = (session?.current_version || 0) + 1;
+    
+    const editId = generateId('edt');
+    
+    await DB.prepare(`
+      INSERT INTO draft_edit_history (
+        id, session_id, draft_id, editor_email, editor_name,
+        version_number, change_type, content_before, content_after,
+        diff_data, change_description, change_position
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      editId, sessionId, draft_id, editor_email, editor_name,
+      newVersion, change_type, content_before, content_after,
+      diff_data ? JSON.stringify(diff_data) : null,
+      change_description, change_position
+    ).run();
+    
+    // Update session version
+    await DB.prepare(`
+      UPDATE collaborative_draft_sessions
+      SET current_version = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(newVersion, sessionId).run();
+    
+    return c.json({ success: true, edit_id: editId, version: newVersion });
+  } catch (error: any) {
+    console.error('Record edit error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// GET /api/collaboration/draft-session/:id/history
+// Get edit history for draft session
+collaborationRoutes.get('/draft-session/:id/history', async (c) => {
+  const { DB } = c.env;
+  const sessionId = c.req.param('id');
+  
+  try {
+    const { results } = await DB.prepare(`
+      SELECT 
+        id, editor_email, editor_name, version_number,
+        change_type, change_description, created_at
+      FROM draft_edit_history
+      WHERE session_id = ?
+      ORDER BY version_number DESC
+      LIMIT 50
+    `).bind(sessionId).all();
+    
+    return c.json({ success: true, history: results });
+  } catch (error: any) {
+    console.error('Get history error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================
+// EMAIL ASSIGNMENTS API
+// ============================================
+
+// POST /api/collaboration/assign
 // Assign email to team member
-collab.post('/team-inboxes/assign', async (c) => {
-  try {
-    const { emailId, teamName, assignedBy, assignedTo } = await c.req.json()
-    
-    if (!emailId || !teamName || !assignedBy) {
-      return c.json({ error: 'emailId, teamName and assignedBy are required' }, 400)
-    }
-    
-    const result = await c.env.DB.prepare(`
-      INSERT INTO team_inboxes (
-        email_id, team_name, assigned_by, assigned_to, status
-      ) VALUES (?, ?, ?, ?, 'pending')
-    `).bind(emailId, teamName, assignedBy, assignedTo || null).run()
-    
-    return c.json({ 
-      success: true, 
-      assignmentId: result.meta.last_row_id,
-      message: 'Email assigned to team' 
-    })
-  } catch (error: any) {
-    console.error('Error assigning to team:', error)
-    return c.json({ error: 'Failed to assign to team', details: error.message }, 500)
-  }
-})
-
-// Update team inbox status
-collab.put('/team-inboxes/:id', async (c) => {
-  const assignmentId = c.req.param('id')
+collaborationRoutes.post('/assign', async (c) => {
+  const { DB } = c.env;
   
   try {
-    const { status, assignedTo } = await c.req.json()
+    const { 
+      email_id, 
+      assigned_to,
+      assigned_by,
+      priority,
+      notes,
+      due_date
+    } = await c.req.json();
     
-    const updates: string[] = []
-    const params: any[] = []
-    
-    if (status !== undefined) {
-      updates.push('status = ?')
-      params.push(status)
+    if (!email_id || !assigned_to || !assigned_by) {
+      return c.json({ 
+        success: false, 
+        error: 'Missing required fields: email_id, assigned_to, assigned_by' 
+      }, 400);
     }
-    if (assignedTo !== undefined) {
-      updates.push('assigned_to = ?')
-      params.push(assignedTo)
-    }
     
-    params.push(assignmentId)
+    const assignmentId = generateId('asn');
     
-    await c.env.DB.prepare(`
-      UPDATE team_inboxes 
-      SET ${updates.join(', ')}
-      WHERE id = ?
-    `).bind(...params).run()
+    await DB.prepare(`
+      INSERT INTO email_shared_assignments (
+        id, email_id, assigned_to, assigned_by, priority, notes, due_date
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      assignmentId, email_id, assigned_to, assigned_by, 
+      priority, notes, due_date
+    ).run();
     
-    return c.json({ success: true, message: 'Team inbox updated' })
+    // Track activity
+    await DB.prepare(`
+      INSERT INTO email_activity_tracking (
+        id, email_id, user_email, activity_type, activity_data
+      ) VALUES (?, ?, ?, 'assigned', ?)
+    `).bind(
+      generateId('act'), email_id, assigned_by,
+      JSON.stringify({ assigned_to, assignment_id: assignmentId })
+    ).run();
+    
+    return c.json({ success: true, assignment_id: assignmentId });
   } catch (error: any) {
-    console.error('Error updating team inbox:', error)
-    return c.json({ error: 'Failed to update team inbox', details: error.message }, 500)
+    console.error('Assign email error:', error);
+    return c.json({ success: false, error: error.message }, 500);
   }
-})
+});
 
-export default collab
+// GET /api/collaboration/assignments
+// Get assignments for a user
+collaborationRoutes.get('/assignments', async (c) => {
+  const { DB } = c.env;
+  const userEmail = c.req.query('user');
+  const status = c.req.query('status');
+  
+  try {
+    let query = `
+      SELECT 
+        a.id, a.email_id, a.assigned_to, a.assigned_by,
+        a.status, a.priority, a.notes, a.due_date,
+        a.assigned_at, a.accepted_at, a.completed_at,
+        e.subject, e.from_email, e.snippet
+      FROM email_shared_assignments a
+      LEFT JOIN emails e ON a.email_id = e.id
+      WHERE 1=1
+    `;
+    
+    const bindings: any[] = [];
+    
+    if (userEmail) {
+      query += ` AND a.assigned_to = ?`;
+      bindings.push(userEmail);
+    }
+    
+    if (status) {
+      query += ` AND a.status = ?`;
+      bindings.push(status);
+    }
+    
+    query += ` ORDER BY a.assigned_at DESC LIMIT 50`;
+    
+    const { results } = await DB.prepare(query).bind(...bindings).all();
+    
+    return c.json({ success: true, assignments: results });
+  } catch (error: any) {
+    console.error('Get assignments error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// PUT /api/collaboration/assignments/:id/status
+// Update assignment status
+collaborationRoutes.put('/assignments/:id/status', async (c) => {
+  const { DB } = c.env;
+  const assignmentId = c.req.param('id');
+  
+  try {
+    const { status } = await c.req.json();
+    
+    if (!status) {
+      return c.json({ success: false, error: 'Missing status' }, 400);
+    }
+    
+    const updateFields: string[] = ['status = ?'];
+    const bindings: any[] = [status];
+    
+    if (status === 'in_progress') {
+      updateFields.push('accepted_at = CURRENT_TIMESTAMP');
+    } else if (status === 'completed') {
+      updateFields.push('completed_at = CURRENT_TIMESTAMP');
+    }
+    
+    bindings.push(assignmentId);
+    
+    await DB.prepare(`
+      UPDATE email_shared_assignments
+      SET ${updateFields.join(', ')}
+      WHERE id = ?
+    `).bind(...bindings).run();
+    
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error('Update assignment status error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================
+// COLLABORATION STATS API
+// ============================================
+
+// GET /api/collaboration/stats/:email_id
+// Get collaboration stats for email
+collaborationRoutes.get('/stats/:email_id', async (c) => {
+  const { DB } = c.env;
+  const emailId = c.req.param('email_id');
+  
+  try {
+    const stats = await DB.prepare(`
+      SELECT * FROM email_collaboration_stats WHERE email_id = ?
+    `).bind(emailId).first() as any;
+    
+    if (!stats) {
+      return c.json({ 
+        success: true, 
+        stats: {
+          total_views: 0,
+          total_comments: 0,
+          unresolved_comments: 0,
+          total_activities: 0,
+          current_viewers: 0
+        }
+      });
+    }
+    
+    return c.json({ success: true, stats });
+  } catch (error: any) {
+    console.error('Get stats error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+export default collaborationRoutes;
