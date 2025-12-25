@@ -1,11 +1,12 @@
 /**
- * InvestMail - Complete Advanced Email System
- * Full Frontend Integration with All Features
+ * InvestMail - Ultra-Modern Internal Email System
+ * Complete Frontend with All Features
  */
 
 (function() {
   'use strict';
   
+  // Wait for React to load
   if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
     console.error('React not loaded, retrying...');
     setTimeout(arguments.callee, 50);
@@ -16,18 +17,12 @@
   const { createElement: h } = React;
 
   // ============================================
-  // Complete API Service with All Endpoints
+  // API Service
   // ============================================
-  const API = {
-    // Email APIs
+  const EmailAPI = {
     async getInbox(user, folder = 'inbox', limit = 50) {
       const params = new URLSearchParams({ user, folder, limit });
       const response = await fetch(`/api/email/inbox?${params}`);
-      return response.json();
-    },
-    
-    async getEmail(id) {
-      const response = await fetch(`/api/email/${id}`);
       return response.json();
     },
 
@@ -40,386 +35,116 @@
       return response.json();
     },
 
-    // Task APIs
-    async getTasks(userEmail, status = 'all') {
-      const params = new URLSearchParams({ userEmail, status });
-      const response = await fetch(`/api/tasks?${params}`);
-      return response.json();
-    },
-
-    async createTaskFromEmail(emailId, userEmail, taskData) {
-      const response = await fetch('/api/tasks/from-email', {
+    async composeAssist(action, content) {
+      const response = await fetch('/api/email/compose-assist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emailId, userEmail, ...taskData })
+        body: JSON.stringify({ action, content })
       });
       return response.json();
     },
 
-    async updateTask(taskId, updates) {
-      const response = await fetch(`/api/tasks/${taskId}`, {
-        method: 'PUT',
+    async search(query, user) {
+      const response = await fetch('/api/email/search', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates)
+        body: JSON.stringify({ query, user })
       });
       return response.json();
     },
 
-    async getReminders(userEmail) {
-      const params = new URLSearchParams({ userEmail });
-      const response = await fetch(`/api/tasks/reminders?${params}`);
+    async getAnalytics(user) {
+      const response = await fetch(`/api/email/analytics/summary?user=${user}`);
       return response.json();
     },
 
-    // CRM APIs
-    async getContacts(userEmail, search = '') {
-      const params = new URLSearchParams({ userEmail, search });
-      const response = await fetch(`/api/crm/contacts?${params}`);
-      return response.json();
-    },
-
-    async getContact(id) {
-      const response = await fetch(`/api/crm/contacts/${id}`);
-      return response.json();
-    },
-
-    async createContact(data) {
-      const response = await fetch('/api/crm/contacts', {
+    async starEmail(emailId, starred) {
+      const response = await fetch(`/api/email/${emailId}/star`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      return response.json();
-    },
-
-    async getDeals(userEmail) {
-      const params = new URLSearchParams({ userEmail });
-      const response = await fetch(`/api/crm/deals?${params}`);
-      return response.json();
-    },
-
-    async getPipelineStats(userEmail) {
-      const params = new URLSearchParams({ userEmail });
-      const response = await fetch(`/api/crm/deals/pipeline/stats?${params}`);
-      return response.json();
-    },
-
-    // Analytics APIs
-    async getProductivityMetrics(userEmail, period = 'week') {
-      const params = new URLSearchParams({ userEmail, period });
-      const response = await fetch(`/api/analytics/productivity?${params}`);
-      return response.json();
-    },
-
-    async getActivityTimeline(userEmail, days = 30) {
-      const params = new URLSearchParams({ userEmail, days });
-      const response = await fetch(`/api/analytics/activity/timeline?${params}`);
-      return response.json();
-    },
-
-    async getSentimentTrends(userEmail, days = 30) {
-      const params = new URLSearchParams({ userEmail, days });
-      const response = await fetch(`/api/analytics/sentiment/trends?${params}`);
-      return response.json();
-    },
-
-    // Meeting APIs
-    async getMeetings(userEmail, status = '') {
-      const params = new URLSearchParams({ userEmail, status });
-      const response = await fetch(`/api/meetings/proposals?${params}`);
-      return response.json();
-    },
-
-    async extractMeetingInfo(emailId, userEmail) {
-      const response = await fetch('/api/meetings/extract', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emailId, userEmail })
-      });
-      return response.json();
-    },
-
-    async createMeeting(data) {
-      const response = await fetch('/api/meetings/proposals', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      return response.json();
-    },
-
-    // Organization APIs
-    async getSmartFolders(userEmail) {
-      const params = new URLSearchParams({ userEmail });
-      const response = await fetch(`/api/organization/folders?${params}`);
-      return response.json();
-    },
-
-    async getPriorityInbox(userEmail, limit = 50) {
-      const params = new URLSearchParams({ userEmail, limit });
-      const response = await fetch(`/api/organization/priority-inbox?${params}`);
-      return response.json();
-    },
-
-    async getProjects(userEmail) {
-      const params = new URLSearchParams({ userEmail });
-      const response = await fetch(`/api/organization/projects?${params}`);
-      return response.json();
-    },
-
-    // Collaboration APIs
-    async getNotes(emailId) {
-      const response = await fetch(`/api/collaboration/notes/${emailId}`);
-      return response.json();
-    },
-
-    async addNote(emailId, userEmail, content) {
-      const response = await fetch('/api/collaboration/notes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emailId, userEmail, content, visibility: 'team' })
-      });
-      return response.json();
-    },
-
-    async getDelegations(userEmail, type = 'all') {
-      const params = new URLSearchParams({ userEmail, type });
-      const response = await fetch(`/api/collaboration/delegations?${params}`);
-      return response.json();
-    },
-
-    // Blockchain APIs
-    async verifyEmail(emailId, userEmail) {
-      const response = await fetch('/api/blockchain/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emailId, userEmail })
-      });
-      return response.json();
-    },
-
-    async getVerificationStatus(emailId) {
-      const response = await fetch(`/api/blockchain/verify/${emailId}`);
-      return response.json();
-    },
-
-    // Voice APIs
-    async startVoiceSession(userEmail) {
-      const response = await fetch('/api/voice/sessions/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userEmail })
+        body: JSON.stringify({ starred })
       });
       return response.json();
     }
   };
 
   // ============================================
-  // Main App Component
+  // Utilities
   // ============================================
-  function EmailApp() {
-    const [currentView, setCurrentView] = useState('inbox');
-    const [currentUser] = useState('admin@investaycapital.com');
-    const [emails, setEmails] = useState([]);
-    const [selectedEmail, setSelectedEmail] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [tasks, setTasks] = useState([]);
-    const [contacts, setContacts] = useState([]);
-    const [showTaskPanel, setShowTaskPanel] = useState(false);
-    const [showCRMPanel, setShowCRMPanel] = useState(false);
-    const [showComposeModal, setShowComposeModal] = useState(false);
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+    const hours = diff / (1000 * 60 * 60);
+    
+    if (hours < 1) return 'Just now';
+    if (hours < 24) return `${Math.floor(hours)}h ago`;
+    if (hours < 48) return 'Yesterday';
+    if (hours < 168) return `${Math.floor(hours / 24)}d ago`;
+    
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
 
-    // Load initial data
-    useEffect(() => {
-      loadInbox();
-      loadTasks();
-      loadContacts();
-    }, []);
-
-    const loadInbox = async () => {
-      setLoading(true);
-      try {
-        const data = await API.getInbox(currentUser);
-        setEmails(data.emails || []);
-      } catch (error) {
-        console.error('Error loading inbox:', error);
-      }
-      setLoading(false);
+  const getCategoryColor = (category) => {
+    const colors = {
+      urgent: '#ff4444',
+      action_required: '#ff9500',
+      important: '#d4af37',
+      financial: '#10b981',
+      legal: '#3b82f6',
+      update: '#6366f1',
+      social: '#ec4899',
+      marketing: '#8b5cf6',
+      other: '#6b7280'
     };
+    return colors[category] || colors.other;
+  };
 
-    const loadTasks = async () => {
-      try {
-        const data = await API.getTasks(currentUser);
-        setTasks(data.tasks || []);
-      } catch (error) {
-        console.error('Error loading tasks:', error);
-      }
+  const getCategoryIcon = (category) => {
+    const icons = {
+      urgent: '🚨',
+      action_required: '⚡',
+      important: '⭐',
+      financial: '💰',
+      legal: '⚖️',
+      update: '📢',
+      social: '👥',
+      marketing: '📈',
+      other: '📧'
     };
-
-    const loadContacts = async () => {
-      try {
-        const data = await API.getContacts(currentUser);
-        setContacts(data.contacts || []);
-      } catch (error) {
-        console.error('Error loading contacts:', error);
-      }
-    };
-
-    const handleViewChange = (view) => {
-      setCurrentView(view);
-      setSelectedEmail(null);
-      
-      if (view === 'inbox') {
-        loadInbox();
-      } else if (view === 'priority') {
-        loadPriorityInbox();
-      } else if (view === 'analytics') {
-        // Analytics view will load its own data
-      }
-    };
-
-    const loadPriorityInbox = async () => {
-      setLoading(true);
-      try {
-        const data = await API.getPriorityInbox(currentUser);
-        setEmails(data.emails || []);
-      } catch (error) {
-        console.error('Error loading priority inbox:', error);
-      }
-      setLoading(false);
-    };
-
-    const handleEmailSelect = (email) => {
-      setSelectedEmail(email);
-    };
-
-    const handleCreateTask = async (emailId) => {
-      const taskData = {
-        title: `Follow up on: ${selectedEmail?.subject || 'Email'}`,
-        priority: 'medium',
-        description: 'Created from email'
-      };
-      
-      try {
-        await API.createTaskFromEmail(emailId, currentUser, taskData);
-        loadTasks();
-        alert('Task created successfully!');
-      } catch (error) {
-        console.error('Error creating task:', error);
-        alert('Failed to create task');
-      }
-    };
-
-    return h('div', { className: 'email-app' },
-      // Sidebar
-      h(Sidebar, {
-        currentView,
-        onViewChange: handleViewChange,
-        taskCount: tasks.length,
-        unreadCount: emails.filter(e => !e.is_read).length
-      }),
-      
-      // Main content area
-      h('div', { className: 'email-main' },
-        // Top bar
-        h(TopBar, {
-          currentView,
-          onToggleTask: () => setShowTaskPanel(!showTaskPanel),
-          onToggleCRM: () => setShowCRMPanel(!showCRMPanel),
-          onCompose: () => setShowComposeModal(true)
-        }),
-        
-        // Content based on view
-        h('div', { className: 'email-content-wrapper' },
-          currentView === 'inbox' && h(InboxView, {
-            emails,
-            selectedEmail,
-            onSelectEmail: handleEmailSelect,
-            onCreateTask: handleCreateTask,
-            loading
-          }),
-          
-          currentView === 'priority' && h(InboxView, {
-            emails,
-            selectedEmail,
-            onSelectEmail: handleEmailSelect,
-            onCreateTask: handleCreateTask,
-            loading,
-            title: 'Priority Inbox'
-          }),
-          
-          currentView === 'tasks' && h(TasksView, {
-            tasks,
-            currentUser,
-            onRefresh: loadTasks
-          }),
-          
-          currentView === 'crm' && h(CRMView, {
-            contacts,
-            currentUser,
-            onRefresh: loadContacts
-          }),
-          
-          currentView === 'analytics' && h(AnalyticsView, {
-            currentUser
-          }),
-          
-          currentView === 'meetings' && h(MeetingsView, {
-            currentUser
-          })
-        )
-      ),
-      
-      // Side panels
-      showTaskPanel && h(TaskPanel, {
-        tasks,
-        onClose: () => setShowTaskPanel(false),
-        onRefresh: loadTasks,
-        currentUser
-      }),
-      
-      showCRMPanel && h(CRMPanel, {
-        contacts,
-        selectedEmail,
-        onClose: () => setShowCRMPanel(false),
-        currentUser
-      }),
-      
-      // Modals
-      showComposeModal && h(ComposeModal, {
-        onClose: () => setShowComposeModal(false),
-        onSend: () => {
-          setShowComposeModal(false);
-          loadInbox();
-        },
-        currentUser
-      })
-    );
-  }
+    return icons[category] || icons.other;
+  };
 
   // ============================================
-  // Sidebar Component
+  // Components
   // ============================================
-  function Sidebar({ currentView, onViewChange, taskCount, unreadCount }) {
-    const navItems = [
-      { id: 'inbox', icon: '📧', label: 'Inbox', badge: unreadCount },
-      { id: 'priority', icon: '⭐', label: 'Priority', badge: null },
-      { id: 'tasks', icon: '✓', label: 'Tasks', badge: taskCount },
-      { id: 'crm', icon: '👥', label: 'CRM', badge: null },
-      { id: 'analytics', icon: '📊', label: 'Analytics', badge: null },
-      { id: 'meetings', icon: '📅', label: 'Meetings', badge: null }
+
+  // Sidebar
+  function Sidebar({ currentView, onViewChange, currentUser, unreadCount }) {
+    const menuItems = [
+      { id: 'inbox', icon: '📥', label: 'Inbox', badge: unreadCount },
+      { id: 'starred', icon: '⭐', label: 'Starred' },
+      { id: 'sent', icon: '📤', label: 'Sent' },
+      { id: 'drafts', icon: '📝', label: 'Drafts' },
+      { id: 'archived', icon: '📦', label: 'Archived' },
+      { id: 'search', icon: '🔍', label: 'Search' },
+      { id: 'analytics', icon: '📊', label: 'Analytics' },
+      { id: 'settings', icon: '⚙️', label: 'Settings' }
     ];
 
     return h('div', { className: 'email-sidebar' },
       h('div', { className: 'sidebar-header' },
-        h('div', { className: 'sidebar-logo' },
-          h('span', { className: 'logo-icon' }, '◆'),
+        h('div', { className: 'logo-section' },
+          h('span', { className: 'logo-icon' }, '✉️'),
           h('span', { className: 'logo-text' }, 'InvestMail')
+        ),
+        h('div', { className: 'user-info' },
+          h('div', { className: 'user-avatar' }, currentUser.charAt(0).toUpperCase()),
+          h('div', { className: 'user-email' }, currentUser)
         )
       ),
-      
       h('nav', { className: 'sidebar-nav' },
-        navItems.map(item =>
+        menuItems.map(item => 
           h('button', {
             key: item.id,
             className: `nav-item ${currentView === item.id ? 'active' : ''}`,
@@ -431,634 +156,675 @@
           )
         )
       ),
-      
       h('div', { className: 'sidebar-footer' },
-        h('div', { className: 'user-info' },
-          h('div', { className: 'user-avatar' }, 'A'),
-          h('div', { className: 'user-details' },
-            h('div', { className: 'user-name' }, 'Admin'),
-            h('div', { className: 'user-email' }, 'admin@investay...')
-          )
+        h('div', { className: 'storage-info' },
+          h('div', { className: 'storage-label' }, 'Storage'),
+          h('div', { className: 'storage-bar' },
+            h('div', { className: 'storage-used', style: { width: '23%' } })
+          ),
+          h('div', { className: 'storage-text' }, '2.3 GB of 10 GB used')
         )
       )
     );
   }
 
-  // ============================================
-  // Top Bar Component
-  // ============================================
-  function TopBar({ currentView, onToggleTask, onToggleCRM, onCompose }) {
-    const viewTitles = {
-      inbox: 'Inbox',
-      priority: 'Priority Inbox',
-      tasks: 'Task Management',
-      crm: 'CRM Dashboard',
-      analytics: 'Analytics',
-      meetings: 'Meeting Scheduler'
+  // Email List Item
+  function EmailListItem({ email, isSelected, onSelect, onClick }) {
+    return h('div', {
+      className: `email-item ${email.is_read === 0 ? 'unread' : ''} ${isSelected ? 'selected' : ''}`,
+      onClick: onClick
+    },
+      h('div', { className: 'email-checkbox' },
+        h('input', {
+          type: 'checkbox',
+          checked: isSelected,
+          onChange: (e) => { e.stopPropagation(); onSelect(email.id); }
+        })
+      ),
+      h('button', {
+        className: `email-star ${email.is_starred ? 'starred' : ''}`,
+        onClick: (e) => {
+          e.stopPropagation();
+          EmailAPI.starEmail(email.id, !email.is_starred);
+        }
+      }, email.is_starred ? '⭐' : '☆'),
+      h('div', { className: 'email-from' },
+        h('div', { className: 'email-avatar' }, 
+          (email.from_email || email.from_address || 'U').charAt(0).toUpperCase()
+        ),
+        h('span', { className: 'email-sender' }, email.from_email || email.from_address || 'Unknown')
+      ),
+      h('div', { className: 'email-content' },
+        h('div', { className: 'email-subject-line' },
+          h('span', { className: 'email-subject' }, email.subject),
+          email.category && h('span', {
+            className: 'email-category-badge',
+            style: { backgroundColor: getCategoryColor(email.category) }
+          }, `${getCategoryIcon(email.category)} ${email.category.replace('_', ' ')}`)
+        ),
+        h('div', { className: 'email-snippet' }, email.snippet)
+      ),
+      h('div', { className: 'email-meta' },
+        email.has_attachments === 1 && h('span', { className: 'attachment-icon' }, '📎'),
+        h('span', { className: 'email-time' }, formatDate(email.sent_at || email.created_at))
+      )
+    );
+  }
+
+  // Inbox View
+  function InboxView({ currentUser, onEmailSelect }) {
+    const [emails, setEmails] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedEmails, setSelectedEmails] = useState(new Set());
+    const [categoryFilter, setCategoryFilter] = useState('all');
+    const [sortBy, setSortBy] = useState('date');
+
+    useEffect(() => {
+      loadEmails();
+    }, [currentUser]);
+
+    const loadEmails = async () => {
+      setLoading(true);
+      try {
+        const result = await EmailAPI.getInbox(currentUser);
+        if (result.success) {
+          setEmails(result.emails || []);
+        }
+      } catch (error) {
+        console.error('Failed to load emails:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    return h('div', { className: 'email-top-bar' },
-      h('div', { className: 'top-bar-left' },
-        h('h1', { className: 'view-title' }, viewTitles[currentView] || 'InvestMail')
-      ),
+    const filteredEmails = useMemo(() => {
+      let filtered = emails;
       
-      h('div', { className: 'top-bar-actions' },
-        h('button', {
-          className: 'btn-icon',
-          onClick: onToggleTask,
-          title: 'Toggle Tasks'
-        }, '✓'),
-        
-        h('button', {
-          className: 'btn-icon',
-          onClick: onToggleCRM,
-          title: 'Toggle CRM'
-        }, '👥'),
-        
-        h('button', {
-          className: 'btn-primary btn-compose',
-          onClick: onCompose
-        },
-          h('span', null, '✉'),
-          ' Compose'
-        )
-      )
-    );
-  }
+      if (categoryFilter !== 'all') {
+        filtered = filtered.filter(e => e.category === categoryFilter);
+      }
 
-  // ============================================
-  // Inbox View Component
-  // ============================================
-  function InboxView({ emails, selectedEmail, onSelectEmail, onCreateTask, loading, title = 'Inbox' }) {
+      if (sortBy === 'date') {
+        filtered.sort((a, b) => new Date(b.sent_at || b.created_at) - new Date(a.sent_at || a.created_at));
+      } else if (sortBy === 'sender') {
+        filtered.sort((a, b) => (a.from_email || '').localeCompare(b.from_email || ''));
+      }
+
+      return filtered;
+    }, [emails, categoryFilter, sortBy]);
+
+    const categories = useMemo(() => {
+      const counts = {};
+      emails.forEach(email => {
+        const cat = email.category || 'other';
+        counts[cat] = (counts[cat] || 0) + 1;
+      });
+      return counts;
+    }, [emails]);
+
     if (loading) {
-      return h('div', { className: 'loading-state' },
-        h('div', { className: 'spinner' }),
-        h('p', null, 'Loading emails...')
-      );
-    }
-
-    if (!emails || emails.length === 0) {
-      return h('div', { className: 'empty-state' },
-        h('div', { className: 'empty-icon' }, '📭'),
-        h('h3', null, 'No emails'),
-        h('p', null, 'Your inbox is empty')
-      );
+      return h('div', { className: 'loading-spinner' }, 'Loading inbox...');
     }
 
     return h('div', { className: 'inbox-view' },
-      h('div', { className: 'email-list' },
-        emails.map(email =>
-          h('div', {
-            key: email.id,
-            className: `email-item ${selectedEmail?.id === email.id ? 'selected' : ''} ${email.is_read ? 'read' : 'unread'}`,
-            onClick: () => onSelectEmail(email)
+      h('div', { className: 'inbox-header' },
+        h('div', { className: 'inbox-title' },
+          h('h1', null, 'Inbox'),
+          h('span', { className: 'email-count' }, `${emails.length} emails`)
+        ),
+        h('div', { className: 'inbox-actions' },
+          h('button', { className: 'btn-icon', onClick: loadEmails, title: 'Refresh' }, '🔄'),
+          h('select', {
+            className: 'inbox-sort',
+            value: sortBy,
+            onChange: (e) => setSortBy(e.target.value)
           },
-            h('div', { className: 'email-item-header' },
-              h('span', { className: 'email-from' }, email.from_email),
-              h('span', { className: 'email-time' }, new Date(email.created_at).toLocaleDateString())
-            ),
-            h('div', { className: 'email-subject' }, email.subject),
-            h('div', { className: 'email-preview' }, 
-              (email.body || '').substring(0, 100) + '...'
-            ),
-            email.category && h('span', {
-              className: `email-category category-${email.category}`
-            }, email.category)
+            h('option', { value: 'date' }, 'Sort by Date'),
+            h('option', { value: 'sender' }, 'Sort by Sender')
           )
         )
       ),
-      
-      selectedEmail && h(EmailDetail, {
-        email: selectedEmail,
-        onCreateTask,
-        onClose: () => onSelectEmail(null)
-      })
-    );
-  }
-
-  // ============================================
-  // Email Detail Component
-  // ============================================
-  function EmailDetail({ email, onCreateTask, onClose }) {
-    const [notes, setNotes] = useState([]);
-    const [newNote, setNewNote] = useState('');
-    const [verification, setVerification] = useState(null);
-
-    useEffect(() => {
-      loadNotes();
-      checkVerification();
-    }, [email.id]);
-
-    const loadNotes = async () => {
-      try {
-        const data = await API.getNotes(email.id);
-        setNotes(data.notes || []);
-      } catch (error) {
-        console.error('Error loading notes:', error);
-      }
-    };
-
-    const checkVerification = async () => {
-      try {
-        const data = await API.getVerificationStatus(email.id);
-        setVerification(data);
-      } catch (error) {
-        console.error('Error checking verification:', error);
-      }
-    };
-
-    const handleAddNote = async () => {
-      if (!newNote.trim()) return;
-      
-      try {
-        await API.addNote(email.id, 'admin@investaycapital.com', newNote);
-        setNewNote('');
-        loadNotes();
-      } catch (error) {
-        console.error('Error adding note:', error);
-      }
-    };
-
-    const handleVerify = async () => {
-      try {
-        const data = await API.verifyEmail(email.id, 'admin@investaycapital.com');
-        setVerification(data);
-        alert('Email verified successfully!');
-      } catch (error) {
-        console.error('Error verifying email:', error);
-        alert('Failed to verify email');
-      }
-    };
-
-    return h('div', { className: 'email-detail' },
-      h('div', { className: 'email-detail-header' },
-        h('button', { className: 'btn-close', onClick: onClose }, '✕'),
-        h('h2', null, email.subject)
-      ),
-      
-      h('div', { className: 'email-meta' },
-        h('div', { className: 'meta-row' },
-          h('strong', null, 'From: '),
-          h('span', null, email.from_email)
-        ),
-        h('div', { className: 'meta-row' },
-          h('strong', null, 'To: '),
-          h('span', null, email.to_email)
-        ),
-        h('div', { className: 'meta-row' },
-          h('strong', null, 'Date: '),
-          h('span', null, new Date(email.created_at).toLocaleString())
-        ),
-        verification?.verified && h('div', { className: 'verification-badge' },
-          '🔒 Verified'
-        )
-      ),
-      
-      h('div', { className: 'email-actions' },
+      h('div', { className: 'inbox-filters' },
         h('button', {
-          className: 'btn-action',
-          onClick: () => onCreateTask(email.id)
-        }, '✓ Create Task'),
-        
-        !verification?.verified && h('button', {
-          className: 'btn-action',
-          onClick: handleVerify
-        }, '🔒 Verify Email')
-      ),
-      
-      h('div', { className: 'email-body' },
-        email.body || 'No content'
-      ),
-      
-      email.ai_summary && h('div', { className: 'ai-summary' },
-        h('h4', null, '🤖 AI Summary'),
-        h('p', null, email.ai_summary)
-      ),
-      
-      h('div', { className: 'email-notes-section' },
-        h('h4', null, '📝 Team Notes'),
-        
-        notes.length > 0 && h('div', { className: 'notes-list' },
-          notes.map((note, idx) =>
-            h('div', { key: idx, className: 'note-item' },
-              h('div', { className: 'note-author' }, note.user_email),
-              h('div', { className: 'note-content' }, note.content),
-              h('div', { className: 'note-time' }, 
-                new Date(note.created_at).toLocaleString()
-              )
-            )
-          )
-        ),
-        
-        h('div', { className: 'note-input' },
-          h('textarea', {
-            value: newNote,
-            onChange: (e) => setNewNote(e.target.value),
-            placeholder: 'Add a note...',
-            rows: 2
-          }),
+          className: `filter-chip ${categoryFilter === 'all' ? 'active' : ''}`,
+          onClick: () => setCategoryFilter('all')
+        }, `All (${emails.length})`),
+        Object.entries(categories).map(([cat, count]) =>
           h('button', {
-            className: 'btn-primary',
-            onClick: handleAddNote
-          }, 'Add Note')
-        )
-      )
-    );
-  }
-
-  // ============================================
-  // Tasks View Component
-  // ============================================
-  function TasksView({ tasks, currentUser, onRefresh }) {
-    const [filter, setFilter] = useState('all');
-    
-    const filteredTasks = useMemo(() => {
-      if (filter === 'all') return tasks;
-      return tasks.filter(t => t.status === filter);
-    }, [tasks, filter]);
-
-    const handleStatusChange = async (taskId, newStatus) {
-      try {
-        await API.updateTask(taskId, { status: newStatus });
-        onRefresh();
-      } catch (error) {
-        console.error('Error updating task:', error);
-      }
-    };
-
-    return h('div', { className: 'tasks-view' },
-      h('div', { className: 'tasks-header' },
-        h('div', { className: 'filter-buttons' },
-          ['all', 'pending', 'in_progress', 'completed'].map(status =>
-            h('button', {
-              key: status,
-              className: `filter-btn ${filter === status ? 'active' : ''}`,
-              onClick: () => setFilter(status)
-            }, status.replace('_', ' '))
-          )
+            key: cat,
+            className: `filter-chip ${categoryFilter === cat ? 'active' : ''}`,
+            onClick: () => setCategoryFilter(cat),
+            style: { borderColor: getCategoryColor(cat) }
+          }, `${getCategoryIcon(cat)} ${cat.replace('_', ' ')} (${count})`)
         )
       ),
-      
-      h('div', { className: 'tasks-list' },
-        filteredTasks.length === 0 ? h('div', { className: 'empty-state' },
-          h('p', null, 'No tasks found')
-        ) : filteredTasks.map(task =>
-          h('div', { key: task.id, className: 'task-item' },
-            h('div', { className: 'task-header' },
-              h('h3', null, task.title),
-              h('select', {
-                value: task.status,
-                onChange: (e) => handleStatusChange(task.id, e.target.value),
-                className: `task-status status-${task.status}`
-              },
-                h('option', { value: 'pending' }, 'Pending'),
-                h('option', { value: 'in_progress' }, 'In Progress'),
-                h('option', { value: 'completed' }, 'Completed')
-              )
-            ),
-            h('p', { className: 'task-description' }, task.description),
-            h('div', { className: 'task-meta' },
-              task.priority && h('span', {
-                className: `priority-badge priority-${task.priority}`
-              }, task.priority),
-              task.due_date && h('span', { className: 'task-due' },
-                '📅 ' + new Date(task.due_date).toLocaleDateString()
-              )
-            ),
-            task.email_subject && h('div', { className: 'task-email-link' },
-              '📧 From: ', task.email_subject
-            )
-          )
+      filteredEmails.length === 0 ? h('div', { className: 'empty-state' },
+        h('div', { className: 'empty-icon' }, '📭'),
+        h('h3', null, 'No emails found'),
+        h('p', null, 'Your inbox is empty or no emails match the filter.')
+      ) : h('div', { className: 'email-list' },
+        filteredEmails.map(email =>
+          h(EmailListItem, {
+            key: email.id,
+            email: email,
+            isSelected: selectedEmails.has(email.id),
+            onSelect: (id) => {
+              const newSelected = new Set(selectedEmails);
+              if (newSelected.has(id)) {
+                newSelected.delete(id);
+              } else {
+                newSelected.add(id);
+              }
+              setSelectedEmails(newSelected);
+            },
+            onClick: () => onEmailSelect(email)
+          })
         )
       )
     );
   }
 
-  // ============================================
-  // CRM View Component
-  // ============================================
-  function CRMView({ contacts, currentUser, onRefresh }) {
-    const [selectedContact, setSelectedContact] = useState(null);
-
-    return h('div', { className: 'crm-view' },
-      h('div', { className: 'crm-sidebar' },
-        h('h3', null, 'Contacts'),
-        contacts.length === 0 ? h('p', null, 'No contacts yet') :
-        contacts.map(contact =>
-          h('div', {
-            key: contact.id,
-            className: `contact-item ${selectedContact?.id === contact.id ? 'selected' : ''}`,
-            onClick: () => setSelectedContact(contact)
-          },
-            h('div', { className: 'contact-avatar' }, contact.name[0]),
-            h('div', { className: 'contact-info' },
-              h('div', { className: 'contact-name' }, contact.name),
-              h('div', { className: 'contact-email' }, contact.email),
-              contact.company && h('div', { className: 'contact-company' }, contact.company)
-            )
-          )
-        )
-      ),
-      
-      h('div', { className: 'crm-detail' },
-        selectedContact ? h(ContactDetail, { contact: selectedContact }) :
-        h('div', { className: 'empty-state' },
-          h('p', null, 'Select a contact to view details')
-        )
-      )
-    );
-  }
-
-  function ContactDetail({ contact }) {
-    return h('div', { className: 'contact-detail' },
-      h('h2', null, contact.name),
-      h('div', { className: 'contact-details' },
-        h('div', { className: 'detail-row' },
-          h('strong', null, 'Email:'),
-          h('span', null, contact.email)
-        ),
-        contact.phone && h('div', { className: 'detail-row' },
-          h('strong', null, 'Phone:'),
-          h('span', null, contact.phone)
-        ),
-        contact.company && h('div', { className: 'detail-row' },
-          h('strong', null, 'Company:'),
-          h('span', null, contact.company)
-        ),
-        contact.position && h('div', { className: 'detail-row' },
-          h('strong', null, 'Position:'),
-          h('span', null, contact.position)
-        )
-      )
-    );
-  }
-
-  // ============================================
-  // Analytics View Component
-  // ============================================
-  function AnalyticsView({ currentUser }) {
-    const [metrics, setMetrics] = useState(null);
-    const [timeline, setTimeline] = useState([]);
-    const [period, setPeriod] = useState('week');
-
-    useEffect(() => {
-      loadMetrics();
-      loadTimeline();
-    }, [period]);
-
-    const loadMetrics = async () => {
-      try {
-        const data = await API.getProductivityMetrics(currentUser, period);
-        setMetrics(data);
-      } catch (error) {
-        console.error('Error loading metrics:', error);
-      }
-    };
-
-    const loadTimeline = async () => {
-      try {
-        const data = await API.getActivityTimeline(currentUser, period === 'week' ? 7 : 30);
-        setTimeline(data.timeline || []);
-      } catch (error) {
-        console.error('Error loading timeline:', error);
-      }
-    };
-
-    if (!metrics) {
-      return h('div', { className: 'loading-state' }, 'Loading analytics...');
+  // Email Detail View
+  function EmailDetailView({ email, onBack }) {
+    if (!email) {
+      return h('div', { className: 'email-detail-empty' },
+        h('div', { className: 'empty-icon' }, '✉️'),
+        h('h3', null, 'Select an email to read'),
+        h('p', null, 'Choose an email from the list to view its contents')
+      );
     }
 
-    return h('div', { className: 'analytics-view' },
-      h('div', { className: 'analytics-header' },
-        h('div', { className: 'period-selector' },
-          ['today', 'week', 'month'].map(p =>
-            h('button', {
-              key: p,
-              className: `period-btn ${period === p ? 'active' : ''}`,
-              onClick: () => setPeriod(p)
-            }, p)
-          )
+    return h('div', { className: 'email-detail-view' },
+      h('div', { className: 'email-detail-header' },
+        h('button', { className: 'btn-back', onClick: onBack }, '← Back to inbox'),
+        h('div', { className: 'email-detail-actions' },
+          h('button', { className: 'btn-icon', title: 'Reply' }, '↩️ Reply'),
+          h('button', { className: 'btn-icon', title: 'Forward' }, '➡️ Forward'),
+          h('button', { className: 'btn-icon', title: 'Archive' }, '📦 Archive'),
+          h('button', { className: 'btn-icon', title: 'Delete' }, '🗑️ Delete')
         )
       ),
-      
-      h('div', { className: 'metrics-grid' },
-        h('div', { className: 'metric-card' },
-          h('div', { className: 'metric-icon' }, '📧'),
-          h('div', { className: 'metric-value' }, metrics.emails?.total_emails || 0),
-          h('div', { className: 'metric-label' }, 'Total Emails')
+      email.ai_summary && h('div', { className: 'ai-summary-card' },
+        h('div', { className: 'ai-summary-header' },
+          h('span', { className: 'ai-badge' }, '🤖 AI Summary')
         ),
-        
-        h('div', { className: 'metric-card' },
-          h('div', { className: 'metric-icon' }, '✓'),
-          h('div', { className: 'metric-value' }, metrics.tasks?.completed_tasks || 0),
-          h('div', { className: 'metric-label' }, 'Tasks Completed')
-        ),
-        
-        h('div', { className: 'metric-card' },
-          h('div', { className: 'metric-icon' }, '📅'),
-          h('div', { className: 'metric-value' }, metrics.meetings?.confirmed_meetings || 0),
-          h('div', { className: 'metric-label' }, 'Meetings')
-        ),
-        
-        h('div', { className: 'metric-card' },
-          h('div', { className: 'metric-icon' }, '👥'),
-          h('div', { className: 'metric-value' }, metrics.crm?.contacts_contacted || 0),
-          h('div', { className: 'metric-label' }, 'Contacts Reached')
-        )
-      ),
-      
-      h('div', { className: 'timeline-chart' },
-        h('h3', null, 'Email Activity'),
-        timeline.length === 0 ? h('p', null, 'No activity data') :
-        h('div', { className: 'chart-bars' },
-          timeline.slice(0, 7).reverse().map((day, idx) =>
-            h('div', { key: idx, className: 'chart-bar-container' },
-              h('div', {
-                className: 'chart-bar',
-                style: { height: `${Math.min((day.email_count / 20) * 100, 100)}%` }
-              }),
-              h('div', { className: 'chart-label' },
-                new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })
+        h('p', { className: 'ai-summary-text' }, email.ai_summary),
+        email.ai_action_items && email.ai_action_items.length > 0 && h('div', { className: 'ai-action-items' },
+          h('h4', null, 'Action Items:'),
+          h('ul', null,
+            email.ai_action_items.map((item, idx) =>
+              h('li', { key: idx },
+                h('input', { type: 'checkbox', id: `action-${idx}` }),
+                h('label', { htmlFor: `action-${idx}` }, item)
               )
             )
           )
         )
-      )
-    );
-  }
-
-  // ============================================
-  // Meetings View Component
-  // ============================================
-  function MeetingsView({ currentUser }) {
-    const [meetings, setMeetings] = useState([]);
-
-    useEffect(() => {
-      loadMeetings();
-    }, []);
-
-    const loadMeetings = async () => {
-      try {
-        const data = await API.getMeetings(currentUser);
-        setMeetings(data.proposals || []);
-      } catch (error) {
-        console.error('Error loading meetings:', error);
-      }
-    };
-
-    return h('div', { className: 'meetings-view' },
-      h('h2', null, 'Upcoming Meetings'),
-      
-      meetings.length === 0 ? h('div', { className: 'empty-state' },
-        h('p', null, 'No meetings scheduled')
-      ) : h('div', { className: 'meetings-list' },
-        meetings.map(meeting =>
-          h('div', { key: meeting.id, className: 'meeting-item' },
-            h('h3', null, meeting.title),
-            h('div', { className: 'meeting-time' },
-              '📅 ', new Date(meeting.proposed_date).toLocaleString()
-            ),
-            meeting.location && h('div', { className: 'meeting-location' },
-              '📍 ', meeting.location
-            ),
-            h('div', {
-              className: `meeting-status status-${meeting.status}`
-            }, meeting.status)
-          )
-        )
-      )
-    );
-  }
-
-  // ============================================
-  // Task Panel Component  
-  // ============================================
-  function TaskPanel({ tasks, onClose, onRefresh, currentUser }) {
-    return h('div', { className: 'side-panel task-panel' },
-      h('div', { className: 'panel-header' },
-        h('h3', null, 'Quick Tasks'),
-        h('button', { className: 'btn-close', onClick: onClose }, '✕')
       ),
-      
-      h('div', { className: 'panel-content' },
-        tasks.slice(0, 5).map(task =>
-          h('div', { key: task.id, className: 'task-quick-item' },
-            h('div', { className: 'task-title' }, task.title),
-            h('span', {
-              className: `priority-badge priority-${task.priority}`
-            }, task.priority)
+      h('div', { className: 'email-detail-content' },
+        h('div', { className: 'email-subject' },
+          h('h2', null, email.subject),
+          email.category && h('span', {
+            className: 'email-category-badge large',
+            style: { backgroundColor: getCategoryColor(email.category) }
+          }, `${getCategoryIcon(email.category)} ${email.category.replace('_', ' ')}`)
+        ),
+        h('div', { className: 'email-sender-info' },
+          h('div', { className: 'sender-avatar large' },
+            (email.from_email || 'U').charAt(0).toUpperCase()
+          ),
+          h('div', { className: 'sender-details' },
+            h('div', { className: 'sender-name' }, email.from_email || 'Unknown'),
+            h('div', { className: 'sender-meta' },
+              `To: ${email.to_email || 'Unknown'} • ${new Date(email.sent_at || email.created_at).toLocaleString()}`
+            )
           )
         ),
-        
-        tasks.length === 0 && h('p', null, 'No pending tasks')
+        h('div', { 
+          className: 'email-body',
+          dangerouslySetInnerHTML: { __html: email.body || email.html_body || 'No content' }
+        })
       )
     );
   }
 
-  // ============================================
-  // CRM Panel Component
-  // ============================================
-  function CRMPanel({ contacts, selectedEmail, onClose, currentUser }) {
-    const relatedContact = selectedEmail ? 
-      contacts.find(c => c.email === selectedEmail.from_email) : null;
-
-    return h('div', { className: 'side-panel crm-panel' },
-      h('div', { className: 'panel-header' },
-        h('h3', null, 'Contact Info'),
-        h('button', { className: 'btn-close', onClick: onClose }, '✕')
-      ),
-      
-      h('div', { className: 'panel-content' },
-        relatedContact ? h('div', null,
-          h('h4', null, relatedContact.name),
-          h('p', null, relatedContact.email),
-          relatedContact.company && h('p', null, relatedContact.company)
-        ) : h('p', null, 'Select an email to see contact info')
-      )
-    );
-  }
-
-  // ============================================
-  // Compose Modal Component
-  // ============================================
-  function ComposeModal({ onClose, onSend, currentUser }) {
+  // Compose Modal
+  function ComposeModal({ isOpen, onClose, onSend, currentUser }) {
     const [to, setTo] = useState('');
     const [subject, setSubject] = useState('');
     const [body, setBody] = useState('');
+    const [useAI, setUseAI] = useState(true);
+    const [aiLoading, setAiLoading] = useState(false);
+    const [showAIMenu, setShowAIMenu] = useState(false);
+
+    const handleAIAssist = async (action) => {
+      if (!body) return;
+      
+      setAiLoading(true);
+      try {
+        const result = await EmailAPI.composeAssist(action, body);
+        if (result.success) {
+          setBody(result.enhanced_content);
+        }
+      } catch (error) {
+        console.error('AI assist failed:', error);
+      } finally {
+        setAiLoading(false);
+        setShowAIMenu(false);
+      }
+    };
 
     const handleSend = async () => {
-      if (!to || !subject) {
-        alert('Please fill in recipient and subject');
+      if (!to || !subject || !body) {
+        alert('Please fill in all fields');
         return;
       }
 
       try {
-        await API.sendEmail({
+        const result = await EmailAPI.sendEmail({
           from: currentUser,
           to,
           subject,
           body,
-          useAI: true
+          useAI
         });
-        onSend();
+
+        if (result.success) {
+          onSend();
+          onClose();
+          setTo('');
+          setSubject('');
+          setBody('');
+        }
       } catch (error) {
-        console.error('Error sending email:', error);
+        console.error('Failed to send email:', error);
         alert('Failed to send email');
       }
     };
 
+    if (!isOpen) return null;
+
     return h('div', { className: 'modal-overlay', onClick: onClose },
-      h('div', {
-        className: 'modal-content compose-modal',
-        onClick: (e) => e.stopPropagation()
-      },
-        h('div', { className: 'modal-header' },
-          h('h2', null, 'Compose Email'),
+      h('div', { className: 'compose-modal', onClick: (e) => e.stopPropagation() },
+        h('div', { className: 'compose-header' },
+          h('h3', null, 'New Message'),
           h('button', { className: 'btn-close', onClick: onClose }, '✕')
         ),
-        
-        h('div', { className: 'compose-form' },
-          h('input', {
-            type: 'email',
-            placeholder: 'To',
-            value: to,
-            onChange: (e) => setTo(e.target.value)
-          }),
-          
+        h('div', { className: 'compose-body' },
+          h('div', { className: 'compose-field' },
+            h('label', null, 'To:'),
+            h('input', {
+              type: 'email',
+              value: to,
+              onChange: (e) => setTo(e.target.value),
+              placeholder: 'recipient@investaycapital.com'
+            })
+          ),
+          h('div', { className: 'compose-field' },
+            h('label', null, 'Subject:'),
+            h('input', {
+              type: 'text',
+              value: subject,
+              onChange: (e) => setSubject(e.target.value),
+              placeholder: 'Email subject'
+            })
+          ),
+          h('div', { className: 'compose-field' },
+            h('label', null, 'Message:'),
+            h('textarea', {
+              value: body,
+              onChange: (e) => setBody(e.target.value),
+              placeholder: 'Write your message...',
+              rows: 12
+            })
+          ),
+          h('div', { className: 'compose-options' },
+            h('label', { className: 'ai-toggle' },
+              h('input', {
+                type: 'checkbox',
+                checked: useAI,
+                onChange: (e) => setUseAI(e.target.checked)
+              }),
+              h('span', null, '🤖 Enable AI features')
+            ),
+            useAI && h('div', { className: 'ai-assist-menu' },
+              h('button', {
+                className: 'btn-ai-assist',
+                onClick: () => setShowAIMenu(!showAIMenu),
+                disabled: aiLoading || !body
+              }, `✨ AI Assistant ${showAIMenu ? '▼' : '▶'}`),
+              showAIMenu && h('div', { className: 'ai-actions' },
+                h('button', { onClick: () => handleAIAssist('improve'), disabled: aiLoading }, '✍️ Improve Writing'),
+                h('button', { onClick: () => handleAIAssist('expand'), disabled: aiLoading }, '📝 Expand Content'),
+                h('button', { onClick: () => handleAIAssist('shorten'), disabled: aiLoading }, '✂️ Make Shorter'),
+                h('button', { onClick: () => handleAIAssist('professional'), disabled: aiLoading }, '💼 Make Professional'),
+                h('button', { onClick: () => handleAIAssist('friendly'), disabled: aiLoading }, '😊 Make Friendly')
+              )
+            )
+          )
+        ),
+        h('div', { className: 'compose-footer' },
+          h('button', { className: 'btn-secondary', onClick: onClose }, 'Cancel'),
+          h('button', { className: 'btn-primary', onClick: handleSend }, '📤 Send Email')
+        ),
+        aiLoading && h('div', { className: 'ai-loading-overlay' },
+          h('div', { className: 'ai-loading-spinner' }, '🤖 AI is enhancing your message...')
+        )
+      )
+    );
+  }
+
+  // Search View
+  function SearchView({ currentUser }) {
+    const [query, setQuery] = useState('');
+    const [results, setResults] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [searched, setSearched] = useState(false);
+
+    const handleSearch = async (e) => {
+      e.preventDefault();
+      if (!query.trim()) return;
+
+      setLoading(true);
+      setSearched(true);
+      try {
+        const result = await EmailAPI.search(query, currentUser);
+        if (result.success) {
+          setResults(result.emails || []);
+        }
+      } catch (error) {
+        console.error('Search failed:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    return h('div', { className: 'search-view' },
+      h('div', { className: 'search-header' },
+        h('h1', null, 'Search Emails'),
+        h('p', null, 'Use semantic search powered by AI to find emails by meaning, not just keywords')
+      ),
+      h('form', { className: 'search-form', onSubmit: handleSearch },
+        h('div', { className: 'search-input-wrapper' },
           h('input', {
             type: 'text',
-            placeholder: 'Subject',
-            value: subject,
-            onChange: (e) => setSubject(e.target.value)
+            className: 'search-input',
+            value: query,
+            onChange: (e) => setQuery(e.target.value),
+            placeholder: 'Search by topic, sender, keywords, or natural language...'
           }),
-          
-          h('textarea', {
-            placeholder: 'Write your message...',
-            value: body,
-            onChange: (e) => setBody(e.target.value),
-            rows: 10
-          }),
-          
-          h('div', { className: 'compose-actions' },
-            h('button', {
-              className: 'btn-primary',
-              onClick: handleSend
-            }, 'Send'),
-            h('button', {
-              className: 'btn-secondary',
-              onClick: onClose
-            }, 'Cancel')
+          h('button', { type: 'submit', className: 'search-button', disabled: loading },
+            `${loading ? '⏳' : '🔍'} Search`
+          )
+        )
+      ),
+      h('div', { className: 'search-examples' },
+        h('span', { className: 'example-label' }, 'Try:'),
+        h('button', { className: 'example-chip', onClick: () => setQuery('urgent financial matters') }, '"urgent financial matters"'),
+        h('button', { className: 'example-chip', onClick: () => setQuery('emails about legal compliance') }, '"emails about legal compliance"'),
+        h('button', { className: 'example-chip', onClick: () => setQuery('meeting requests from last week') }, '"meeting requests from last week"')
+      ),
+      loading && h('div', { className: 'search-loading' },
+        h('div', { className: 'loading-spinner' }, '🤖 AI is searching through your emails...')
+      ),
+      !loading && searched && h('div', { className: 'search-results' },
+        h('div', { className: 'results-header' },
+          h('h3', null, `Found ${results.length} results`)
+        ),
+        results.length === 0 ? h('div', { className: 'empty-state' },
+          h('div', { className: 'empty-icon' }, '🔍'),
+          h('h3', null, 'No results found'),
+          h('p', null, 'Try different keywords or a broader search query')
+        ) : h('div', { className: 'email-list' },
+          results.map(email =>
+            h('div', { key: email.id, className: 'search-result-item' },
+              h('div', { className: 'result-header' },
+                h('span', { className: 'result-from' }, email.from_email || email.from_address),
+                h('span', { className: 'result-date' }, formatDate(email.sent_at || email.created_at))
+              ),
+              h('div', { className: 'result-subject' }, email.subject),
+              h('div', { className: 'result-snippet' }, email.snippet),
+              email.category && h('span', {
+                className: 'email-category-badge',
+                style: { backgroundColor: getCategoryColor(email.category) }
+              }, `${getCategoryIcon(email.category)} ${email.category.replace('_', ' ')}`)
+            )
           )
         )
       )
     );
   }
 
-  // ============================================
-  // Initialize App
-  // ============================================
-  const root = document.getElementById('email-root');
-  if (root) {
-    ReactDOM.render(h(EmailApp), root);
+  // Analytics View
+  function AnalyticsView({ currentUser }) {
+    const [analytics, setAnalytics] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+      loadAnalytics();
+    }, [currentUser]);
+
+    const loadAnalytics = async () => {
+      setLoading(true);
+      try {
+        const result = await EmailAPI.getAnalytics(currentUser);
+        if (result.success) {
+          setAnalytics(result.analytics);
+        }
+      } catch (error) {
+        console.error('Failed to load analytics:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (loading) {
+      return h('div', { className: 'loading-spinner' }, 'Loading analytics...');
+    }
+
+    if (!analytics) {
+      return h('div', { className: 'error-message' }, 'Failed to load analytics');
+    }
+
+    return h('div', { className: 'analytics-view' },
+      h('div', { className: 'analytics-header' },
+        h('h1', null, '📊 Email Analytics'),
+        h('button', { className: 'btn-refresh', onClick: loadAnalytics }, '🔄 Refresh')
+      ),
+      h('div', { className: 'analytics-grid' },
+        h('div', { className: 'analytics-card' },
+          h('div', { className: 'card-icon' }, '📥'),
+          h('div', { className: 'card-value' }, analytics.total_emails),
+          h('div', { className: 'card-label' }, 'Total Emails')
+        ),
+        h('div', { className: 'analytics-card' },
+          h('div', { className: 'card-icon' }, '📬'),
+          h('div', { className: 'card-value' }, analytics.unread_count),
+          h('div', { className: 'card-label' }, 'Unread Emails')
+        ),
+        h('div', { className: 'analytics-card' },
+          h('div', { className: 'card-icon' }, '📤'),
+          h('div', { className: 'card-value' }, analytics.sent_today),
+          h('div', { className: 'card-label' }, 'Sent Today')
+        ),
+        h('div', { className: 'analytics-card' },
+          h('div', { className: 'card-icon' }, '⭐'),
+          h('div', { className: 'card-value' }, analytics.starred_count || 0),
+          h('div', { className: 'card-label' }, 'Starred')
+        )
+      ),
+      analytics.top_senders && analytics.top_senders.length > 0 && h('div', { className: 'analytics-section' },
+        h('h3', null, 'Top Senders'),
+        h('div', { className: 'top-senders-list' },
+          analytics.top_senders.map((sender, idx) =>
+            h('div', { key: idx, className: 'sender-item' },
+              h('div', { className: 'sender-avatar' }, sender.sender.charAt(0).toUpperCase()),
+              h('div', { className: 'sender-info' },
+                h('div', { className: 'sender-email' }, sender.sender),
+                h('div', { className: 'sender-count' }, `${sender.count} emails`)
+              ),
+              h('div', { className: 'sender-bar' },
+                h('div', {
+                  className: 'sender-bar-fill',
+                  style: { width: `${(sender.count / analytics.top_senders[0].count) * 100}%` }
+                })
+              )
+            )
+          )
+        )
+      )
+    );
   }
+
+  // Settings View
+  function SettingsView() {
+    const [settings, setSettings] = useState({
+      aiEnabled: true,
+      autoSummarize: true,
+      autoCategorize: true,
+      smartReplies: true,
+      notifications: true,
+      theme: 'light'
+    });
+
+    const handleSave = () => {
+      localStorage.setItem('emailSettings', JSON.stringify(settings));
+      alert('Settings saved successfully!');
+    };
+
+    return h('div', { className: 'settings-view' },
+      h('div', { className: 'settings-header' },
+        h('h1', null, '⚙️ Settings')
+      ),
+      h('div', { className: 'settings-section' },
+        h('h3', null, 'AI Features'),
+        h('div', { className: 'setting-item' },
+          h('label', null,
+            h('input', {
+              type: 'checkbox',
+              checked: settings.aiEnabled,
+              onChange: (e) => setSettings({...settings, aiEnabled: e.target.checked})
+            }),
+            h('span', null, 'Enable AI features')
+          ),
+          h('p', { className: 'setting-description' }, 'Use AI for email categorization, summarization, and smart replies')
+        ),
+        h('div', { className: 'setting-item' },
+          h('label', null,
+            h('input', {
+              type: 'checkbox',
+              checked: settings.autoSummarize,
+              onChange: (e) => setSettings({...settings, autoSummarize: e.target.checked})
+            }),
+            h('span', null, 'Auto-summarize emails')
+          ),
+          h('p', { className: 'setting-description' }, 'Automatically generate AI summaries for incoming emails')
+        )
+      ),
+      h('div', { className: 'settings-footer' },
+        h('button', { className: 'btn-primary', onClick: handleSave }, '💾 Save Settings')
+      )
+    );
+  }
+
+  // Main App
+  function EmailApp() {
+    const [currentView, setCurrentView] = useState('inbox');
+    const [selectedEmail, setSelectedEmail] = useState(null);
+    const [currentUser] = useState('admin@investaycapital.com');
+    const [showCompose, setShowCompose] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    useEffect(() => {
+      EmailAPI.getInbox(currentUser).then(result => {
+        if (result.success && result.emails) {
+          const unread = result.emails.filter(e => e.is_read === 0).length;
+          setUnreadCount(unread);
+        }
+      });
+    }, [currentUser]);
+
+    const handleEmailSelect = (email) => {
+      setSelectedEmail(email);
+      setCurrentView('detail');
+    };
+
+    const handleBackToInbox = () => {
+      setSelectedEmail(null);
+      setCurrentView('inbox');
+    };
+
+    const renderView = () => {
+      switch (currentView) {
+        case 'inbox':
+          return h(InboxView, { currentUser, onEmailSelect: handleEmailSelect });
+        case 'detail':
+          return h(EmailDetailView, { email: selectedEmail, onBack: handleBackToInbox });
+        case 'search':
+          return h(SearchView, { currentUser });
+        case 'analytics':
+          return h(AnalyticsView, { currentUser });
+        case 'settings':
+          return h(SettingsView);
+        default:
+          return h('div', { className: 'empty-state' },
+            h('div', { className: 'empty-icon' }, '🚧'),
+            h('h3', null, 'Coming Soon'),
+            h('p', null, `${currentView} view is under construction`)
+          );
+      }
+    };
+
+    return h('div', { className: 'email-app' },
+      h(Sidebar, {
+        currentView: currentView,
+        onViewChange: setCurrentView,
+        currentUser: currentUser,
+        unreadCount: unreadCount
+      }),
+      h('main', { className: 'email-main' },
+        h('div', { className: 'email-content' }, renderView()),
+        h('button', {
+          className: 'fab-compose',
+          onClick: () => setShowCompose(true),
+          title: 'Compose new email'
+        }, '✏️')
+      ),
+      h(ComposeModal, {
+        isOpen: showCompose,
+        onClose: () => setShowCompose(false),
+        onSend: () => {
+          setShowCompose(false);
+          if (currentView === 'inbox') {
+            window.location.reload();
+          }
+        },
+        currentUser: currentUser
+      })
+    );
+  }
+
+  // Initialize
+  function initApp() {
+    const rootElement = document.getElementById('email-root');
+    if (!rootElement) {
+      console.error('Root element not found');
+      return;
+    }
+
+    try {
+      const root = ReactDOM.createRoot(rootElement);
+      root.render(h(EmailApp));
+      console.log('✅ InvestMail initialized successfully');
+    } catch (error) {
+      console.error('❌ Failed to initialize:', error);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+  } else {
+    initApp();
+  }
+
 })();
