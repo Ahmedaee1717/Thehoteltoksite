@@ -26,6 +26,10 @@ window.addEventListener('DOMContentLoaded', function() {
       const [showCompose, setShowCompose] = useState(false);
       const [selectedEmail, setSelectedEmail] = useState(null);
       const [hoveredNav, setHoveredNav] = useState(null);
+      const [showCollabPanel, setShowCollabPanel] = useState(false);
+      const [comments, setComments] = useState([]);
+      const [collabStats, setCollabStats] = useState(null);
+      const [newComment, setNewComment] = useState('');
       
       useEffect(() => {
         loadData();
@@ -93,6 +97,44 @@ window.addEventListener('DOMContentLoaded', function() {
           setShowCompose(false);
         } catch (error) {
           alert('❌ Network error: ' + error.message);
+        }
+      };
+      
+      const loadCollabData = async (emailId) => {
+        try {
+          const [commentsRes, statsRes] = await Promise.all([
+            fetch(`/api/collaboration/comments/${emailId}`),
+            fetch(`/api/collaboration/stats/${emailId}`)
+          ]);
+          const commentsData = await commentsRes.json();
+          const statsData = await statsRes.json();
+          setComments(commentsData.comments || []);
+          setCollabStats(statsData.stats || {});
+        } catch (error) {
+          console.error('Load collab error:', error);
+        }
+      };
+      
+      const addComment = async () => {
+        if (!newComment.trim() || !selectedEmail) return;
+        try {
+          const res = await fetch('/api/collaboration/comments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email_id: selectedEmail.id,
+              author_email: user,
+              author_name: 'Admin',
+              comment_text: newComment
+            })
+          });
+          const result = await res.json();
+          if (result.success) {
+            setNewComment('');
+            loadCollabData(selectedEmail.id);
+          }
+        } catch (error) {
+          console.error('Add comment error:', error);
         }
       };
       
@@ -658,7 +700,11 @@ window.addEventListener('DOMContentLoaded', function() {
               emails.map((email, i) =>
                 h('div', {
                   key: email.id || i,
-                  onClick: () => setSelectedEmail(email),
+                  onClick: () => {
+                    setSelectedEmail(email);
+                    setShowCollabPanel(true);
+                    loadCollabData(email.id);
+                  },
                   style: {
                     padding: '24px',
                     background: 'linear-gradient(135deg, rgba(26, 31, 58, 0.6) 0%, rgba(15, 20, 41, 0.6) 100%)',
@@ -785,7 +831,95 @@ window.addEventListener('DOMContentLoaded', function() {
         showCompose && h(ComposeModal, {
           onClose: () => setShowCompose(false),
           onSend: sendEmail
-        })
+        }),
+        
+        // Team Collaboration Panel
+        showCollabPanel && selectedEmail && h('div', {
+          style: {
+            position: 'fixed',
+            right: 0,
+            top: 0,
+            width: '400px',
+            height: '100vh',
+            background: 'linear-gradient(180deg, #0f1429 0%, #1a1f3a 100%)',
+            borderLeft: '1px solid rgba(255, 255, 255, 0.1)',
+            display: 'flex',
+            flexDirection: 'column',
+            zIndex: 1000,
+            boxShadow: '-4px 0 24px rgba(0, 0, 0, 0.4)',
+            animation: 'slideInRight 0.3s ease-out'
+          }
+        },
+          h('div', { style: { padding: '20px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+            h('h3', { style: { margin: 0, color: '#C9A962', fontSize: '18px' } }, '👥 Team Collaboration'),
+            h('button', {
+              onClick: () => setShowCollabPanel(false),
+              style: { background: 'none', border: 'none', color: 'rgba(255, 255, 255, 0.6)', fontSize: '24px', cursor: 'pointer' }
+            }, '✕')
+          ),
+          h('div', { style: { padding: '16px 20px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' } },
+            h('div', { style: { textAlign: 'center', padding: '12px', background: 'rgba(201, 169, 98, 0.1)', borderRadius: '8px' } },
+              h('div', { style: { fontSize: '20px', fontWeight: '700', color: '#C9A962' } }, collabStats?.total_views || 0),
+              h('div', { style: { fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '4px' } }, 'Views')
+            ),
+            h('div', { style: { textAlign: 'center', padding: '12px', background: 'rgba(201, 169, 98, 0.1)', borderRadius: '8px' } },
+              h('div', { style: { fontSize: '20px', fontWeight: '700', color: '#C9A962' } }, collabStats?.total_comments || 0),
+              h('div', { style: { fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '4px' } }, 'Comments')
+            )
+          ),
+          h('div', { style: { flex: 1, overflow: 'auto', padding: '20px' } },
+            h('div', { style: { fontSize: '13px', color: '#C9A962', marginBottom: '16px', fontWeight: '600' } }, '💬 Team Comments'),
+            h('div', { style: { display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' } },
+              comments.length === 0 ? 
+                h('div', { style: { textAlign: 'center', padding: '40px 20px', color: 'rgba(255, 255, 255, 0.4)', fontSize: '13px' } }, 'No comments yet') :
+                comments.map((comment, i) =>
+                  h('div', {
+                    key: i,
+                    style: { padding: '12px', background: 'rgba(26, 31, 58, 0.6)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '8px' }
+                  },
+                    h('div', { style: { fontSize: '12px', fontWeight: '600', color: '#C9A962', marginBottom: '8px' } }, comment.author_name || comment.author_email),
+                    h('div', { style: { fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)', marginBottom: '8px' } }, comment.comment_text),
+                    h('div', { style: { fontSize: '11px', color: 'rgba(255, 255, 255, 0.4)' } }, new Date(comment.created_at).toLocaleString())
+                  )
+                )
+            ),
+            h('div', {},
+              h('textarea', {
+                value: newComment,
+                onChange: (e) => setNewComment(e.target.value),
+                placeholder: 'Add internal team comment (private)...',
+                style: {
+                  width: '100%',
+                  padding: '12px',
+                  background: 'rgba(26, 31, 58, 0.6)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '8px',
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  fontSize: '13px',
+                  fontFamily: 'inherit',
+                  resize: 'vertical',
+                  minHeight: '80px',
+                  marginBottom: '12px'
+                }
+              }),
+              h('button', {
+                onClick: addComment,
+                disabled: !newComment.trim(),
+                style: {
+                  width: '100%',
+                  padding: '12px',
+                  background: newComment.trim() ? 'linear-gradient(135deg, #C9A962 0%, #A88B4E 100%)' : 'rgba(100, 100, 100, 0.3)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  color: '#fff',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: newComment.trim() ? 'pointer' : 'not-allowed'
+                }
+              }, '💬 Add Comment')
+            )
+          )
+        )
       );
     }
     
@@ -1068,6 +1202,16 @@ window.addEventListener('DOMContentLoaded', function() {
         to { 
           opacity: 1;
           transform: translateY(0);
+        }
+      }
+      @keyframes slideInRight {
+        from { 
+          opacity: 0;
+          transform: translateX(100%);
+        }
+        to { 
+          opacity: 1;
+          transform: translateX(0);
         }
       }
       @keyframes pulse {
