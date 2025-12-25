@@ -95,18 +95,22 @@ app.get('/blog', async (c) => {
       ORDER BY published_at DESC, created_at DESC
     `).all();
 
+    // Get featured post (most recent)
+    const featuredPost = results[0];
+    const otherPosts = results.slice(1);
+
     return c.html(`
       <!DOCTYPE html>
       <html lang="en">
       <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Insights & News - Investay Capital</title>
+          <title>Insights - Investay Capital</title>
           <meta name="description" content="Latest insights on institutional infrastructure, hospitality digital frameworks, and real-world asset markets from Investay Capital.">
           <meta name="keywords" content="hospitality infrastructure, digital assets, institutional investment, blockchain, real estate technology">
           
           <!-- Open Graph -->
-          <meta property="og:title" content="Insights & News - Investay Capital">
+          <meta property="og:title" content="Insights - Investay Capital">
           <meta property="og:description" content="Latest insights on institutional infrastructure and hospitality digital frameworks.">
           <meta property="og:type" content="website">
           <meta property="og:url" content="https://investaycapital.com/blog">
@@ -114,84 +118,196 @@ app.get('/blog', async (c) => {
           
           <!-- Twitter Card -->
           <meta name="twitter:card" content="summary_large_image">
-          <meta name="twitter:title" content="Insights & News - Investay Capital">
+          <meta name="twitter:title" content="Insights - Investay Capital">
           <meta name="twitter:description" content="Latest insights on institutional infrastructure and hospitality digital frameworks.">
           
           <link rel="preconnect" href="https://fonts.googleapis.com">
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@300;400;500;600;700&display=swap" rel="stylesheet">
           <link rel="stylesheet" href="/static/styles.css">
+          <link rel="stylesheet" href="/static/blog.css">
           <link rel="canonical" href="https://investaycapital.com/blog">
       </head>
-      <body>
+      <body class="blog-page">
           <!-- Header -->
-          <header id="header">
+          <header id="header" class="premium-header blog-header">
               <div class="container">
-                  <a href="/" class="logo">Investay Capital</a>
-                  <nav>
+                  <div class="logo">
+                      <a href="/">
+                          <span class="logo-icon">◆</span>
+                          <span class="logo-text">INVESTAY CAPITAL</span>
+                      </a>
+                  </div>
+                  <nav class="premium-nav">
                       <a href="/#about">About</a>
-                      <a href="/#investors">For Investors</a>
-                      <a href="/#hotels">For Hotel Owners</a>
-                      <a href="/blog">Insights</a>
-                      <a href="/#contact">Contact</a>
+                      <a href="/#investors">Investors</a>
+                      <a href="/#hotels">Hotels</a>
+                      <a href="/blog" class="active">Insights</a>
+                      <a href="/#contact" class="nav-cta">Contact</a>
                   </nav>
               </div>
           </header>
 
-          <!-- Blog Listing -->
-          <section id="blog-listing">
+          <!-- Blog Hero Section -->
+          <section class="blog-hero">
               <div class="container">
-                  <div class="blog-header">
-                      <h1>Insights & News</h1>
-                      <p class="blog-intro">
+                  <div class="blog-hero-content">
+                      <h1 class="blog-hero-title">Insights</h1>
+                      <p class="blog-hero-subtitle">
                           Perspectives on institutional infrastructure, digital frameworks, 
                           and the evolution of hospitality asset markets.
                       </p>
                   </div>
-                  
-                  <div class="blog-grid">
-                      ${results.length > 0 ? results.map((post: any) => `
-                          <article class="blog-card">
-                              <div class="blog-card-image">
-                                  <span class="blog-card-category">Insights</span>
-                                  ${post.featured_image ? `
-                                      <img src="${post.featured_image}" alt="${post.title}" loading="lazy">
-                                  ` : `
-                                      <div class="blog-card-image-placeholder">
-                                          <div class="blog-card-image-text">${post.title.charAt(0)}</div>
-                                      </div>
-                                  `}
+              </div>
+          </section>
+
+          <!-- Featured Article -->
+          ${featuredPost ? `
+          <section class="featured-article">
+              <div class="container">
+                  <a href="/blog/${featuredPost.slug}" class="featured-article-card">
+                      <div class="featured-article-image">
+                          ${featuredPost.featured_image ? `
+                              <img src="${featuredPost.featured_image}" alt="${featuredPost.title}" loading="lazy">
+                          ` : `
+                              <div class="featured-article-placeholder">
+                                  <span class="featured-article-icon">◆</span>
                               </div>
-                              <div class="blog-card-content">
-                                  <h3 class="blog-card-title">${post.title}</h3>
-                                  <div class="blog-card-meta">
-                                      <span class="blog-card-author">By ${post.author}</span>
-                                      <span class="blog-card-date">${new Date(post.published_at || post.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                          `}
+                          <div class="featured-article-overlay">
+                              <span class="featured-badge">FEATURED</span>
+                          </div>
+                      </div>
+                      <div class="featured-article-content">
+                          <div class="featured-article-meta">
+                              <span class="featured-article-category">BUSINESS CREATORS</span>
+                              <span class="featured-article-date">${new Date(featuredPost.published_at || featuredPost.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          </div>
+                          <h2 class="featured-article-title">${featuredPost.title}</h2>
+                          ${featuredPost.excerpt ? `<p class="featured-article-excerpt">${featuredPost.excerpt}</p>` : ''}
+                          <div class="featured-article-cta">
+                              <span class="cta-text">Read Article</span>
+                              <svg class="cta-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                  <path d="M4 10h12M10 4l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                              </svg>
+                          </div>
+                      </div>
+                  </a>
+              </div>
+          </section>
+          ` : ''}
+
+          <!-- Article Grid -->
+          <section class="article-grid-section">
+              <div class="container">
+                  <div class="section-header">
+                      <h2 class="section-title">Our most popular articles</h2>
+                      <p class="section-subtitle">
+                          The latest news, tips and advice to help you run your business with less fuss
+                      </p>
+                  </div>
+
+                  <div class="article-grid">
+                      ${otherPosts.length > 0 ? otherPosts.map((post: any, index: number) => `
+                          <article class="article-card" data-category="creators">
+                              <a href="/blog/${post.slug}" class="article-card-link">
+                                  <div class="article-card-image">
+                                      ${post.featured_image ? `
+                                          <img src="${post.featured_image}" alt="${post.title}" loading="lazy">
+                                      ` : `
+                                          <div class="article-card-placeholder">
+                                              <span class="article-card-icon">◆</span>
+                                          </div>
+                                      `}
+                                      <span class="article-card-badge">CREATORS</span>
                                   </div>
-                                  ${post.excerpt ? `<p class="blog-card-excerpt">${post.excerpt}</p>` : ''}
-                                  <a href="/blog/${post.slug}" class="blog-card-link">Read more</a>
-                              </div>
+                                  <div class="article-card-content">
+                                      <h3 class="article-card-title">${post.title}</h3>
+                                      <div class="article-card-meta">
+                                          <span class="article-card-author">${post.author}</span>
+                                          <span class="article-card-date">${new Date(post.published_at || post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                      </div>
+                                  </div>
+                              </a>
                           </article>
                       `).join('') : `
-                          <div class="blog-empty">
-                              <p>No posts published yet. Check back soon for insights and updates.</p>
+                          <div class="article-empty">
+                              <p>More articles coming soon. Stay tuned for insights and updates.</p>
                           </div>
                       `}
                   </div>
-                  
-                  ${results.length > 0 ? `
-                      <div class="blog-pagination">
-                          <button class="btn-load-more" disabled>Load more posts</button>
-                      </div>
+
+                  ${otherPosts.length > 0 ? `
+                  <div class="article-grid-cta">
+                      <button class="btn btn-secondary-outline">Read All Articles</button>
+                  </div>
                   ` : ''}
               </div>
           </section>
 
-          <!-- Footer -->
-          <footer>
+          <!-- Useful Tips Section -->
+          <section class="useful-tips-section">
               <div class="container">
-                  <p>&copy; 2025 Investay Capital. All rights reserved.</p>
-                  <p class="disclaimer">Informational overview only.</p>
+                  <div class="tips-card">
+                      <h2 class="tips-title">Useful tips for your <span class="tips-highlight">business</span></h2>
+                      <div class="tips-grid">
+                          <div class="tip-item">
+                              <div class="tip-icon">
+                                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                                      <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="2"/>
+                                      <path d="M24 14v10l6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                  </svg>
+                              </div>
+                              <h3 class="tip-heading">Freelancers</h3>
+                              <p class="tip-description">Tips on self-employed? We've got the answers for freelancers.</p>
+                              <a href="#" class="tip-link">
+                                  <span>Discover</span>
+                                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                      <path d="M3 8h10M8 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                  </svg>
+                              </a>
+                          </div>
+                          <div class="tip-item">
+                              <div class="tip-icon">
+                                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                                      <path d="M8 18L24 6l16 12v18a4 4 0 01-4 4H12a4 4 0 01-4-4V18z" stroke="currentColor" stroke-width="2"/>
+                                      <path d="M18 42V24h12v18" stroke="currentColor" stroke-width="2"/>
+                                  </svg>
+                              </div>
+                              <h3 class="tip-heading">Trends and News</h3>
+                              <p class="tip-description">What's happening in the world of entrepreneurship.</p>
+                              <a href="#" class="tip-link">
+                                  <span>Discover</span>
+                                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                      <path d="M3 8h10M8 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                  </svg>
+                              </a>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </section>
+
+          <!-- Footer -->
+          <footer class="premium-footer">
+              <div class="container">
+                  <div class="footer-content">
+                      <div class="footer-brand">
+                          <span class="logo-icon">◆</span>
+                          <span class="logo-text">INVESTAY CAPITAL</span>
+                      </div>
+                      <div class="footer-links">
+                          <a href="/#about">About</a>
+                          <a href="/#investors">Investors</a>
+                          <a href="/#hotels">Hotels</a>
+                          <a href="/blog">Insights</a>
+                          <a href="/#contact">Contact</a>
+                      </div>
+                  </div>
+                  <div class="footer-bottom">
+                      <p>&copy; 2025 Investay Capital. All rights reserved.</p>
+                      <p class="disclaimer">Informational overview only.</p>
+                  </div>
               </div>
           </footer>
 
