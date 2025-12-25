@@ -395,175 +395,217 @@ app.get('/blog/:slug', async (c) => {
           
           <link rel="preconnect" href="https://fonts.googleapis.com">
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@300;400;500;600;700&display=swap" rel="stylesheet">
           <link rel="stylesheet" href="/static/styles.css">
+          <link rel="stylesheet" href="/static/blog.css">
+          <link rel="stylesheet" href="/static/article.css">
           <link rel="canonical" href="https://investaycapital.com/blog/${slug}">
       </head>
-      <body>
+      <body class="article-page">
+          <!-- Progress Bar -->
+          <div class="reading-progress-bar"></div>
+
           <!-- Header -->
-          <header id="header">
+          <header id="header" class="premium-header article-header">
               <div class="container">
-                  <a href="/" class="logo">Investay Capital</a>
-                  <nav>
+                  <div class="logo">
+                      <a href="/">
+                          <span class="logo-icon">◆</span>
+                          <span class="logo-text">INVESTAY CAPITAL</span>
+                      </a>
+                  </div>
+                  <nav class="premium-nav">
                       <a href="/#about">About</a>
-                      <a href="/#investors">For Investors</a>
-                      <a href="/#hotels">For Hotel Owners</a>
-                      <a href="/blog">Insights</a>
-                      <a href="/#contact">Contact</a>
+                      <a href="/#investors">Investors</a>
+                      <a href="/#hotels">Hotels</a>
+                      <a href="/blog" class="active">Insights</a>
+                      <a href="/#contact" class="nav-cta">Contact</a>
                   </nav>
               </div>
           </header>
 
-          <!-- Blog Post -->
-          <article id="blog-post">
-              <div class="container blog-post-container">
-                  <!-- Main Content Column -->
-                  <div class="blog-post-main">
-                      <!-- Breadcrumb -->
-                      <nav class="breadcrumb">
-                          <a href="/">Home</a>
-                          <span class="separator">›</span>
-                          <a href="/blog">Insights & News</a>
-                          <span class="separator">›</span>
-                          <span>Insights</span>
-                      </nav>
+          <!-- Article Hero -->
+          <section class="article-hero">
+              <div class="article-hero-container">
+                  <nav class="breadcrumb">
+                      <a href="/">Home</a>
+                      <span class="separator">›</span>
+                      <a href="/blog">Insights</a>
+                      <span class="separator">›</span>
+                      <span>Article</span>
+                  </nav>
+                  
+                  <div class="article-hero-content">
+                      <div class="article-category-badge">INSIGHTS</div>
+                      <h1 class="article-hero-title">${post.title}</h1>
+                      ${post.excerpt ? `<p class="article-hero-excerpt">${post.excerpt}</p>` : ''}
                       
-                      <!-- Article Header -->
-                      <div class="article-header">
-                          <div class="article-category">INSIGHTS</div>
-                          <h1 class="article-title">${post.title}</h1>
-                          <div class="article-meta">
-                              <span>By ${post.author}</span>
-                              <span class="meta-separator">·</span>
-                              <span>${new Date(post.published_at || post.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                              <span class="meta-separator">·</span>
-                              <span>${Math.ceil(post.content.split(' ').length / 200)} min read</span>
+                      <div class="article-hero-meta">
+                          <div class="author-meta">
+                              <div class="author-avatar-small">
+                                  <span>${post.author.charAt(0)}</span>
+                              </div>
+                              <div class="author-details">
+                                  <span class="author-name">${post.author}</span>
+                                  <span class="author-date">${new Date(post.published_at || post.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })} · ${Math.ceil(post.content.split(' ').length / 200)} min read</span>
+                              </div>
                           </div>
                           
-                          <!-- Social Share -->
-                          <div class="social-share">
-                              <a href="https://www.linkedin.com/sharing/share-offsite/?url=https://investaycapital.com/blog/${slug}" target="_blank" class="share-btn" title="Share on LinkedIn">
-                                  <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                          <div class="social-share-buttons">
+                              <a href="https://www.linkedin.com/sharing/share-offsite/?url=https://investaycapital.com/blog/${slug}" target="_blank" class="share-button" title="Share on LinkedIn">
+                                  <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
                               </a>
-                              <a href="https://twitter.com/intent/tweet?url=https://investaycapital.com/blog/${slug}&text=${encodeURIComponent(post.title)}" target="_blank" class="share-btn" title="Share on X">
-                                  <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                              <a href="https://twitter.com/intent/tweet?url=https://investaycapital.com/blog/${slug}&text=${encodeURIComponent(post.title)}" target="_blank" class="share-button" title="Share on X">
+                                  <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                               </a>
-                              <a href="mailto:?subject=${encodeURIComponent(post.title)}&body=Check out this article: https://investaycapital.com/blog/${slug}" class="share-btn" title="Share via Email">
-                                  <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                              <a href="mailto:?subject=${encodeURIComponent(post.title)}&body=Check out this article: https://investaycapital.com/blog/${slug}" class="share-button" title="Share via Email">
+                                  <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
                               </a>
                           </div>
-                      </div>
-                      
-                      <!-- Featured Image -->
-                      ${post.featured_image ? `
-                          <div class="article-featured-image">
-                              <img src="${post.featured_image}" alt="${post.title}">
-                          </div>
-                      ` : ''}
-                      
-                      <!-- Article Body -->
-                      <div class="article-body">
-                          ${post.content}
-                      </div>
-                      
-                      <!-- Author Box -->
-                      <div class="author-box">
-                          <div class="author-avatar">
-                              <span>${post.author.charAt(0)}</span>
-                          </div>
-                          <div class="author-info">
-                              <h3 class="author-name">${post.author}</h3>
-                              <p class="author-title">Research & Analysis</p>
-                              <p class="author-bio">Delivering institutional-grade insights on digital infrastructure and hospitality asset markets.</p>
-                          </div>
-                      </div>
-                      
-                      <!-- Post Navigation -->
-                      <div class="post-navigation">
-                          <a href="/blog" class="nav-link nav-prev">
-                              <span class="nav-label">← Previous Article</span>
-                              <span class="nav-title">Return to Insights</span>
-                          </a>
-                          <a href="/blog" class="nav-link nav-next">
-                              <span class="nav-label">Next Article →</span>
-                              <span class="nav-title">View More Insights</span>
-                          </a>
                       </div>
                   </div>
-                  
-                  <!-- Sidebar Column -->
-                  <aside class="blog-post-sidebar">
-                      <!-- Recent Insights Widget -->
-                      <div class="sidebar-widget">
-                          <h3 class="widget-title">Recent Insights</h3>
-                          <div class="recent-posts" id="recent-posts-widget">
-                              <p class="widget-loading">Loading...</p>
+              </div>
+          </section>
+
+          <!-- Featured Image -->
+          ${post.featured_image ? `
+          <section class="article-featured-image-section">
+              <div class="article-featured-image-container">
+                  <img src="${post.featured_image}" alt="${post.title}" class="article-featured-image">
+              </div>
+          </section>
+          ` : ''}
+
+          <!-- Article Content -->
+          <article class="article-content-section">
+              <div class="article-content-container">
+                  <div class="article-content-wrapper">
+                      <!-- Main Content -->
+                      <div class="article-main-content">
+                          <div class="article-body prose">
+                              ${post.content}
+                          </div>
+
+                          <!-- AI FAQ Section (if available) -->
+                          ${post.ai_faq ? `
+                          <div class="article-faq-section">
+                              <h2 class="faq-title">Frequently Asked Questions</h2>
+                              <div class="faq-list">
+                                  ${JSON.parse(post.ai_faq).map((faq: any) => `
+                                      <details class="faq-item">
+                                          <summary class="faq-question">
+                                              <span>${faq.question}</span>
+                                              <svg class="faq-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                                  <path d="M5 7.5l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                              </svg>
+                                          </summary>
+                                          <div class="faq-answer">
+                                              <p>${faq.answer}</p>
+                                          </div>
+                                      </details>
+                                  `).join('')}
+                              </div>
+                          </div>
+                          ` : ''}
+
+                          <!-- Author Box -->
+                          <div class="article-author-box">
+                              <div class="author-box-avatar">
+                                  <span>${post.author.charAt(0)}</span>
+                              </div>
+                              <div class="author-box-info">
+                                  <h3 class="author-box-name">${post.author}</h3>
+                                  <p class="author-box-title">Research & Analysis Team</p>
+                                  <p class="author-box-bio">Delivering institutional-grade insights on digital infrastructure, hospitality asset markets, and real-world tokenization frameworks.</p>
+                              </div>
+                          </div>
+
+                          <!-- Post Navigation -->
+                          <div class="article-navigation">
+                              <a href="/blog" class="article-nav-link">
+                                  <div class="nav-direction">
+                                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                          <path d="M12.5 15l-5-5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                      </svg>
+                                      <span>Back to Insights</span>
+                                  </div>
+                                  <span class="nav-title">View All Articles</span>
+                              </a>
                           </div>
                       </div>
-                      
-                      <!-- Categories Widget -->
-                      <div class="sidebar-widget">
-                          <h3 class="widget-title">Categories</h3>
-                          <ul class="category-list">
-                              <li><a href="/blog">All Insights</a></li>
-                              <li><a href="/blog">Institutional Infrastructure</a></li>
-                              <li><a href="/blog">Hospitality Technology</a></li>
-                              <li><a href="/blog">Digital Assets</a></li>
-                              <li><a href="/blog">Market Analysis</a></li>
-                          </ul>
-                      </div>
-                      
-                      <!-- Newsletter Widget -->
-                      <div class="sidebar-widget newsletter-widget">
-                          <h3 class="widget-title">Stay Informed</h3>
-                          <p class="newsletter-desc">Receive institutional insights and analysis delivered to your inbox.</p>
-                          <form class="newsletter-form" onsubmit="event.preventDefault(); alert('Newsletter signup coming soon!');">
-                              <input type="email" placeholder="Your email" required>
-                              <button type="submit" class="btn btn-primary">Subscribe</button>
-                          </form>
-                      </div>
-                  </aside>
+
+                      <!-- Sidebar (Desktop) -->
+                      <aside class="article-sidebar">
+                          <!-- Share Widget -->
+                          <div class="sidebar-widget sticky-widget">
+                              <h3 class="widget-title">Share Article</h3>
+                              <div class="widget-share-buttons">
+                                  <a href="https://www.linkedin.com/sharing/share-offsite/?url=https://investaycapital.com/blog/${slug}" target="_blank" class="widget-share-btn linkedin">
+                                      <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                                      <span>LinkedIn</span>
+                                  </a>
+                                  <a href="https://twitter.com/intent/tweet?url=https://investaycapital.com/blog/${slug}&text=${encodeURIComponent(post.title)}" target="_blank" class="widget-share-btn twitter">
+                                      <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                                      <span>X (Twitter)</span>
+                                  </a>
+                                  <a href="mailto:?subject=${encodeURIComponent(post.title)}&body=Check out this article: https://investaycapital.com/blog/${slug}" class="widget-share-btn email">
+                                      <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                                      <span>Email</span>
+                                  </a>
+                              </div>
+                          </div>
+
+                          <!-- Table of Contents (optional) -->
+                          <div class="sidebar-widget">
+                              <h3 class="widget-title">In This Article</h3>
+                              <ul class="widget-toc">
+                                  <li><a href="#" class="toc-link">Introduction</a></li>
+                                  <li><a href="#" class="toc-link">Key Insights</a></li>
+                                  <li><a href="#" class="toc-link">Analysis</a></li>
+                                  <li><a href="#" class="toc-link">Conclusion</a></li>
+                              </ul>
+                          </div>
+                      </aside>
+                  </div>
               </div>
           </article>
-          
-          <script>
-              // Load recent posts for sidebar
-              fetch('/api/blog')
-                  .then(res => res.json())
-                  .then(data => {
-                      const widget = document.getElementById('recent-posts-widget');
-                      if (data.success && data.posts.length > 0) {
-                          widget.innerHTML = data.posts.slice(0, 5).map(post => \`
-                              <a href="/blog/\${post.slug}" class="recent-post-item">
-                                  \${post.featured_image ? \`
-                                      <img src="\${post.featured_image}" alt="\${post.title}">
-                                  \` : \`
-                                      <div class="recent-post-placeholder">\${post.title.charAt(0)}</div>
-                                  \`}
-                                  <div class="recent-post-content">
-                                      <h4>\${post.title}</h4>
-                                      <span class="recent-post-date">\${new Date(post.published_at || post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                                  </div>
-                              </a>
-                          \`).join('');
-                      } else {
-                          widget.innerHTML = '<p class="widget-empty">No recent posts</p>';
-                      }
-                  })
-                  .catch(() => {
-                      document.getElementById('recent-posts-widget').innerHTML = '<p class="widget-error">Failed to load</p>';
-                  });
-          </script>
+
+          <!-- Related Articles (placeholder) -->
+          <section class="related-articles-section">
+              <div class="container">
+                  <h2 class="related-title">Continue Reading</h2>
+                  <p class="related-subtitle">Explore more insights on institutional infrastructure and hospitality frameworks</p>
+                  <div class="related-cta">
+                      <a href="/blog" class="btn btn-primary-outline">View All Insights</a>
+                  </div>
+              </div>
+          </section>
 
           <!-- Footer -->
-          <footer>
+          <footer class="premium-footer">
               <div class="container">
-                  <p>&copy; 2025 Investay Capital. All rights reserved.</p>
-                  <p class="disclaimer">Informational overview only.</p>
+                  <div class="footer-content">
+                      <div class="footer-brand">
+                          <span class="logo-icon">◆</span>
+                          <span class="logo-text">INVESTAY CAPITAL</span>
+                      </div>
+                      <div class="footer-links">
+                          <a href="/#about">About</a>
+                          <a href="/#investors">Investors</a>
+                          <a href="/#hotels">Hotels</a>
+                          <a href="/blog">Insights</a>
+                          <a href="/#contact">Contact</a>
+                      </div>
+                  </div>
+                  <div class="footer-bottom">
+                      <p>&copy; 2025 Investay Capital. All rights reserved.</p>
+                      <p class="disclaimer">Informational overview only.</p>
+                  </div>
               </div>
           </footer>
 
           <script src="/static/app.js"></script>
+          <script src="/static/article.js"></script>
       </body>
       </html>
     `);
