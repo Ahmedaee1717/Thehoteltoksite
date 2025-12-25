@@ -5,6 +5,14 @@ import { blogRoutes } from './routes/blog'
 import { adminRoutes } from './routes/admin'
 import { aiAdminRoutes } from './routes/ai-admin'
 import { emailRoutes } from './routes/email'
+import tasks from './routes/tasks'
+import crm from './routes/crm'
+import collab from './routes/collaboration'
+import analytics from './routes/analytics'
+import meetings from './routes/meetings'
+import organization from './routes/organization'
+import blockchain from './routes/blockchain'
+import voice from './routes/voice'
 import { homePage } from './pages/home'
 import { answerQuestion } from './services/ai-optimizer'
 
@@ -27,6 +35,14 @@ app.route('/api/blog', blogRoutes)
 app.route('/api/admin', adminRoutes)
 app.route('/api/ai', aiAdminRoutes)
 app.route('/api/email', emailRoutes)
+app.route('/api/tasks', tasks)
+app.route('/api/crm', crm)
+app.route('/api/collaboration', collab)
+app.route('/api/analytics', analytics)
+app.route('/api/meetings', meetings)
+app.route('/api/organization', organization)
+app.route('/api/blockchain', blockchain)
+app.route('/api/voice', voice)
 
 // AI Q&A Endpoint - semantic search and question answering
 app.post('/api/ai-answer', async (c) => {
