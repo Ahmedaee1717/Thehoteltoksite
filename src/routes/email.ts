@@ -41,45 +41,6 @@ emailRoutes.get('/inbox', async (c) => {
 });
 
 // ============================================
-// GET /api/email/:id
-// Get single email by ID
-// ============================================
-emailRoutes.get('/:id', async (c) => {
-  const { DB } = c.env;
-  const emailId = c.req.param('id');
-  
-  try {
-    const email = await DB.prepare(`
-      SELECT * FROM emails WHERE id = ?
-    `).bind(emailId).first();
-    
-    if (!email) {
-      return c.json({ success: false, error: 'Email not found' }, 404);
-    }
-    
-    // Mark as read
-    await DB.prepare(`
-      UPDATE emails 
-      SET is_read = 1, opened_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).bind(emailId).run();
-    
-    // Get attachments
-    const { results: attachments } = await DB.prepare(`
-      SELECT * FROM attachments WHERE email_id = ?
-    `).bind(emailId).all();
-    
-    return c.json({ 
-      success: true, 
-      email: { ...email, attachments }
-    });
-  } catch (error: any) {
-    console.error('Email fetch error:', error);
-    return c.json({ success: false, error: error.message }, 500);
-  }
-});
-
-// ============================================
 // POST /api/email/send
 // Send a new email
 // ============================================
@@ -401,6 +362,190 @@ emailRoutes.get('/analytics/summary', async (c) => {
     });
   } catch (error: any) {
     console.error('Analytics error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================
+// POST /api/email/drafts/save
+// Save or update draft email
+// ============================================
+emailRoutes.post('/drafts/save', async (c) => {
+  const { DB } = c.env;
+  
+  try {
+    const { draftId, from, to, subject, body } = await c.req.json();
+    
+    const now = new Date().toISOString();
+    
+    if (draftId) {
+      // Update existing draft
+      await DB.prepare(`
+        UPDATE emails 
+        SET to_email = ?, subject = ?, body = ?, updated_at = ?
+        WHERE id = ? AND from_email = ?
+      `).bind(to, subject, body, now, draftId, from).run();
+      
+      return c.json({ success: true, draftId });
+    } else {
+      // Create new draft
+      const newDraftId = generateId('draft');
+      
+      await DB.prepare(`
+        INSERT INTO emails (
+          id, thread_id, from_email, to_email, subject, body,
+          category, priority, is_read, is_starred, is_archived,
+          sent_at, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, 'draft', 0, 1, 0, 0, ?, ?, ?)
+      `).bind(
+        newDraftId,
+        generateId('thread'),
+        from,
+        to || '',
+        subject || 'No Subject',
+        body || '',
+        now,
+        now,
+        now
+      ).run();
+      
+      return c.json({ success: true, draftId: newDraftId });
+    }
+  } catch (error: any) {
+    console.error('Save draft error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================
+// GET /api/email/drafts
+// Get all drafts for a user
+// ============================================
+emailRoutes.get('/drafts', async (c) => {
+  const { DB } = c.env;
+  const userEmail = c.req.query('user') || 'admin@investaycapital.com';
+  
+  try {
+    const { results } = await DB.prepare(`
+      SELECT 
+        id, from_email, to_email, subject, body, created_at, updated_at
+      FROM emails
+      WHERE from_email = ? AND category = 'draft'
+      ORDER BY updated_at DESC
+      LIMIT 20
+    `).bind(userEmail).all();
+    
+    return c.json({ success: true, drafts: results });
+  } catch (error: any) {
+    console.error('Get drafts error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================
+// DELETE /api/email/drafts/:id
+// Delete a draft
+// ============================================
+emailRoutes.delete('/drafts/:id', async (c) => {
+  const { DB } = c.env;
+  const draftId = c.req.param('id');
+  
+  try {
+    await DB.prepare(`
+      DELETE FROM emails WHERE id = ? AND category = 'draft'
+    `).bind(draftId).run();
+    
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error('Delete draft error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================
+// POST /api/email/templates/save
+// Save email template
+// ============================================
+emailRoutes.post('/templates/save', async (c) => {
+  const { DB } = c.env;
+  
+  try {
+    const { name, subject, body, category, userId } = await c.req.json();
+    const templateId = generateId('tmpl');
+    const now = new Date().toISOString();
+    
+    await DB.prepare(`
+      INSERT INTO email_templates (
+        id, user_id, name, subject, body, category, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(templateId, userId, name, subject, body, category || 'general', now, now).run();
+    
+    return c.json({ success: true, templateId });
+  } catch (error: any) {
+    console.error('Save template error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================
+// GET /api/email/templates
+// Get all templates for a user
+// ============================================
+emailRoutes.get('/templates', async (c) => {
+  const { DB } = c.env;
+  const userId = c.req.query('user') || 'admin@investaycapital.com';
+  
+  try {
+    const { results } = await DB.prepare(`
+      SELECT id, name, subject, body, category, created_at
+      FROM email_templates
+      WHERE user_id = ?
+      ORDER BY name ASC
+    `).bind(userId).all();
+    
+    return c.json({ success: true, templates: results || [] });
+  } catch (error: any) {
+    console.error('Get templates error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================
+// GET /api/email/:id
+// Get single email by ID
+// NOTE: This MUST be last among GET routes as it's a catch-all
+// ============================================
+emailRoutes.get('/:id', async (c) => {
+  const { DB } = c.env;
+  const emailId = c.req.param('id');
+  
+  try {
+    const email = await DB.prepare(`
+      SELECT * FROM emails WHERE id = ?
+    `).bind(emailId).first();
+    
+    if (!email) {
+      return c.json({ success: false, error: 'Email not found' }, 404);
+    }
+    
+    // Mark as read
+    await DB.prepare(`
+      UPDATE emails 
+      SET is_read = 1, opened_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(emailId).run();
+    
+    // Get attachments
+    const { results: attachments } = await DB.prepare(`
+      SELECT * FROM attachments WHERE email_id = ?
+    `).bind(emailId).all();
+    
+    return c.json({ 
+      success: true, 
+      email: { ...email, attachments }
+    });
+  } catch (error: any) {
+    console.error('Email fetch error:', error);
     return c.json({ success: false, error: error.message }, 500);
   }
 });
