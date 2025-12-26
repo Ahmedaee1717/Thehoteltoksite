@@ -905,15 +905,19 @@ window.addEventListener('DOMContentLoaded', function() {
           onSend: sendEmail
         }),
         
-        // Email Viewer Modal
-        selectedEmail && !showCollabPanel && h(EmailViewerModal, {
+        // Email Viewer Modal - Shows when email is selected
+        selectedEmail && h(EmailViewerModal, {
           email: selectedEmail,
-          onClose: () => setSelectedEmail(null),
+          onClose: () => {
+            setSelectedEmail(null);
+            setShowCollabPanel(false);
+          },
           onShowCollab: () => setShowCollabPanel(true),
-          view: view
+          view: view,
+          showCollabPanel: showCollabPanel
         }),
         
-        // Team Collaboration Panel
+        // Team Collaboration Panel - Slides in from right
         showCollabPanel && selectedEmail && h('div', {
           style: {
             position: 'fixed',
@@ -1464,7 +1468,7 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     // Email Viewer Modal Component
-    function EmailViewerModal({ email, onClose, onShowCollab, view }) {
+    function EmailViewerModal({ email, onClose, onShowCollab, view, showCollabPanel }) {
       const formatDate = (dateString) => {
         if (!dateString) return 'Unknown date';
         const date = new Date(dateString);
@@ -1484,16 +1488,17 @@ window.addEventListener('DOMContentLoaded', function() {
           position: 'fixed',
           top: 0,
           left: 0,
-          right: 0,
+          right: showCollabPanel ? '400px' : 0,
           bottom: 0,
-          background: 'rgba(0, 0, 0, 0.85)',
-          backdropFilter: 'blur(12px)',
+          background: showCollabPanel ? 'transparent' : 'rgba(0, 0, 0, 0.85)',
+          backdropFilter: showCollabPanel ? 'none' : 'blur(12px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 1000,
+          zIndex: 999,
           animation: 'fadeIn 0.2s ease-out',
-          padding: '20px'
+          padding: '20px',
+          pointerEvents: showCollabPanel ? 'none' : 'auto'
         }
       },
         h('div', {
@@ -1502,15 +1507,17 @@ window.addEventListener('DOMContentLoaded', function() {
             background: 'linear-gradient(135deg, rgba(26, 31, 58, 0.98) 0%, rgba(15, 20, 41, 0.98) 100%)',
             backdropFilter: 'blur(40px)',
             borderRadius: '24px',
-            width: '900px',
-            maxWidth: '95%',
+            width: showCollabPanel ? 'calc(100vw - 480px)' : '900px',
+            maxWidth: showCollabPanel ? 'calc(100vw - 480px)' : '95%',
             maxHeight: '90vh',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             boxShadow: '0 24px 64px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(201, 169, 98, 0.1)',
             animation: 'slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             display: 'flex',
             flexDirection: 'column',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            pointerEvents: 'auto',
+            transition: 'all 0.3s ease'
           }
         },
           // Header
