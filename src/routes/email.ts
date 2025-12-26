@@ -219,6 +219,7 @@ emailRoutes.post('/send', async (c) => {
         });
         
         // Create HTML version of email with tracking pixel
+        // Only embed tracking pixel in actual sent emails, not when viewing in app
         const trackingPixelUrl = `https://${c.req.header('host') || 'localhost:3000'}/api/email/track/${emailId}`;
         const htmlBody = `
           <html>
@@ -243,8 +244,8 @@ emailRoutes.post('/send', async (c) => {
                   <p>Sent via InvestMail</p>
                 </div>
               </div>
-              <!-- Email open tracking pixel -->
-              <img src="${trackingPixelUrl}" width="1" height="1" style="display:none;" alt="" />
+              <!-- Email open tracking pixel - Only loaded when recipient opens email in their email client -->
+              <img src="${trackingPixelUrl}" width="1" height="1" style="display:none;visibility:hidden;" alt="" border="0" />
             </body>
           </html>
         `;
@@ -759,9 +760,9 @@ emailRoutes.get('/track/:tracking_id', async (c) => {
     // Parse tracking ID format: email_id
     const emailId = trackingId;
     
-    // Get email details
+    // Get email details including sender
     const email = await DB.prepare(`
-      SELECT id, to_email FROM emails WHERE id = ?
+      SELECT id, to_email, from_email FROM emails WHERE id = ?
     `).bind(emailId).first() as any;
     
     if (!email) {
@@ -781,6 +782,31 @@ emailRoutes.get('/track/:tracking_id', async (c) => {
     const ipAddress = c.req.header('cf-connecting-ip') || 
                       c.req.header('x-forwarded-for') || 
                       c.req.header('x-real-ip') || '';
+    
+    // IMPORTANT: Only track if request is NOT from the sender viewing their own email
+    // Check if the request is from our app or a real email client
+    const referer = c.req.header('referer') || '';
+    const isFromOurApp = referer.includes('/mail') || 
+                         referer.includes('investay') || 
+                         referer.includes('localhost') ||
+                         referer.includes('sandbox') ||
+                         userAgent.includes('Chrome') && referer.includes('3000-');
+    
+    // If request is from our own app viewing sent emails, don't track
+    // Only track when email is opened by recipient in their actual email client
+    if (isFromOurApp) {
+      console.log('⏭️ Skipping tracking - request from app interface, not email client');
+      return new Response(TRACKING_PIXEL, {
+        headers: {
+          'Content-Type': 'image/gif',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+    }
+    
+    console.log('✅ Tracking email open from recipient email client');
     
     // Detect device type
     const deviceType = userAgent.toLowerCase().includes('mobile') ? 'mobile' :
