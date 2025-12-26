@@ -30,6 +30,7 @@ window.addEventListener('DOMContentLoaded', function() {
       const [comments, setComments] = useState([]);
       const [collabStats, setCollabStats] = useState(null);
       const [newComment, setNewComment] = useState('');
+      const [readStatuses, setReadStatuses] = useState({});
       
       useEffect(() => {
         loadData();
@@ -49,7 +50,14 @@ window.addEventListener('DOMContentLoaded', function() {
           if (url) {
             const response = await fetch(url);
             const data = await response.json();
-            setEmails(data.emails || data.drafts || []);
+            const fetchedEmails = data.emails || data.drafts || [];
+            setEmails(fetchedEmails);
+            
+            // Load read statuses for sent emails
+            if (view === 'sent' && fetchedEmails.length > 0) {
+              const emailIds = fetchedEmails.map(e => e.id);
+              loadReadStatuses(emailIds);
+            }
           }
           
           // Load CRM data
@@ -112,6 +120,24 @@ window.addEventListener('DOMContentLoaded', function() {
           setCollabStats(statsData.stats || {});
         } catch (error) {
           console.error('Load collab error:', error);
+        }
+      };
+      
+      const loadReadStatuses = async (emailIds) => {
+        try {
+          const statuses = {};
+          await Promise.all(
+            emailIds.map(async (id) => {
+              const res = await fetch(`/api/email/${id}/read-status`);
+              const data = await res.json();
+              if (data.success) {
+                statuses[id] = data;
+              }
+            })
+          );
+          setReadStatuses(statuses);
+        } catch (error) {
+          console.error('Load read statuses error:', error);
         }
       };
       
@@ -809,6 +835,28 @@ window.addEventListener('DOMContentLoaded', function() {
                       letterSpacing: '-0.2px'
                     } 
                   }, email.subject || '(No Subject)'),
+                  // Read status indicator for sent emails
+                  view === 'sent' && readStatuses[email.id] && h('div', {
+                    style: {
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      marginTop: '8px',
+                      padding: '4px 12px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      background: readStatuses[email.id].is_read ? 'rgba(34, 197, 94, 0.15)' : 'rgba(156, 163, 175, 0.15)',
+                      color: readStatuses[email.id].is_read ? '#22c55e' : 'rgba(255, 255, 255, 0.5)',
+                      border: `1px solid ${readStatuses[email.id].is_read ? 'rgba(34, 197, 94, 0.3)' : 'rgba(156, 163, 175, 0.3)'}`
+                    }
+                  },
+                    readStatuses[email.id].is_read ? '✓ Read' : '○ Unread',
+                    readStatuses[email.id].is_read && readStatuses[email.id].receipts?.[0]?.opened_at && 
+                      h('span', { style: { fontSize: '11px', opacity: 0.7 } }, 
+                        ` • ${new Date(readStatuses[email.id].receipts[0].opened_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                      )
+                  ),
                   h('div', { 
                     style: { 
                       fontSize: '14px', 

@@ -218,7 +218,8 @@ emailRoutes.post('/send', async (c) => {
           fromName: MAILGUN_FROM_NAME || 'InvestMail'
         });
         
-        // Create HTML version of email
+        // Create HTML version of email with tracking pixel
+        const trackingPixelUrl = `https://${c.req.header('host') || 'localhost:3000'}/api/email/track/${emailId}`;
         const htmlBody = `
           <html>
             <head>
@@ -242,6 +243,8 @@ emailRoutes.post('/send', async (c) => {
                   <p>Sent via InvestMail</p>
                 </div>
               </div>
+              <!-- Email open tracking pixel -->
+              <img src="${trackingPixelUrl}" width="1" height="1" style="display:none;" alt="" />
             </body>
           </html>
         `;
@@ -742,5 +745,147 @@ emailRoutes.get('/:id', async (c) => {
     return c.json({ success: false, error: error.message }, 500);
   }
 });
+
+// ============================================
+// GET /api/email/track/:tracking_id
+// Email open tracking pixel endpoint
+// Returns a 1x1 transparent GIF
+// ============================================
+emailRoutes.get('/track/:tracking_id', async (c) => {
+  const { DB } = c.env;
+  const trackingId = c.req.param('tracking_id');
+  
+  try {
+    // Parse tracking ID format: email_id
+    const emailId = trackingId;
+    
+    // Get email details
+    const email = await DB.prepare(`
+      SELECT id, to_email FROM emails WHERE id = ?
+    `).bind(emailId).first() as any;
+    
+    if (!email) {
+      // Still return pixel even if email not found
+      return new Response(TRACKING_PIXEL, {
+        headers: {
+          'Content-Type': 'image/gif',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+    }
+    
+    // Get user agent and IP
+    const userAgent = c.req.header('user-agent') || '';
+    const ipAddress = c.req.header('cf-connecting-ip') || 
+                      c.req.header('x-forwarded-for') || 
+                      c.req.header('x-real-ip') || '';
+    
+    // Detect device type
+    const deviceType = userAgent.toLowerCase().includes('mobile') ? 'mobile' :
+                       userAgent.toLowerCase().includes('tablet') ? 'tablet' : 'desktop';
+    
+    // Detect email client (basic detection)
+    let emailClient = 'unknown';
+    if (userAgent.includes('Gmail')) emailClient = 'gmail';
+    else if (userAgent.includes('Outlook')) emailClient = 'outlook';
+    else if (userAgent.includes('Apple Mail')) emailClient = 'apple-mail';
+    else if (userAgent.includes('Thunderbird')) emailClient = 'thunderbird';
+    
+    // Check if already tracked
+    const existing = await DB.prepare(`
+      SELECT id, open_count FROM email_read_receipts 
+      WHERE email_id = ? AND recipient_email = ?
+    `).bind(emailId, email.to_email).first() as any;
+    
+    if (existing) {
+      // Update existing record - increment open count
+      await DB.prepare(`
+        UPDATE email_read_receipts
+        SET open_count = open_count + 1,
+            last_opened_at = CURRENT_TIMESTAMP,
+            ip_address = ?,
+            user_agent = ?
+        WHERE id = ?
+      `).bind(ipAddress, userAgent, existing.id).run();
+    } else {
+      // Create new read receipt
+      const receiptId = generateId('rcpt');
+      await DB.prepare(`
+        INSERT INTO email_read_receipts (
+          id, email_id, recipient_email, opened_at,
+          ip_address, user_agent, device_type, email_client
+        ) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?, ?)
+      `).bind(
+        receiptId, emailId, email.to_email,
+        ipAddress, userAgent, deviceType, emailClient
+      ).run();
+      
+      // Track as activity
+      await DB.prepare(`
+        INSERT INTO email_activity_tracking (
+          id, email_id, user_email, activity_type, activity_data
+        ) VALUES (?, ?, ?, 'email_opened', ?)
+      `).bind(
+        generateId('act'), emailId, email.to_email,
+        JSON.stringify({ device_type: deviceType, email_client: emailClient })
+      ).run();
+    }
+    
+    // Return 1x1 transparent GIF
+    return new Response(TRACKING_PIXEL, {
+      headers: {
+        'Content-Type': 'image/gif',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
+  } catch (error: any) {
+    console.error('Tracking error:', error);
+    // Always return pixel even on error
+    return new Response(TRACKING_PIXEL, {
+      headers: {
+        'Content-Type': 'image/gif',
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
+      }
+    });
+  }
+});
+
+// ============================================
+// GET /api/email/:email_id/read-status
+// Get read status for sent email
+// ============================================
+emailRoutes.get('/:email_id/read-status', async (c) => {
+  const { DB } = c.env;
+  const emailId = c.req.param('email_id');
+  
+  try {
+    const receipts = await DB.prepare(`
+      SELECT 
+        id, recipient_email, opened_at, last_opened_at,
+        open_count, ip_address, device_type, email_client
+      FROM email_read_receipts
+      WHERE email_id = ?
+      ORDER BY opened_at DESC
+    `).bind(emailId).all();
+    
+    return c.json({
+      success: true,
+      is_read: receipts.results.length > 0,
+      total_opens: receipts.results.reduce((sum: number, r: any) => sum + r.open_count, 0),
+      receipts: receipts.results
+    });
+  } catch (error: any) {
+    console.error('Get read status error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// 1x1 transparent GIF pixel (base64 encoded)
+const TRACKING_PIXEL = Uint8Array.from(atob('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'), c => c.charCodeAt(0));
 
 export { emailRoutes }
