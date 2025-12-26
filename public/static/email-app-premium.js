@@ -905,6 +905,14 @@ window.addEventListener('DOMContentLoaded', function() {
           onSend: sendEmail
         }),
         
+        // Email Viewer Modal
+        selectedEmail && !showCollabPanel && h(EmailViewerModal, {
+          email: selectedEmail,
+          onClose: () => setSelectedEmail(null),
+          onShowCollab: () => setShowCollabPanel(true),
+          view: view
+        }),
+        
         // Team Collaboration Panel
         showCollabPanel && selectedEmail && h('div', {
           style: {
@@ -1450,6 +1458,461 @@ window.addEventListener('DOMContentLoaded', function() {
                 e.target.style.boxShadow = '0 8px 24px rgba(201, 169, 98, 0.4)';
               }
             }, '🚀 Send Email')
+          )
+        )
+      );
+    }
+    
+    // Email Viewer Modal Component
+    function EmailViewerModal({ email, onClose, onShowCollab, view }) {
+      const formatDate = (dateString) => {
+        if (!dateString) return 'Unknown date';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { 
+          weekday: 'long',
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      };
+      
+      return h('div', {
+        onClick: onClose,
+        style: {
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.85)',
+          backdropFilter: 'blur(12px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          animation: 'fadeIn 0.2s ease-out',
+          padding: '20px'
+        }
+      },
+        h('div', {
+          onClick: (e) => e.stopPropagation(),
+          style: {
+            background: 'linear-gradient(135deg, rgba(26, 31, 58, 0.98) 0%, rgba(15, 20, 41, 0.98) 100%)',
+            backdropFilter: 'blur(40px)',
+            borderRadius: '24px',
+            width: '900px',
+            maxWidth: '95%',
+            maxHeight: '90vh',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 24px 64px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(201, 169, 98, 0.1)',
+            animation: 'slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden'
+          }
+        },
+          // Header
+          h('div', {
+            style: {
+              padding: '24px 32px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'linear-gradient(135deg, rgba(201, 169, 98, 0.1) 0%, rgba(139, 115, 85, 0.1) 100%)'
+            }
+          },
+            h('div', {
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              }
+            },
+              h('div', {
+                style: {
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '14px',
+                  background: 'linear-gradient(135deg, #C9A962 0%, #8B7355 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '24px',
+                  boxShadow: '0 8px 16px rgba(201, 169, 98, 0.3)'
+                }
+              }, '📧'),
+              h('div', {},
+                h('div', {
+                  style: {
+                    fontSize: '20px',
+                    fontWeight: '700',
+                    color: 'rgba(255, 255, 255, 0.95)',
+                    marginBottom: '4px'
+                  }
+                }, email.subject || '(No Subject)'),
+                h('div', {
+                  style: {
+                    fontSize: '13px',
+                    color: 'rgba(255, 255, 255, 0.5)',
+                    display: 'flex',
+                    gap: '12px',
+                    alignItems: 'center'
+                  }
+                },
+                  h('span', {}, `📨 ${view === 'sent' ? 'To' : 'From'}: ${view === 'sent' ? email.to_email : email.from_email}`),
+                  h('span', {}, `📅 ${formatDate(email.sent_at || email.received_at || email.created_at)}`)
+                )
+              )
+            ),
+            h('div', {
+              style: {
+                display: 'flex',
+                gap: '8px'
+              }
+            },
+              h('button', {
+                onClick: () => {
+                  onClose();
+                  onShowCollab();
+                },
+                style: {
+                  padding: '10px 16px',
+                  borderRadius: '10px',
+                  background: 'rgba(201, 169, 98, 0.15)',
+                  border: '1px solid rgba(201, 169, 98, 0.3)',
+                  color: '#C9A962',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s'
+                },
+                onMouseEnter: (e) => {
+                  e.target.style.background = 'rgba(201, 169, 98, 0.25)';
+                },
+                onMouseLeave: (e) => {
+                  e.target.style.background = 'rgba(201, 169, 98, 0.15)';
+                }
+              }, '👥 Team Collab'),
+              h('button', {
+                onClick: onClose,
+                style: {
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: 'rgba(255, 255, 255, 0.6)',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s'
+                },
+                onMouseEnter: (e) => {
+                  e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                },
+                onMouseLeave: (e) => {
+                  e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                }
+              }, '✕')
+            )
+          ),
+          
+          // Email Content
+          h('div', {
+            style: {
+              padding: '32px',
+              overflowY: 'auto',
+              flex: 1
+            }
+          },
+            // Email metadata
+            h('div', {
+              style: {
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '16px',
+                marginBottom: '32px',
+                padding: '20px',
+                background: 'rgba(255, 255, 255, 0.03)',
+                borderRadius: '12px',
+                border: '1px solid rgba(255, 255, 255, 0.05)'
+              }
+            },
+              h('div', {},
+                h('div', {
+                  style: {
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    color: 'rgba(255, 255, 255, 0.5)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    marginBottom: '6px'
+                  }
+                }, view === 'sent' ? 'To' : 'From'),
+                h('div', {
+                  style: {
+                    fontSize: '14px',
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    fontWeight: '500'
+                  }
+                }, view === 'sent' 
+                  ? `${email.to_name || ''} <${email.to_email}>`.trim()
+                  : `${email.from_name || ''} <${email.from_email}>`.trim()
+                )
+              ),
+              h('div', {},
+                h('div', {
+                  style: {
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    color: 'rgba(255, 255, 255, 0.5)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    marginBottom: '6px'
+                  }
+                }, 'Date'),
+                h('div', {
+                  style: {
+                    fontSize: '14px',
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    fontWeight: '500'
+                  }
+                }, formatDate(email.sent_at || email.received_at || email.created_at))
+              ),
+              email.category && h('div', {},
+                h('div', {
+                  style: {
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    color: 'rgba(255, 255, 255, 0.5)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    marginBottom: '6px'
+                  }
+                }, 'Category'),
+                h('div', {
+                  style: {
+                    display: 'inline-block',
+                    padding: '4px 12px',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    background: email.category === 'inbox' ? 'rgba(59, 130, 246, 0.15)'
+                      : email.category === 'sent' ? 'rgba(34, 197, 94, 0.15)'
+                      : email.category === 'spam' ? 'rgba(239, 68, 68, 0.15)'
+                      : 'rgba(156, 163, 175, 0.15)',
+                    color: email.category === 'inbox' ? '#3b82f6'
+                      : email.category === 'sent' ? '#22c55e'
+                      : email.category === 'spam' ? '#ef4444'
+                      : '#9ca3af'
+                  }
+                }, email.category.charAt(0).toUpperCase() + email.category.slice(1))
+              ),
+              email.priority !== undefined && h('div', {},
+                h('div', {
+                  style: {
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    color: 'rgba(255, 255, 255, 0.5)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    marginBottom: '6px'
+                  }
+                }, 'Priority'),
+                h('div', {
+                  style: {
+                    fontSize: '14px',
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    fontWeight: '500'
+                  }
+                }, email.priority === 2 ? '🔴 High' 
+                  : email.priority === 1 ? '🟡 Medium' 
+                  : '🟢 Normal')
+              )
+            ),
+            
+            // Email body
+            h('div', {
+              style: {
+                marginTop: '24px'
+              }
+            },
+              h('div', {
+                style: {
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  marginBottom: '16px'
+                }
+              }, 'Message'),
+              h('div', {
+                style: {
+                  fontSize: '15px',
+                  lineHeight: '1.8',
+                  color: 'rgba(255, 255, 255, 0.85)',
+                  whiteSpace: 'pre-wrap',
+                  padding: '24px',
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255, 255, 255, 0.05)'
+                }
+              }, email.body_text || email.snippet || '(No content)')
+            ),
+            
+            // AI Summary (if available)
+            email.ai_summary && h('div', {
+              style: {
+                marginTop: '24px',
+                padding: '20px',
+                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)',
+                borderRadius: '12px',
+                border: '1px solid rgba(139, 92, 246, 0.2)'
+              }
+            },
+              h('div', {
+                style: {
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  color: 'rgba(139, 92, 246, 0.9)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  marginBottom: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }
+              }, '✨ AI Summary'),
+              h('div', {
+                style: {
+                  fontSize: '14px',
+                  lineHeight: '1.6',
+                  color: 'rgba(255, 255, 255, 0.8)'
+                }
+              }, email.ai_summary)
+            ),
+            
+            // Action Items (if available)
+            email.action_items && h('div', {
+              style: {
+                marginTop: '24px',
+                padding: '20px',
+                background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%)',
+                borderRadius: '12px',
+                border: '1px solid rgba(34, 197, 94, 0.2)'
+              }
+            },
+              h('div', {
+                style: {
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  color: 'rgba(34, 197, 94, 0.9)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  marginBottom: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }
+              }, '✅ Action Items'),
+              h('div', {
+                style: {
+                  fontSize: '14px',
+                  lineHeight: '1.6',
+                  color: 'rgba(255, 255, 255, 0.8)'
+                }
+              }, email.action_items)
+            )
+          ),
+          
+          // Footer Actions
+          h('div', {
+            style: {
+              padding: '20px 32px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-end',
+              background: 'rgba(0, 0, 0, 0.2)'
+            }
+          },
+            h('button', {
+              onClick: () => {
+                alert('Reply feature coming soon!');
+              },
+              style: {
+                padding: '12px 24px',
+                borderRadius: '10px',
+                background: 'rgba(59, 130, 246, 0.15)',
+                border: '1px solid rgba(59, 130, 246, 0.3)',
+                color: '#3b82f6',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              },
+              onMouseEnter: (e) => {
+                e.target.style.background = 'rgba(59, 130, 246, 0.25)';
+              },
+              onMouseLeave: (e) => {
+                e.target.style.background = 'rgba(59, 130, 246, 0.15)';
+              }
+            }, '↩️ Reply'),
+            h('button', {
+              onClick: () => {
+                alert('Forward feature coming soon!');
+              },
+              style: {
+                padding: '12px 24px',
+                borderRadius: '10px',
+                background: 'rgba(34, 197, 94, 0.15)',
+                border: '1px solid rgba(34, 197, 94, 0.3)',
+                color: '#22c55e',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              },
+              onMouseEnter: (e) => {
+                e.target.style.background = 'rgba(34, 197, 94, 0.25)';
+              },
+              onMouseLeave: (e) => {
+                e.target.style.background = 'rgba(34, 197, 94, 0.15)';
+              }
+            }, '↪️ Forward'),
+            h('button', {
+              onClick: () => {
+                if (confirm('Are you sure you want to delete this email?')) {
+                  alert('Delete feature coming soon!');
+                }
+              },
+              style: {
+                padding: '12px 24px',
+                borderRadius: '10px',
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                color: '#ef4444',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              },
+              onMouseEnter: (e) => {
+                e.target.style.background = 'rgba(239, 68, 68, 0.25)';
+              },
+              onMouseLeave: (e) => {
+                e.target.style.background = 'rgba(239, 68, 68, 0.15)';
+              }
+            }, '🗑️ Delete')
           )
         )
       );
