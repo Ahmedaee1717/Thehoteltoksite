@@ -166,7 +166,17 @@ export class MailgunService {
         body: formData
       });
 
-      const result = await response.json();
+      // Handle response - might not always be JSON
+      let result: any;
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        // Not JSON - likely an error message as text
+        const text = await response.text();
+        result = { message: text };
+      }
       
       if (response.ok) {
         console.log('✅ Email sent successfully:', result);
@@ -177,10 +187,25 @@ export class MailgunService {
           data: result
         };
       } else {
-        console.error('❌ Mailgun API error:', result);
+        console.error('❌ Mailgun API error:', response.status, result);
+        
+        // Provide helpful error messages
+        let errorMessage = result.message || 'Failed to send email';
+        
+        if (response.status === 403 || response.status === 401) {
+          errorMessage = `Authentication failed. This usually means:\n` +
+            `1. Domain "${this.domain}" is not verified in Mailgun yet (DNS records not added)\n` +
+            `2. API key doesn't have permission for this domain\n` +
+            `3. Domain hasn't been added to your Mailgun account\n\n` +
+            `Please verify your domain in Mailgun dashboard: https://app.mailgun.com/app/sending/domains`;
+        } else if (response.status === 404) {
+          errorMessage = `Domain "${this.domain}" not found in Mailgun account. Please add it first.`;
+        }
+        
         return {
           success: false,
-          error: result.message || 'Failed to send email',
+          error: errorMessage,
+          statusCode: response.status,
           details: result
         };
       }
