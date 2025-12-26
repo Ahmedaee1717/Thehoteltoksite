@@ -12,6 +12,14 @@ export interface EmailData {
   replyTo?: string;
   cc?: string;
   bcc?: string;
+  // Anti-spam features
+  trackOpens?: boolean;
+  trackClicks?: boolean;
+  tags?: string[];
+  customVariables?: Record<string, string>;
+  // Authentication
+  requireTLS?: boolean;
+  testMode?: boolean;
 }
 
 export interface MailgunConfig {
@@ -47,7 +55,7 @@ export class MailgunService {
   }
 
   /**
-   * Send an email via Mailgun REST API
+   * Send an email via Mailgun REST API with anti-spam features
    */
   async sendEmail(data: EmailData): Promise<any> {
     try {
@@ -59,12 +67,41 @@ export class MailgunService {
       formData.append('to', data.to);
       formData.append('subject', data.subject);
       
-      if (data.html) {
-        formData.append('html', data.html);
+      // Add unsubscribe link automatically (CAN-SPAM compliance)
+      let htmlContent = data.html;
+      let textContent = data.text;
+      
+      // Generate unsubscribe link
+      const unsubscribeLink = `https://investaycapital.pages.dev/unsubscribe?email=${encodeURIComponent(data.to)}`;
+      
+      if (htmlContent) {
+        // Add unsubscribe footer to HTML
+        if (!htmlContent.includes('unsubscribe')) {
+          htmlContent += `
+            <div style="margin-top: 40px; padding: 20px; border-top: 1px solid #e0e0e0; text-align: center; color: #666; font-size: 12px;">
+              <p>InvestMail - Professional Email Management</p>
+              <p>
+                <a href="${unsubscribeLink}" style="color: #4CAF50; text-decoration: none;">Unsubscribe</a> | 
+                <a href="mailto:support@investaycapital.com" style="color: #4CAF50; text-decoration: none;">Contact Support</a>
+              </p>
+              <p style="margin-top: 10px; font-size: 11px;">
+                InvestMail LLC, 123 Business St, San Francisco, CA 94105
+              </p>
+            </div>
+          `;
+        }
+        formData.append('html', htmlContent);
       }
       
-      if (data.text) {
-        formData.append('text', data.text);
+      if (textContent) {
+        // Add unsubscribe footer to plain text
+        if (!textContent.includes('unsubscribe')) {
+          textContent += `\n\n---\nInvestMail - Professional Email Management\n`;
+          textContent += `Unsubscribe: ${unsubscribeLink}\n`;
+          textContent += `Contact: support@investaycapital.com\n`;
+          textContent += `InvestMail LLC, 123 Business St, San Francisco, CA 94105\n`;
+        }
+        formData.append('text', textContent);
       }
 
       if (data.replyTo) {
@@ -77,6 +114,47 @@ export class MailgunService {
 
       if (data.bcc) {
         formData.append('bcc', data.bcc);
+      }
+
+      // Add anti-spam headers
+      formData.append('h:X-Mailer', 'InvestMail v1.0');
+      formData.append('h:List-Unsubscribe', `<${unsubscribeLink}>`);
+      formData.append('h:Precedence', 'bulk');
+      
+      // Enable DKIM signing (Mailgun handles this automatically)
+      formData.append('o:dkim', 'yes');
+      
+      // Enable tracking
+      if (data.trackOpens !== false) {
+        formData.append('o:tracking-opens', 'yes');
+      }
+      
+      if (data.trackClicks !== false) {
+        formData.append('o:tracking-clicks', 'yes');
+      }
+      
+      // Require TLS (encrypted transport)
+      if (data.requireTLS !== false) {
+        formData.append('o:require-tls', 'true');
+      }
+      
+      // Add tags for tracking
+      if (data.tags && data.tags.length > 0) {
+        data.tags.forEach(tag => formData.append('o:tag', tag));
+      } else {
+        formData.append('o:tag', 'investmail-system');
+      }
+      
+      // Add custom variables
+      if (data.customVariables) {
+        Object.entries(data.customVariables).forEach(([key, value]) => {
+          formData.append(`v:${key}`, value);
+        });
+      }
+      
+      // Test mode (sandbox mode - emails won't be delivered)
+      if (data.testMode) {
+        formData.append('o:testmode', 'yes');
       }
 
       // Send via Mailgun API

@@ -3,6 +3,7 @@ import { Hono } from 'hono'
 import { generateId } from '../utils/id'
 import { generateEmbedding, categorizeEmail, summarizeEmail, extractActionItems } from '../services/ai-email'
 import { createMailgunService } from '../lib/mailgun'
+import { checkSpamScore, getSpamScoreSummary } from '../lib/spam-checker'
 
 type Bindings = {
   DB: D1Database;
@@ -182,6 +183,30 @@ emailRoutes.post('/send', async (c) => {
     
     const emailId = generateId('eml');
     const threadId = generateId('thr');
+    
+    // Check spam score before sending
+    const spamCheck = checkSpamScore(subject, body);
+    console.log('📊 Spam Check:', getSpamScoreSummary(spamCheck));
+    
+    // Log all spam issues
+    if (spamCheck.issues.length > 0) {
+      console.log('⚠️ Spam Issues Found:', spamCheck.issues);
+      console.log('💡 Recommendations:', spamCheck.recommendations);
+    }
+    
+    // Optionally block high-risk emails
+    if (spamCheck.level === 'danger') {
+      return c.json({
+        success: false,
+        error: 'Email failed spam check - high spam risk detected',
+        spamCheck: {
+          score: spamCheck.score,
+          level: spamCheck.level,
+          issues: spamCheck.issues,
+          recommendations: spamCheck.recommendations
+        }
+      }, 400);
+    }
     
     // AI enhancements (if enabled)
     let aiSummary = null;
@@ -913,5 +938,38 @@ emailRoutes.get('/:email_id/read-status', async (c) => {
 
 // 1x1 transparent GIF pixel (base64 encoded)
 const TRACKING_PIXEL = Uint8Array.from(atob('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'), c => c.charCodeAt(0));
+
+// ============================================
+// POST /api/email/check-spam
+// Check spam score without sending
+// ============================================
+emailRoutes.post('/check-spam', async (c) => {
+  try {
+    const { subject, body, html } = await c.req.json();
+    
+    if (!subject || !body) {
+      return c.json({ 
+        success: false, 
+        error: 'Missing required fields: subject and body' 
+      }, 400);
+    }
+    
+    const spamCheck = checkSpamScore(subject, body, html);
+    
+    return c.json({
+      success: true,
+      spamCheck: {
+        score: spamCheck.score,
+        level: spamCheck.level,
+        passed: spamCheck.passed,
+        issues: spamCheck.issues,
+        recommendations: spamCheck.recommendations
+      }
+    });
+  } catch (error: any) {
+    console.error('Spam check error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
 
 export { emailRoutes }
