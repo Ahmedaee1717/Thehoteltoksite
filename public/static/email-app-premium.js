@@ -36,6 +36,24 @@ window.addEventListener('DOMContentLoaded', function() {
         loadData();
       }, [view]);
       
+      // Auto-refresh read statuses in Sent folder
+      useEffect(() => {
+        let refreshInterval;
+        if (view === 'sent' && emails.length > 0) {
+          refreshInterval = setInterval(() => {
+            const emailIds = emails.map(e => e.id);
+            loadReadStatuses(emailIds);
+            console.log('🔄 Auto-refreshing read statuses...');
+          }, 10000); // Every 10 seconds
+        }
+        
+        return () => {
+          if (refreshInterval) {
+            clearInterval(refreshInterval);
+          }
+        };
+      }, [view, emails.length]);
+      
       const loadData = async () => {
         setLoading(true);
         try {
@@ -503,7 +521,13 @@ window.addEventListener('DOMContentLoaded', function() {
             ),
             h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center' } },
               h('button', {
-                onClick: loadData,
+                onClick: () => {
+                  loadData();
+                  if (view === 'sent' && emails.length > 0) {
+                    const emailIds = emails.map(e => e.id);
+                    loadReadStatuses(emailIds);
+                  }
+                },
                 style: {
                   padding: '10px 16px',
                   background: 'rgba(255, 255, 255, 0.05)',
@@ -527,7 +551,7 @@ window.addEventListener('DOMContentLoaded', function() {
                   e.target.style.background = 'rgba(255, 255, 255, 0.05)';
                   e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
                 }
-              }, '🔄 Refresh')
+              }, view === 'sent' ? '🔄 Check Read Status' : '🔄 Refresh')
             )
           ),
           
