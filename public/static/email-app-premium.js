@@ -999,12 +999,65 @@ window.addEventListener('DOMContentLoaded', function() {
       const [to, setTo] = useState('');
       const [subject, setSubject] = useState('');
       const [body, setBody] = useState('');
+      const [spamCheck, setSpamCheck] = useState(null);
+      const [checkingSpam, setCheckingSpam] = useState(false);
+      
+      // Check spam score when subject or body changes
+      useEffect(() => {
+        if (!subject && !body) {
+          setSpamCheck(null);
+          return;
+        }
+        
+        const timer = setTimeout(async () => {
+          if (subject || body) {
+            setCheckingSpam(true);
+            try {
+              const response = await fetch('/api/email/check-spam', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subject, body })
+              });
+              const result = await response.json();
+              if (result.success) {
+                setSpamCheck(result.spamCheck);
+              }
+            } catch (error) {
+              console.error('Spam check error:', error);
+            } finally {
+              setCheckingSpam(false);
+            }
+          }
+        }, 1000); // Check 1 second after user stops typing
+        
+        return () => clearTimeout(timer);
+      }, [subject, body]);
       
       const handleSend = () => {
         if (!to || !subject) {
           alert('Please fill recipient and subject');
           return;
         }
+        
+        // Warn if spam score is high
+        if (spamCheck && spamCheck.level === 'danger') {
+          const proceed = confirm(
+            `⚠️ HIGH SPAM RISK DETECTED!\n\n` +
+            `Spam Score: ${spamCheck.score}/100\n\n` +
+            `Your email has ${spamCheck.issues.length} issues that may cause it to land in spam.\n\n` +
+            `Do you want to send anyway? (Not recommended)`
+          );
+          if (!proceed) return;
+        } else if (spamCheck && spamCheck.level === 'warning') {
+          const proceed = confirm(
+            `⚠️ MODERATE SPAM RISK\n\n` +
+            `Spam Score: ${spamCheck.score}/100\n\n` +
+            `Your email has ${spamCheck.issues.length} issues. Consider revising before sending.\n\n` +
+            `Send anyway?`
+          );
+          if (!proceed) return;
+        }
+        
         onSend(to, subject, body);
       };
       
@@ -1208,6 +1261,149 @@ window.addEventListener('DOMContentLoaded', function() {
                 e.target.style.boxShadow = 'none';
               }
             })
+          ),
+          
+          // Spam Score Indicator
+          (subject || body) && h('div', {
+            style: {
+              marginTop: '20px',
+              marginBottom: '20px',
+              padding: '16px 20px',
+              background: spamCheck 
+                ? spamCheck.level === 'safe' 
+                  ? 'rgba(34, 197, 94, 0.1)' 
+                  : spamCheck.level === 'warning' 
+                    ? 'rgba(251, 191, 36, 0.1)' 
+                    : 'rgba(239, 68, 68, 0.1)'
+                : 'rgba(255, 255, 255, 0.05)',
+              border: spamCheck 
+                ? `1px solid ${spamCheck.level === 'safe' 
+                  ? 'rgba(34, 197, 94, 0.3)' 
+                  : spamCheck.level === 'warning' 
+                    ? 'rgba(251, 191, 36, 0.3)' 
+                    : 'rgba(239, 68, 68, 0.3)'}`
+                : '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '12px',
+              transition: 'all 0.3s'
+            }
+          },
+            h('div', { 
+              style: { 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                marginBottom: spamCheck && spamCheck.issues.length > 0 ? '12px' : '0'
+              } 
+            },
+              h('div', { 
+                style: { 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '10px' 
+                } 
+              },
+                h('div', { 
+                  style: { 
+                    fontSize: '20px' 
+                  } 
+                }, checkingSpam ? '⏳' : spamCheck 
+                  ? spamCheck.level === 'safe' ? '✅' 
+                  : spamCheck.level === 'warning' ? '⚠️' 
+                  : '🚫' 
+                  : '🔍'),
+                h('div', { style: { flex: 1 } },
+                  h('div', { 
+                    style: { 
+                      fontSize: '14px', 
+                      fontWeight: '600',
+                      color: spamCheck 
+                        ? spamCheck.level === 'safe' ? '#22c55e' 
+                        : spamCheck.level === 'warning' ? '#fbbf24' 
+                        : '#ef4444'
+                        : 'rgba(255, 255, 255, 0.7)',
+                      marginBottom: '4px'
+                    } 
+                  }, checkingSpam ? 'Checking spam score...' : spamCheck 
+                    ? spamCheck.level === 'safe' ? '✅ Low Spam Risk' 
+                    : spamCheck.level === 'warning' ? '⚠️ Moderate Spam Risk' 
+                    : '🚫 High Spam Risk - Will be blocked'
+                    : '🔍 Spam Checker Active'),
+                  spamCheck && h('div', { 
+                    style: { 
+                      fontSize: '12px', 
+                      color: 'rgba(255, 255, 255, 0.5)' 
+                    } 
+                  }, `Score: ${spamCheck.score}/100 • ${spamCheck.issues.length} ${spamCheck.issues.length === 1 ? 'issue' : 'issues'} detected`)
+                )
+              ),
+              spamCheck && h('div', {
+                style: {
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  background: spamCheck.level === 'safe' 
+                    ? 'rgba(34, 197, 94, 0.2)' 
+                    : spamCheck.level === 'warning' 
+                      ? 'rgba(251, 191, 36, 0.2)' 
+                      : 'rgba(239, 68, 68, 0.2)',
+                  color: spamCheck.level === 'safe' ? '#22c55e' 
+                    : spamCheck.level === 'warning' ? '#fbbf24' 
+                    : '#ef4444'
+                }
+              }, spamCheck.score.toString())
+            ),
+            
+            // Show top 3 issues
+            spamCheck && spamCheck.issues.length > 0 && h('div', {
+              style: {
+                marginTop: '12px',
+                paddingTop: '12px',
+                borderTop: '1px solid rgba(255, 255, 255, 0.1)'
+              }
+            },
+              h('div', {
+                style: {
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  marginBottom: '8px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }
+              }, `Top ${Math.min(3, spamCheck.issues.length)} Issues:`),
+              ...spamCheck.issues.slice(0, 3).map((issue, idx) =>
+                h('div', {
+                  key: idx,
+                  style: {
+                    fontSize: '12px',
+                    color: 'rgba(255, 255, 255, 0.6)',
+                    marginBottom: '6px',
+                    paddingLeft: '12px',
+                    position: 'relative'
+                  }
+                },
+                  h('span', {
+                    style: {
+                      position: 'absolute',
+                      left: '0',
+                      color: issue.severity === 'high' ? '#ef4444' 
+                        : issue.severity === 'medium' ? '#fbbf24' 
+                        : '#94a3b8'
+                    }
+                  }, '•'),
+                  ` ${issue.message}`
+                )
+              ),
+              spamCheck.issues.length > 3 && h('div', {
+                style: {
+                  fontSize: '11px',
+                  color: 'rgba(255, 255, 255, 0.4)',
+                  marginTop: '8px',
+                  fontStyle: 'italic'
+                }
+              }, `+ ${spamCheck.issues.length - 3} more issues`)
+            )
           ),
           
           h('div', { style: { display: 'flex', gap: '12px', justifyContent: 'flex-end' } },
