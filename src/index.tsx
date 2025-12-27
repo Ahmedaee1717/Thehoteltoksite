@@ -184,6 +184,25 @@ app.get('/mail', (c) => {
   `)
 })
 
+// DEBUG: Check timer emails without auth
+app.get('/api/debug/timer-emails', async (c) => {
+  const { DB } = c.env;
+  try {
+    const { results } = await DB.prepare(`
+      SELECT id, subject, expiry_type, expires_at, created_at
+      FROM emails
+      WHERE to_email = 'admin@investaycapital.com'
+      AND category = 'inbox'
+      ORDER BY created_at DESC
+      LIMIT 10
+    `).all();
+    
+    return c.json({ success: true, emails: results, count: results.length });
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500);
+  }
+})
+
 // Email Admin page - Manage email accounts
 app.get('/admin/email-accounts', (c) => {
   return c.html(`
