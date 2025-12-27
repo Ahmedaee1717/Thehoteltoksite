@@ -31,3 +31,8 @@ lerna-debug.log*
 
 # misc
 .DS_Store
+
+# Documentation files with potential secrets
+DNS_SETUP_INVESTAYCAPITAL.md
+MAILGUN_DOMAIN_SETUP.md
+EMAIL_SENDING_WORKING.md
