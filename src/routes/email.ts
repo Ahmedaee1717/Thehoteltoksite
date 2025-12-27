@@ -1,5 +1,7 @@
 // Email API Routes
 import { Hono } from 'hono'
+import { getCookie } from 'hono/cookie'
+import { verifyToken } from '../lib/auth'
 import { generateId } from '../utils/id'
 import { generateEmbedding, categorizeEmail, summarizeEmail, extractActionItems } from '../services/ai-email'
 import { createMailgunService } from '../lib/mailgun'
@@ -14,17 +16,58 @@ type Bindings = {
   MAILGUN_REGION?: string;
   MAILGUN_FROM_EMAIL?: string;
   MAILGUN_FROM_NAME?: string;
+  JWT_SECRET?: string;
 }
 
 const emailRoutes = new Hono<{ Bindings: Bindings }>()
 
+// 🔒 CRITICAL SECURITY: Authentication Middleware
+// Protects ALL email routes - ensures users can ONLY see their own emails
+const requireAuth = async (c: any, next: any) => {
+  const token = getCookie(c, 'auth_token');
+  
+  if (!token) {
+    return c.json({ success: false, error: 'Unauthorized - Please login' }, 401);
+  }
+  
+  const secret = c.env.JWT_SECRET || 'investay-super-secret-key-2025';
+  const decoded = await verifyToken(token, secret);
+  
+  if (!decoded) {
+    return c.json({ success: false, error: 'Invalid or expired token' }, 401);
+  }
+  
+  // Set authenticated user email in context
+  c.set('userEmail', decoded.email);
+  c.set('userId', decoded.sub);
+  
+  await next();
+}
+
+// Apply auth middleware to ALL routes EXCEPT tracking pixel
+// Tracking pixel must be public (loaded from external email clients)
+emailRoutes.use('/*', async (c, next) => {
+  // Skip auth for tracking pixel endpoint
+  if (c.req.path.includes('/track/')) {
+    return next();
+  }
+  // Apply auth to all other routes
+  return requireAuth(c, next);
+})
+
 // ============================================
 // GET /api/email/inbox
-// Get inbox emails for a user
+// Get inbox emails for authenticated user ONLY
+// 🔒 SECURITY: Users can ONLY see their own emails
 // ============================================
 emailRoutes.get('/inbox', async (c) => {
   const { DB } = c.env;
-  const userEmail = c.req.query('user') || 'admin@investay.com';
+  // 🔒 Get email from authenticated session - NO query parameter!
+  const userEmail = c.get('userEmail');
+  
+  if (!userEmail) {
+    return c.json({ success: false, error: 'Authentication required' }, 401);
+  }
   
   try {
     const { results } = await DB.prepare(`
@@ -50,11 +93,17 @@ emailRoutes.get('/inbox', async (c) => {
 
 // ============================================
 // GET /api/email/sent
-// Get sent emails for a user
+// Get sent emails for authenticated user ONLY
+// 🔒 SECURITY: Users can ONLY see their own sent emails
 // ============================================
 emailRoutes.get('/sent', async (c) => {
   const { DB } = c.env;
-  const userEmail = c.req.query('user') || 'admin@investay.com';
+  // 🔒 Get email from authenticated session - NO query parameter!
+  const userEmail = c.get('userEmail');
+  
+  if (!userEmail) {
+    return c.json({ success: false, error: 'Authentication required' }, 401);
+  }
   
   try {
     const { results } = await DB.prepare(`
@@ -78,11 +127,17 @@ emailRoutes.get('/sent', async (c) => {
 
 // ============================================
 // GET /api/email/spam
-// Get spam emails for a user
+// Get spam emails for authenticated user ONLY
+// 🔒 SECURITY: Users can ONLY see their own spam
 // ============================================
 emailRoutes.get('/spam', async (c) => {
   const { DB } = c.env;
-  const userEmail = c.req.query('user') || 'admin@investay.com';
+  // 🔒 Get email from authenticated session - NO query parameter!
+  const userEmail = c.get('userEmail');
+  
+  if (!userEmail) {
+    return c.json({ success: false, error: 'Authentication required' }, 401);
+  }
   
   try {
     const { results } = await DB.prepare(`
@@ -106,11 +161,17 @@ emailRoutes.get('/spam', async (c) => {
 
 // ============================================
 // GET /api/email/trash
-// Get trashed emails for a user
+// Get trashed emails for authenticated user ONLY
+// 🔒 SECURITY: Users can ONLY see their own trash
 // ============================================
 emailRoutes.get('/trash', async (c) => {
   const { DB } = c.env;
-  const userEmail = c.req.query('user') || 'admin@investay.com';
+  // 🔒 Get email from authenticated session - NO query parameter!
+  const userEmail = c.get('userEmail');
+  
+  if (!userEmail) {
+    return c.json({ success: false, error: 'Authentication required' }, 401);
+  }
   
   try {
     const { results } = await DB.prepare(`
@@ -134,11 +195,17 @@ emailRoutes.get('/trash', async (c) => {
 
 // ============================================
 // GET /api/email/archived
-// Get archived emails for a user
+// Get archived emails for authenticated user ONLY
+// 🔒 SECURITY: Users can ONLY see their own archived emails
 // ============================================
 emailRoutes.get('/archived', async (c) => {
   const { DB } = c.env;
-  const userEmail = c.req.query('user') || 'admin@investay.com';
+  // 🔒 Get email from authenticated session - NO query parameter!
+  const userEmail = c.get('userEmail');
+  
+  if (!userEmail) {
+    return c.json({ success: false, error: 'Authentication required' }, 401);
+  }
   
   try {
     const { results } = await DB.prepare(`
@@ -164,20 +231,31 @@ emailRoutes.get('/archived', async (c) => {
 // ============================================
 // POST /api/email/send
 // Send a new email
+// 🔒 SECURITY: Users can ONLY send emails from their own address
 // ============================================
 emailRoutes.post('/send', async (c) => {
   const { DB, OPENAI_API_KEY, MAILGUN_API_KEY, MAILGUN_DOMAIN, MAILGUN_REGION, MAILGUN_FROM_EMAIL, MAILGUN_FROM_NAME } = c.env;
   
+  // 🔒 Get authenticated user email
+  const authenticatedUserEmail = c.get('userEmail');
+  
+  if (!authenticatedUserEmail) {
+    return c.json({ success: false, error: 'Authentication required' }, 401);
+  }
+  
   try {
     const { 
-      from, to, cc, bcc, subject, body, 
+      to, cc, bcc, subject, body, 
       attachments, useAI 
     } = await c.req.json();
     
-    if (!from || !to || !subject || !body) {
+    // 🔒 CRITICAL: Force from to be authenticated user's email - NEVER trust client
+    const from = authenticatedUserEmail;
+    
+    if (!to || !subject || !body) {
       return c.json({ 
         success: false, 
-        error: 'Missing required fields: from, to, subject, body' 
+        error: 'Missing required fields: to, subject, body' 
       }, 400);
     }
     
@@ -537,11 +615,17 @@ emailRoutes.delete('/:id', async (c) => {
 
 // ============================================
 // GET /api/email/analytics
-// Get email analytics for a user
+// Get email analytics for authenticated user ONLY
+// 🔒 SECURITY: Users can ONLY see their own analytics
 // ============================================
 emailRoutes.get('/analytics/summary', async (c) => {
   const { DB } = c.env;
-  const userEmail = c.req.query('user') || 'admin@investay.com';
+  // 🔒 Get email from authenticated session - NO query parameter!
+  const userEmail = c.get('userEmail');
+  
+  if (!userEmail) {
+    return c.json({ success: false, error: 'Authentication required' }, 401);
+  }
   
   try {
     // Total emails
@@ -590,20 +674,42 @@ emailRoutes.get('/analytics/summary', async (c) => {
 // ============================================
 // POST /api/email/drafts/save
 // Save or update draft email
+// 🔒 SECURITY: Users can ONLY save drafts from their own address
 // ============================================
 emailRoutes.post('/drafts/save', async (c) => {
   const { DB } = c.env;
   
+  // 🔒 Get authenticated user email
+  const authenticatedUserEmail = c.get('userEmail');
+  
+  if (!authenticatedUserEmail) {
+    return c.json({ success: false, error: 'Authentication required' }, 401);
+  }
+  
   try {
-    const { draftId, from, to, subject, body } = await c.req.json();
+    const { draftId, to, subject, body } = await c.req.json();
+    
+    // 🔒 CRITICAL: Force from to be authenticated user's email
+    const from = authenticatedUserEmail;
     
     const now = new Date().toISOString();
     
     if (draftId) {
-      // Update existing draft
+      // Update existing draft - verify ownership
+      const existingDraft = await DB.prepare(`
+        SELECT from_email FROM emails WHERE id = ? AND from_email = ?
+      `).bind(draftId, from).first();
+      
+      if (!existingDraft) {
+        return c.json({ 
+          success: false, 
+          error: 'Draft not found or access denied' 
+        }, 403);
+      }
+      
       await DB.prepare(`
         UPDATE emails 
-        SET to_email = ?, subject = ?, body = ?, updated_at = ?
+        SET to_email = ?, subject = ?, body_text = ?, updated_at = ?
         WHERE id = ? AND from_email = ?
       `).bind(to, subject, body, now, draftId, from).run();
       
@@ -640,11 +746,17 @@ emailRoutes.post('/drafts/save', async (c) => {
 
 // ============================================
 // GET /api/email/drafts
-// Get all drafts for a user
+// Get all drafts for authenticated user ONLY
+// 🔒 SECURITY: Users can ONLY see their own drafts
 // ============================================
 emailRoutes.get('/drafts', async (c) => {
   const { DB } = c.env;
-  const userEmail = c.req.query('user') || 'admin@investay.com';
+  // 🔒 Get email from authenticated session - NO query parameter!
+  const userEmail = c.get('userEmail');
+  
+  if (!userEmail) {
+    return c.json({ success: false, error: 'Authentication required' }, 401);
+  }
   
   try {
     const { results } = await DB.prepare(`
@@ -711,11 +823,17 @@ emailRoutes.post('/templates/save', async (c) => {
 
 // ============================================
 // GET /api/email/templates
-// Get all templates for a user
+// Get all templates for authenticated user ONLY
+// 🔒 SECURITY: Users can ONLY see their own templates
 // ============================================
 emailRoutes.get('/templates', async (c) => {
   const { DB } = c.env;
-  const userId = c.req.query('user') || 'admin@investay.com';
+  // 🔒 Get user ID from authenticated session - NO query parameter!
+  const userId = c.get('userId');
+  
+  if (!userId) {
+    return c.json({ success: false, error: 'Authentication required' }, 401);
+  }
   
   try {
     const { results } = await DB.prepare(`
@@ -735,11 +853,18 @@ emailRoutes.get('/templates', async (c) => {
 // ============================================
 // GET /api/email/:id
 // Get single email by ID
+// 🔒 SECURITY: Users can ONLY view emails they sent or received
 // NOTE: This MUST be last among GET routes as it's a catch-all
 // ============================================
 emailRoutes.get('/:id', async (c) => {
   const { DB } = c.env;
   const emailId = c.req.param('id');
+  // 🔒 Get authenticated user email
+  const userEmail = c.get('userEmail');
+  
+  if (!userEmail) {
+    return c.json({ success: false, error: 'Authentication required' }, 401);
+  }
   
   try {
     const email = await DB.prepare(`
@@ -750,12 +875,22 @@ emailRoutes.get('/:id', async (c) => {
       return c.json({ success: false, error: 'Email not found' }, 404);
     }
     
-    // Mark as read
-    await DB.prepare(`
-      UPDATE emails 
-      SET is_read = 1, opened_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).bind(emailId).run();
+    // 🔒 CRITICAL: Check if user owns this email
+    if (email.to_email !== userEmail && email.from_email !== userEmail) {
+      return c.json({ 
+        success: false, 
+        error: 'Access denied - You can only view emails you sent or received' 
+      }, 403);
+    }
+    
+    // Mark as read (only if recipient)
+    if (email.to_email === userEmail) {
+      await DB.prepare(`
+        UPDATE emails 
+        SET is_read = 1, opened_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).bind(emailId).run();
+    }
     
     // Get attachments
     const { results: attachments } = await DB.prepare(`
