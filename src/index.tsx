@@ -142,9 +142,12 @@ app.get('/mail', (c) => {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>InvestMail - Complete Email System with Advanced Features</title>
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:wght@400;600;700&display=swap" rel="stylesheet">
-      <link href="/static/email-app-complete.css" rel="stylesheet">
+      <title>InvestMail AI - Ultra-Powered Email System</title>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; }
+      </style>
     </head>
     <body>
       <div id="email-root"></div>
@@ -153,8 +156,8 @@ app.get('/mail', (c) => {
       <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
       <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
       
-      <!-- ULTRA PREMIUM EMAIL APP - DARK MODE -->
-      <script src="/static/email-app-premium.js"></script>
+      <!-- ULTRA AI-POWERED EMAIL APP -->
+      <script src="/static/email-app-ai-ultra.js"></script>
     </body>
     </html>
   `)

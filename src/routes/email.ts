@@ -527,6 +527,80 @@ emailRoutes.post('/compose-assist', async (c) => {
 });
 
 // ============================================
+// POST /api/email/smart-replies
+// Generate AI-powered quick reply suggestions
+// ============================================
+emailRoutes.post('/smart-replies', async (c) => {
+  const { OPENAI_API_KEY } = c.env;
+  
+  if (!OPENAI_API_KEY) {
+    return c.json({ 
+      success: false, 
+      error: 'AI features not configured' 
+    }, 503);
+  }
+  
+  try {
+    const { emailBody } = await c.req.json();
+    
+    if (!emailBody) {
+      return c.json({ success: false, error: 'Email body is required' }, 400);
+    }
+    
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert at generating quick, professional email replies. Generate exactly 3 short reply suggestions as a JSON array. Each reply should be 1-2 sentences, professional and appropriate.'
+          },
+          {
+            role: 'user',
+            content: `Generate 3 quick reply suggestions for this email:\n\n${emailBody.substring(0, 1000)}`
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 200
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error?.message || 'AI request failed');
+    }
+    
+    const content = data.choices[0].message.content;
+    
+    let replies: string[] = [];
+    try {
+      replies = JSON.parse(content);
+    } catch {
+      // If not valid JSON, return default replies
+      replies = [
+        'Thank you for your email. I will review and get back to you shortly.',
+        'Received, I\'ll look into this.',
+        'Thanks for the update!'
+      ];
+    }
+    
+    return c.json({ 
+      success: true, 
+      replies 
+    });
+  } catch (error: any) {
+    console.error('Smart replies error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================
 // POST /api/email/search
 // Semantic search in emails
 // ============================================
