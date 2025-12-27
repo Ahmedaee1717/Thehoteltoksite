@@ -785,6 +785,7 @@ app.get('/admin/dashboard', (c) => {
                 <nav class="admin-nav">
                     <a href="#" class="admin-nav-item active" data-view="posts">Blog Posts</a>
                     <a href="#" class="admin-nav-item" data-view="new-post">New Post</a>
+                    <a href="/admin/email-accounts" class="admin-nav-item">📧 Email Management</a>
                     <a href="#" class="admin-nav-item" data-view="settings">Settings</a>
                     <a href="/blog" class="admin-nav-item" target="_blank">View Blog</a>
                 </nav>

@@ -44,14 +44,25 @@ const requireAuth = async (c: any, next: any) => {
   await next();
 }
 
-// Apply auth middleware to ALL routes EXCEPT tracking pixel
+// Apply auth middleware to ALL routes EXCEPT tracking pixel and admin account management
 // Tracking pixel must be public (loaded from external email clients)
+// Admin account management should be accessible without email login
 emailRoutes.use('/*', async (c, next) => {
-  // Skip auth for tracking pixel endpoint
-  if (c.req.path.includes('/track/')) {
+  const path = c.req.path;
+  
+  // Skip auth for these endpoints:
+  // 1. Tracking pixel (external email clients)
+  // 2. Admin email account management (admin dashboard access)
+  if (
+    path.includes('/track/') ||
+    path.includes('/accounts/create') ||
+    path.includes('/accounts/list') ||
+    path.includes('/accounts/') && (c.req.method === 'DELETE' || c.req.method === 'PATCH')
+  ) {
     return next();
   }
-  // Apply auth to all other routes
+  
+  // Apply auth to all other routes (user email operations)
   return requireAuth(c, next);
 })
 
