@@ -134,6 +134,30 @@ app.get('/login', (c) => {
   `)
 })
 
+// Test minimal compose modal
+app.get('/mail/test', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Test Compose Modal</title>
+    </head>
+    <body>
+      <div id="root"></div>
+      
+      <!-- React Library -->
+      <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+      <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+      
+      <!-- Minimal Compose Test -->
+      <script src="/static/email-app-minimal-compose.js"></script>
+    </body>
+    </html>
+  `)
+})
+
 // Email client page
 app.get('/mail', (c) => {
   return c.html(`
@@ -153,8 +177,8 @@ app.get('/mail', (c) => {
       <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
       <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
       
-      <!-- ULTRA PREMIUM EMAIL APP - DARK MODE WITH AI -->
-      <script src="/static/email-app-premium.js"></script>
+      <!-- USING WORKING EMAIL APP - Premium version has compose bug, will fix gradually -->
+      <script src="/static/email-app-complete.js"></script>
     </body>
     </html>
   `)
