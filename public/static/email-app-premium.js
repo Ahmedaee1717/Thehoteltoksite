@@ -1016,9 +1016,68 @@ window.addEventListener('DOMContentLoaded', function() {
       const [aiProcessing, setAiProcessing] = useState(false);
       const [showAiTools, setShowAiTools] = useState(false);
       const [aiPrompt, setAiPrompt] = useState('');
+      const [attachments, setAttachments] = useState([]);
+      const [uploading, setUploading] = useState(false);
+      const bodyRef = useRef(null);
       
       // Check spam score ONLY when user explicitly requests (removed auto-check for performance)
       // Spam check removed from useEffect for speed - was causing lag
+      
+      const applyFormatting = (command, value = null) => {
+        document.execCommand(command, false, value);
+        if (bodyRef.current) {
+          bodyRef.current.focus();
+        }
+      };
+      
+      const handleFileUpload = async (files) => {
+        setUploading(true);
+        const newAttachments = [];
+        
+        for (let file of files) {
+          // Create preview for images
+          if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              newAttachments.push({
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                preview: e.target.result,
+                file: file
+              });
+              
+              if (newAttachments.length === files.length) {
+                setAttachments([...attachments, ...newAttachments]);
+                setUploading(false);
+              }
+            };
+            reader.readAsDataURL(file);
+          } else {
+            newAttachments.push({
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              file: file
+            });
+            
+            if (newAttachments.length === files.length) {
+              setAttachments([...attachments, ...newAttachments]);
+              setUploading(false);
+            }
+          }
+        }
+      };
+      
+      const removeAttachment = (index) => {
+        setAttachments(attachments.filter((_, i) => i !== index));
+      };
+      
+      const formatFileSize = (bytes) => {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+      };
       
       const handleAIAssist = async (action, tone = 'professional') => {
         if (!body.trim() && action !== 'generate') {
@@ -1293,21 +1352,193 @@ window.addEventListener('DOMContentLoaded', function() {
                 textTransform: 'uppercase'
               }
             }, 'Message'),
-            h('textarea', {
-              placeholder: 'Write your message here...',
-              value: body,
-              onChange: (e) => setBody(e.target.value),
+            
+            // 🎨 RICH TEXT FORMATTING TOOLBAR
+            h('div', {
+              style: {
+                display: 'flex',
+                gap: '6px',
+                padding: '10px 12px',
+                background: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderBottom: 'none',
+                borderRadius: '12px 12px 0 0',
+                flexWrap: 'wrap'
+              }
+            },
+              // Bold
+              h('button', {
+                onClick: () => applyFormatting('bold'),
+                title: 'Bold (Ctrl+B)',
+                style: {
+                  padding: '6px 12px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '6px',
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                },
+                onMouseEnter: (e) => e.target.style.background = 'rgba(255, 255, 255, 0.1)',
+                onMouseLeave: (e) => e.target.style.background = 'rgba(255, 255, 255, 0.05)'
+              }, 'B'),
+              
+              // Italic
+              h('button', {
+                onClick: () => applyFormatting('italic'),
+                title: 'Italic (Ctrl+I)',
+                style: {
+                  padding: '6px 12px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '6px',
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  fontSize: '14px',
+                  fontStyle: 'italic',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                },
+                onMouseEnter: (e) => e.target.style.background = 'rgba(255, 255, 255, 0.1)',
+                onMouseLeave: (e) => e.target.style.background = 'rgba(255, 255, 255, 0.05)'
+              }, 'I'),
+              
+              // Underline
+              h('button', {
+                onClick: () => applyFormatting('underline'),
+                title: 'Underline (Ctrl+U)',
+                style: {
+                  padding: '6px 12px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '6px',
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  textDecoration: 'underline',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                },
+                onMouseEnter: (e) => e.target.style.background = 'rgba(255, 255, 255, 0.1)',
+                onMouseLeave: (e) => e.target.style.background = 'rgba(255, 255, 255, 0.05)'
+              }, 'U'),
+              
+              // Divider
+              h('div', { style: { width: '1px', background: 'rgba(255, 255, 255, 0.1)', margin: '0 4px' } }),
+              
+              // Bullet List
+              h('button', {
+                onClick: () => applyFormatting('insertUnorderedList'),
+                title: 'Bullet List',
+                style: {
+                  padding: '6px 12px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '6px',
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                },
+                onMouseEnter: (e) => e.target.style.background = 'rgba(255, 255, 255, 0.1)',
+                onMouseLeave: (e) => e.target.style.background = 'rgba(255, 255, 255, 0.05)'
+              }, '• List'),
+              
+              // Numbered List
+              h('button', {
+                onClick: () => applyFormatting('insertOrderedList'),
+                title: 'Numbered List',
+                style: {
+                  padding: '6px 12px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '6px',
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                },
+                onMouseEnter: (e) => e.target.style.background = 'rgba(255, 255, 255, 0.1)',
+                onMouseLeave: (e) => e.target.style.background = 'rgba(255, 255, 255, 0.05)'
+              }, '1. List'),
+              
+              // Divider
+              h('div', { style: { width: '1px', background: 'rgba(255, 255, 255, 0.1)', margin: '0 4px' } }),
+              
+              // Link
+              h('button', {
+                onClick: () => {
+                  const url = prompt('Enter URL:');
+                  if (url) applyFormatting('createLink', url);
+                },
+                title: 'Insert Link',
+                style: {
+                  padding: '6px 12px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '6px',
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                },
+                onMouseEnter: (e) => e.target.style.background = 'rgba(255, 255, 255, 0.1)',
+                onMouseLeave: (e) => e.target.style.background = 'rgba(255, 255, 255, 0.05)'
+              }, '🔗 Link'),
+              
+              // Divider
+              h('div', { style: { width: '1px', background: 'rgba(255, 255, 255, 0.1)', margin: '0 4px' } }),
+              
+              // File Upload
+              h('label', {
+                style: {
+                  padding: '6px 12px',
+                  background: 'rgba(201, 169, 98, 0.1)',
+                  border: '1px solid rgba(201, 169, 98, 0.3)',
+                  borderRadius: '6px',
+                  color: 'rgba(201, 169, 98, 0.9)',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                },
+                onMouseEnter: (e) => e.target.style.background = 'rgba(201, 169, 98, 0.2)',
+                onMouseLeave: (e) => e.target.style.background = 'rgba(201, 169, 98, 0.1)'
+              },
+                '📎 Attach',
+                h('input', {
+                  type: 'file',
+                  multiple: true,
+                  onChange: (e) => e.target.files.length > 0 && handleFileUpload(Array.from(e.target.files)),
+                  style: { display: 'none' }
+                })
+              )
+            ),
+            
+            // 📝 RICH TEXT EDITOR (ContentEditable)
+            h('div', {
+              ref: bodyRef,
+              contentEditable: true,
+              onInput: (e) => setBody(e.target.innerHTML),
+              dangerouslySetInnerHTML: { __html: body || '' },
               style: {
                 width: '100%',
                 padding: '14px 16px',
                 background: 'rgba(255, 255, 255, 0.05)',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '12px',
+                borderTop: 'none',
+                borderRadius: '0 0 12px 12px',
                 fontSize: '15px',
                 color: 'rgba(255, 255, 255, 0.9)',
                 fontFamily: 'inherit',
                 minHeight: '200px',
-                resize: 'vertical',
+                maxHeight: '400px',
+                overflowY: 'auto',
                 transition: 'all 0.2s',
                 outline: 'none',
                 lineHeight: '1.6'
@@ -1321,8 +1552,104 @@ window.addEventListener('DOMContentLoaded', function() {
                 e.target.style.background = 'rgba(255, 255, 255, 0.05)';
                 e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
                 e.target.style.boxShadow = 'none';
+              },
+              onPaste: (e) => {
+                // Handle paste of images
+                const items = e.clipboardData.items;
+                for (let item of items) {
+                  if (item.type.indexOf('image') !== -1) {
+                    e.preventDefault();
+                    const file = item.getAsFile();
+                    handleFileUpload([file]);
+                  }
+                }
               }
-            })
+            }),
+            
+            // Show placeholder if empty
+            !body && h('div', {
+              style: {
+                position: 'absolute',
+                marginTop: '-190px',
+                marginLeft: '16px',
+                color: 'rgba(255, 255, 255, 0.4)',
+                pointerEvents: 'none',
+                fontSize: '15px'
+              }
+            }, 'Write your message here... (Paste images, drag files, or use formatting tools)'),
+            
+            // 📎 ATTACHMENTS DISPLAY
+            attachments.length > 0 && h('div', {
+              style: {
+                marginTop: '12px',
+                padding: '12px',
+                background: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '8px'
+              }
+            },
+              h('div', {
+                style: {
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  color: 'rgba(255, 255, 255, 0.6)',
+                  marginBottom: '10px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }
+              }, `📎 ${attachments.length} Attachment${attachments.length > 1 ? 's' : ''}`),
+              
+              h('div', {
+                style: {
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '10px'
+                }
+              },
+                attachments.map((att, idx) =>
+                  h('div', {
+                    key: idx,
+                    style: {
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 12px',
+                      background: 'rgba(201, 169, 98, 0.1)',
+                      border: '1px solid rgba(201, 169, 98, 0.2)',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      color: 'rgba(255, 255, 255, 0.8)'
+                    }
+                  },
+                    att.preview && h('img', {
+                      src: att.preview,
+                      style: {
+                        width: '32px',
+                        height: '32px',
+                        objectFit: 'cover',
+                        borderRadius: '4px'
+                      }
+                    }),
+                    h('div', { style: { flex: 1 } },
+                      h('div', { style: { fontWeight: '600', color: 'rgba(201, 169, 98, 0.9)' } }, att.name),
+                      h('div', { style: { fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)' } }, formatFileSize(att.size))
+                    ),
+                    h('button', {
+                      onClick: () => removeAttachment(idx),
+                      style: {
+                        padding: '4px 8px',
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        borderRadius: '4px',
+                        color: 'rgba(239, 68, 68, 0.9)',
+                        fontSize: '12px',
+                        cursor: 'pointer'
+                      }
+                    }, '✕')
+                  )
+                )
+              )
+            )
           ),
           
           // 🤖 AI COMPOSE ASSISTANT TOOLBAR
