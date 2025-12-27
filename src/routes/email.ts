@@ -972,4 +972,191 @@ emailRoutes.post('/check-spam', async (c) => {
   }
 });
 
+// ============================================
+// EMAIL ACCOUNT MANAGEMENT ENDPOINTS
+// ============================================
+
+// POST /api/email/accounts/create
+// Create a new email account
+emailRoutes.post('/accounts/create', async (c) => {
+  const { DB } = c.env;
+  
+  try {
+    const { email, display_name, password } = await c.req.json();
+    
+    // Validate required fields
+    if (!email || !display_name) {
+      return c.json({ 
+        success: false, 
+        error: 'Missing required fields: email and display_name' 
+      }, 400);
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@www\.investaycapital\.com$/;
+    if (!emailRegex.test(email)) {
+      return c.json({ 
+        success: false, 
+        error: 'Invalid email format. Must be @www.investaycapital.com' 
+      }, 400);
+    }
+    
+    // Check if email already exists
+    const existingAccount = await DB.prepare(`
+      SELECT id FROM email_accounts WHERE email_address = ?
+    `).bind(email).first();
+    
+    if (existingAccount) {
+      return c.json({ 
+        success: false, 
+        error: 'Email account already exists' 
+      }, 409);
+    }
+    
+    // Generate account ID
+    const accountId = generateId('acc');
+    
+    // Create account (password is optional, used for SMTP if needed)
+    const result = await DB.prepare(`
+      INSERT INTO email_accounts (
+        id, email_address, display_name, password_hash, is_active, created_at
+      ) VALUES (?, ?, ?, ?, 1, datetime('now'))
+    `).bind(accountId, email, display_name, password || null).run();
+    
+    if (!result.success) {
+      return c.json({ 
+        success: false, 
+        error: 'Failed to create email account' 
+      }, 500);
+    }
+    
+    return c.json({
+      success: true,
+      account: {
+        id: accountId,
+        email,
+        display_name,
+        is_active: true,
+        created_at: new Date().toISOString()
+      }
+    });
+  } catch (error: any) {
+    console.error('Account creation error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// GET /api/email/accounts/list
+// List all email accounts
+emailRoutes.get('/accounts/list', async (c) => {
+  const { DB } = c.env;
+  
+  try {
+    const { results } = await DB.prepare(`
+      SELECT 
+        id, email_address as email, display_name, is_active, created_at, updated_at
+      FROM email_accounts
+      ORDER BY created_at DESC
+    `).all();
+    
+    return c.json({ 
+      success: true, 
+      accounts: results,
+      total: results.length
+    });
+  } catch (error: any) {
+    console.error('Account list error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// DELETE /api/email/accounts/:id
+// Delete an email account
+emailRoutes.delete('/accounts/:id', async (c) => {
+  const { DB } = c.env;
+  const accountId = c.req.param('id');
+  
+  try {
+    // Check if account exists
+    const account = await DB.prepare(`
+      SELECT id, email_address as email FROM email_accounts WHERE id = ?
+    `).bind(accountId).first();
+    
+    if (!account) {
+      return c.json({ 
+        success: false, 
+        error: 'Email account not found' 
+      }, 404);
+    }
+    
+    // Delete the account
+    const result = await DB.prepare(`
+      DELETE FROM email_accounts WHERE id = ?
+    `).bind(accountId).run();
+    
+    if (!result.success) {
+      return c.json({ 
+        success: false, 
+        error: 'Failed to delete email account' 
+      }, 500);
+    }
+    
+    return c.json({
+      success: true,
+      message: `Email account ${account.email} deleted successfully`
+    });
+  } catch (error: any) {
+    console.error('Account deletion error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// PATCH /api/email/accounts/:id/toggle
+// Toggle email account active status
+emailRoutes.patch('/accounts/:id/toggle', async (c) => {
+  const { DB } = c.env;
+  const accountId = c.req.param('id');
+  
+  try {
+    // Get current status
+    const account = await DB.prepare(`
+      SELECT id, email_address as email, is_active FROM email_accounts WHERE id = ?
+    `).bind(accountId).first();
+    
+    if (!account) {
+      return c.json({ 
+        success: false, 
+        error: 'Email account not found' 
+      }, 404);
+    }
+    
+    // Toggle status
+    const newStatus = account.is_active === 1 ? 0 : 1;
+    const result = await DB.prepare(`
+      UPDATE email_accounts 
+      SET is_active = ?, updated_at = datetime('now')
+      WHERE id = ?
+    `).bind(newStatus, accountId).run();
+    
+    if (!result.success) {
+      return c.json({ 
+        success: false, 
+        error: 'Failed to update email account status' 
+      }, 500);
+    }
+    
+    return c.json({
+      success: true,
+      account: {
+        id: account.id,
+        email: account.email,
+        is_active: newStatus === 1
+      }
+    });
+  } catch (error: any) {
+    console.error('Account toggle error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
 export { emailRoutes }

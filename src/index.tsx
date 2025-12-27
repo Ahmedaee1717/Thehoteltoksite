@@ -125,6 +125,37 @@ app.get('/mail', (c) => {
   `)
 })
 
+// Email Admin page - Manage email accounts
+app.get('/admin/email-accounts', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Email Account Management - InvestMail Admin</title>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    </head>
+    <body>
+      <div id="root"></div>
+      
+      <!-- React -->
+      <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+      <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+      
+      <!-- HTM for JSX-like syntax -->
+      <script src="https://unpkg.com/htm@3.1.1/dist/htm.js"></script>
+      <script>
+        window.htm = window.htm.bind(window.React.createElement);
+      </script>
+      
+      <!-- Email Admin App -->
+      <script src="/static/email-admin.js"></script>
+    </body>
+    </html>
+  `)
+})
+
 // Home page
 app.get('/', homePage)
 
