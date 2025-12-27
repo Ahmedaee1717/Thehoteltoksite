@@ -177,8 +177,8 @@ app.get('/mail', (c) => {
       <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
       <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
       
-      <!-- USING WORKING EMAIL APP - Premium version has compose bug, will fix gradually -->
-      <script src="/static/email-app-complete.js"></script>
+      <!-- ULTRA PREMIUM EMAIL APP - DARK MODE WITH AI -->
+      <script src="/static/email-app-premium.js"></script>
     </body>
     </html>
   `)
