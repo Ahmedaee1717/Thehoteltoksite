@@ -831,7 +831,7 @@ emailRoutes.get('/track/:tracking_id', async (c) => {
       });
     }
     
-    console.log('✅ Tracking email open from recipient email client');
+    console.log(`✅ Tracking email open from recipient email client for email ${emailId}`);
     
     // Detect device type
     const deviceType = userAgent.toLowerCase().includes('mobile') ? 'mobile' :
@@ -843,6 +843,8 @@ emailRoutes.get('/track/:tracking_id', async (c) => {
     else if (userAgent.includes('Outlook')) emailClient = 'outlook';
     else if (userAgent.includes('Apple Mail')) emailClient = 'apple-mail';
     else if (userAgent.includes('Thunderbird')) emailClient = 'thunderbird';
+    
+    console.log(`📧 Device: ${deviceType}, Client: ${emailClient}, IP: ${ipAddress}`);
     
     // Check if already tracked
     const existing = await DB.prepare(`
@@ -860,6 +862,16 @@ emailRoutes.get('/track/:tracking_id', async (c) => {
             user_agent = ?
         WHERE id = ?
       `).bind(ipAddress, userAgent, existing.id).run();
+      
+      console.log(`✅ Email ${emailId} re-opened (total opens: ${existing.open_count + 1})`);
+      
+      // Ensure the email is still marked as read (in case it was changed)
+      await DB.prepare(`
+        UPDATE emails
+        SET is_read = 1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND is_read = 0
+      `).bind(emailId).run();
     } else {
       // Create new read receipt
       const receiptId = generateId('rcpt');
@@ -882,6 +894,18 @@ emailRoutes.get('/track/:tracking_id', async (c) => {
         generateId('act'), emailId, email.to_email,
         JSON.stringify({ device_type: deviceType, email_client: emailClient })
       ).run();
+      
+      // 🔥 CRITICAL FIX: Update the emails table to mark as read
+      // This ensures the email shows "Read" status in the UI
+      await DB.prepare(`
+        UPDATE emails
+        SET is_read = 1,
+            opened_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).bind(emailId).run();
+      
+      console.log(`✅ Email ${emailId} marked as READ in database`);
     }
     
     // Return 1x1 transparent GIF

@@ -1,7 +1,7 @@
 /**
- * 🏨 INVESTAY - BLOCKCHAIN RWA HOSPITALITY LOGIN
- * Tokenizing Real Estate Assets
- * Theme: Blockchain + Hotels + Real Estate + Tokenization
+ * 🏢 INVESTAY - Professional Blockchain RWA Platform
+ * Tokenizing Hospitality Assets
+ * Features: Login, Register, First-Time Setup, Forgot Password
  */
 
 const { useState, useEffect, useRef } = window.React;
@@ -23,27 +23,21 @@ function BlockchainBackground() {
     canvas.height = window.innerHeight;
     
     const nodes = [];
-    const nodeCount = 30;
+    const nodeCount = 40;
     
-    // Icons for hospitality/blockchain
-    const icons = ['🏨', '🏢', '🏛️', '⛓️', '🔗', '💎', '🏦', '🏰'];
-    
-    class BlockchainNode {
+    class Node {
       constructor() {
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
-        this.size = Math.random() * 20 + 20;
-        this.speedX = Math.random() * 0.5 - 0.25;
-        this.speedY = Math.random() * 0.5 - 0.25;
-        this.pulsePhase = Math.random() * Math.PI * 2;
-        this.icon = icons[Math.floor(Math.random() * icons.length)];
-        this.isHotel = ['🏨', '🏢', '🏛️', '🏰'].includes(this.icon);
+        this.size = Math.random() * 3 + 2;
+        this.speedX = Math.random() * 0.3 - 0.15;
+        this.speedY = Math.random() * 0.3 - 0.15;
+        this.opacity = Math.random() * 0.5 + 0.3;
       }
       
       update() {
         this.x += this.speedX;
         this.y += this.speedY;
-        this.pulsePhase += 0.02;
         
         if (this.x > canvas.width) this.x = 0;
         if (this.x < 0) this.x = canvas.width;
@@ -52,31 +46,15 @@ function BlockchainBackground() {
       }
       
       draw() {
-        const pulse = Math.sin(this.pulsePhase) * 0.3 + 0.7;
-        
-        // Outer glow
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = this.isHotel ? 'rgba(251, 191, 36, 0.8)' : 'rgba(59, 130, 246, 0.8)';
-        
-        // Node circle
-        ctx.fillStyle = this.isHotel 
-          ? `rgba(251, 191, 36, ${0.3 * pulse})` 
-          : `rgba(59, 130, 246, ${0.3 * pulse})`;
+        ctx.fillStyle = `rgba(251, 191, 36, ${this.opacity})`;
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size * pulse, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();
-        
-        // Icon
-        ctx.shadowBlur = 0;
-        ctx.font = `${this.size}px Arial`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(this.icon, this.x, this.y);
       }
     }
     
     for (let i = 0; i < nodeCount; i++) {
-      nodes.push(new BlockchainNode());
+      nodes.push(new Node());
     }
     
     function connectNodes() {
@@ -86,21 +64,13 @@ function BlockchainBackground() {
           const dy = nodes[i].y - nodes[j].y;
           const distance = Math.sqrt(dx * dx + dy * dy);
           
-          if (distance < 200) {
-            const opacity = 0.3 * (1 - distance / 200);
-            
-            // Blockchain connection (blue) or Hotel network (gold)
-            const isHotelLink = nodes[i].isHotel && nodes[j].isHotel;
-            ctx.strokeStyle = isHotelLink
-              ? `rgba(251, 191, 36, ${opacity})`
-              : `rgba(59, 130, 246, ${opacity})`;
-            ctx.lineWidth = 2;
-            ctx.setLineDash(isHotelLink ? [] : [5, 5]);
+          if (distance < 150) {
+            ctx.strokeStyle = `rgba(59, 130, 246, ${0.15 * (1 - distance / 150)})`;
+            ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(nodes[i].x, nodes[i].y);
             ctx.lineTo(nodes[j].x, nodes[j].y);
             ctx.stroke();
-            ctx.setLineDash([]);
           }
         }
       }
@@ -108,12 +78,10 @@ function BlockchainBackground() {
     
     function animate() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
       nodes.forEach(node => {
         node.update();
         node.draw();
       });
-      
       connectNodes();
       requestAnimationFrame(animate);
     }
@@ -146,17 +114,66 @@ function BlockchainBackground() {
 }
 
 // ============================================
-// MAIN LOGIN APP
+// PROFESSIONAL LOGO
+// ============================================
+function InvestayLogo() {
+  return html`
+    <svg width="200" height="60" viewBox="0 0 200 60" style=${{ filter: 'drop-shadow(0 4px 20px rgba(251, 191, 36, 0.3))' }}>
+      <!-- Building/Hotel Icon -->
+      <rect x="10" y="15" width="30" height="35" fill="#3b82f6" rx="2"/>
+      <rect x="15" y="20" width="5" height="5" fill="#1e40af"/>
+      <rect x="25" y="20" width="5" height="5" fill="#1e40af"/>
+      <rect x="15" y="28" width="5" height="5" fill="#1e40af"/>
+      <rect x="25" y="28" width="5" height="5" fill="#1e40af"/>
+      <rect x="15" y="36" width="5" height="5" fill="#1e40af"/>
+      <rect x="25" y="36" width="5" height="5" fill="#1e40af"/>
+      <rect x="18" y="43" width="9" height="7" fill="#1e40af"/>
+      
+      <!-- Chain Link -->
+      <circle cx="52" cy="30" r="8" fill="none" stroke="#fbbf24" stroke-width="3"/>
+      <circle cx="68" cy="30" r="8" fill="none" stroke="#fbbf24" stroke-width="3"/>
+      
+      <!-- INVESTAY Text -->
+      <text x="85" y="38" font-family="Inter, sans-serif" font-size="24" font-weight="800" fill="url(#textGradient)">
+        INVESTAY
+      </text>
+      
+      <!-- Gradient Definition -->
+      <defs>
+        <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#3b82f6"/>
+          <stop offset="50%" stop-color="#fbbf24"/>
+          <stop offset="100%" stop-color="#3b82f6"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  `;
+}
+
+// ============================================
+// MAIN APP
 // ============================================
 function LoginApp() {
-  const [mode, setMode] = useState('login');
+  const [mode, setMode] = useState('login'); // 'login', 'register', 'forgot', 'reset', 'first-time'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [resetToken, setResetToken] = useState(null);
+  
+  // Check URL for reset token
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    if (token) {
+      setResetToken(token);
+      setMode('reset');
+    }
+  }, []);
   
   useEffect(() => {
     if (error || success) {
@@ -171,7 +188,6 @@ function LoginApp() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
     setLoading(true);
     
     try {
@@ -185,10 +201,8 @@ function LoginApp() {
       const data = await response.json();
       
       if (data.success) {
-        setSuccess('🎉 Welcome to Investay! Redirecting to your inbox...');
-        setTimeout(() => {
-          window.location.href = '/mail';
-        }, 1500);
+        setSuccess('✅ Welcome back! Redirecting...');
+        setTimeout(() => window.location.href = '/mail', 1500);
       } else {
         setError(data.error || 'Login failed');
       }
@@ -202,7 +216,6 @@ function LoginApp() {
   const handleRegister = async (e) => {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
     
     if (password !== confirmPassword) {
       setError('Passwords do not match');
@@ -212,16 +225,16 @@ function LoginApp() {
     setLoading(true);
     
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch('/api/auth/first-login-setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, newPassword: password })
       });
       
       const data = await response.json();
       
       if (data.success) {
-        setSuccess('🎉 Account registered! You can now login.');
+        setSuccess('✅ Password set! You can now login.');
         setMode('login');
         setPassword('');
         setConfirmPassword('');
@@ -238,7 +251,95 @@ function LoginApp() {
             </div>
           `);
         } else {
-          setError(data.error || 'Registration failed');
+          setError(data.error || 'Setup failed');
+        }
+      }
+    } catch (err) {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // DEV: Show reset link
+        if (data.resetLink) {
+          setSuccess(html`
+            <div>
+              <div>✅ Password reset link generated!</div>
+              <div style=${{ marginTop: '8px', fontSize: '13px' }}>
+                <a href=${data.resetLink} style=${{ color: '#fbbf24', textDecoration: 'underline' }}>
+                  Click here to reset password
+                </a>
+              </div>
+            </div>
+          `);
+        } else {
+          setSuccess('✅ If your email exists, you will receive a reset link.');
+        }
+      } else {
+        setError(data.error || 'Request failed');
+      }
+    } catch (err) {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setError(null);
+    
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      const response = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: resetToken, newPassword })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setSuccess('✅ Password reset! You can now login.');
+        setTimeout(() => {
+          setMode('login');
+          setResetToken(null);
+          window.history.replaceState({}, '', '/login');
+        }, 2000);
+      } else {
+        if (data.details) {
+          setError(html`
+            <div>
+              <div>${data.error}</div>
+              <ul style=${{ paddingLeft: '20px', margin: '8px 0 0' }}>
+                ${data.details.map(d => html`<li key=${d}>${d}</li>`)}
+              </ul>
+            </div>
+          `);
+        } else {
+          setError(data.error || 'Reset failed');
         }
       }
     } catch (err) {
@@ -256,15 +357,13 @@ function LoginApp() {
       overflow: 'hidden',
       fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
-      <!-- Blockchain Network Background -->
       <${BlockchainBackground} />
       
-      <!-- Animated Gradient Orbs -->
       <div style=${{
         position: 'absolute',
         width: '600px',
         height: '600px',
-        background: 'radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%)',
         borderRadius: '50%',
         top: '-300px',
         right: '-200px',
@@ -277,7 +376,7 @@ function LoginApp() {
         position: 'absolute',
         width: '500px',
         height: '500px',
-        background: 'radial-gradient(circle, rgba(251, 191, 36, 0.2) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, rgba(251, 191, 36, 0.15) 0%, transparent 70%)',
         borderRadius: '50%',
         bottom: '-250px',
         left: '-150px',
@@ -286,7 +385,6 @@ function LoginApp() {
         zIndex: 1
       }}></div>
       
-      <!-- Main Container -->
       <div style=${{
         minHeight: '100vh',
         display: 'flex',
@@ -298,60 +396,32 @@ function LoginApp() {
       }}>
         <div style=${{
           width: '100%',
-          maxWidth: '500px'
+          maxWidth: '480px'
         }}>
-          <!-- Logo & Title -->
+          <!-- Professional Logo -->
           <div style=${{
             textAlign: 'center',
             marginBottom: '40px',
             animation: 'fadeInDown 0.8s ease-out'
           }}>
-            <div style=${{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '16px',
-              padding: '24px 40px',
-              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(251, 191, 36, 0.1) 100%)',
-              borderRadius: '24px',
-              border: '2px solid rgba(251, 191, 36, 0.3)',
-              marginBottom: '28px',
-              boxShadow: '0 0 60px rgba(251, 191, 36, 0.3), inset 0 0 30px rgba(59, 130, 246, 0.1)',
-              animation: 'glow 3s infinite ease-in-out'
-            }}>
-              <div style=${{ fontSize: '56px' }}>🏨</div>
-              <div style=${{ fontSize: '56px' }}>⛓️</div>
-              <div style=${{ fontSize: '56px' }}>💎</div>
+            <div style=${{ marginBottom: '20px' }}>
+              <${InvestayLogo} />
             </div>
             
-            <h1 style=${{
-              fontSize: '52px',
-              fontWeight: '800',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #fbbf24 50%, #3b82f6 100%)',
-              backgroundSize: '200% auto',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              margin: '0 0 12px',
-              animation: 'gradient 5s linear infinite'
-            }}>
-              INVESTAY
-            </h1>
-            
             <p style=${{
-              fontSize: '16px',
+              fontSize: '15px',
               color: 'rgba(251, 191, 36, 0.9)',
-              margin: '0 0 8px',
-              letterSpacing: '3px',
+              margin: '0 0 6px',
+              letterSpacing: '2px',
               textTransform: 'uppercase',
-              fontWeight: '700'
+              fontWeight: '600'
             }}>
               Tokenizing Hospitality Assets
             </p>
             
             <p style=${{
-              fontSize: '14px',
-              color: 'rgba(148, 163, 184, 0.8)',
+              fontSize: '13px',
+              color: 'rgba(148, 163, 184, 0.7)',
               margin: 0,
               letterSpacing: '1px'
             }}>
@@ -362,171 +432,268 @@ function LoginApp() {
           <!-- Messages -->
           ${error && html`
             <div style=${{
-              marginBottom: '24px',
-              padding: '18px 24px',
+              marginBottom: '20px',
+              padding: '16px 20px',
               background: 'rgba(239, 68, 68, 0.1)',
               backdropFilter: 'blur(20px)',
               border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: '16px',
+              borderRadius: '12px',
               color: '#fff',
               fontSize: '14px',
               display: 'flex',
               alignItems: 'flex-start',
               gap: '12px',
-              animation: 'slideInLeft 0.4s ease-out',
-              boxShadow: '0 8px 32px rgba(239, 68, 68, 0.2)'
+              animation: 'slideInLeft 0.4s ease-out'
             }}>
-              <span style=${{ fontSize: '24px', flexShrink: 0 }}>⚠️</span>
+              <span style=${{ fontSize: '20px', flexShrink: 0 }}>⚠️</span>
               <div style=${{ flex: 1 }}>${error}</div>
             </div>
           `}
           
           ${success && html`
             <div style=${{
-              marginBottom: '24px',
-              padding: '18px 24px',
+              marginBottom: '20px',
+              padding: '16px 20px',
               background: 'rgba(34, 197, 94, 0.1)',
               backdropFilter: 'blur(20px)',
               border: '1px solid rgba(34, 197, 94, 0.3)',
-              borderRadius: '16px',
+              borderRadius: '12px',
               color: '#fff',
               fontSize: '14px',
               display: 'flex',
               alignItems: 'center',
               gap: '12px',
-              animation: 'slideInLeft 0.4s ease-out',
-              boxShadow: '0 8px 32px rgba(34, 197, 94, 0.2)'
+              animation: 'slideInLeft 0.4s ease-out'
             }}>
-              <span style=${{ fontSize: '24px' }}>🎉</span>
-              <span>${success}</span>
+              <span style=${{ fontSize: '20px' }}>✅</span>
+              <div style=${{ flex: 1 }}>${success}</div>
             </div>
           `}
           
-          <!-- Login Card -->
+          <!-- Card -->
           <div style=${{
             background: 'rgba(30, 41, 59, 0.8)',
             backdropFilter: 'blur(40px)',
-            borderRadius: '28px',
-            padding: '48px',
+            borderRadius: '24px',
+            padding: '40px',
             boxShadow: '0 0 0 1px rgba(251, 191, 36, 0.2), 0 20px 60px rgba(0, 0, 0, 0.5)',
-            animation: 'fadeInUp 0.8s ease-out',
-            position: 'relative'
+            animation: 'fadeInUp 0.8s ease-out'
           }}>
-            <!-- Mode Tabs -->
-            <div style=${{
-              display: 'flex',
-              gap: '12px',
-              marginBottom: '36px',
-              background: 'rgba(15, 23, 42, 0.6)',
-              padding: '6px',
-              borderRadius: '16px'
-            }}>
-              <button
-                onClick=${() => setMode('login')}
-                style=${{
-                  flex: 1,
-                  padding: '14px',
-                  background: mode === 'login' 
-                    ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' 
-                    : 'transparent',
-                  border: 'none',
-                  borderRadius: '12px',
-                  color: '#fff',
-                  fontSize: '16px',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  boxShadow: mode === 'login' ? '0 8px 24px rgba(59, 130, 246, 0.4)' : 'none',
-                  transform: mode === 'login' ? 'scale(1.02)' : 'scale(1)'
-                }}
-              >
-                🔓 Login
-              </button>
-              <button
-                onClick=${() => setMode('register')}
-                style=${{
-                  flex: 1,
-                  padding: '14px',
-                  background: mode === 'register' 
-                    ? 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)' 
-                    : 'transparent',
-                  border: 'none',
-                  borderRadius: '12px',
-                  color: '#fff',
-                  fontSize: '16px',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  boxShadow: mode === 'register' ? '0 8px 24px rgba(251, 191, 36, 0.4)' : 'none',
-                  transform: mode === 'register' ? 'scale(1.02)' : 'scale(1)'
-                }}
-              >
-                ✨ Register
-              </button>
-            </div>
-            
-            <!-- Form -->
-            <form onSubmit=${mode === 'login' ? handleLogin : handleRegister}>
-              <!-- Email Field -->
-              <div style=${{ marginBottom: '24px' }}>
-                <label style=${{
-                  display: 'block',
-                  fontSize: '13px',
-                  fontWeight: '700',
-                  color: 'rgba(251, 191, 36, 0.9)',
-                  marginBottom: '10px',
-                  letterSpacing: '1px',
-                  textTransform: 'uppercase'
-                }}>
-                  📧 Email Address
-                </label>
-                <input
-                  type="email"
-                  value=${email}
-                  onChange=${(e) => setEmail(e.target.value)}
-                  placeholder="your-email@investay.com"
-                  required
+            ${mode === 'login' && html`
+              <h2 style=${{
+                fontSize: '24px',
+                fontWeight: '700',
+                color: '#fff',
+                margin: '0 0 28px',
+                textAlign: 'center'
+              }}>
+                Welcome Back
+              </h2>
+              
+              <form onSubmit=${handleLogin}>
+                <div style=${{ marginBottom: '20px' }}>
+                  <label style=${{
+                    display: 'block',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: 'rgba(251, 191, 36, 0.9)',
+                    marginBottom: '8px'
+                  }}>
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value=${email}
+                    onChange=${(e) => setEmail(e.target.value)}
+                    placeholder="your-email@investay.com"
+                    required
+                    disabled=${loading}
+                    style=${{
+                      width: '100%',
+                      padding: '14px 16px',
+                      background: 'rgba(15, 23, 42, 0.6)',
+                      border: '2px solid rgba(251, 191, 36, 0.3)',
+                      borderRadius: '12px',
+                      color: '#fff',
+                      fontSize: '15px',
+                      outline: 'none',
+                      transition: 'all 0.3s',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                
+                <div style=${{ marginBottom: '24px' }}>
+                  <label style=${{
+                    display: 'block',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: 'rgba(251, 191, 36, 0.9)',
+                    marginBottom: '8px'
+                  }}>
+                    Password
+                  </label>
+                  <div style=${{ position: 'relative' }}>
+                    <input
+                      type=${showPassword ? 'text' : 'password'}
+                      value=${password}
+                      onChange=${(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      disabled=${loading}
+                      style=${{
+                        width: '100%',
+                        padding: '14px 50px 14px 16px',
+                        background: 'rgba(15, 23, 42, 0.6)',
+                        border: '2px solid rgba(251, 191, 36, 0.3)',
+                        borderRadius: '12px',
+                        color: '#fff',
+                        fontSize: '15px',
+                        outline: 'none',
+                        transition: 'all 0.3s',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick=${() => setShowPassword(!showPassword)}
+                      style=${{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        color: 'rgba(251, 191, 36, 0.7)',
+                        cursor: 'pointer',
+                        fontSize: '18px'
+                      }}
+                    >
+                      ${showPassword ? '👁️' : '👁️‍🗨️'}
+                    </button>
+                  </div>
+                </div>
+                
+                <button
+                  type="submit"
                   disabled=${loading}
                   style=${{
                     width: '100%',
-                    padding: '16px 20px',
-                    background: 'rgba(15, 23, 42, 0.6)',
-                    backdropFilter: 'blur(10px)',
-                    border: '2px solid rgba(251, 191, 36, 0.3)',
-                    borderRadius: '14px',
+                    padding: '16px',
+                    background: loading 
+                      ? 'rgba(100, 116, 139, 0.5)'
+                      : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                    border: 'none',
+                    borderRadius: '12px',
                     color: '#fff',
                     fontSize: '16px',
-                    outline: 'none',
-                    transition: 'all 0.3s ease',
-                    boxSizing: 'border-box',
-                    boxShadow: 'inset 0 2px 8px rgba(0, 0, 0, 0.3)',
-                    opacity: loading ? 0.6 : 1
+                    fontWeight: '700',
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.3s',
+                    marginBottom: '16px'
                   }}
-                  onFocus=${(e) => {
-                    e.target.style.borderColor = 'rgba(251, 191, 36, 0.8)';
-                    e.target.style.boxShadow = '0 0 0 4px rgba(251, 191, 36, 0.1), inset 0 2px 8px rgba(0, 0, 0, 0.3)';
-                  }}
-                  onBlur=${(e) => {
-                    e.target.style.borderColor = 'rgba(251, 191, 36, 0.3)';
-                    e.target.style.boxShadow = 'inset 0 2px 8px rgba(0, 0, 0, 0.3)';
-                  }}
-                />
-              </div>
+                >
+                  ${loading ? '⏳ Logging in...' : '🔓 Login'}
+                </button>
+                
+                <div style=${{ textAlign: 'center' }}>
+                  <button
+                    type="button"
+                    onClick=${() => setMode('forgot')}
+                    style=${{
+                      background: 'none',
+                      border: 'none',
+                      color: '#fbbf24',
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      marginBottom: '12px'
+                    }}
+                  >
+                    Forgot Password?
+                  </button>
+                  <div style=${{ fontSize: '13px', color: 'rgba(148, 163, 184, 0.7)' }}>
+                    First time? 
+                    <button
+                      type="button"
+                      onClick=${() => setMode('register')}
+                      style=${{
+                        background: 'none',
+                        border: 'none',
+                        color: '#fbbf24',
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        marginLeft: '4px'
+                      }}
+                    >
+                      Set your password
+                    </button>
+                  </div>
+                </div>
+              </form>
+            `}
+            
+            ${mode === 'register' && html`
+              <h2 style=${{
+                fontSize: '24px',
+                fontWeight: '700',
+                color: '#fff',
+                margin: '0 0 8px',
+                textAlign: 'center'
+              }}>
+                Set Your Password
+              </h2>
+              <p style=${{
+                fontSize: '13px',
+                color: 'rgba(148, 163, 184, 0.7)',
+                margin: '0 0 24px',
+                textAlign: 'center'
+              }}>
+                First-time setup for your account
+              </p>
               
-              <!-- Password Field -->
-              <div style=${{ marginBottom: mode === 'register' ? '24px' : '32px' }}>
-                <label style=${{
-                  display: 'block',
-                  fontSize: '13px',
-                  fontWeight: '700',
-                  color: 'rgba(251, 191, 36, 0.9)',
-                  marginBottom: '10px',
-                  letterSpacing: '1px',
-                  textTransform: 'uppercase'
-                }}>
-                  🔒 Password
-                </label>
-                <div style=${{ position: 'relative' }}>
+              <form onSubmit=${handleRegister}>
+                <div style=${{ marginBottom: '20px' }}>
+                  <label style=${{
+                    display: 'block',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: 'rgba(251, 191, 36, 0.9)',
+                    marginBottom: '8px'
+                  }}>
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value=${email}
+                    onChange=${(e) => setEmail(e.target.value)}
+                    placeholder="your-email@investay.com"
+                    required
+                    disabled=${loading}
+                    style=${{
+                      width: '100%',
+                      padding: '14px 16px',
+                      background: 'rgba(15, 23, 42, 0.6)',
+                      border: '2px solid rgba(251, 191, 36, 0.3)',
+                      borderRadius: '12px',
+                      color: '#fff',
+                      fontSize: '15px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                
+                <div style=${{ marginBottom: '20px' }}>
+                  <label style=${{
+                    display: 'block',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: 'rgba(251, 191, 36, 0.9)',
+                    marginBottom: '8px'
+                  }}>
+                    New Password
+                  </label>
                   <input
                     type=${showPassword ? 'text' : 'password'}
                     value=${password}
@@ -536,64 +703,27 @@ function LoginApp() {
                     disabled=${loading}
                     style=${{
                       width: '100%',
-                      padding: '16px 56px 16px 20px',
+                      padding: '14px 16px',
                       background: 'rgba(15, 23, 42, 0.6)',
-                      backdropFilter: 'blur(10px)',
                       border: '2px solid rgba(251, 191, 36, 0.3)',
-                      borderRadius: '14px',
+                      borderRadius: '12px',
                       color: '#fff',
-                      fontSize: '16px',
+                      fontSize: '15px',
                       outline: 'none',
-                      transition: 'all 0.3s ease',
-                      boxSizing: 'border-box',
-                      boxShadow: 'inset 0 2px 8px rgba(0, 0, 0, 0.3)',
-                      opacity: loading ? 0.6 : 1
-                    }}
-                    onFocus=${(e) => {
-                      e.target.style.borderColor = 'rgba(251, 191, 36, 0.8)';
-                      e.target.style.boxShadow = '0 0 0 4px rgba(251, 191, 36, 0.1), inset 0 2px 8px rgba(0, 0, 0, 0.3)';
-                    }}
-                    onBlur=${(e) => {
-                      e.target.style.borderColor = 'rgba(251, 191, 36, 0.3)';
-                      e.target.style.boxShadow = 'inset 0 2px 8px rgba(0, 0, 0, 0.3)';
+                      boxSizing: 'border-box'
                     }}
                   />
-                  <button
-                    type="button"
-                    onClick=${() => setShowPassword(!showPassword)}
-                    style=${{
-                      position: 'absolute',
-                      right: '16px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'rgba(251, 191, 36, 0.2)',
-                      border: '1px solid rgba(251, 191, 36, 0.3)',
-                      borderRadius: '8px',
-                      padding: '8px 10px',
-                      color: '#fff',
-                      cursor: 'pointer',
-                      fontSize: '18px',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    ${showPassword ? '👁️' : '👁️‍🗨️'}
-                  </button>
                 </div>
-              </div>
-              
-              <!-- Confirm Password (Register Only) -->
-              ${mode === 'register' && html`
-                <div style=${{ marginBottom: '32px' }}>
+                
+                <div style=${{ marginBottom: '24px' }}>
                   <label style=${{
                     display: 'block',
                     fontSize: '13px',
-                    fontWeight: '700',
+                    fontWeight: '600',
                     color: 'rgba(251, 191, 36, 0.9)',
-                    marginBottom: '10px',
-                    letterSpacing: '1px',
-                    textTransform: 'uppercase'
+                    marginBottom: '8px'
                   }}>
-                    🔒 Confirm Password
+                    Confirm Password
                   </label>
                   <input
                     type=${showPassword ? 'text' : 'password'}
@@ -604,220 +734,284 @@ function LoginApp() {
                     disabled=${loading}
                     style=${{
                       width: '100%',
-                      padding: '16px 20px',
+                      padding: '14px 16px',
                       background: 'rgba(15, 23, 42, 0.6)',
-                      backdropFilter: 'blur(10px)',
                       border: '2px solid rgba(251, 191, 36, 0.3)',
-                      borderRadius: '14px',
+                      borderRadius: '12px',
                       color: '#fff',
-                      fontSize: '16px',
+                      fontSize: '15px',
                       outline: 'none',
-                      transition: 'all 0.3s ease',
-                      boxSizing: 'border-box',
-                      boxShadow: 'inset 0 2px 8px rgba(0, 0, 0, 0.3)',
-                      opacity: loading ? 0.6 : 1
-                    }}
-                    onFocus=${(e) => {
-                      e.target.style.borderColor = 'rgba(251, 191, 36, 0.8)';
-                      e.target.style.boxShadow = '0 0 0 4px rgba(251, 191, 36, 0.1), inset 0 2px 8px rgba(0, 0, 0, 0.3)';
-                    }}
-                    onBlur=${(e) => {
-                      e.target.style.borderColor = 'rgba(251, 191, 36, 0.3)';
-                      e.target.style.boxShadow = 'inset 0 2px 8px rgba(0, 0, 0, 0.3)';
+                      boxSizing: 'border-box'
                     }}
                   />
                 </div>
-              `}
-              
-              <!-- Security Info (Register Only) -->
-              ${mode === 'register' && html`
-                <div style=${{
-                  marginBottom: '32px',
-                  padding: '16px 20px',
-                  background: 'rgba(251, 191, 36, 0.05)',
-                  border: '1px solid rgba(251, 191, 36, 0.2)',
-                  borderRadius: '14px',
-                  fontSize: '13px',
-                  color: 'rgba(255, 255, 255, 0.8)',
-                  lineHeight: '1.7'
-                }}>
-                  <div style=${{ fontWeight: '700', marginBottom: '8px', color: 'rgba(251, 191, 36, 0.9)' }}>
-                    🔒 Password Requirements:
-                  </div>
-                  <ul style=${{ margin: '0', paddingLeft: '20px' }}>
-                    <li>At least 8 characters</li>
-                    <li>One uppercase & lowercase letter</li>
-                    <li>One number & special character</li>
-                  </ul>
-                </div>
-              `}
-              
-              <!-- Submit Button -->
-              <button
-                type="submit"
-                disabled=${loading}
-                style=${{
-                  width: '100%',
-                  padding: '18px',
-                  background: loading 
-                    ? 'rgba(100, 116, 139, 0.5)'
-                    : mode === 'login'
-                      ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+                
+                <button
+                  type="submit"
+                  disabled=${loading}
+                  style=${{
+                    width: '100%',
+                    padding: '16px',
+                    background: loading 
+                      ? 'rgba(100, 116, 139, 0.5)'
                       : 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
-                  border: 'none',
-                  borderRadius: '14px',
-                  color: '#fff',
-                  fontSize: '17px',
-                  fontWeight: '800',
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.3s',
-                  boxShadow: loading 
-                    ? 'none' 
-                    : mode === 'login'
-                      ? '0 8px 32px rgba(59, 130, 246, 0.5)'
-                      : '0 8px 32px rgba(251, 191, 36, 0.5)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '1px'
-                }}
-                onMouseEnter=${(e) => {
-                  if (!loading) {
-                    e.target.style.transform = 'translateY(-2px)';
-                  }
-                }}
-                onMouseLeave=${(e) => {
-                  e.target.style.transform = 'translateY(0)';
-                }}
-              >
-                ${loading 
-                  ? '⏳ Processing...' 
-                  : mode === 'login' 
-                    ? '🏨 Access Investay' 
-                    : '💎 Tokenize Your Access'}
-              </button>
-            </form>
+                    border: 'none',
+                    borderRadius: '12px',
+                    color: '#fff',
+                    fontSize: '16px',
+                    fontWeight: '700',
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    marginBottom: '16px'
+                  }}
+                >
+                  ${loading ? '⏳ Setting up...' : '✨ Set Password'}
+                </button>
+                
+                <div style=${{ textAlign: 'center', fontSize: '13px', color: 'rgba(148, 163, 184, 0.7)' }}>
+                  Already have a password? 
+                  <button
+                    type="button"
+                    onClick=${() => setMode('login')}
+                    style=${{
+                      background: 'none',
+                      border: 'none',
+                      color: '#fbbf24',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      marginLeft: '4px'
+                    }}
+                  >
+                    Login
+                  </button>
+                </div>
+              </form>
+            `}
             
-            <!-- Footer -->
-            <div style=${{
-              marginTop: '28px',
-              textAlign: 'center',
-              fontSize: '13px',
-              color: 'rgba(148, 163, 184, 0.7)',
-              lineHeight: '1.6'
-            }}>
-              ${mode === 'login' ? html`
-                <div>
-                  Need an account? Contact admin at
-                  <a href="/admin/email-accounts" style=${{
-                    color: '#fbbf24',
+            ${mode === 'forgot' && html`
+              <h2 style=${{
+                fontSize: '24px',
+                fontWeight: '700',
+                color: '#fff',
+                margin: '0 0 8px',
+                textAlign: 'center'
+              }}>
+                Forgot Password?
+              </h2>
+              <p style=${{
+                fontSize: '13px',
+                color: 'rgba(148, 163, 184, 0.7)',
+                margin: '0 0 24px',
+                textAlign: 'center'
+              }}>
+                Enter your email to receive a reset link
+              </p>
+              
+              <form onSubmit=${handleForgotPassword}>
+                <div style=${{ marginBottom: '24px' }}>
+                  <label style=${{
+                    display: 'block',
+                    fontSize: '13px',
                     fontWeight: '600',
-                    textDecoration: 'none',
-                    marginLeft: '4px'
+                    color: 'rgba(251, 191, 36, 0.9)',
+                    marginBottom: '8px'
                   }}>
-                    Admin Panel →
-                  </a>
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value=${email}
+                    onChange=${(e) => setEmail(e.target.value)}
+                    placeholder="your-email@investay.com"
+                    required
+                    disabled=${loading}
+                    style=${{
+                      width: '100%',
+                      padding: '14px 16px',
+                      background: 'rgba(15, 23, 42, 0.6)',
+                      border: '2px solid rgba(251, 191, 36, 0.3)',
+                      borderRadius: '12px',
+                      color: '#fff',
+                      fontSize: '15px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
                 </div>
-              ` : html`
-                <div>
-                  Your email must exist in our system.
-                  <br />
-                  Contact admin to create your account first.
+                
+                <button
+                  type="submit"
+                  disabled=${loading}
+                  style=${{
+                    width: '100%',
+                    padding: '16px',
+                    background: loading 
+                      ? 'rgba(100, 116, 139, 0.5)'
+                      : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                    border: 'none',
+                    borderRadius: '12px',
+                    color: '#fff',
+                    fontSize: '16px',
+                    fontWeight: '700',
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    marginBottom: '16px'
+                  }}
+                >
+                  ${loading ? '⏳ Sending...' : '📧 Send Reset Link'}
+                </button>
+                
+                <div style=${{ textAlign: 'center', fontSize: '13px', color: 'rgba(148, 163, 184, 0.7)' }}>
+                  Remember your password? 
+                  <button
+                    type="button"
+                    onClick=${() => setMode('login')}
+                    style=${{
+                      background: 'none',
+                      border: 'none',
+                      color: '#fbbf24',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      marginLeft: '4px'
+                    }}
+                  >
+                    Back to Login
+                  </button>
                 </div>
-              `}
-            </div>
+              </form>
+            `}
+            
+            ${mode === 'reset' && html`
+              <h2 style=${{
+                fontSize: '24px',
+                fontWeight: '700',
+                color: '#fff',
+                margin: '0 0 8px',
+                textAlign: 'center'
+              }}>
+                Reset Password
+              </h2>
+              <p style=${{
+                fontSize: '13px',
+                color: 'rgba(148, 163, 184, 0.7)',
+                margin: '0 0 24px',
+                textAlign: 'center'
+              }}>
+                Enter your new password
+              </p>
+              
+              <form onSubmit=${handleResetPassword}>
+                <div style=${{ marginBottom: '20px' }}>
+                  <label style=${{
+                    display: 'block',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: 'rgba(251, 191, 36, 0.9)',
+                    marginBottom: '8px'
+                  }}>
+                    New Password
+                  </label>
+                  <input
+                    type=${showPassword ? 'text' : 'password'}
+                    value=${newPassword}
+                    onChange=${(e) => setNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    disabled=${loading}
+                    style=${{
+                      width: '100%',
+                      padding: '14px 16px',
+                      background: 'rgba(15, 23, 42, 0.6)',
+                      border: '2px solid rgba(251, 191, 36, 0.3)',
+                      borderRadius: '12px',
+                      color: '#fff',
+                      fontSize: '15px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                
+                <div style=${{ marginBottom: '24px' }}>
+                  <label style=${{
+                    display: 'block',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: 'rgba(251, 191, 36, 0.9)',
+                    marginBottom: '8px'
+                  }}>
+                    Confirm Password
+                  </label>
+                  <input
+                    type=${showPassword ? 'text' : 'password'}
+                    value=${confirmPassword}
+                    onChange=${(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    disabled=${loading}
+                    style=${{
+                      width: '100%',
+                      padding: '14px 16px',
+                      background: 'rgba(15, 23, 42, 0.6)',
+                      border: '2px solid rgba(251, 191, 36, 0.3)',
+                      borderRadius: '12px',
+                      color: '#fff',
+                      fontSize: '15px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                
+                <button
+                  type="submit"
+                  disabled=${loading}
+                  style=${{
+                    width: '100%',
+                    padding: '16px',
+                    background: loading 
+                      ? 'rgba(100, 116, 139, 0.5)'
+                      : 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+                    border: 'none',
+                    borderRadius: '12px',
+                    color: '#fff',
+                    fontSize: '16px',
+                    fontWeight: '700',
+                    cursor: loading ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  ${loading ? '⏳ Resetting...' : '🔐 Reset Password'}
+                </button>
+              </form>
+            `}
           </div>
           
-          <!-- Security Badge -->
+          <!-- Footer -->
           <div style=${{
-            marginTop: '32px',
+            marginTop: '24px',
             textAlign: 'center',
             fontSize: '12px',
-            color: 'rgba(148, 163, 184, 0.6)',
-            animation: 'fadeIn 1s ease-out 0.5s both'
+            color: 'rgba(148, 163, 184, 0.6)'
           }}>
-            <div style=${{ marginBottom: '8px', fontSize: '13px', fontWeight: '600', color: 'rgba(251, 191, 36, 0.8)' }}>
+            <div style=${{ marginBottom: '6px', fontWeight: '600', color: 'rgba(251, 191, 36, 0.8)' }}>
               🛡️ Blockchain-Secured Platform
             </div>
-            <div style=${{ opacity: 0.7 }}>
-              Enterprise Security • Tokenized Assets • Decentralized Trust
-            </div>
+            <div>Enterprise Security • Tokenized Assets • Decentralized Trust</div>
           </div>
         </div>
       </div>
       
-      <!-- Animations -->
       <style>${`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        
-        @keyframes fadeInDown {
-          from {
-            opacity: 0;
-            transform: translateY(-30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        @keyframes slideInLeft {
-          from {
-            opacity: 0;
-            transform: translateX(-30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); opacity: 0.2; }
-          50% { transform: scale(1.1); opacity: 0.3; }
-        }
-        
-        @keyframes gradient {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        
-        @keyframes glow {
-          0%, 100% {
-            box-shadow: 0 0 60px rgba(251, 191, 36, 0.3), inset 0 0 30px rgba(59, 130, 246, 0.1);
-          }
-          50% {
-            box-shadow: 0 0 80px rgba(251, 191, 36, 0.5), inset 0 0 40px rgba(59, 130, 246, 0.2);
-          }
-        }
-        
-        ::placeholder {
-          color: rgba(255, 255, 255, 0.3);
-        }
-        
-        input:-webkit-autofill {
-          -webkit-text-fill-color: #fff;
-          -webkit-box-shadow: 0 0 0 1000px rgba(15, 23, 42, 0.6) inset;
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInLeft { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.15; } 50% { transform: scale(1.1); opacity: 0.25; } }
+        ::placeholder { color: rgba(255, 255, 255, 0.3); }
+        input:-webkit-autofill { -webkit-text-fill-color: #fff; -webkit-box-shadow: 0 0 0 1000px rgba(15, 23, 42, 0.6) inset; }
       `}</style>
     </div>
   `;
 }
 
-// Initialize
 const container = document.getElementById('root');
 const root = createRoot(container);
 root.render(html`<${LoginApp} />`);

@@ -400,4 +400,236 @@ authRoutes.post('/change-password', async (c) => {
   }
 })
 
+// ============================================
+// POST /api/auth/forgot-password
+// Request password reset email
+// ============================================
+authRoutes.post('/forgot-password', async (c) => {
+  const { DB } = c.env
+  const headers = getSecurityHeaders()
+  
+  try {
+    const { email } = await c.req.json()
+    const sanitizedEmail = sanitizeInput(email).toLowerCase()
+    
+    // Validate email
+    if (!isValidEmail(sanitizedEmail)) {
+      return c.json({ 
+        success: false, 
+        error: 'Invalid email format' 
+      }, { status: 400, headers })
+    }
+    
+    // Check if account exists
+    const account = await DB.prepare(`
+      SELECT id, email_address FROM email_accounts 
+      WHERE email_address = ? AND is_active = 1
+    `).bind(sanitizedEmail).first()
+    
+    // Always return success to prevent email enumeration
+    if (!account) {
+      return c.json({ 
+        success: true, 
+        message: 'If the email exists, a password reset link has been sent.' 
+      }, { headers })
+    }
+    
+    // Generate reset token
+    const resetToken = generateSecureToken(32)
+    const tokenId = generateSecureToken(16)
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+    
+    // Store reset token
+    await DB.prepare(`
+      INSERT INTO password_reset_tokens (id, email, token, expires_at)
+      VALUES (?, ?, ?, ?)
+    `).bind(tokenId, sanitizedEmail, resetToken, expiresAt.toISOString()).run()
+    
+    // In production, send email here
+    // For now, return token in response (DEV ONLY)
+    console.log('Password reset token:', resetToken)
+    console.log('Reset link: /reset-password?token=' + resetToken)
+    
+    return c.json({ 
+      success: true, 
+      message: 'If the email exists, a password reset link has been sent.',
+      // DEV ONLY - remove in production
+      resetToken,
+      resetLink: `/reset-password?token=${resetToken}`
+    }, { headers })
+    
+  } catch (error: any) {
+    console.error('Forgot password error:', error)
+    return c.json({ 
+      success: false, 
+      error: 'Password reset request failed' 
+    }, { status: 500, headers })
+  }
+})
+
+// ============================================
+// POST /api/auth/reset-password
+// Reset password with token
+// ============================================
+authRoutes.post('/reset-password', async (c) => {
+  const { DB } = c.env
+  const headers = getSecurityHeaders()
+  
+  try {
+    const { token, newPassword } = await c.req.json()
+    
+    if (!token || !newPassword) {
+      return c.json({ 
+        success: false, 
+        error: 'Token and new password are required' 
+      }, { status: 400, headers })
+    }
+    
+    // Validate password strength
+    const passwordValidation = validatePasswordStrength(newPassword)
+    if (!passwordValidation.valid) {
+      return c.json({ 
+        success: false, 
+        error: 'Password does not meet security requirements',
+        details: passwordValidation.errors
+      }, { status: 400, headers })
+    }
+    
+    // Find valid token
+    const resetToken = await DB.prepare(`
+      SELECT id, email, expires_at, used 
+      FROM password_reset_tokens 
+      WHERE token = ? AND used = 0
+    `).bind(token).first()
+    
+    if (!resetToken) {
+      return c.json({ 
+        success: false, 
+        error: 'Invalid or expired reset token' 
+      }, { status: 400, headers })
+    }
+    
+    // Check if expired
+    const expiresAt = new Date(resetToken.expires_at as string)
+    if (expiresAt < new Date()) {
+      return c.json({ 
+        success: false, 
+        error: 'Reset token has expired' 
+      }, { status: 400, headers })
+    }
+    
+    // Hash new password
+    const passwordHash = await hashPassword(newPassword)
+    
+    // Update password
+    await DB.prepare(`
+      UPDATE email_accounts 
+      SET password_hash = ?, first_login = 0, updated_at = datetime('now')
+      WHERE email_address = ?
+    `).bind(passwordHash, resetToken.email).run()
+    
+    // Mark token as used
+    await DB.prepare(`
+      UPDATE password_reset_tokens 
+      SET used = 1, used_at = datetime('now')
+      WHERE id = ?
+    `).bind(resetToken.id).run()
+    
+    return c.json({ 
+      success: true, 
+      message: 'Password reset successfully. You can now login.' 
+    }, { headers })
+    
+  } catch (error: any) {
+    console.error('Reset password error:', error)
+    return c.json({ 
+      success: false, 
+      error: 'Password reset failed' 
+    }, { status: 500, headers })
+  }
+})
+
+// ============================================
+// POST /api/auth/first-login-setup
+// Set password on first login
+// ============================================
+authRoutes.post('/first-login-setup', async (c) => {
+  const { DB } = c.env
+  const headers = getSecurityHeaders()
+  
+  try {
+    const { email, temporaryToken, newPassword } = await c.req.json()
+    const sanitizedEmail = sanitizeInput(email).toLowerCase()
+    
+    // Validate inputs
+    if (!email || !newPassword) {
+      return c.json({ 
+        success: false, 
+        error: 'Email and new password are required' 
+      }, { status: 400, headers })
+    }
+    
+    // Validate password strength
+    const passwordValidation = validatePasswordStrength(newPassword)
+    if (!passwordValidation.valid) {
+      return c.json({ 
+        success: false, 
+        error: 'Password does not meet security requirements',
+        details: passwordValidation.errors
+      }, { status: 400, headers })
+    }
+    
+    // Get account
+    const account = await DB.prepare(`
+      SELECT id, email_address, password_hash, first_login, is_active 
+      FROM email_accounts 
+      WHERE email_address = ?
+    `).bind(sanitizedEmail).first()
+    
+    if (!account) {
+      return c.json({ 
+        success: false, 
+        error: 'Account not found' 
+      }, { status: 404, headers })
+    }
+    
+    if (account.is_active !== 1) {
+      return c.json({ 
+        success: false, 
+        error: 'Account is deactivated' 
+      }, { status: 403, headers })
+    }
+    
+    // Check if already has password
+    if (account.password_hash && account.first_login !== 1) {
+      return c.json({ 
+        success: false, 
+        error: 'Account already has a password. Use login or forgot password.' 
+      }, { status: 400, headers })
+    }
+    
+    // Hash password
+    const passwordHash = await hashPassword(newPassword)
+    
+    // Update account
+    await DB.prepare(`
+      UPDATE email_accounts 
+      SET password_hash = ?, first_login = 0, updated_at = datetime('now')
+      WHERE id = ?
+    `).bind(passwordHash, account.id).run()
+    
+    return c.json({ 
+      success: true, 
+      message: 'Password set successfully! You can now login.' 
+    }, { headers })
+    
+  } catch (error: any) {
+    console.error('First login setup error:', error)
+    return c.json({ 
+      success: false, 
+      error: 'Password setup failed' 
+    }, { status: 500, headers })
+  }
+})
+
 export { authRoutes }
