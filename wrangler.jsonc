@@ -5,5 +5,12 @@
   "pages_build_output_dir": "./dist",
   "compatibility_flags": [
     "nodejs_compat"
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "investay-email-production",
+      "database_id": "ddae3970-8570-45ab-84f7-3e3b39a8309b"
+    }
   ]
 }
