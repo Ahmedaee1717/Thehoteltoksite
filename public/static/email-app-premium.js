@@ -1015,25 +1015,11 @@ window.addEventListener('DOMContentLoaded', function() {
       const [aiProcessing, setAiProcessing] = useState(false);
       const [showAiTools, setShowAiTools] = useState(false);
       const [aiPrompt, setAiPrompt] = useState('');
-      const editorRef = useRef(null);
       
       // TEMP FIX: These were removed but code references them - set as empty/null
       const attachments = [];
       const spamCheck = null;
       const checkingSpam = false;
-      
-      // Rich text formatting functions
-      const execCommand = (command, value = null) => {
-        document.execCommand(command, false, value);
-        if (editorRef.current) {
-          setBody(editorRef.current.innerHTML);
-        }
-      };
-      
-      const insertLink = () => {
-        const url = prompt('Enter URL:');
-        if (url) execCommand('createLink', url);
-      };
       
       const handleAIAssist = async (action, tone = 'professional') => {
         if (!body.trim() && action !== 'generate') {
@@ -1310,230 +1296,119 @@ window.addEventListener('DOMContentLoaded', function() {
               }
             }, 'Message'),
             
-            // 🎨 RICH TEXT FORMATTING TOOLBAR - Beats Gmail!
+            // 🎨 CLEAN MESSAGE EDITOR - Fast & Beautiful
             h('div', {
               style: {
-                display: 'flex',
-                gap: '4px',
-                padding: '10px 14px',
-                background: 'linear-gradient(135deg, rgba(201, 169, 98, 0.15) 0%, rgba(139, 115, 85, 0.15) 100%)',
-                border: '1px solid rgba(201, 169, 98, 0.35)',
-                borderBottom: 'none',
-                borderRadius: '12px 12px 0 0',
-                alignItems: 'center',
-                flexWrap: 'wrap'
+                position: 'relative'
               }
             },
-              // Text formatting
-              h('div', {
+              // Message textarea
+              h('textarea', {
+                placeholder: 'Write your message...',
+                value: body,
+                onChange: (e) => setBody(e.target.value),
                 style: {
-                  display: 'flex',
-                  gap: '3px',
-                  padding: '3px',
-                  background: 'rgba(0, 0, 0, 0.25)',
-                  borderRadius: '6px',
-                  marginRight: '10px'
-                }
-              },
-                ['bold', 'italic', 'underline'].map(cmd => 
-                  h('button', {
-                    key: cmd,
-                    onMouseDown: (e) => {
-                      e.preventDefault();
-                      execCommand(cmd);
-                    },
-                    style: {
-                      width: '34px',
-                      height: '34px',
-                      background: 'rgba(255, 255, 255, 0.08)',
-                      border: 'none',
-                      borderRadius: '5px',
-                      color: 'rgba(255, 255, 255, 0.85)',
-                      cursor: 'pointer',
-                      fontSize: '15px',
-                      fontWeight: cmd === 'bold' ? 'bold' : '500',
-                      fontStyle: cmd === 'italic' ? 'italic' : 'normal',
-                      textDecoration: cmd === 'underline' ? 'underline' : 'none',
-                      transition: 'all 0.15s',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    },
-                    onMouseEnter: (e) => {
-                      e.target.style.background = 'rgba(201, 169, 98, 0.25)';
-                      e.target.style.transform = 'scale(1.05)';
-                    },
-                    onMouseLeave: (e) => {
-                      e.target.style.background = 'rgba(255, 255, 255, 0.08)';
-                      e.target.style.transform = 'scale(1)';
-                    }
-                  }, cmd === 'bold' ? 'B' : cmd === 'italic' ? 'I' : 'U')
-                )
-              ),
-              
-              // Lists
-              h('div', {
-                style: {
-                  display: 'flex',
-                  gap: '3px',
-                  padding: '3px',
-                  background: 'rgba(0, 0, 0, 0.25)',
-                  borderRadius: '6px',
-                  marginRight: '10px'
-                }
-              },
-                [
-                  { cmd: 'insertUnorderedList', icon: '• List' },
-                  { cmd: 'insertOrderedList', icon: '1. List' }
-                ].map(item =>
-                  h('button', {
-                    key: item.cmd,
-                    onMouseDown: (e) => {
-                      e.preventDefault();
-                      execCommand(item.cmd);
-                    },
-                    style: {
-                      height: '34px',
-                      padding: '0 12px',
-                      background: 'rgba(255, 255, 255, 0.08)',
-                      border: 'none',
-                      borderRadius: '5px',
-                      color: 'rgba(255, 255, 255, 0.85)',
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      transition: 'all 0.15s',
-                      whiteSpace: 'nowrap'
-                    },
-                    onMouseEnter: (e) => {
-                      e.target.style.background = 'rgba(201, 169, 98, 0.25)';
-                      e.target.style.transform = 'scale(1.05)';
-                    },
-                    onMouseLeave: (e) => {
-                      e.target.style.background = 'rgba(255, 255, 255, 0.08)';
-                      e.target.style.transform = 'scale(1)';
-                    }
-                  }, item.icon)
-                )
-              ),
-              
-              // Link
-              h('button', {
-                onMouseDown: (e) => {
-                  e.preventDefault();
-                  insertLink();
+                  width: '100%',
+                  padding: '20px',
+                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.06) 100%)',
+                  border: '2px solid rgba(201, 169, 98, 0.25)',
+                  borderRadius: '16px',
+                  fontSize: '15.5px',
+                  color: 'rgba(255, 255, 255, 0.95)',
+                  fontFamily: 'inherit',
+                  minHeight: '280px',
+                  maxHeight: '450px',
+                  resize: 'vertical',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  outline: 'none',
+                  lineHeight: '1.8',
+                  letterSpacing: '0.3px',
+                  boxShadow: 'inset 0 2px 8px rgba(0, 0, 0, 0.15)'
                 },
-                style: {
-                  height: '34px',
-                  padding: '0 14px',
-                  background: 'rgba(59, 130, 246, 0.15)',
-                  border: '1px solid rgba(59, 130, 246, 0.3)',
-                  borderRadius: '6px',
-                  color: 'rgba(59, 130, 246, 0.95)',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: '700',
-                  transition: 'all 0.15s',
-                  marginRight: '10px'
+                onFocus: (e) => {
+                  e.target.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.08) 100%)';
+                  e.target.style.borderColor = 'rgba(201, 169, 98, 0.6)';
+                  e.target.style.boxShadow = '0 0 0 4px rgba(201, 169, 98, 0.12), inset 0 2px 12px rgba(0, 0, 0, 0.2)';
+                  e.target.style.transform = 'translateY(-2px)';
                 },
-                onMouseEnter: (e) => {
-                  e.target.style.background = 'rgba(59, 130, 246, 0.25)';
-                  e.target.style.transform = 'scale(1.05)';
-                },
-                onMouseLeave: (e) => {
-                  e.target.style.background = 'rgba(59, 130, 246, 0.15)';
-                  e.target.style.transform = 'scale(1)';
-                }
-              }, '🔗 Link'),
-              
-              // Spacer
-              h('div', { style: { flex: 1 } }),
-              
-              // Attach files
-              h('label', {
-                style: {
-                  height: '34px',
-                  padding: '0 16px',
-                  background: 'linear-gradient(135deg, rgba(201, 169, 98, 0.2) 0%, rgba(139, 115, 85, 0.2) 100%)',
-                  border: '1px solid rgba(201, 169, 98, 0.5)',
-                  borderRadius: '6px',
-                  color: '#C9A962',
-                  fontSize: '13px',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: '0 2px 6px rgba(201, 169, 98, 0.15)'
-                },
-                onMouseEnter: (e) => {
-                  e.target.style.background = 'linear-gradient(135deg, rgba(201, 169, 98, 0.3) 0%, rgba(139, 115, 85, 0.3) 100%)';
-                  e.target.style.transform = 'translateY(-1px)';
-                  e.target.style.boxShadow = '0 4px 10px rgba(201, 169, 98, 0.25)';
-                },
-                onMouseLeave: (e) => {
-                  e.target.style.background = 'linear-gradient(135deg, rgba(201, 169, 98, 0.2) 0%, rgba(139, 115, 85, 0.2) 100%)';
+                onBlur: (e) => {
+                  e.target.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.06) 100%)';
+                  e.target.style.borderColor = 'rgba(201, 169, 98, 0.25)';
+                  e.target.style.boxShadow = 'inset 0 2px 8px rgba(0, 0, 0, 0.15)';
                   e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = '0 2px 6px rgba(201, 169, 98, 0.15)';
+                }
+              }),
+              
+              // Floating action buttons
+              h('div', {
+                style: {
+                  position: 'absolute',
+                  bottom: '16px',
+                  right: '16px',
+                  display: 'flex',
+                  gap: '10px',
+                  alignItems: 'center',
+                  pointerEvents: 'none'
                 }
               },
-                '📎 Attach',
-                h('input', {
-                  type: 'file',
-                  multiple: true,
-                  onChange: (e) => {
-                    if (e.target.files.length > 0) {
-                      alert(`✅ ${e.target.files.length} file(s) selected (upload coming soon!)`);
-                    }
+                // Character count
+                h('div', {
+                  style: {
+                    padding: '6px 14px',
+                    background: 'rgba(0, 0, 0, 0.4)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '20px',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: body.length > 0 ? 'rgba(201, 169, 98, 0.9)' : 'rgba(255, 255, 255, 0.4)',
+                    border: '1px solid rgba(201, 169, 98, 0.2)'
+                  }
+                }, `${body.length} chars`),
+                
+                // Attach button
+                h('label', {
+                  style: {
+                    padding: '8px 18px',
+                    background: 'linear-gradient(135deg, rgba(201, 169, 98, 0.25) 0%, rgba(139, 115, 85, 0.25) 100%)',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(201, 169, 98, 0.6)',
+                    borderRadius: '24px',
+                    color: '#C9A962',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 4px 12px rgba(201, 169, 98, 0.2)',
+                    pointerEvents: 'all'
                   },
-                  style: { display: 'none' }
-                })
+                  onMouseEnter: (e) => {
+                    e.target.style.background = 'linear-gradient(135deg, rgba(201, 169, 98, 0.35) 0%, rgba(139, 115, 85, 0.35) 100%)';
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 6px 16px rgba(201, 169, 98, 0.35)';
+                  },
+                  onMouseLeave: (e) => {
+                    e.target.style.background = 'linear-gradient(135deg, rgba(201, 169, 98, 0.25) 0%, rgba(139, 115, 85, 0.25) 100%)';
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 4px 12px rgba(201, 169, 98, 0.2)';
+                  }
+                },
+                  '📎 Attach Files',
+                  h('input', {
+                    type: 'file',
+                    multiple: true,
+                    onChange: (e) => {
+                      if (e.target.files.length > 0) {
+                        alert(`✅ ${e.target.files.length} file(s) selected (upload coming soon!)`);
+                      }
+                    },
+                    style: { display: 'none' }
+                  })
+                )
               )
             ),
-            
-            // RICH TEXT EDITOR - ContentEditable
-            h('div', {
-              ref: editorRef,
-              contentEditable: true,
-              onInput: (e) => setBody(e.target.innerHTML),
-              onPaste: (e) => {
-                e.preventDefault();
-                const text = e.clipboardData.getData('text/plain');
-                document.execCommand('insertText', false, text);
-              },
-              dangerouslySetInnerHTML: { __html: body },
-              'data-placeholder': 'Write your professional message here... Use the toolbar above for formatting.',
-              style: {
-                width: '100%',
-                padding: '18px 22px',
-                background: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid rgba(201, 169, 98, 0.35)',
-                borderTop: 'none',
-                borderRadius: '0 0 12px 12px',
-                fontSize: '15px',
-                color: 'rgba(255, 255, 255, 0.95)',
-                fontFamily: 'inherit',
-                minHeight: '240px',
-                maxHeight: '420px',
-                overflowY: 'auto',
-                transition: 'all 0.3s',
-                outline: 'none',
-                lineHeight: '1.75',
-                letterSpacing: '0.3px',
-                cursor: 'text'
-              },
-              onFocus: (e) => {
-                e.target.style.background = 'rgba(255, 255, 255, 0.09)';
-                e.target.style.borderColor = 'rgba(201, 169, 98, 0.65)';
-                e.target.style.boxShadow = '0 0 0 4px rgba(201, 169, 98, 0.15), inset 0 2px 12px rgba(0, 0, 0, 0.25)';
-              },
-              onBlur: (e) => {
-                e.target.style.background = 'rgba(255, 255, 255, 0.06)';
-                e.target.style.borderColor = 'rgba(201, 169, 98, 0.35)';
-                e.target.style.boxShadow = 'none';
-              }
-            }),
             
             // 📎 ATTACHMENTS DISPLAY
             attachments.length > 0 && h('div', {
