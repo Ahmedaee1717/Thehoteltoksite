@@ -1013,37 +1013,48 @@ window.addEventListener('DOMContentLoaded', function() {
       const [body, setBody] = useState('');
       const [spamCheck, setSpamCheck] = useState(null);
       const [checkingSpam, setCheckingSpam] = useState(false);
+      const [aiProcessing, setAiProcessing] = useState(false);
+      const [showAiTools, setShowAiTools] = useState(false);
       
-      // Check spam score when subject or body changes
-      useEffect(() => {
-        if (!subject && !body) {
-          setSpamCheck(null);
+      // Check spam score ONLY when user explicitly requests (removed auto-check for performance)
+      // Spam check removed from useEffect for speed - was causing lag
+      
+      const handleAIAssist = async (action, tone = 'professional') => {
+        if (!body.trim()) {
+          alert('✍️ Please write some text first!');
           return;
         }
         
-        const timer = setTimeout(async () => {
-          if (subject || body) {
-            setCheckingSpam(true);
-            try {
-              const response = await fetch('/api/email/check-spam', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ subject, body })
-              });
-              const result = await response.json();
-              if (result.success) {
-                setSpamCheck(result.spamCheck);
-              }
-            } catch (error) {
-              console.error('Spam check error:', error);
-            } finally {
-              setCheckingSpam(false);
-            }
+        setAiProcessing(true);
+        try {
+          const token = localStorage.getItem('token');
+          const response = await fetch('/api/email/compose-assist', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              action,
+              text: body,
+              tone,
+              context: subject
+            })
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            setBody(data.text);
+          } else {
+            alert('❌ AI assist failed: ' + data.error);
           }
-        }, 1000); // Check 1 second after user stops typing
-        
-        return () => clearTimeout(timer);
-      }, [subject, body]);
+        } catch (error) {
+          alert('❌ AI error: ' + error.message);
+        } finally {
+          setAiProcessing(false);
+        }
+      };
       
       const handleSend = () => {
         if (!to || !subject) {
@@ -1273,6 +1284,170 @@ window.addEventListener('DOMContentLoaded', function() {
                 e.target.style.boxShadow = 'none';
               }
             })
+          ),
+          
+          // 🤖 AI COMPOSE ASSISTANT TOOLBAR
+          h('div', {
+            style: {
+              marginTop: '16px',
+              marginBottom: '24px',
+              padding: '16px',
+              background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.1) 0%, rgba(79, 70, 229, 0.1) 100%)',
+              border: '1px solid rgba(147, 51, 234, 0.2)',
+              borderRadius: '12px'
+            }
+          },
+            h('button', {
+              onClick: () => setShowAiTools(!showAiTools),
+              disabled: aiProcessing,
+              style: {
+                width: '100%',
+                padding: '10px 16px',
+                background: showAiTools 
+                  ? 'linear-gradient(135deg, rgba(147, 51, 234, 0.2) 0%, rgba(79, 70, 229, 0.2) 100%)'
+                  : 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(147, 51, 234, 0.3)',
+                borderRadius: '8px',
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                transition: 'all 0.2s'
+              }
+            }, showAiTools ? '🤖 Hide AI Tools' : '🤖 Show AI Tools'),
+            
+            showAiTools && h('div', {
+              style: {
+                marginTop: '12px',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                gap: '8px'
+              }
+            },
+              // Improve button
+              h('button', {
+                onClick: () => handleAIAssist('improve', 'professional'),
+                disabled: aiProcessing,
+                style: {
+                  padding: '10px 14px',
+                  background: 'rgba(34, 197, 94, 0.1)',
+                  border: '1px solid rgba(34, 197, 94, 0.3)',
+                  borderRadius: '8px',
+                  color: 'rgba(34, 197, 94, 0.9)',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  cursor: aiProcessing ? 'wait' : 'pointer',
+                  transition: 'all 0.2s',
+                  opacity: aiProcessing ? 0.5 : 1
+                },
+                onMouseEnter: (e) => !aiProcessing && (e.target.style.background = 'rgba(34, 197, 94, 0.2)'),
+                onMouseLeave: (e) => (e.target.style.background = 'rgba(34, 197, 94, 0.1)')
+              }, aiProcessing ? '⏳...' : '✨ Improve'),
+              
+              // Expand button
+              h('button', {
+                onClick: () => handleAIAssist('expand', 'professional'),
+                disabled: aiProcessing,
+                style: {
+                  padding: '10px 14px',
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  borderRadius: '8px',
+                  color: 'rgba(59, 130, 246, 0.9)',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  cursor: aiProcessing ? 'wait' : 'pointer',
+                  transition: 'all 0.2s',
+                  opacity: aiProcessing ? 0.5 : 1
+                },
+                onMouseEnter: (e) => !aiProcessing && (e.target.style.background = 'rgba(59, 130, 246, 0.2)'),
+                onMouseLeave: (e) => (e.target.style.background = 'rgba(59, 130, 246, 0.1)')
+              }, aiProcessing ? '⏳...' : '📝 Expand'),
+              
+              // Summarize button
+              h('button', {
+                onClick: () => handleAIAssist('summarize', 'professional'),
+                disabled: aiProcessing,
+                style: {
+                  padding: '10px 14px',
+                  background: 'rgba(251, 191, 36, 0.1)',
+                  border: '1px solid rgba(251, 191, 36, 0.3)',
+                  borderRadius: '8px',
+                  color: 'rgba(251, 191, 36, 0.9)',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  cursor: aiProcessing ? 'wait' : 'pointer',
+                  transition: 'all 0.2s',
+                  opacity: aiProcessing ? 0.5 : 1
+                },
+                onMouseEnter: (e) => !aiProcessing && (e.target.style.background = 'rgba(251, 191, 36, 0.2)'),
+                onMouseLeave: (e) => (e.target.style.background = 'rgba(251, 191, 36, 0.1)')
+              }, aiProcessing ? '⏳...' : '📊 Shorten'),
+              
+              // Friendly tone button
+              h('button', {
+                onClick: () => handleAIAssist('improve', 'friendly'),
+                disabled: aiProcessing,
+                style: {
+                  padding: '10px 14px',
+                  background: 'rgba(236, 72, 153, 0.1)',
+                  border: '1px solid rgba(236, 72, 153, 0.3)',
+                  borderRadius: '8px',
+                  color: 'rgba(236, 72, 153, 0.9)',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  cursor: aiProcessing ? 'wait' : 'pointer',
+                  transition: 'all 0.2s',
+                  opacity: aiProcessing ? 0.5 : 1
+                },
+                onMouseEnter: (e) => !aiProcessing && (e.target.style.background = 'rgba(236, 72, 153, 0.2)'),
+                onMouseLeave: (e) => (e.target.style.background = 'rgba(236, 72, 153, 0.1)')
+              }, aiProcessing ? '⏳...' : '😊 Friendly'),
+              
+              // Formal tone button
+              h('button', {
+                onClick: () => handleAIAssist('improve', 'formal'),
+                disabled: aiProcessing,
+                style: {
+                  padding: '10px 14px',
+                  background: 'rgba(139, 92, 246, 0.1)',
+                  border: '1px solid rgba(139, 92, 246, 0.3)',
+                  borderRadius: '8px',
+                  color: 'rgba(139, 92, 246, 0.9)',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  cursor: aiProcessing ? 'wait' : 'pointer',
+                  transition: 'all 0.2s',
+                  opacity: aiProcessing ? 0.5 : 1
+                },
+                onMouseEnter: (e) => !aiProcessing && (e.target.style.background = 'rgba(139, 92, 246, 0.2)'),
+                onMouseLeave: (e) => (e.target.style.background = 'rgba(139, 92, 246, 0.1)')
+              }, aiProcessing ? '⏳...' : '👔 Formal'),
+              
+              // Casual button
+              h('button', {
+                onClick: () => handleAIAssist('improve', 'casual'),
+                disabled: aiProcessing,
+                style: {
+                  padding: '10px 14px',
+                  background: 'rgba(20, 184, 166, 0.1)',
+                  border: '1px solid rgba(20, 184, 166, 0.3)',
+                  borderRadius: '8px',
+                  color: 'rgba(20, 184, 166, 0.9)',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  cursor: aiProcessing ? 'wait' : 'pointer',
+                  transition: 'all 0.2s',
+                  opacity: aiProcessing ? 0.5 : 1
+                },
+                onMouseEnter: (e) => !aiProcessing && (e.target.style.background = 'rgba(20, 184, 166, 0.2)'),
+                onMouseLeave: (e) => (e.target.style.background = 'rgba(20, 184, 166, 0.1)')
+              }, aiProcessing ? '⏳...' : '👋 Casual')
+            )
           ),
           
           // Spam Score Indicator
