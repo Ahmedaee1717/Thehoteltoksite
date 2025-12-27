@@ -420,16 +420,24 @@ emailRoutes.post('/send', async (c) => {
       VALUES (?, ?, 'sent', ?)
     `).bind(generateId('anl'), from, emailId).run();
     
+    // ❌ FAIL if Mailgun is not configured or failed
+    if (!mailgunSuccess) {
+      return c.json({ 
+        success: false,
+        error: mailgunError || 'Failed to send email via Mailgun',
+        emailId, // Still saved to DB for drafts
+        mailgunError,
+        message: '❌ Email could not be sent. Please check Mailgun configuration.'
+      }, 500);
+    }
+    
+    // ✅ SUCCESS - Email sent via Mailgun
     return c.json({ 
       success: true,
-      emailSent: mailgunSuccess,
+      emailSent: true,
       emailId,
       messageId: mailgunMessageId,
-      message: mailgunSuccess 
-        ? '✅ Email sent successfully via Mailgun and saved to database' 
-        : '⚠️ Email saved to database but could not be sent via Mailgun',
-      mailgunError: mailgunError || undefined,
-      warning: !mailgunSuccess ? 'Check Mailgun configuration' : undefined
+      message: '✅ Email sent successfully via Mailgun'
     });
   } catch (error: any) {
     console.error('Send email error:', error);
