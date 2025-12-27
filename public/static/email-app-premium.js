@@ -1283,11 +1283,12 @@ window.addEventListener('DOMContentLoaded', function() {
             })
           ),
           
-          h('div', { style: { marginBottom: '24px' } },
+          // MESSAGE SECTION - No bottom margin for tight layout
+          h('div', { style: { marginBottom: '0' } },
             h('label', {
               style: {
                 display: 'block',
-                marginBottom: '8px',
+                marginBottom: '12px',
                 fontSize: '13px',
                 fontWeight: '600',
                 color: 'rgba(255, 255, 255, 0.7)',
@@ -1299,7 +1300,8 @@ window.addEventListener('DOMContentLoaded', function() {
             // 🎨 CLEAN MESSAGE EDITOR - Fast & Beautiful
             h('div', {
               style: {
-                position: 'relative'
+                position: 'relative',
+                marginBottom: '20px'
               }
             },
               // Message textarea
