@@ -21,11 +21,13 @@ document.addEventListener('DOMContentLoaded', function() {
 function setupNavigation() {
     document.querySelectorAll('.admin-nav-item').forEach(item => {
         item.addEventListener('click', function(e) {
-            e.preventDefault();
             const view = this.getAttribute('data-view');
             if (view) {
+                // Only prevent default if it's an internal view switch
+                e.preventDefault();
                 switchView(view);
             }
+            // If no data-view, let the link work normally (e.g., external links)
         });
     });
     
