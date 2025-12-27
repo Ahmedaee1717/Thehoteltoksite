@@ -203,6 +203,19 @@ app.get('/api/debug/timer-emails', async (c) => {
   }
 })
 
+// DEBUG: Show Mailgun configuration (masked)
+app.get('/api/debug/mailgun-config', async (c) => {
+  const { MAILGUN_API_KEY, MAILGUN_DOMAIN, MAILGUN_FROM_EMAIL, MAILGUN_REGION } = c.env;
+  
+  return c.json({
+    configured: !!MAILGUN_API_KEY && !!MAILGUN_DOMAIN,
+    domain: MAILGUN_DOMAIN || 'NOT SET',
+    fromEmail: MAILGUN_FROM_EMAIL || 'NOT SET',
+    region: MAILGUN_REGION || 'NOT SET',
+    apiKey: MAILGUN_API_KEY ? `${MAILGUN_API_KEY.substring(0, 8)}...${MAILGUN_API_KEY.substring(MAILGUN_API_KEY.length - 4)}` : 'NOT SET'
+  });
+})
+
 // Email Admin page - Manage email accounts
 app.get('/admin/email-accounts', (c) => {
   return c.html(`

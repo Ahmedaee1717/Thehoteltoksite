@@ -193,11 +193,20 @@ export class MailgunService {
         let errorMessage = result.message || 'Failed to send email';
         
         if (response.status === 403 || response.status === 401) {
-          errorMessage = `Authentication failed. This usually means:\n` +
-            `1. Domain "${this.domain}" is not verified in Mailgun yet (DNS records not added)\n` +
-            `2. API key doesn't have permission for this domain\n` +
-            `3. Domain hasn't been added to your Mailgun account\n\n` +
-            `Please verify your domain in Mailgun dashboard: https://app.mailgun.com/app/sending/domains`;
+          errorMessage = `🔐 Mailgun Authentication Error (${response.status}):\n\n` +
+            `Current Config:\n` +
+            `- Domain: ${this.domain}\n` +
+            `- From: ${this.fromEmail}\n` +
+            `- API URL: ${this.apiUrl}\n\n` +
+            `Possible causes:\n` +
+            `1. API key is incorrect or expired\n` +
+            `2. API key doesn't have 'Mail Send' permission\n` +
+            `3. Wrong region (US vs EU)\n` +
+            `4. Domain ownership not verified in Mailgun account\n\n` +
+            `Please check:\n` +
+            `- Mailgun dashboard: https://app.mailgun.com/app/sending/domains\n` +
+            `- API keys: https://app.mailgun.com/app/account/security/api_keys\n` +
+            `- Make sure domain shows as 'Active' with green checkmark`;
         } else if (response.status === 404) {
           errorMessage = `Domain "${this.domain}" not found in Mailgun account. Please add it first.`;
         }
