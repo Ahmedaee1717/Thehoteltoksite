@@ -1015,65 +1015,24 @@ window.addEventListener('DOMContentLoaded', function() {
       const [aiProcessing, setAiProcessing] = useState(false);
       const [showAiTools, setShowAiTools] = useState(false);
       const [aiPrompt, setAiPrompt] = useState('');
+      const editorRef = useRef(null);
       
       // TEMP FIX: These were removed but code references them - set as empty/null
       const attachments = [];
       const spamCheck = null;
       const checkingSpam = false;
       
-      // Check spam score ONLY when user explicitly requests (removed auto-check for performance)
-      // Spam check removed from useEffect for speed - was causing lag
-      
-      // Note: Rich text formatting with textarea requires converting to HTML on send
-      // For now, formatting toolbar is visual only - full rich text coming soon
-      
-      const handleFileUpload = async (files) => {
-        setUploading(true);
-        const newAttachments = [];
-        
-        for (let file of files) {
-          // Create preview for images
-          if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              newAttachments.push({
-                name: file.name,
-                size: file.size,
-                type: file.type,
-                preview: e.target.result,
-                file: file
-              });
-              
-              if (newAttachments.length === files.length) {
-                setAttachments([...attachments, ...newAttachments]);
-                setUploading(false);
-              }
-            };
-            reader.readAsDataURL(file);
-          } else {
-            newAttachments.push({
-              name: file.name,
-              size: file.size,
-              type: file.type,
-              file: file
-            });
-            
-            if (newAttachments.length === files.length) {
-              setAttachments([...attachments, ...newAttachments]);
-              setUploading(false);
-            }
-          }
+      // Rich text formatting functions
+      const execCommand = (command, value = null) => {
+        document.execCommand(command, false, value);
+        if (editorRef.current) {
+          setBody(editorRef.current.innerHTML);
         }
       };
       
-      const removeAttachment = (index) => {
-        setAttachments(attachments.filter((_, i) => i !== index));
-      };
-      
-      const formatFileSize = (bytes) => {
-        if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+      const insertLink = () => {
+        const url = prompt('Enter URL:');
+        if (url) execCommand('createLink', url);
       };
       
       const handleAIAssist = async (action, tone = 'professional') => {
@@ -1351,39 +1310,153 @@ window.addEventListener('DOMContentLoaded', function() {
               }
             }, 'Message'),
             
-            // 🎨 PREMIUM MESSAGE EDITOR with styled toolbar
+            // 🎨 RICH TEXT FORMATTING TOOLBAR - Beats Gmail!
             h('div', {
               style: {
                 display: 'flex',
-                gap: '8px',
-                padding: '12px 16px',
-                background: 'linear-gradient(135deg, rgba(201, 169, 98, 0.12) 0%, rgba(139, 115, 85, 0.12) 100%)',
-                border: '1px solid rgba(201, 169, 98, 0.3)',
+                gap: '4px',
+                padding: '10px 14px',
+                background: 'linear-gradient(135deg, rgba(201, 169, 98, 0.15) 0%, rgba(139, 115, 85, 0.15) 100%)',
+                border: '1px solid rgba(201, 169, 98, 0.35)',
                 borderBottom: 'none',
                 borderRadius: '12px 12px 0 0',
                 alignItems: 'center',
-                justifyContent: 'space-between'
+                flexWrap: 'wrap'
               }
             },
+              // Text formatting
               h('div', {
                 style: {
+                  display: 'flex',
+                  gap: '3px',
+                  padding: '3px',
+                  background: 'rgba(0, 0, 0, 0.25)',
+                  borderRadius: '6px',
+                  marginRight: '10px'
+                }
+              },
+                ['bold', 'italic', 'underline'].map(cmd => 
+                  h('button', {
+                    key: cmd,
+                    onMouseDown: (e) => {
+                      e.preventDefault();
+                      execCommand(cmd);
+                    },
+                    style: {
+                      width: '34px',
+                      height: '34px',
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      border: 'none',
+                      borderRadius: '5px',
+                      color: 'rgba(255, 255, 255, 0.85)',
+                      cursor: 'pointer',
+                      fontSize: '15px',
+                      fontWeight: cmd === 'bold' ? 'bold' : '500',
+                      fontStyle: cmd === 'italic' ? 'italic' : 'normal',
+                      textDecoration: cmd === 'underline' ? 'underline' : 'none',
+                      transition: 'all 0.15s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    },
+                    onMouseEnter: (e) => {
+                      e.target.style.background = 'rgba(201, 169, 98, 0.25)';
+                      e.target.style.transform = 'scale(1.05)';
+                    },
+                    onMouseLeave: (e) => {
+                      e.target.style.background = 'rgba(255, 255, 255, 0.08)';
+                      e.target.style.transform = 'scale(1)';
+                    }
+                  }, cmd === 'bold' ? 'B' : cmd === 'italic' ? 'I' : 'U')
+                )
+              ),
+              
+              // Lists
+              h('div', {
+                style: {
+                  display: 'flex',
+                  gap: '3px',
+                  padding: '3px',
+                  background: 'rgba(0, 0, 0, 0.25)',
+                  borderRadius: '6px',
+                  marginRight: '10px'
+                }
+              },
+                [
+                  { cmd: 'insertUnorderedList', icon: '• List' },
+                  { cmd: 'insertOrderedList', icon: '1. List' }
+                ].map(item =>
+                  h('button', {
+                    key: item.cmd,
+                    onMouseDown: (e) => {
+                      e.preventDefault();
+                      execCommand(item.cmd);
+                    },
+                    style: {
+                      height: '34px',
+                      padding: '0 12px',
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      border: 'none',
+                      borderRadius: '5px',
+                      color: 'rgba(255, 255, 255, 0.85)',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      transition: 'all 0.15s',
+                      whiteSpace: 'nowrap'
+                    },
+                    onMouseEnter: (e) => {
+                      e.target.style.background = 'rgba(201, 169, 98, 0.25)';
+                      e.target.style.transform = 'scale(1.05)';
+                    },
+                    onMouseLeave: (e) => {
+                      e.target.style.background = 'rgba(255, 255, 255, 0.08)';
+                      e.target.style.transform = 'scale(1)';
+                    }
+                  }, item.icon)
+                )
+              ),
+              
+              // Link
+              h('button', {
+                onMouseDown: (e) => {
+                  e.preventDefault();
+                  insertLink();
+                },
+                style: {
+                  height: '34px',
+                  padding: '0 14px',
+                  background: 'rgba(59, 130, 246, 0.15)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  borderRadius: '6px',
+                  color: 'rgba(59, 130, 246, 0.95)',
+                  cursor: 'pointer',
                   fontSize: '13px',
                   fontWeight: '700',
-                  color: 'rgba(201, 169, 98, 1)',
-                  letterSpacing: '0.5px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
+                  transition: 'all 0.15s',
+                  marginRight: '10px'
+                },
+                onMouseEnter: (e) => {
+                  e.target.style.background = 'rgba(59, 130, 246, 0.25)';
+                  e.target.style.transform = 'scale(1.05)';
+                },
+                onMouseLeave: (e) => {
+                  e.target.style.background = 'rgba(59, 130, 246, 0.15)';
+                  e.target.style.transform = 'scale(1)';
                 }
-              }, '✍️ COMPOSE MESSAGE'),
+              }, '🔗 Link'),
               
-              // File Upload button
+              // Spacer
+              h('div', { style: { flex: 1 } }),
+              
+              // Attach files
               h('label', {
                 style: {
-                  padding: '8px 16px',
+                  height: '34px',
+                  padding: '0 16px',
                   background: 'linear-gradient(135deg, rgba(201, 169, 98, 0.2) 0%, rgba(139, 115, 85, 0.2) 100%)',
                   border: '1px solid rgba(201, 169, 98, 0.5)',
-                  borderRadius: '8px',
+                  borderRadius: '6px',
                   color: '#C9A962',
                   fontSize: '13px',
                   fontWeight: '700',
@@ -1392,26 +1465,26 @@ window.addEventListener('DOMContentLoaded', function() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
-                  boxShadow: '0 2px 8px rgba(201, 169, 98, 0.15)'
+                  boxShadow: '0 2px 6px rgba(201, 169, 98, 0.15)'
                 },
                 onMouseEnter: (e) => {
                   e.target.style.background = 'linear-gradient(135deg, rgba(201, 169, 98, 0.3) 0%, rgba(139, 115, 85, 0.3) 100%)';
                   e.target.style.transform = 'translateY(-1px)';
-                  e.target.style.boxShadow = '0 4px 12px rgba(201, 169, 98, 0.25)';
+                  e.target.style.boxShadow = '0 4px 10px rgba(201, 169, 98, 0.25)';
                 },
                 onMouseLeave: (e) => {
                   e.target.style.background = 'linear-gradient(135deg, rgba(201, 169, 98, 0.2) 0%, rgba(139, 115, 85, 0.2) 100%)';
                   e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = '0 2px 8px rgba(201, 169, 98, 0.15)';
+                  e.target.style.boxShadow = '0 2px 6px rgba(201, 169, 98, 0.15)';
                 }
               },
-                '📎 ATTACH FILES',
+                '📎 Attach',
                 h('input', {
                   type: 'file',
                   multiple: true,
                   onChange: (e) => {
                     if (e.target.files.length > 0) {
-                      alert(`✅ ${e.target.files.length} file(s) selected!\n\n(Full attachment support coming soon)`);
+                      alert(`✅ ${e.target.files.length} file(s) selected (upload coming soon!)`);
                     }
                   },
                   style: { display: 'none' }
@@ -1419,37 +1492,45 @@ window.addEventListener('DOMContentLoaded', function() {
               )
             ),
             
-            // Message textarea
-            h('textarea', {
-              placeholder: 'Write your professional message here...',
-              value: body,
-              onChange: (e) => setBody(e.target.value),
+            // RICH TEXT EDITOR - ContentEditable
+            h('div', {
+              ref: editorRef,
+              contentEditable: true,
+              onInput: (e) => setBody(e.target.innerHTML),
+              onPaste: (e) => {
+                e.preventDefault();
+                const text = e.clipboardData.getData('text/plain');
+                document.execCommand('insertText', false, text);
+              },
+              dangerouslySetInnerHTML: { __html: body },
+              'data-placeholder': 'Write your professional message here... Use the toolbar above for formatting.',
               style: {
                 width: '100%',
-                padding: '16px 20px',
+                padding: '18px 22px',
                 background: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid rgba(201, 169, 98, 0.3)',
+                border: '1px solid rgba(201, 169, 98, 0.35)',
                 borderTop: 'none',
                 borderRadius: '0 0 12px 12px',
                 fontSize: '15px',
                 color: 'rgba(255, 255, 255, 0.95)',
                 fontFamily: 'inherit',
-                minHeight: '220px',
-                maxHeight: '400px',
-                resize: 'vertical',
+                minHeight: '240px',
+                maxHeight: '420px',
+                overflowY: 'auto',
                 transition: 'all 0.3s',
                 outline: 'none',
-                lineHeight: '1.7',
-                letterSpacing: '0.2px'
+                lineHeight: '1.75',
+                letterSpacing: '0.3px',
+                cursor: 'text'
               },
               onFocus: (e) => {
-                e.target.style.background = 'rgba(255, 255, 255, 0.08)';
-                e.target.style.borderColor = 'rgba(201, 169, 98, 0.6)';
-                e.target.style.boxShadow = '0 0 0 4px rgba(201, 169, 98, 0.12), inset 0 2px 8px rgba(0, 0, 0, 0.2)';
+                e.target.style.background = 'rgba(255, 255, 255, 0.09)';
+                e.target.style.borderColor = 'rgba(201, 169, 98, 0.65)';
+                e.target.style.boxShadow = '0 0 0 4px rgba(201, 169, 98, 0.15), inset 0 2px 12px rgba(0, 0, 0, 0.25)';
               },
               onBlur: (e) => {
                 e.target.style.background = 'rgba(255, 255, 255, 0.06)';
-                e.target.style.borderColor = 'rgba(201, 169, 98, 0.3)';
+                e.target.style.borderColor = 'rgba(201, 169, 98, 0.35)';
                 e.target.style.boxShadow = 'none';
               }
             }),
@@ -2482,6 +2563,55 @@ window.addEventListener('DOMContentLoaded', function() {
       }
       ::placeholder {
         color: rgba(255, 255, 255, 0.3);
+      }
+      
+      /* Rich text editor styles */
+      [contenteditable]:empty:before {
+        content: attr(data-placeholder);
+        color: rgba(255, 255, 255, 0.35);
+        pointer-events: none;
+      }
+      [contenteditable] {
+        word-wrap: break-word;
+      }
+      [contenteditable] b,
+      [contenteditable] strong {
+        font-weight: 700;
+        color: rgba(255, 255, 255, 1);
+      }
+      [contenteditable] i,
+      [contenteditable] em {
+        font-style: italic;
+        color: rgba(201, 169, 98, 1);
+      }
+      [contenteditable] u {
+        text-decoration: underline;
+        text-decoration-color: rgba(201, 169, 98, 0.7);
+        text-decoration-thickness: 2px;
+      }
+      [contenteditable] a {
+        color: rgba(59, 130, 246, 1);
+        text-decoration: underline;
+        cursor: pointer;
+      }
+      [contenteditable] a:hover {
+        color: rgba(96, 165, 250, 1);
+      }
+      [contenteditable] ul,
+      [contenteditable] ol {
+        margin: 10px 0;
+        padding-left: 28px;
+      }
+      [contenteditable] li {
+        margin: 8px 0;
+        color: rgba(255, 255, 255, 0.95);
+      }
+      [contenteditable] ul li::marker {
+        color: rgba(201, 169, 98, 0.9);
+      }
+      [contenteditable] ol li::marker {
+        color: rgba(201, 169, 98, 0.9);
+        font-weight: 600;
       }
     `;
     document.head.appendChild(style);
