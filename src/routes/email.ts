@@ -426,11 +426,16 @@ emailRoutes.post('/send', async (c) => {
       VALUES (?, ?, 'sent', ?)
     `).bind(generateId('anl'), from, emailId).run();
     
-    // ⚠️ BYPASS Mailgun errors for now - save to DB anyway
-    // This lets you test the app even if Mailgun isn't configured yet
+    // ❌ FAIL if Mailgun failed
     if (!mailgunSuccess) {
-      console.warn('⚠️ Mailgun failed but saving email to DB anyway:', mailgunError);
-      // DON'T return error - continue and save to DB
+      return c.json({ 
+        success: false,
+        emailSaved: true,  // Email IS saved to DB
+        emailSent: false,  // But NOT sent via Mailgun
+        emailId,
+        error: mailgunError || 'Failed to send email via Mailgun',
+        message: '❌ Email saved to drafts but could not be sent via Mailgun'
+      }, 500);
     }
     
     // ✅ SUCCESS - Email sent via Mailgun
