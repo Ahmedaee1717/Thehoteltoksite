@@ -1015,12 +1015,13 @@ window.addEventListener('DOMContentLoaded', function() {
       const [checkingSpam, setCheckingSpam] = useState(false);
       const [aiProcessing, setAiProcessing] = useState(false);
       const [showAiTools, setShowAiTools] = useState(false);
+      const [aiPrompt, setAiPrompt] = useState('');
       
       // Check spam score ONLY when user explicitly requests (removed auto-check for performance)
       // Spam check removed from useEffect for speed - was causing lag
       
       const handleAIAssist = async (action, tone = 'professional') => {
-        if (!body.trim()) {
+        if (!body.trim() && action !== 'generate') {
           alert('✍️ Please write some text first!');
           return;
         }
@@ -1048,6 +1049,44 @@ window.addEventListener('DOMContentLoaded', function() {
             setBody(data.text);
           } else {
             alert('❌ AI assist failed: ' + data.error);
+          }
+        } catch (error) {
+          alert('❌ AI error: ' + error.message);
+        } finally {
+          setAiProcessing(false);
+        }
+      };
+      
+      const handleGenerateFromPrompt = async () => {
+        if (!aiPrompt.trim()) {
+          alert('💡 Please enter what you want the email to say!');
+          return;
+        }
+        
+        setAiProcessing(true);
+        try {
+          const token = localStorage.getItem('token');
+          const response = await fetch('/api/email/compose-assist', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              action: 'expand',
+              text: aiPrompt,
+              tone: 'professional',
+              context: subject || 'Email request'
+            })
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            setBody(data.text);
+            setAiPrompt(''); // Clear prompt after generating
+          } else {
+            alert('❌ AI generation failed: ' + data.error);
           }
         } catch (error) {
           alert('❌ AI error: ' + error.message);
@@ -1320,14 +1359,103 @@ window.addEventListener('DOMContentLoaded', function() {
               }
             }, showAiTools ? '🤖 Hide AI Tools' : '🤖 Show AI Tools'),
             
-            showAiTools && h('div', {
-              style: {
-                marginTop: '12px',
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-                gap: '8px'
-              }
-            },
+            showAiTools && h('div', { style: { marginTop: '12px' } },
+              // GENERATE FROM PROMPT - Top priority feature
+              h('div', {
+                style: {
+                  marginBottom: '16px',
+                  padding: '14px',
+                  background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.15) 0%, rgba(79, 70, 229, 0.15) 100%)',
+                  border: '2px solid rgba(147, 51, 234, 0.4)',
+                  borderRadius: '12px'
+                }
+              },
+                h('div', {
+                  style: {
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: 'rgba(147, 51, 234, 0.9)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    marginBottom: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }
+                }, '✨ Generate Full Email from Prompt'),
+                h('input', {
+                  type: 'text',
+                  placeholder: 'e.g., "Schedule meeting tomorrow about Q4 budget review"',
+                  value: aiPrompt,
+                  onChange: (e) => setAiPrompt(e.target.value),
+                  onKeyPress: (e) => e.key === 'Enter' && !aiProcessing && handleGenerateFromPrompt(),
+                  disabled: aiProcessing,
+                  style: {
+                    width: '100%',
+                    padding: '12px 14px',
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: '1px solid rgba(147, 51, 234, 0.3)',
+                    borderRadius: '8px',
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    fontSize: '14px',
+                    fontFamily: 'inherit',
+                    outline: 'none',
+                    marginBottom: '10px'
+                  }
+                }),
+                h('button', {
+                  onClick: handleGenerateFromPrompt,
+                  disabled: aiProcessing || !aiPrompt.trim(),
+                  style: {
+                    width: '100%',
+                    padding: '12px 16px',
+                    background: aiProcessing || !aiPrompt.trim()
+                      ? 'rgba(147, 51, 234, 0.2)'
+                      : 'linear-gradient(135deg, rgba(147, 51, 234, 0.9) 0%, rgba(79, 70, 229, 0.9) 100%)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: '#fff',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: aiProcessing || !aiPrompt.trim() ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    transition: 'all 0.2s',
+                    opacity: aiProcessing || !aiPrompt.trim() ? 0.5 : 1,
+                    boxShadow: aiProcessing || !aiPrompt.trim() ? 'none' : '0 4px 12px rgba(147, 51, 234, 0.3)'
+                  }
+                }, aiProcessing ? '⏳ Generating...' : '🚀 Generate Complete Email')
+              ),
+              
+              // Divider
+              h('div', {
+                style: {
+                  height: '1px',
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(147, 51, 234, 0.3) 50%, transparent 100%)',
+                  marginBottom: '16px'
+                }
+              }),
+              
+              // Action buttons grid
+              h('div', {
+                style: {
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  color: 'rgba(255, 255, 255, 0.6)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  marginBottom: '10px'
+                }
+              }, '✏️ Enhance Existing Text'),
+              h('div', {
+                style: {
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                  gap: '8px'
+                }
+              },
               // Improve button
               h('button', {
                 onClick: () => handleAIAssist('improve', 'professional'),
@@ -1447,6 +1575,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 onMouseEnter: (e) => !aiProcessing && (e.target.style.background = 'rgba(20, 184, 166, 0.2)'),
                 onMouseLeave: (e) => (e.target.style.background = 'rgba(20, 184, 166, 0.1)')
               }, aiProcessing ? '⏳...' : '👋 Casual')
+              )
             )
           ),
           
