@@ -102,6 +102,22 @@ window.addEventListener('DOMContentLoaded', function() {
         setLoading(false);
       };
       
+      // 🕒 Calculate time remaining until expiry
+      const getTimeRemaining = (expiresAt) => {
+        if (!expiresAt) return null;
+        const now = new Date();
+        const expiry = new Date(expiresAt);
+        const diff = expiry - now;
+        
+        if (diff <= 0) return 'Expired';
+        
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const days = Math.floor(hours / 24);
+        
+        if (days > 0) return `${days}d`;
+        return `${hours}h`;
+      };
+      
       const sendEmail = async (to, subject, body) => {
         try {
           const response = await fetch('/api/email/send', {
@@ -848,6 +864,42 @@ window.addEventListener('DOMContentLoaded', function() {
                           })
                         )
                       )
+                    ),
+                    // ⏳ INBOX = NOW Timer Badge
+                    email.expiry_type && h('div', {
+                      style: {
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        background: email.expiry_type === 'keep' 
+                          ? 'linear-gradient(135deg, rgba(201, 169, 98, 0.2), rgba(201, 169, 98, 0.1))'
+                          : email.expires_at && new Date(email.expires_at) - new Date() < 24 * 60 * 60 * 1000
+                            ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1))'
+                            : 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1))',
+                        border: email.expiry_type === 'keep'
+                          ? '1px solid rgba(201, 169, 98, 0.3)'
+                          : email.expires_at && new Date(email.expires_at) - new Date() < 24 * 60 * 60 * 1000
+                            ? '1px solid rgba(239, 68, 68, 0.3)'
+                            : '1px solid rgba(59, 130, 246, 0.3)',
+                        color: email.expiry_type === 'keep'
+                          ? 'rgba(201, 169, 98, 0.9)'
+                          : email.expires_at && new Date(email.expires_at) - new Date() < 24 * 60 * 60 * 1000
+                            ? '#ef4444'
+                            : '#3b82f6',
+                        boxShadow: email.expiry_type === 'keep'
+                          ? '0 2px 8px rgba(201, 169, 98, 0.2)'
+                          : email.expires_at && new Date(email.expires_at) - new Date() < 24 * 60 * 60 * 1000
+                            ? '0 2px 8px rgba(239, 68, 68, 0.2)'
+                            : '0 2px 8px rgba(59, 130, 246, 0.2)'
+                      }
+                    },
+                      email.expiry_type === 'keep' ? '∞' : '⏳',
+                      ' ',
+                      email.expiry_type === 'keep' ? 'Keep' : getTimeRemaining(email.expires_at)
                     )
                   ),
                   h('div', { 

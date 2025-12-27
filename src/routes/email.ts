@@ -85,7 +85,8 @@ emailRoutes.get('/inbox', async (c) => {
       SELECT 
         id, thread_id, from_email, from_name, to_email, subject,
         snippet, category, priority, sentiment, is_read, is_starred,
-        is_archived, labels, received_at, sent_at
+        is_archived, labels, received_at, sent_at,
+        expiry_type, expires_at, expiry_action, ai_summary
       FROM emails
       WHERE to_email = ? 
         AND category != 'trash' 
@@ -121,7 +122,8 @@ emailRoutes.get('/sent', async (c) => {
       SELECT 
         id, thread_id, from_email, from_name, to_email, subject,
         snippet, category, priority, sentiment, is_read, is_starred,
-        is_archived, labels, received_at, sent_at
+        is_archived, labels, received_at, sent_at,
+        expiry_type, expires_at, expiry_action, ai_summary
       FROM emails
       WHERE from_email = ? 
         AND category != 'trash'
@@ -155,7 +157,8 @@ emailRoutes.get('/spam', async (c) => {
       SELECT 
         id, thread_id, from_email, from_name, to_email, subject,
         snippet, category, priority, sentiment, is_read, is_starred,
-        is_archived, labels, received_at, sent_at
+        is_archived, labels, received_at, sent_at,
+        expiry_type, expires_at, expiry_action, ai_summary
       FROM emails
       WHERE to_email = ? 
         AND category = 'spam'
@@ -189,7 +192,8 @@ emailRoutes.get('/trash', async (c) => {
       SELECT 
         id, thread_id, from_email, from_name, to_email, subject,
         snippet, category, priority, sentiment, is_read, is_starred,
-        is_archived, labels, received_at, sent_at
+        is_archived, labels, received_at, sent_at,
+        expiry_type, expires_at, expiry_action, ai_summary
       FROM emails
       WHERE (to_email = ? OR from_email = ?)
         AND category = 'trash'
@@ -395,8 +399,9 @@ emailRoutes.post('/send', async (c) => {
       INSERT INTO emails (
         id, thread_id, from_email, to_email, cc, bcc, subject,
         body_text, body_html, snippet, category, ai_summary, 
-        action_items, embedding_vector, sent_at, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        action_items, embedding_vector, sent_at, created_at,
+        expiry_type, expires_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, datetime('now', '+30 days'))
     `).bind(
       emailId,
       threadId,
@@ -411,7 +416,8 @@ emailRoutes.post('/send', async (c) => {
       category,
       aiSummary,
       aiActionItems ? JSON.stringify(aiActionItems) : null,
-      embeddingVector ? JSON.stringify(embeddingVector) : null
+      embeddingVector ? JSON.stringify(embeddingVector) : null,
+      '30d' // Default expiry: 30 days for all emails
     ).run();
     
     // Track analytics
@@ -682,6 +688,55 @@ emailRoutes.put('/:id/archive', async (c) => {
     return c.json({ success: true });
   } catch (error: any) {
     console.error('Archive email error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================
+// PUT /api/email/:id/expiry
+// Set email expiry time (Inbox = Now feature)
+// ============================================
+emailRoutes.put('/:id/expiry', async (c) => {
+  const { DB } = c.env;
+  const emailId = c.req.param('id');
+  
+  try {
+    const { expiry_type } = await c.req.json();
+    
+    // Calculate expires_at based on expiry_type
+    let expiresAt = null;
+    if (expiry_type === '24h') {
+      expiresAt = `datetime('now', '+1 day')`;
+    } else if (expiry_type === '7d') {
+      expiresAt = `datetime('now', '+7 days')`;
+    } else if (expiry_type === '30d') {
+      expiresAt = `datetime('now', '+30 days')`;
+    } else if (expiry_type === 'keep') {
+      expiresAt = null; // Keep forever
+    }
+    
+    if (expiresAt) {
+      await DB.prepare(`
+        UPDATE emails 
+        SET expiry_type = ?, 
+            expires_at = ${expiresAt},
+            is_expired = 0
+        WHERE id = ?
+      `).bind(expiry_type, emailId).run();
+    } else {
+      // Keep forever
+      await DB.prepare(`
+        UPDATE emails 
+        SET expiry_type = 'keep', 
+            expires_at = NULL,
+            is_expired = 0
+        WHERE id = ?
+      `).bind(emailId).run();
+    }
+    
+    return c.json({ success: true, expiry_type });
+  } catch (error: any) {
+    console.error('Set expiry error:', error);
     return c.json({ success: false, error: error.message }, 500);
   }
 });
