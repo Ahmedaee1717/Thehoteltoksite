@@ -24,7 +24,7 @@ const emailRoutes = new Hono<{ Bindings: Bindings }>()
 // ============================================
 emailRoutes.get('/inbox', async (c) => {
   const { DB } = c.env;
-  const userEmail = c.req.query('user') || 'admin@investaycapital.com';
+  const userEmail = c.req.query('user') || 'admin@investay.com';
   
   try {
     const { results } = await DB.prepare(`
@@ -54,7 +54,7 @@ emailRoutes.get('/inbox', async (c) => {
 // ============================================
 emailRoutes.get('/sent', async (c) => {
   const { DB } = c.env;
-  const userEmail = c.req.query('user') || 'admin@investaycapital.com';
+  const userEmail = c.req.query('user') || 'admin@investay.com';
   
   try {
     const { results } = await DB.prepare(`
@@ -82,7 +82,7 @@ emailRoutes.get('/sent', async (c) => {
 // ============================================
 emailRoutes.get('/spam', async (c) => {
   const { DB } = c.env;
-  const userEmail = c.req.query('user') || 'admin@investaycapital.com';
+  const userEmail = c.req.query('user') || 'admin@investay.com';
   
   try {
     const { results } = await DB.prepare(`
@@ -110,7 +110,7 @@ emailRoutes.get('/spam', async (c) => {
 // ============================================
 emailRoutes.get('/trash', async (c) => {
   const { DB } = c.env;
-  const userEmail = c.req.query('user') || 'admin@investaycapital.com';
+  const userEmail = c.req.query('user') || 'admin@investay.com';
   
   try {
     const { results } = await DB.prepare(`
@@ -138,7 +138,7 @@ emailRoutes.get('/trash', async (c) => {
 // ============================================
 emailRoutes.get('/archived', async (c) => {
   const { DB } = c.env;
-  const userEmail = c.req.query('user') || 'admin@investaycapital.com';
+  const userEmail = c.req.query('user') || 'admin@investay.com';
   
   try {
     const { results } = await DB.prepare(`
@@ -455,8 +455,8 @@ emailRoutes.post('/search', async (c) => {
       ORDER BY received_at DESC
       LIMIT 50
     `).bind(
-      userEmail || 'admin@investaycapital.com',
-      userEmail || 'admin@investaycapital.com',
+      userEmail || 'admin@investay.com',
+      userEmail || 'admin@investay.com',
       `%${query}%`,
       `%${query}%`
     ).all();
@@ -541,7 +541,7 @@ emailRoutes.delete('/:id', async (c) => {
 // ============================================
 emailRoutes.get('/analytics/summary', async (c) => {
   const { DB } = c.env;
-  const userEmail = c.req.query('user') || 'admin@investaycapital.com';
+  const userEmail = c.req.query('user') || 'admin@investay.com';
   
   try {
     // Total emails
@@ -644,7 +644,7 @@ emailRoutes.post('/drafts/save', async (c) => {
 // ============================================
 emailRoutes.get('/drafts', async (c) => {
   const { DB } = c.env;
-  const userEmail = c.req.query('user') || 'admin@investaycapital.com';
+  const userEmail = c.req.query('user') || 'admin@investay.com';
   
   try {
     const { results } = await DB.prepare(`
@@ -715,7 +715,7 @@ emailRoutes.post('/templates/save', async (c) => {
 // ============================================
 emailRoutes.get('/templates', async (c) => {
   const { DB } = c.env;
-  const userId = c.req.query('user') || 'admin@investaycapital.com';
+  const userId = c.req.query('user') || 'admin@investay.com';
   
   try {
     const { results } = await DB.prepare(`
@@ -993,11 +993,11 @@ emailRoutes.post('/accounts/create', async (c) => {
     }
     
     // Validate email format
-    const emailRegex = /^[^\s@]+@www\.investaycapital\.com$/;
+    const emailRegex = /^[^\s@]+@investay\.com$/;
     if (!emailRegex.test(email)) {
       return c.json({ 
         success: false, 
-        error: 'Invalid email format. Must be @www.investaycapital.com' 
+        error: 'Invalid email format. Must be @investay.com' 
       }, 400);
     }
     

@@ -442,8 +442,8 @@ function CreateAccountModal({ onClose, onCreate }) {
     }
     
     // Validate email format
-    if (!email.endsWith('@www.investaycapital.com')) {
-      alert('Email must end with @www.investaycapital.com');
+    if (!email.endsWith('@investay.com')) {
+      alert('Email must end with @investay.com');
       return;
     }
     
@@ -529,7 +529,7 @@ function CreateAccountModal({ onClose, onCreate }) {
               type="email"
               value=${email}
               onChange=${(e) => setEmail(e.target.value)}
-              placeholder="example@www.investaycapital.com"
+              placeholder="example@investay.com"
               style=${{
                 width: '100%',
                 padding: '12px 16px',
