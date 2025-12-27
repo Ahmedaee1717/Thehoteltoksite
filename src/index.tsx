@@ -5,6 +5,7 @@ import { blogRoutes } from './routes/blog'
 import { adminRoutes } from './routes/admin'
 import { aiAdminRoutes } from './routes/ai-admin'
 import { emailRoutes } from './routes/email'
+import { authRoutes } from './routes/auth'
 import tasks from './routes/tasks'
 import crm from './routes/crm'
 import collab from './routes/collaboration'
@@ -20,6 +21,7 @@ type Bindings = {
   DB: D1Database;
   OPENAI_API_KEY?: string;
   R2_BUCKET?: R2Bucket;
+  JWT_SECRET?: string;
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -35,6 +37,7 @@ app.route('/api/blog', blogRoutes)
 app.route('/api/admin', adminRoutes)
 app.route('/api/ai', aiAdminRoutes)
 app.route('/api/email', emailRoutes)
+app.route('/api/auth', authRoutes)
 app.route('/api/tasks', tasks)
 app.route('/api/crm', crm)
 app.route('/api/collaboration', collab)
@@ -97,6 +100,38 @@ app.post('/api/ai-answer', async (c) => {
       details: error.message
     }, 500);
   }
+})
+
+// Login page - Ultra-secure authentication
+app.get('/login', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Login - InvestMail</title>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+      <script src="https://cdn.tailwindcss.com"></script>
+    </head>
+    <body>
+      <div id="root"></div>
+      
+      <!-- React -->
+      <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+      <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+      
+      <!-- HTM for JSX-like syntax -->
+      <script src="https://unpkg.com/htm@3.1.1/dist/htm.js"></script>
+      <script>
+        window.htm = window.htm.bind(window.React.createElement);
+      </script>
+      
+      <!-- Login App -->
+      <script src="/static/login.js"></script>
+    </body>
+    </html>
+  `)
 })
 
 // Email client page
