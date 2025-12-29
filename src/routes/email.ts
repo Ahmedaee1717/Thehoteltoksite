@@ -1582,7 +1582,7 @@ emailRoutes.post('/receive', async (c) => {
       category, // Use AI-detected category or 'inbox'
       aiSummary,
       aiActionItems,
-      embeddingVector,
+      embeddingVector ? JSON.stringify(embeddingVector) : null, // Convert array to JSON string
       '30d' // Default expiry: 30 days
     ).run();
     
