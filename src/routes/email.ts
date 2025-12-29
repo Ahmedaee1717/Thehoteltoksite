@@ -54,8 +54,10 @@ emailRoutes.use('/*', async (c, next) => {
   // Skip auth for these endpoints:
   // 1. Tracking pixel (external email clients)
   // 2. Admin email account management (admin dashboard access)
+  // 3. Email receive webhook (Mailgun calls this)
   if (
     path.includes('/track/') ||
+    path.includes('/receive') ||
     path.includes('/accounts/create') ||
     path.includes('/accounts/list') ||
     path.includes('/accounts/') && (c.req.method === 'DELETE' || c.req.method === 'PATCH')
