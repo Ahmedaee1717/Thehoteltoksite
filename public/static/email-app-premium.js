@@ -2097,6 +2097,22 @@ window.addEventListener('DOMContentLoaded', function() {
       const [forwardBody, setForwardBody] = useState('');
       const [sending, setSending] = useState(false);
       
+      // Helper function for time remaining
+      const getTimeRemaining = (expiresAt) => {
+        if (!expiresAt) return null;
+        const now = new Date();
+        const expiry = new Date(expiresAt);
+        const diff = expiry - now;
+        
+        if (diff <= 0) return 'Expired';
+        
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const days = Math.floor(hours / 24);
+        
+        if (days > 0) return `${days}d`;
+        return `${hours}h`;
+      };
+      
       const formatDate = (dateString) => {
         if (!dateString) return 'Unknown date';
         try {
