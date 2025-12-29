@@ -3242,34 +3242,38 @@ window.addEventListener('DOMContentLoaded', function() {
       
       // Load contact suggestions
       const loadContactSuggestions = async (query) => {
-        if (!query || query.length < 2) {
-          setContactSuggestions([]);
-          setShowContactSuggestions(false);
-          return;
-        }
-        
         setLoadingContacts(true);
         try {
           // Get CRM contacts
-          const crmRes = await fetch(`/api/crm/contacts?userEmail=${user}&search=${encodeURIComponent(query)}`);
+          const searchParam = query && query.length >= 1 ? `&search=${encodeURIComponent(query)}` : '';
+          const crmRes = await fetch(`/api/crm/contacts?userEmail=${user}${searchParam}`);
           const crmData = await crmRes.json();
+          
+          console.log('CRM Contacts Response:', crmData); // Debug log
           
           // Get company team members (all @investaycapital.com emails)
           const teamEmails = [
             { email: 'admin@investaycapital.com', name: 'Admin', company: 'Investay Capital' },
             { email: 'test1@investaycapital.com', name: 'Test User 1', company: 'Investay Capital' },
             { email: 'ahmed.enin@virgingates.com', name: 'Ahmed Enin', company: 'Virgin Gates' },
+            { email: 'ahmed@investaycapital.com', name: 'Ahmed', company: 'Investay Capital' },
             { email: 'talabatpromocode@gmail.com', name: 'Talabat Promo', company: 'External' }
           ];
           
           // Combine and filter suggestions
           const suggestions = [];
+          const queryLower = (query || '').toLowerCase();
           
           // Add matching CRM contacts first
-          if (crmData.contacts) {
+          if (crmData.contacts && Array.isArray(crmData.contacts)) {
             crmData.contacts.forEach(contact => {
-              if (contact.email.toLowerCase().includes(query.toLowerCase()) || 
-                  contact.name.toLowerCase().includes(query.toLowerCase())) {
+              // If no query, show all. If query exists, filter
+              const matchesQuery = !query || query.length === 0 ||
+                contact.email.toLowerCase().includes(queryLower) || 
+                contact.name.toLowerCase().includes(queryLower) ||
+                (contact.company && contact.company.toLowerCase().includes(queryLower));
+                
+              if (matchesQuery) {
                 suggestions.push({
                   email: contact.email,
                   name: contact.name,
@@ -3280,17 +3284,23 @@ window.addEventListener('DOMContentLoaded', function() {
             });
           }
           
+          console.log('CRM matches:', suggestions.length); // Debug log
+          
           // Add matching team emails
           teamEmails.forEach(teamMember => {
-            if ((teamMember.email.toLowerCase().includes(query.toLowerCase()) || 
-                 teamMember.name.toLowerCase().includes(query.toLowerCase())) &&
-                !suggestions.find(s => s.email === teamMember.email)) {
+            const matchesQuery = !query || query.length === 0 ||
+              teamMember.email.toLowerCase().includes(queryLower) || 
+              teamMember.name.toLowerCase().includes(queryLower);
+              
+            if (matchesQuery && !suggestions.find(s => s.email === teamMember.email)) {
               suggestions.push({
                 ...teamMember,
                 type: 'team'
               });
             }
           });
+          
+          console.log('Total suggestions:', suggestions.length); // Debug log
           
           setContactSuggestions(suggestions.slice(0, 8)); // Limit to 8 suggestions
           setShowContactSuggestions(suggestions.length > 0);
@@ -3504,16 +3514,28 @@ window.addEventListener('DOMContentLoaded', function() {
               }
             }, 'To'),
             h('input', {
-              type: 'text',
+              type: 'email',
+              name: 'to_email_' + Date.now(),
+              id: 'compose_to_' + Date.now(),
               placeholder: 'Start typing to see suggestions...',
               value: to,
+              autoComplete: 'new-password',
+              autoCorrect: 'off',
+              autoCapitalize: 'off',
+              spellCheck: 'false',
+              'data-form-type': 'other',
+              'data-lpignore': 'true',
               onChange: (e) => handleToChange(e.target.value),
+              onInput: (e) => handleToChange(e.target.value),
               onFocus: (e) => {
                 e.target.style.background = 'rgba(255, 255, 255, 0.08)';
                 e.target.style.borderColor = 'rgba(201, 169, 98, 0.5)';
                 e.target.style.boxShadow = '0 0 0 3px rgba(201, 169, 98, 0.1)';
                 if (to.length >= 2) {
                   loadContactSuggestions(to);
+                } else if (to.length === 0) {
+                  // Show all suggestions when field is empty and focused
+                  loadContactSuggestions('');
                 }
               },
               onBlur: (e) => {
@@ -3523,7 +3545,7 @@ window.addEventListener('DOMContentLoaded', function() {
                   e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
                   e.target.style.boxShadow = 'none';
                   setShowContactSuggestions(false);
-                }, 200);
+                }, 300);
               },
               style: {
                 width: '100%',
