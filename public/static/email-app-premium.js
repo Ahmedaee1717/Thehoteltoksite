@@ -2089,13 +2089,38 @@ window.addEventListener('DOMContentLoaded', function() {
         return null;
       }
       
-      // Local state for reply/forward
+      // Local state for reply/forward and thread
       const [showReply, setShowReply] = useState(false);
       const [showForward, setShowForward] = useState(false);
       const [replyBody, setReplyBody] = useState('');
       const [forwardTo, setForwardTo] = useState('');
       const [forwardBody, setForwardBody] = useState('');
       const [sending, setSending] = useState(false);
+      const [threadEmails, setThreadEmails] = useState([email]); // Start with current email
+      const [loadingThread, setLoadingThread] = useState(false);
+      
+      // Load full thread on mount
+      useEffect(() => {
+        if (email.thread_id) {
+          loadThread();
+        }
+      }, [email.thread_id]);
+      
+      const loadThread = async () => {
+        setLoadingThread(true);
+        try {
+          const response = await fetch(`/api/email/thread/${email.thread_id}`);
+          const data = await response.json();
+          if (data.success && data.emails) {
+            setThreadEmails(data.emails);
+            console.log('🧵 Thread loaded:', data.emails.length, 'messages');
+          }
+        } catch (err) {
+          console.error('❌ Failed to load thread:', err);
+        } finally {
+          setLoadingThread(false);
+        }
+      };
       
       // Helper function for time remaining
       const getTimeRemaining = (expiresAt) => {
@@ -2395,7 +2420,7 @@ window.addEventListener('DOMContentLoaded', function() {
               )
             ),
             
-            // Email body
+            // Thread View - Show all messages in conversation (Gmail-style)
             h('div', {
               style: {
                 marginTop: '24px'
@@ -2408,21 +2433,133 @@ window.addEventListener('DOMContentLoaded', function() {
                   color: 'rgba(255, 255, 255, 0.5)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px',
-                  marginBottom: '16px'
+                  marginBottom: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
                 }
-              }, 'Message'),
-              h('div', {
+              }, 
+                '🧵 Conversation',
+                threadEmails.length > 1 && h('span', {
+                  style: {
+                    background: 'rgba(201, 169, 98, 0.2)',
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    fontSize: '10px',
+                    color: '#C9A962'
+                  }
+                }, `${threadEmails.length} messages`)
+              ),
+              
+              // Show all messages in thread
+              threadEmails.map((msg, idx) =>
+                h('div', {
+                  key: msg.id,
+                  style: {
+                    marginBottom: idx < threadEmails.length - 1 ? '16px' : '0',
+                    padding: '20px',
+                    background: idx === threadEmails.length - 1 
+                      ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%)'
+                      : 'rgba(255, 255, 255, 0.02)',
+                    borderRadius: '12px',
+                    border: idx === threadEmails.length - 1
+                      ? '1px solid rgba(59, 130, 246, 0.2)'
+                      : '1px solid rgba(255, 255, 255, 0.05)',
+                    position: 'relative'
+                  }
+                },
+                  // Message header
+                  h('div', {
+                    style: {
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '12px',
+                      paddingBottom: '12px',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+                    }
+                  },
+                    h('div', {
+                      style: {
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px'
+                      }
+                    },
+                      h('div', {
+                        style: {
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #C9A962 0%, #8B7355 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '14px',
+                          flexShrink: 0
+                        }
+                      }, msg.from_name ? msg.from_name.charAt(0).toUpperCase() : '📧'),
+                      h('div', {},
+                        h('div', {
+                          style: {
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            color: 'rgba(255, 255, 255, 0.9)'
+                          }
+                        }, msg.from_name || msg.from_email),
+                        h('div', {
+                          style: {
+                            fontSize: '11px',
+                            color: 'rgba(255, 255, 255, 0.5)'
+                          }
+                        }, '→ ' + msg.to_email)
+                      )
+                    ),
+                    h('div', {
+                      style: {
+                        fontSize: '11px',
+                        color: 'rgba(255, 255, 255, 0.5)',
+                        textAlign: 'right'
+                      }
+                    }, formatDate(msg.sent_at || msg.received_at || msg.created_at))
+                  ),
+                  
+                  // Message body
+                  h('div', {
+                    style: {
+                      fontSize: '14px',
+                      lineHeight: '1.7',
+                      color: 'rgba(255, 255, 255, 0.85)',
+                      whiteSpace: 'pre-wrap'
+                    }
+                  }, msg.body_text || msg.snippet || '(No content)'),
+                  
+                  // Latest message indicator
+                  idx === threadEmails.length - 1 && h('div', {
+                    style: {
+                      position: 'absolute',
+                      top: '12px',
+                      right: '12px',
+                      fontSize: '10px',
+                      fontWeight: '600',
+                      color: '#3b82f6',
+                      background: 'rgba(59, 130, 246, 0.15)',
+                      padding: '4px 10px',
+                      borderRadius: '12px',
+                      border: '1px solid rgba(59, 130, 246, 0.3)'
+                    }
+                  }, '💬 Latest')
+                )
+              ),
+              
+              loadingThread && h('div', {
                 style: {
-                  fontSize: '15px',
-                  lineHeight: '1.8',
-                  color: 'rgba(255, 255, 255, 0.85)',
-                  whiteSpace: 'pre-wrap',
-                  padding: '24px',
-                  background: 'rgba(255, 255, 255, 0.02)',
-                  borderRadius: '12px',
-                  border: '1px solid rgba(255, 255, 255, 0.05)'
+                  textAlign: 'center',
+                  padding: '20px',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  fontSize: '13px'
                 }
-              }, email.body_text || email.snippet || '(No content)')
+              }, '⏳ Loading thread...')
             ),
             
             // ⏳ INBOX = NOW Quick Expiry Selector (only if email has expiry data)

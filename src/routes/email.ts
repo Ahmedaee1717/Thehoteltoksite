@@ -264,7 +264,7 @@ emailRoutes.post('/send', async (c) => {
   try {
     const { 
       to, cc, bcc, subject, body, 
-      attachments, useAI 
+      attachments, useAI, thread_id 
     } = await c.req.json();
     
     // 🔒 CRITICAL: Force from to be authenticated user's email - NEVER trust client
@@ -278,7 +278,8 @@ emailRoutes.post('/send', async (c) => {
     }
     
     const emailId = generateId('eml');
-    const threadId = generateId('thr');
+    // Use provided thread_id for replies, or generate new one for new conversations
+    const threadId = thread_id || generateId('thr');
     
     // Check spam score before sending
     const spamCheck = checkSpamScore(subject, body);
@@ -1615,6 +1616,42 @@ emailRoutes.patch('/:id/expiry', async (c) => {
     }
   } catch (error: any) {
     console.error('Expiry update error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================
+// GET /api/email/thread/:thread_id
+// Get all emails in a thread (conversation view)
+// 🔒 SECURITY: Users can ONLY see threads they're part of
+// ============================================
+emailRoutes.get('/thread/:thread_id', async (c) => {
+  const { DB } = c.env;
+  const threadId = c.req.param('thread_id');
+  const userEmail = c.get('userEmail');
+  
+  if (!userEmail) {
+    return c.json({ success: false, error: 'Authentication required' }, 401);
+  }
+  
+  try {
+    // Get all emails in thread where user is sender or recipient
+    const { results } = await DB.prepare(`
+      SELECT 
+        id, thread_id, from_email, from_name, to_email, subject,
+        body_text, body_html, snippet, category, priority, sentiment, 
+        is_read, is_starred, is_archived, labels, received_at, sent_at, 
+        ai_summary, action_items, created_at, updated_at
+      FROM emails
+      WHERE thread_id = ? 
+        AND (from_email = ? OR to_email = ?)
+        AND category != 'trash'
+      ORDER BY sent_at ASC, created_at ASC
+    `).bind(threadId, userEmail, userEmail).all();
+    
+    return c.json({ success: true, emails: results, thread_id: threadId });
+  } catch (error: any) {
+    console.error('Thread fetch error:', error);
     return c.json({ success: false, error: error.message }, 500);
   }
 });
