@@ -74,12 +74,12 @@ window.addEventListener('DOMContentLoaded', function() {
         setLoading(true);
         try {
           let url = '';
-          if (view === 'inbox') url = `/api/email/inbox?user=${user}`;
-          else if (view === 'sent') url = `/api/email/sent?user=${user}`;
-          else if (view === 'spam') url = `/api/email/spam?user=${user}`;
-          else if (view === 'trash') url = `/api/email/trash?user=${user}`;
-          else if (view === 'drafts') url = `/api/email/drafts?user=${user}`;
-          else if (view === 'archived') url = `/api/email/archived?user=${user}`;
+          if (view === 'inbox') url = `/api/email/inbox`;
+          else if (view === 'sent') url = `/api/email/sent`;
+          else if (view === 'spam') url = `/api/email/spam`;
+          else if (view === 'trash') url = `/api/email/trash`;
+          else if (view === 'drafts') url = `/api/email/drafts`;
+          else if (view === 'archived') url = `/api/email/archived`;
           
           if (url) {
             const response = await fetch(url);
