@@ -1480,4 +1480,74 @@ emailRoutes.patch('/accounts/:id/toggle', async (c) => {
   }
 });
 
+// ============================================
+// POST /api/email/receive
+// Webhook endpoint for receiving emails from Mailgun
+// Public endpoint - no auth required (Mailgun calls this)
+// ============================================
+emailRoutes.post('/receive', async (c) => {
+  const { DB } = c.env;
+  
+  try {
+    // Mailgun sends form data, not JSON
+    const formData = await c.req.formData();
+    
+    // Extract email data from Mailgun webhook
+    const from = formData.get('from') as string;
+    const to = formData.get('recipient') as string;
+    const subject = formData.get('subject') as string;
+    const bodyText = formData.get('body-plain') as string;
+    const bodyHtml = formData.get('body-html') as string;
+    const timestamp = formData.get('timestamp') as string;
+    
+    console.log('📬 Incoming email from Mailgun:', { from, to, subject });
+    
+    // Validate required fields
+    if (!from || !to || !subject) {
+      console.error('❌ Missing required fields:', { from, to, subject });
+      return c.json({ success: false, error: 'Missing required fields' }, 400);
+    }
+    
+    // Extract sender name and email
+    const fromMatch = from.match(/^(.+?)\s*<(.+?)>$/);
+    const fromEmail = fromMatch ? fromMatch[2] : from;
+    const fromName = fromMatch ? fromMatch[1].trim() : fromEmail.split('@')[0];
+    
+    // Generate IDs
+    const emailId = generateId('eml');
+    const threadId = generateId('thr');
+    
+    // Store in database
+    const result = await DB.prepare(`
+      INSERT INTO emails (
+        id, thread_id, from_email, from_name, to_email, subject,
+        body_text, body_html, snippet, category, 
+        is_read, received_at, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'inbox', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `).bind(
+      emailId,
+      threadId,
+      fromEmail,
+      fromName,
+      to,
+      subject,
+      bodyText || '',
+      bodyHtml || bodyText || '',
+      (bodyText || '').substring(0, 150)
+    ).run();
+    
+    if (result.success) {
+      console.log('✅ Email stored in inbox:', emailId);
+      return c.json({ success: true, emailId });
+    } else {
+      console.error('❌ Failed to store email');
+      return c.json({ success: false, error: 'Failed to store email' }, 500);
+    }
+    
+  } catch (error: any) {
+    console.error('❌ Webhook error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
 export { emailRoutes }
