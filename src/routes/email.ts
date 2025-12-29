@@ -328,12 +328,21 @@ emailRoutes.post('/send', async (c) => {
     
     if (MAILGUN_API_KEY && MAILGUN_DOMAIN) {
       try {
+        // Get user's display name from email accounts table
+        const userAccount = await DB.prepare(`
+          SELECT display_name FROM email_accounts WHERE email_address = ?
+        `).bind(from).first();
+        
+        const displayName = userAccount?.display_name || from.split('@')[0];
+        
         const mailgunService = createMailgunService({
           apiKey: MAILGUN_API_KEY,
           domain: MAILGUN_DOMAIN,
           region: MAILGUN_REGION as 'US' | 'EU' || 'US',
-          fromEmail: MAILGUN_FROM_EMAIL || from,
-          fromName: MAILGUN_FROM_NAME || 'InvestMail'
+          // Use postmaster for actual sending (Mailgun requirement)
+          // But set display name to show user's name
+          fromEmail: `postmaster@${MAILGUN_DOMAIN}`,
+          fromName: `${displayName} (via InvestMail)`
         });
         
         // Create HTML version of email with tracking pixel
@@ -374,7 +383,8 @@ emailRoutes.post('/send', async (c) => {
           text: body,
           html: htmlBody,
           cc,
-          bcc
+          bcc,
+          replyTo: from  // Set reply-to as the actual user's email
         });
         
         if (result.success) {
