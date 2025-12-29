@@ -47,6 +47,9 @@ window.addEventListener('DOMContentLoaded', function() {
       const [collabStats, setCollabStats] = useState(null);
       const [newComment, setNewComment] = useState('');
       const [readStatuses, setReadStatuses] = useState({});
+      const [replyMode, setReplyMode] = useState(null); // null, 'reply', or 'forward'
+      const [replyText, setReplyText] = useState('');
+      const [forwardTo, setForwardTo] = useState('');
       
       useEffect(() => {
         loadData();
@@ -2086,6 +2089,14 @@ window.addEventListener('DOMContentLoaded', function() {
         return null;
       }
       
+      // Local state for reply/forward
+      const [showReply, setShowReply] = useState(false);
+      const [showForward, setShowForward] = useState(false);
+      const [replyBody, setReplyBody] = useState('');
+      const [forwardTo, setForwardTo] = useState('');
+      const [forwardBody, setForwardBody] = useState('');
+      const [sending, setSending] = useState(false);
+      
       const formatDate = (dateString) => {
         if (!dateString) return 'Unknown date';
         try {
@@ -2579,28 +2590,13 @@ window.addEventListener('DOMContentLoaded', function() {
           },
             h('button', {
               onClick: () => {
-                // Close the modal and open compose with pre-filled data
-                onClose();
-                setTimeout(() => {
-                  const composeBtn = document.querySelector('#compose-button');
-                  if (composeBtn) composeBtn.click();
-                  // Pre-fill the compose form
-                  setTimeout(() => {
-                    const toInput = document.querySelector('input[placeholder="To:"]');
-                    const subjectInput = document.querySelector('input[placeholder="Subject"]');
-                    const bodyTextarea = document.querySelector('textarea[placeholder="Email body"]');
-                    if (toInput) toInput.value = email.from_email;
-                    if (subjectInput) subjectInput.value = 'Re: ' + (email.subject || 'No Subject');
-                    if (bodyTextarea) {
-                      bodyTextarea.value = '\n\n---\nOn ' + formatDate(email.sent_at || email.received_at) + ', ' + email.from_email + ' wrote:\n> ' + (email.body_text || email.snippet || '').split('\n').join('\n> ');
-                    }
-                  }, 100);
-                }, 100);
+                setShowReply(!showReply);
+                setShowForward(false);
               },
               style: {
                 padding: '12px 24px',
                 borderRadius: '10px',
-                background: 'rgba(59, 130, 246, 0.15)',
+                background: showReply ? 'rgba(59, 130, 246, 0.25)' : 'rgba(59, 130, 246, 0.15)',
                 border: '1px solid rgba(59, 130, 246, 0.3)',
                 color: '#3b82f6',
                 cursor: 'pointer',
@@ -2612,31 +2608,22 @@ window.addEventListener('DOMContentLoaded', function() {
                 e.target.style.background = 'rgba(59, 130, 246, 0.25)';
               },
               onMouseLeave: (e) => {
-                e.target.style.background = 'rgba(59, 130, 246, 0.15)';
+                if (!showReply) e.target.style.background = 'rgba(59, 130, 246, 0.15)';
               }
             }, '↩️ Reply'),
             h('button', {
               onClick: () => {
-                // Close the modal and open compose with pre-filled data
-                onClose();
-                setTimeout(() => {
-                  const composeBtn = document.querySelector('#compose-button');
-                  if (composeBtn) composeBtn.click();
-                  // Pre-fill the compose form
-                  setTimeout(() => {
-                    const subjectInput = document.querySelector('input[placeholder="Subject"]');
-                    const bodyTextarea = document.querySelector('textarea[placeholder="Email body"]');
-                    if (subjectInput) subjectInput.value = 'Fwd: ' + (email.subject || 'No Subject');
-                    if (bodyTextarea) {
-                      bodyTextarea.value = '\n\n---\nForwarded message:\nFrom: ' + email.from_email + '\nDate: ' + formatDate(email.sent_at || email.received_at) + '\nSubject: ' + (email.subject || 'No Subject') + '\n\n' + (email.body_text || email.snippet || '');
-                    }
-                  }, 100);
-                }, 100);
+                setShowForward(!showForward);
+                setShowReply(false);
+                if (!showForward) {
+                  // Pre-fill forward body
+                  setForwardBody('\n\n---\nForwarded message:\nFrom: ' + email.from_email + '\nDate: ' + formatDate(email.sent_at || email.received_at) + '\nSubject: ' + (email.subject || 'No Subject') + '\n\n' + (email.body_text || email.snippet || ''));
+                }
               },
               style: {
                 padding: '12px 24px',
                 borderRadius: '10px',
-                background: 'rgba(34, 197, 94, 0.15)',
+                background: showForward ? 'rgba(34, 197, 94, 0.25)' : 'rgba(34, 197, 94, 0.15)',
                 border: '1px solid rgba(34, 197, 94, 0.3)',
                 color: '#22c55e',
                 cursor: 'pointer',
@@ -2648,7 +2635,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 e.target.style.background = 'rgba(34, 197, 94, 0.25)';
               },
               onMouseLeave: (e) => {
-                e.target.style.background = 'rgba(34, 197, 94, 0.15)';
+                if (!showForward) e.target.style.background = 'rgba(34, 197, 94, 0.15)';
               }
             }, '↪️ Forward'),
             h('button', {
@@ -2690,6 +2677,250 @@ window.addEventListener('DOMContentLoaded', function() {
                 e.target.style.background = 'rgba(239, 68, 68, 0.15)';
               }
             }, '🗑️ Delete')
+          ),
+          
+          // Inline Reply Form (Gmail-style)
+          showReply && h('div', {
+            style: {
+              padding: '24px 32px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%)',
+              animation: 'slideUp 0.3s ease-out'
+            }
+          },
+            h('div', {
+              style: {
+                marginBottom: '16px',
+                fontSize: '12px',
+                color: 'rgba(255, 255, 255, 0.6)'
+              }
+            }, '📝 Reply to ' + email.from_email),
+            h('textarea', {
+              value: replyBody,
+              onInput: (e) => setReplyBody(e.target.value),
+              placeholder: 'Write your reply here...',
+              style: {
+                width: '100%',
+                minHeight: '120px',
+                padding: '16px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '12px',
+                color: 'white',
+                fontSize: '14px',
+                lineHeight: '1.6',
+                resize: 'vertical',
+                fontFamily: 'inherit'
+              }
+            }),
+            h('div', {
+              style: {
+                marginTop: '16px',
+                padding: '16px',
+                background: 'rgba(255, 255, 255, 0.03)',
+                borderRadius: '8px',
+                fontSize: '13px',
+                color: 'rgba(255, 255, 255, 0.5)',
+                maxHeight: '200px',
+                overflowY: 'auto'
+              }
+            },
+              h('div', { style: { marginBottom: '8px', fontWeight: '600' } }, 'Original Message:'),
+              h('div', {}, 'From: ' + email.from_email),
+              h('div', {}, 'Date: ' + formatDate(email.sent_at || email.received_at)),
+              h('div', {}, 'Subject: ' + (email.subject || 'No Subject')),
+              h('div', { style: { marginTop: '12px', whiteSpace: 'pre-wrap' } }, email.body_text || email.snippet || '(No content)')
+            ),
+            h('div', {
+              style: {
+                marginTop: '16px',
+                display: 'flex',
+                gap: '12px',
+                justifyContent: 'flex-end'
+              }
+            },
+              h('button', {
+                onClick: () => setShowReply(false),
+                style: {
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  cursor: 'pointer',
+                  fontSize: '13px'
+                }
+              }, 'Cancel'),
+              h('button', {
+                onClick: async () => {
+                  if (!replyBody.trim()) {
+                    alert('❌ Please write a reply');
+                    return;
+                  }
+                  setSending(true);
+                  try {
+                    const response = await fetch('/api/email/send', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        to: email.from_email,
+                        subject: 'Re: ' + (email.subject || 'No Subject'),
+                        body: replyBody,
+                        thread_id: email.thread_id
+                      })
+                    });
+                    if (response.ok) {
+                      alert('✅ Reply sent successfully!');
+                      setShowReply(false);
+                      setReplyBody('');
+                      onClose();
+                      window.location.reload();
+                    } else {
+                      alert('❌ Failed to send reply');
+                    }
+                  } catch (err) {
+                    console.error('Reply error:', err);
+                    alert('❌ Error sending reply');
+                  } finally {
+                    setSending(false);
+                  }
+                },
+                disabled: sending,
+                style: {
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  background: sending ? 'rgba(59, 130, 246, 0.3)' : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                  border: 'none',
+                  color: 'white',
+                  cursor: sending ? 'not-allowed' : 'pointer',
+                  fontSize: '13px',
+                  fontWeight: '600'
+                }
+              }, sending ? '⏳ Sending...' : '📤 Send Reply')
+            )
+          ),
+          
+          // Inline Forward Form
+          showForward && h('div', {
+            style: {
+              padding: '24px 32px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+              background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%)',
+              animation: 'slideUp 0.3s ease-out'
+            }
+          },
+            h('div', {
+              style: {
+                marginBottom: '16px',
+                fontSize: '12px',
+                color: 'rgba(255, 255, 255, 0.6)'
+              }
+            }, '📨 Forward Message'),
+            h('input', {
+              type: 'email',
+              value: forwardTo,
+              onInput: (e) => setForwardTo(e.target.value),
+              placeholder: 'To: recipient@example.com',
+              style: {
+                width: '100%',
+                padding: '12px 16px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '8px',
+                color: 'white',
+                fontSize: '14px',
+                marginBottom: '12px'
+              }
+            }),
+            h('textarea', {
+              value: forwardBody,
+              onInput: (e) => setForwardBody(e.target.value),
+              placeholder: 'Add a message (optional)...',
+              style: {
+                width: '100%',
+                minHeight: '200px',
+                padding: '16px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '12px',
+                color: 'white',
+                fontSize: '14px',
+                lineHeight: '1.6',
+                resize: 'vertical',
+                fontFamily: 'inherit',
+                whiteSpace: 'pre-wrap'
+              }
+            }),
+            h('div', {
+              style: {
+                marginTop: '16px',
+                display: 'flex',
+                gap: '12px',
+                justifyContent: 'flex-end'
+              }
+            },
+              h('button', {
+                onClick: () => {
+                  setShowForward(false);
+                  setForwardTo('');
+                  setForwardBody('');
+                },
+                style: {
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  cursor: 'pointer',
+                  fontSize: '13px'
+                }
+              }, 'Cancel'),
+              h('button', {
+                onClick: async () => {
+                  if (!forwardTo.trim()) {
+                    alert('❌ Please enter a recipient email');
+                    return;
+                  }
+                  setSending(true);
+                  try {
+                    const response = await fetch('/api/email/send', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        to: forwardTo,
+                        subject: 'Fwd: ' + (email.subject || 'No Subject'),
+                        body: forwardBody
+                      })
+                    });
+                    if (response.ok) {
+                      alert('✅ Email forwarded successfully!');
+                      setShowForward(false);
+                      setForwardTo('');
+                      setForwardBody('');
+                      onClose();
+                    } else {
+                      alert('❌ Failed to forward email');
+                    }
+                  } catch (err) {
+                    console.error('Forward error:', err);
+                    alert('❌ Error forwarding email');
+                  } finally {
+                    setSending(false);
+                  }
+                },
+                disabled: sending,
+                style: {
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  background: sending ? 'rgba(34, 197, 94, 0.3)' : 'linear-gradient(135deg, #22c55e 0%, #10b981 100%)',
+                  border: 'none',
+                  color: 'white',
+                  cursor: sending ? 'not-allowed' : 'pointer',
+                  fontSize: '13px',
+                  fontWeight: '600'
+                }
+              }, sending ? '⏳ Sending...' : '📤 Forward Email')
+            )
           )
         )
       );
