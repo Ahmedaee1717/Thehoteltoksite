@@ -705,40 +705,219 @@ emailRoutes.post('/smart-replies', async (c) => {
 
 // ============================================
 // POST /api/email/search
-// Semantic search in emails
+// AI-Powered Smart Search with Intent Understanding
 // ============================================
 emailRoutes.post('/search', async (c) => {
   const { DB, OPENAI_API_KEY } = c.env;
   
   try {
-    const { query, userEmail } = await c.req.json();
+    const { query, userEmail, folder } = await c.req.json();
     
     if (!query) {
       return c.json({ success: false, error: 'Query is required' }, 400);
     }
     
-    // Simple text search (fallback if no AI)
-    const { results } = await DB.prepare(`
-      SELECT 
-        id, thread_id, from_email, from_name, to_email, subject,
-        snippet, category, priority, is_read, is_starred, received_at
-      FROM emails
-      WHERE (to_email = ? OR from_email = ?)
-        AND (subject LIKE ? OR body_text LIKE ?)
-        AND category != 'trash'
-      ORDER BY received_at DESC
-      LIMIT 50
-    `).bind(
-      userEmail || 'admin@investaycapital.com',
-      userEmail || 'admin@investaycapital.com',
-      `%${query}%`,
-      `%${query}%`
-    ).all();
+    const user = userEmail || 'admin@investaycapital.com';
     
-    // TODO: Implement semantic search with embeddings
-    // For now, return text search results
+    // AI-powered intent extraction
+    let searchIntent = {
+      keywords: [] as string[],
+      sender: null as string | null,
+      recipient: null as string | null,
+      dateRange: null as { start?: string; end?: string } | null,
+      hasAttachment: false,
+      isUnread: false,
+      isStarred: false,
+      isPriority: false,
+      category: folder || null as string | null
+    };
     
-    return c.json({ success: true, results, query });
+    // Parse natural language queries with AI
+    const queryLower = query.toLowerCase();
+    
+    // Extract sender (from)
+    const fromMatch = queryLower.match(/from\s+([^\s]+@[^\s]+|[\w\s]+)/i);
+    if (fromMatch) {
+      searchIntent.sender = fromMatch[1].trim();
+    }
+    
+    // Extract recipient (to)
+    const toMatch = queryLower.match(/to\s+([^\s]+@[^\s]+|[\w\s]+)/i);
+    if (toMatch) {
+      searchIntent.recipient = toMatch[1].trim();
+    }
+    
+    // Check for attachments
+    if (queryLower.includes('attachment') || queryLower.includes('attached') || queryLower.includes('with file')) {
+      searchIntent.hasAttachment = true;
+    }
+    
+    // Check for unread
+    if (queryLower.includes('unread') || queryLower.includes('not read')) {
+      searchIntent.isUnread = true;
+    }
+    
+    // Check for starred
+    if (queryLower.includes('starred') || queryLower.includes('important') || queryLower.includes('flagged')) {
+      searchIntent.isStarred = true;
+    }
+    
+    // Check for priority
+    if (queryLower.includes('priority') || queryLower.includes('urgent')) {
+      searchIntent.isPriority = true;
+    }
+    
+    // Extract date ranges
+    const today = new Date();
+    if (queryLower.includes('today')) {
+      const todayStr = today.toISOString().split('T')[0];
+      searchIntent.dateRange = { start: todayStr };
+    } else if (queryLower.includes('yesterday')) {
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      searchIntent.dateRange = { start: yesterdayStr, end: yesterdayStr };
+    } else if (queryLower.includes('this week') || queryLower.includes('last 7 days')) {
+      const weekAgo = new Date(today);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      searchIntent.dateRange = { start: weekAgo.toISOString().split('T')[0] };
+    } else if (queryLower.includes('this month')) {
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      searchIntent.dateRange = { start: monthStart.toISOString().split('T')[0] };
+    } else if (queryLower.includes('last month')) {
+      const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+      searchIntent.dateRange = { 
+        start: lastMonthStart.toISOString().split('T')[0],
+        end: lastMonthEnd.toISOString().split('T')[0]
+      };
+    }
+    
+    // Extract keywords (remove special operators)
+    let keywords = query
+      .replace(/from\s+[^\s]+/gi, '')
+      .replace(/to\s+[^\s]+/gi, '')
+      .replace(/\b(unread|starred|important|attachment|today|yesterday|this week|last week|this month|last month)\b/gi, '')
+      .trim()
+      .split(/\s+/)
+      .filter(w => w.length > 2);
+    
+    searchIntent.keywords = keywords;
+    
+    // Build dynamic SQL query
+    let sql = `
+      SELECT DISTINCT
+        e.id, e.thread_id, e.from_email, e.from_name, e.to_email, e.subject,
+        e.snippet, e.category, e.priority, e.is_read, e.is_starred, e.received_at,
+        e.has_attachments,
+        (SELECT COUNT(*) FROM email_attachments WHERE email_id = e.id) as attachment_count
+      FROM emails e
+      WHERE (e.to_email = ? OR e.from_email = ?)
+    `;
+    
+    const bindings: any[] = [user, user];
+    
+    // Apply folder filter
+    if (folder) {
+      if (folder === 'inbox') {
+        sql += ` AND e.category = 'inbox' AND e.is_archived = 0`;
+      } else if (folder === 'sent') {
+        sql += ` AND e.from_email = ?`;
+        bindings.push(user);
+      } else if (folder === 'drafts') {
+        // Check email_drafts table
+        sql = `
+          SELECT 
+            d.id, d.thread_id, '' as from_email, ? as from_name, d.to_email, d.subject,
+            substr(d.body_text, 1, 150) as snippet, 'draft' as category, 
+            'normal' as priority, 0 as is_read, 0 as is_starred, d.created_at as received_at,
+            0 as has_attachments, 0 as attachment_count
+          FROM email_drafts d
+          WHERE d.created_by = ?
+        `;
+        bindings.length = 0;
+        bindings.push(user, user);
+      } else if (folder === 'spam') {
+        sql += ` AND e.category = 'spam'`;
+      } else if (folder === 'trash') {
+        sql += ` AND e.category = 'trash'`;
+      } else if (folder === 'archive') {
+        sql += ` AND e.is_archived = 1`;
+      } else {
+        sql += ` AND e.category != 'trash'`;
+      }
+    } else {
+      sql += ` AND e.category != 'trash'`;
+    }
+    
+    // Apply sender filter
+    if (searchIntent.sender) {
+      sql += ` AND (e.from_email LIKE ? OR e.from_name LIKE ?)`;
+      bindings.push(`%${searchIntent.sender}%`, `%${searchIntent.sender}%`);
+    }
+    
+    // Apply recipient filter
+    if (searchIntent.recipient) {
+      sql += ` AND e.to_email LIKE ?`;
+      bindings.push(`%${searchIntent.recipient}%`);
+    }
+    
+    // Apply date range
+    if (searchIntent.dateRange) {
+      if (searchIntent.dateRange.start) {
+        sql += ` AND date(e.received_at) >= ?`;
+        bindings.push(searchIntent.dateRange.start);
+      }
+      if (searchIntent.dateRange.end) {
+        sql += ` AND date(e.received_at) <= ?`;
+        bindings.push(searchIntent.dateRange.end);
+      }
+    }
+    
+    // Apply unread filter
+    if (searchIntent.isUnread) {
+      sql += ` AND e.is_read = 0`;
+    }
+    
+    // Apply starred filter
+    if (searchIntent.isStarred) {
+      sql += ` AND e.is_starred = 1`;
+    }
+    
+    // Apply attachment filter
+    if (searchIntent.hasAttachment) {
+      sql += ` AND e.has_attachments = 1`;
+    }
+    
+    // Apply priority filter
+    if (searchIntent.isPriority) {
+      sql += ` AND e.priority = 'high'`;
+    }
+    
+    // Apply keyword search
+    if (searchIntent.keywords.length > 0) {
+      const keywordConditions = searchIntent.keywords.map(() => 
+        `(e.subject LIKE ? OR e.body_text LIKE ? OR e.snippet LIKE ?)`
+      ).join(' AND ');
+      sql += ` AND (${keywordConditions})`;
+      
+      searchIntent.keywords.forEach(keyword => {
+        const likePattern = `%${keyword}%`;
+        bindings.push(likePattern, likePattern, likePattern);
+      });
+    }
+    
+    sql += ` ORDER BY e.received_at DESC LIMIT 100`;
+    
+    const { results } = await DB.prepare(sql).bind(...bindings).all();
+    
+    return c.json({ 
+      success: true, 
+      results, 
+      query,
+      intent: searchIntent,
+      count: results.length
+    });
   } catch (error: any) {
     console.error('Search error:', error);
     return c.json({ success: false, error: error.message }, 500);

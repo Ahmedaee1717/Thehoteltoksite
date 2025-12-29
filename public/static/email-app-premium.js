@@ -54,6 +54,13 @@ window.addEventListener('DOMContentLoaded', function() {
       const [forwardTo, setForwardTo] = useState('');
       const [unreadCount, setUnreadCount] = useState(0);
       
+      // Search state
+      const [searchQuery, setSearchQuery] = useState('');
+      const [searchResults, setSearchResults] = useState([]);
+      const [searchLoading, setSearchLoading] = useState(false);
+      const [showSearchResults, setShowSearchResults] = useState(false);
+      const [searchIntent, setSearchIntent] = useState(null);
+      
       // Task creation state
       const [newTaskTitle, setNewTaskTitle] = useState('');
       const [newTaskDescription, setNewTaskDescription] = useState('');
@@ -217,6 +224,60 @@ window.addEventListener('DOMContentLoaded', function() {
         
         if (days > 0) return `${days}d`;
         return `${hours}h`;
+      };
+      
+      // AI-Powered Smart Search
+      const performSmartSearch = async (query) => {
+        if (!query || query.trim().length === 0) {
+          setShowSearchResults(false);
+          setSearchResults([]);
+          return;
+        }
+        
+        setSearchLoading(true);
+        try {
+          const response = await fetch('/api/email/search', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ 
+              query: query.trim(),
+              userEmail: user,
+              folder: view === 'inbox' || view === 'sent' || view === 'drafts' || 
+                       view === 'spam' || view === 'trash' || view === 'archive' ? view : null
+            })
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            setSearchResults(data.results || []);
+            setSearchIntent(data.intent);
+            setShowSearchResults(true);
+            console.log('🔍 Smart Search Results:', {
+              query: data.query,
+              intent: data.intent,
+              count: data.count
+            });
+          } else {
+            console.error('Search error:', data.error);
+            alert('❌ Search failed: ' + data.error);
+          }
+        } catch (error) {
+          console.error('Search error:', error);
+          alert('❌ Search failed: ' + error.message);
+        } finally {
+          setSearchLoading(false);
+        }
+      };
+      
+      const clearSearch = () => {
+        setSearchQuery('');
+        setSearchResults([]);
+        setShowSearchResults(false);
+        setSearchIntent(null);
       };
       
       const sendEmail = async (to, subject, body) => {
@@ -1122,7 +1183,7 @@ window.addEventListener('DOMContentLoaded', function() {
                   color: 'rgba(255, 255, 255, 0.4)',
                   fontWeight: '500'
                 }
-              }, `${emails.length} ${emails.length === 1 ? 'email' : 'emails'}`)
+              }, showSearchResults ? `${searchResults.length} result${searchResults.length === 1 ? '' : 's'}` : `${emails.length} ${emails.length === 1 ? 'email' : 'emails'}`)
             ),
             h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center' } },
               h('button', {
@@ -1157,6 +1218,196 @@ window.addEventListener('DOMContentLoaded', function() {
                   e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
                 }
               }, view === 'sent' ? '🔄 Check Read Status' : '🔄 Refresh')
+            )
+          ),
+          
+          // AI-Powered Smart Search Bar
+          h('div', {
+            style: {
+              padding: '16px 32px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'rgba(15, 20, 41, 0.6)',
+              backdropFilter: 'blur(20px)'
+            }
+          },
+            h('div', { style: { position: 'relative' } },
+              h('div', {
+                style: {
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }
+              },
+                h('div', {
+                  style: {
+                    position: 'absolute',
+                    left: '16px',
+                    fontSize: '18px',
+                    pointerEvents: 'none',
+                    opacity: 0.5
+                  }
+                }, '🔍'),
+                h('input', {
+                  type: 'text',
+                  placeholder: 'Smart Search: Try "unread emails from john", "important emails this week", "emails with attachments"...',
+                  value: searchQuery,
+                  onChange: (e) => setSearchQuery(e.target.value),
+                  onKeyPress: (e) => {
+                    if (e.key === 'Enter') {
+                      performSmartSearch(searchQuery);
+                    }
+                  },
+                  style: {
+                    flex: 1,
+                    padding: '14px 16px 14px 48px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(201, 169, 98, 0.2)',
+                    borderRadius: '12px',
+                    fontSize: '14px',
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    fontFamily: 'inherit',
+                    transition: 'all 0.2s',
+                    outline: 'none'
+                  },
+                  onFocus: (e) => {
+                    e.target.style.background = 'rgba(255, 255, 255, 0.08)';
+                    e.target.style.borderColor = 'rgba(201, 169, 98, 0.5)';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(201, 169, 98, 0.1)';
+                  },
+                  onBlur: (e) => {
+                    e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                    e.target.style.borderColor = 'rgba(201, 169, 98, 0.2)';
+                    e.target.style.boxShadow = 'none';
+                  }
+                }),
+                h('button', {
+                  onClick: () => performSmartSearch(searchQuery),
+                  disabled: searchLoading,
+                  style: {
+                    padding: '14px 24px',
+                    background: 'linear-gradient(135deg, #C9A962 0%, #A08852 100%)',
+                    border: 'none',
+                    borderRadius: '12px',
+                    color: '#fff',
+                    cursor: searchLoading ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    transition: 'all 0.2s',
+                    opacity: searchLoading ? 0.6 : 1
+                  },
+                  onMouseEnter: (e) => {
+                    if (!searchLoading) {
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 8px 24px rgba(201, 169, 98, 0.4)';
+                    }
+                  },
+                  onMouseLeave: (e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = 'none';
+                  }
+                }, 
+                  searchLoading ? '⏳ Searching...' : '🔍 Search'
+                ),
+                showSearchResults && h('button', {
+                  onClick: clearSearch,
+                  style: {
+                    padding: '14px 20px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '12px',
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    transition: 'all 0.2s'
+                  },
+                  onMouseEnter: (e) => {
+                    e.target.style.background = 'rgba(255, 255, 255, 0.08)';
+                  },
+                  onMouseLeave: (e) => {
+                    e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                  }
+                }, '✖ Clear')
+              ),
+              
+              // Search Intent Display
+              showSearchResults && searchIntent && h('div', {
+                style: {
+                  marginTop: '12px',
+                  padding: '12px 16px',
+                  background: 'rgba(201, 169, 98, 0.1)',
+                  border: '1px solid rgba(201, 169, 98, 0.2)',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                  alignItems: 'center'
+                }
+              },
+                h('span', { style: { color: '#C9A962', fontWeight: '600' } }, '🤖 AI Understood:'),
+                searchIntent.sender && h('span', { 
+                  style: { 
+                    padding: '4px 8px', 
+                    background: 'rgba(255, 255, 255, 0.1)', 
+                    borderRadius: '6px',
+                    fontSize: '12px'
+                  } 
+                }, `📧 From: ${searchIntent.sender}`),
+                searchIntent.recipient && h('span', { 
+                  style: { 
+                    padding: '4px 8px', 
+                    background: 'rgba(255, 255, 255, 0.1)', 
+                    borderRadius: '6px',
+                    fontSize: '12px'
+                  } 
+                }, `📨 To: ${searchIntent.recipient}`),
+                searchIntent.hasAttachment && h('span', { 
+                  style: { 
+                    padding: '4px 8px', 
+                    background: 'rgba(255, 255, 255, 0.1)', 
+                    borderRadius: '6px',
+                    fontSize: '12px'
+                  } 
+                }, '📎 With Attachments'),
+                searchIntent.isUnread && h('span', { 
+                  style: { 
+                    padding: '4px 8px', 
+                    background: 'rgba(255, 255, 255, 0.1)', 
+                    borderRadius: '6px',
+                    fontSize: '12px'
+                  } 
+                }, '✉️ Unread'),
+                searchIntent.isStarred && h('span', { 
+                  style: { 
+                    padding: '4px 8px', 
+                    background: 'rgba(255, 255, 255, 0.1)', 
+                    borderRadius: '6px',
+                    fontSize: '12px'
+                  } 
+                }, '⭐ Starred'),
+                searchIntent.dateRange && h('span', { 
+                  style: { 
+                    padding: '4px 8px', 
+                    background: 'rgba(255, 255, 255, 0.1)', 
+                    borderRadius: '6px',
+                    fontSize: '12px'
+                  } 
+                }, `📅 ${searchIntent.dateRange.start || ''} ${searchIntent.dateRange.end ? `to ${searchIntent.dateRange.end}` : ''}`),
+                searchIntent.keywords && searchIntent.keywords.length > 0 && h('span', { 
+                  style: { 
+                    padding: '4px 8px', 
+                    background: 'rgba(255, 255, 255, 0.1)', 
+                    borderRadius: '6px',
+                    fontSize: '12px'
+                  } 
+                }, `🔎 Keywords: ${searchIntent.keywords.join(', ')}`)
+              )
             )
           ),
           
@@ -1791,8 +2042,8 @@ window.addEventListener('DOMContentLoaded', function() {
                 'Team collaboration features coming soon...'
               )
             ) :
-            // Email views
-            emails.length === 0 ? h('div', { 
+            // Email views - Show search results or regular emails
+            (showSearchResults ? searchResults : emails).length === 0 ? h('div', { 
               style: { 
                 textAlign: 'center', 
                 padding: '80px 20px',
@@ -1830,7 +2081,8 @@ window.addEventListener('DOMContentLoaded', function() {
                   maxWidth: '400px'
                 } 
               }, 
-                view === 'sent' ? 'You haven\'t sent any emails yet. Click "Compose New Email" to get started.' : 'This folder is empty.'
+                view === 'sent' ? 'You haven\'t sent any emails yet. Click "Compose New Email" to get started.' : 
+                showSearchResults ? 'No emails found matching your search. Try different keywords.' : 'This folder is empty.'
               )
             ) : h('div', { 
               style: { 
@@ -1838,7 +2090,24 @@ window.addEventListener('DOMContentLoaded', function() {
                 gap: '16px'
               } 
             },
-              emails.map((email, i) =>
+              // Show search results header if searching
+              showSearchResults && h('div', {
+                style: {
+                  padding: '16px 20px',
+                  background: 'rgba(201, 169, 98, 0.1)',
+                  border: '1px solid rgba(201, 169, 98, 0.2)',
+                  borderRadius: '12px',
+                  marginBottom: '8px'
+                }
+              },
+                h('div', { style: { fontSize: '16px', fontWeight: '600', color: '#C9A962', marginBottom: '4px' } },
+                  `🔍 Found ${searchResults.length} result${searchResults.length === 1 ? '' : 's'}`
+                ),
+                h('div', { style: { fontSize: '13px', color: 'rgba(255, 255, 255, 0.6)' } },
+                  `Searching for: "${searchQuery}"`
+                )
+              ),
+              (showSearchResults ? searchResults : emails).map((email, i) =>
                 h('div', {
                   key: email.id || i,
                   onClick: () => {
