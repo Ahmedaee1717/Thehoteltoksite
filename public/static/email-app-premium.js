@@ -72,6 +72,7 @@ window.addEventListener('DOMContentLoaded', function() {
       const [isDragging, setIsDragging] = useState(false);
       const [showCreateFolder, setShowCreateFolder] = useState(false);
       const [newFolderName, setNewFolderName] = useState('');
+      const [newFolderIsShared, setNewFolderIsShared] = useState(false);
       const [currentFolder, setCurrentFolder] = useState(null);
       const [showCreateDeal, setShowCreateDeal] = useState(false);
       const [newContactName, setNewContactName] = useState('');
@@ -553,17 +554,20 @@ window.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify({
               userEmail: user,
-              folder_name: newFolderName,
-              parent_folder_id: currentFolder ? currentFolder.id : null
+              folderName: newFolderName,
+              parentFolderId: currentFolder ? currentFolder.id : null,
+              isShared: newFolderIsShared,
+              isTeamShared: newFolderIsShared
             })
           });
           
           const result = await res.json();
           if (result.success) {
             setNewFolderName('');
+            setNewFolderIsShared(false);
             setShowCreateFolder(false);
             loadData();
-            alert('✅ Folder created!');
+            alert(`✅ ${newFolderIsShared ? 'Shared folder' : 'Folder'} created!`);
           }
         } catch (error) {
           console.error('Create folder error:', error);
@@ -1292,6 +1296,16 @@ window.addEventListener('DOMContentLoaded', function() {
                     },
                       h('span', { style: { fontSize: '20px' } }, folder.icon || '📁'),
                       h('span', { style: { fontWeight: '500', color: 'rgba(255, 255, 255, 0.9)' } }, folder.folder_name),
+                      folder.is_team_shared === 1 && h('span', { 
+                        style: { 
+                          fontSize: '10px', 
+                          padding: '2px 8px', 
+                          background: 'rgba(201, 169, 98, 0.2)', 
+                          borderRadius: '4px', 
+                          color: '#C9A962',
+                          fontWeight: '600'
+                        } 
+                      }, '👥 SHARED'),
                       folder.file_count > 0 && h('span', { style: { fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)' } }, `(${folder.file_count})`)
                     )
                   )
@@ -2049,14 +2063,45 @@ window.addEventListener('DOMContentLoaded', function() {
                 borderRadius: '10px',
                 color: 'rgba(255, 255, 255, 0.9)',
                 fontSize: '14px',
-                marginBottom: '24px'
+                marginBottom: '16px'
               }
             }),
+            // Shared folder checkbox
+            h('label', {
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                marginBottom: '24px',
+                cursor: 'pointer',
+                padding: '12px',
+                background: 'rgba(201, 169, 98, 0.05)',
+                borderRadius: '10px',
+                border: '1px solid rgba(201, 169, 98, 0.2)'
+              }
+            },
+              h('input', {
+                type: 'checkbox',
+                checked: newFolderIsShared,
+                onChange: (e) => setNewFolderIsShared(e.target.checked),
+                style: {
+                  width: '18px',
+                  height: '18px',
+                  cursor: 'pointer',
+                  accentColor: '#C9A962'
+                }
+              }),
+              h('div', {},
+                h('div', { style: { color: 'rgba(255, 255, 255, 0.9)', fontSize: '14px', fontWeight: '600', marginBottom: '4px' } }, '👥 Shared Folder'),
+                h('div', { style: { color: 'rgba(255, 255, 255, 0.5)', fontSize: '12px' } }, 'All team members can access files in this folder')
+              )
+            ),
             h('div', { style: { display: 'flex', gap: '12px', justifyContent: 'flex-end' } },
               h('button', {
                 onClick: () => {
                   setShowCreateFolder(false);
                   setNewFolderName('');
+                  setNewFolderIsShared(false);
                 },
                 style: {
                   padding: '12px 24px',

@@ -17,10 +17,13 @@ fileBank.get('/files', async (c) => {
     let query = `
       SELECT f.*, 
         folder.folder_name as folder_name,
+        folder.is_team_shared as folder_is_shared,
         (SELECT COUNT(*) FROM file_bank_usage WHERE file_id = f.id) as usage_count
       FROM file_bank_files f
       LEFT JOIN file_bank_folders folder ON f.folder_id = folder.id
-      WHERE f.user_email = ? AND f.deleted_at IS NULL AND f.is_latest_version = 1
+      WHERE (f.user_email = ? OR folder.is_team_shared = 1) 
+        AND f.deleted_at IS NULL 
+        AND f.is_latest_version = 1
     `
     const params: any[] = [userEmail]
     
@@ -347,10 +350,11 @@ fileBank.get('/folders', async (c) => {
   const userEmail = c.req.query('userEmail') || c.req.query('user') || 'admin@investaycapital.com'
   
   try {
+    // Get user's own folders + team shared folders
     const { results } = await c.env.DB.prepare(`
       SELECT * FROM file_bank_folders
-      WHERE user_email = ?
-      ORDER BY is_pinned DESC, folder_name ASC
+      WHERE user_email = ? OR is_team_shared = 1
+      ORDER BY is_team_shared DESC, is_pinned DESC, folder_name ASC
     `).bind(userEmail).all()
     
     return c.json({ folders: results || [] })
@@ -363,7 +367,7 @@ fileBank.get('/folders', async (c) => {
 // Create folder
 fileBank.post('/folders', async (c) => {
   try {
-    const { userEmail, folderName, parentFolderId, icon, color, description } = await c.req.json()
+    const { userEmail, folderName, parentFolderId, icon, color, description, isShared, isTeamShared } = await c.req.json()
     
     if (!userEmail || !folderName) {
       return c.json({ error: 'userEmail and folderName are required' }, 400)
@@ -373,15 +377,15 @@ fileBank.post('/folders', async (c) => {
     let folderPath = `/${folderName}`
     if (parentFolderId) {
       const parent = await c.env.DB.prepare('SELECT folder_path FROM file_bank_folders WHERE id = ?').bind(parentFolderId).first()
-      if (parent) {
+      if (parent && parent.folder_path) {
         folderPath = `${parent.folder_path}/${folderName}`
       }
     }
     
     const result = await c.env.DB.prepare(`
       INSERT INTO file_bank_folders (
-        user_email, folder_name, parent_folder_id, folder_path, icon, color, description
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        user_email, folder_name, parent_folder_id, folder_path, icon, color, description, is_shared, is_team_shared
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       userEmail,
       folderName,
@@ -389,7 +393,9 @@ fileBank.post('/folders', async (c) => {
       folderPath,
       icon || '📁',
       color || '#C9A962',
-      description || ''
+      description || '',
+      isShared ? 1 : 0,
+      isTeamShared ? 1 : 0
     ).run()
     
     return c.json({
