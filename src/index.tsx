@@ -158,8 +158,16 @@ app.get('/mail/test', (c) => {
   `)
 })
 
-// Email client page
+// Email client page - requires login
 app.get('/mail', (c) => {
+  // Check if user is logged in
+  const authToken = c.req.header('Cookie')?.match(/auth_token=([^;]+)/)?.[1];
+  
+  if (!authToken) {
+    // Not logged in - redirect to login page
+    return c.redirect('/login');
+  }
+  
   return c.html(`
     <!DOCTYPE html>
     <html lang="en">
@@ -179,6 +187,303 @@ app.get('/mail', (c) => {
       
       <!-- ULTRA PREMIUM EMAIL APP - DARK MODE WITH AI -->
       <script src="/static/email-app-premium.js"></script>
+    </body>
+    </html>
+  `)
+})
+
+// Login page
+app.get('/login', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Login - InvestMail</title>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+      <style>
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        
+        body {
+          font-family: 'Inter', sans-serif;
+          background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%);
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+        }
+        
+        .login-container {
+          background: linear-gradient(135deg, rgba(26, 31, 58, 0.8) 0%, rgba(15, 20, 41, 0.8) 100%);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 24px;
+          padding: 48px;
+          width: 100%;
+          max-width: 440px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+        
+        .logo {
+          text-align: center;
+          margin-bottom: 32px;
+        }
+        
+        .logo h1 {
+          font-size: 32px;
+          font-weight: 700;
+          background: linear-gradient(135deg, #c9a962 0%, #f4e4c1 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          margin-bottom: 8px;
+        }
+        
+        .logo p {
+          font-size: 14px;
+          color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .form-group {
+          margin-bottom: 24px;
+        }
+        
+        label {
+          display: block;
+          font-size: 13px;
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.7);
+          margin-bottom: 8px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        
+        input {
+          width: 100%;
+          padding: 14px 16px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 2px solid rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+          font-size: 15px;
+          color: white;
+          font-family: inherit;
+          transition: all 0.3s;
+        }
+        
+        input:focus {
+          outline: none;
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(201, 169, 98, 0.5);
+          box-shadow: 0 0 0 3px rgba(201, 169, 98, 0.1);
+        }
+        
+        .btn {
+          width: 100%;
+          padding: 16px;
+          background: linear-gradient(135deg, #c9a962 0%, #f4e4c1 100%);
+          border: none;
+          border-radius: 12px;
+          font-size: 16px;
+          font-weight: 600;
+          color: #0f1419;
+          cursor: pointer;
+          transition: all 0.3s;
+          margin-top: 8px;
+        }
+        
+        .btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(201, 169, 98, 0.4);
+        }
+        
+        .error {
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid rgba(239, 68, 68, 0.3);
+          color: #ef4444;
+          padding: 12px 16px;
+          border-radius: 12px;
+          margin-bottom: 24px;
+          font-size: 14px;
+          display: none;
+        }
+        
+        .error.show {
+          display: block;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="login-container">
+        <div class="logo">
+          <h1>📧 InvestMail</h1>
+          <p>Email, without the past</p>
+        </div>
+        
+        <div class="error" id="error"></div>
+        
+        <form id="loginForm">
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="email" placeholder="your@email.com" required>
+          </div>
+          
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="password" placeholder="Enter your password" required>
+          </div>
+          
+          <button type="submit" class="btn">Sign In</button>
+        </form>
+      </div>
+      
+      <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          
+          const email = document.getElementById('email').value;
+          const password = document.getElementById('password').value;
+          const errorEl = document.getElementById('error');
+          
+          errorEl.classList.remove('show');
+          
+          try {
+            const response = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email, password })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+              // Store user email in localStorage
+              localStorage.setItem('userEmail', result.user.email);
+              
+              // Login successful - redirect to mail
+              window.location.href = '/mail';
+            } else {
+              // Show error
+              errorEl.textContent = result.error || 'Login failed';
+              errorEl.classList.add('show');
+            }
+          } catch (error) {
+            errorEl.textContent = 'Network error. Please try again.';
+            errorEl.classList.add('show');
+          }
+        });
+      </script>
+    </body>
+    </html>
+  `)
+})
+
+// Logout page
+app.get('/logout', async (c) => {
+  // Call logout API
+  await fetch(c.req.url.replace('/logout', '/api/auth/logout'), {
+    method: 'POST',
+    headers: c.req.raw.headers
+  });
+  
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Logged Out - InvestMail</title>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+      <style>
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        
+        body {
+          font-family: 'Inter', sans-serif;
+          background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%);
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          text-align: center;
+        }
+        
+        .logout-container {
+          background: linear-gradient(135deg, rgba(26, 31, 58, 0.8) 0%, rgba(15, 20, 41, 0.8) 100%);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 24px;
+          padding: 48px;
+          width: 100%;
+          max-width: 440px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+        
+        h1 {
+          font-size: 48px;
+          margin-bottom: 16px;
+        }
+        
+        h2 {
+          font-size: 24px;
+          font-weight: 600;
+          margin-bottom: 12px;
+          background: linear-gradient(135deg, #c9a962 0%, #f4e4c1 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+        
+        p {
+          color: rgba(255, 255, 255, 0.6);
+          margin-bottom: 32px;
+          font-size: 15px;
+        }
+        
+        .btn {
+          display: inline-block;
+          padding: 16px 32px;
+          background: linear-gradient(135deg, #c9a962 0%, #f4e4c1 100%);
+          border: none;
+          border-radius: 12px;
+          font-size: 16px;
+          font-weight: 600;
+          color: #0f1419;
+          text-decoration: none;
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+        
+        .btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(201, 169, 98, 0.4);
+        }
+      </style>
+    </head>
+    <body>
+      <div class="logout-container">
+        <h1>👋</h1>
+        <h2>You've been logged out</h2>
+        <p>Your session has ended. See you next time!</p>
+        <a href="/login" class="btn">Sign In Again</a>
+      </div>
+      
+      <script>
+        // Clear auth token cookie
+        document.cookie = 'auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        
+        // Clear localStorage
+        localStorage.clear();
+      </script>
     </body>
     </html>
   `)

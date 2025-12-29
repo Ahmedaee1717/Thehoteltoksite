@@ -14,7 +14,23 @@ window.addEventListener('DOMContentLoaded', function() {
     
     const { useState, useEffect, useRef } = React;
     const h = React.createElement;
-    const user = 'admin@investaycapital.com';
+    
+    // Get user email from cookie or localStorage
+    const getUserEmail = () => {
+      // Try localStorage first (set during login)
+      const stored = localStorage.getItem('userEmail');
+      if (stored) return stored;
+      
+      // If not in localStorage, user is not logged in
+      return null;
+    };
+    
+    const user = getUserEmail();
+    
+    // Redirect to login if not logged in
+    if (!user) {
+      window.location.href = '/login';
+    }
     
     function EmailApp() {
       const [view, setView] = useState('inbox');
@@ -466,7 +482,52 @@ window.addEventListener('DOMContentLoaded', function() {
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap'
                 } 
-              }, 'admin@investay...')
+              }, user || 'admin@investay...')
+            )
+          ),
+          
+          // Logout Button
+          h('div', {
+            style: {
+              padding: '12px 24px 20px 24px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.05)'
+            }
+          },
+            h('button', {
+              onClick: () => {
+                if (confirm('Are you sure you want to logout?')) {
+                  localStorage.clear();
+                  document.cookie = 'auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                  window.location.href = '/logout';
+                }
+              },
+              style: {
+                width: '100%',
+                padding: '12px 16px',
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '8px',
+                color: '#ef4444',
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                transition: 'all 0.3s'
+              },
+              onMouseEnter: (e) => {
+                e.target.style.background = 'rgba(239, 68, 68, 0.2)';
+                e.target.style.transform = 'translateY(-1px)';
+              },
+              onMouseLeave: (e) => {
+                e.target.style.background = 'rgba(239, 68, 68, 0.1)';
+                e.target.style.transform = 'translateY(0)';
+              }
+            },
+              h('span', { style: { fontSize: '16px' } }, '🚪'),
+              'Logout'
             )
           )
         ),
