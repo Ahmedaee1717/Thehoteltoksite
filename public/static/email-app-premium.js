@@ -329,7 +329,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     letterSpacing: '0.3px',
                     fontStyle: 'italic'
                   } 
-                }, 'If it's still important, it will still be here.')
+                }, 'If it\'s still important, it will still be here.')
               )
             ),
             
