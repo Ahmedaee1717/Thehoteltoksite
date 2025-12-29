@@ -322,6 +322,13 @@ emailRoutes.post('/send', async (c) => {
       }
     }
     
+    // Get user's display name from email accounts table (needed for both Mailgun and DB)
+    const userAccount = await DB.prepare(`
+      SELECT display_name FROM email_accounts WHERE email_address = ?
+    `).bind(from).first();
+    
+    const displayName = userAccount?.display_name || from.split('@')[0];
+    
     // Send email via Mailgun
     let mailgunSuccess = false;
     let mailgunError = null;
@@ -329,13 +336,6 @@ emailRoutes.post('/send', async (c) => {
     
     if (MAILGUN_API_KEY && MAILGUN_DOMAIN) {
       try {
-        // Get user's display name from email accounts table
-        const userAccount = await DB.prepare(`
-          SELECT display_name FROM email_accounts WHERE email_address = ?
-        `).bind(from).first();
-        
-        const displayName = userAccount?.display_name || from.split('@')[0];
-        
         const mailgunService = createMailgunService({
           apiKey: MAILGUN_API_KEY,
           domain: MAILGUN_DOMAIN,
@@ -406,17 +406,18 @@ emailRoutes.post('/send', async (c) => {
     }
     
     // Store email in database
-    await DB.prepare(`
+    const insertResult = await DB.prepare(`
       INSERT INTO emails (
-        id, thread_id, from_email, to_email, cc, bcc, subject,
+        id, thread_id, from_email, from_name, to_email, cc, bcc, subject,
         body_text, body_html, snippet, category, ai_summary, 
         action_items, embedding_vector, sent_at, created_at,
         expiry_type, expires_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, datetime('now', '+30 days'))
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, datetime('now', '+30 days'))
     `).bind(
       emailId,
       threadId,
       from,
+      displayName || from.split('@')[0], // Add from_name
       to,
       cc ? JSON.stringify(cc) : null,
       bcc ? JSON.stringify(bcc) : null,
@@ -430,6 +431,8 @@ emailRoutes.post('/send', async (c) => {
       embeddingVector ? JSON.stringify(embeddingVector) : null,
       '30d' // Default expiry: 30 days for all emails
     ).run();
+    
+    console.log('📧 Email saved to database:', insertResult.success ? '✅ SUCCESS' : '❌ FAILED', emailId);
     
     // Track analytics
     await DB.prepare(`
