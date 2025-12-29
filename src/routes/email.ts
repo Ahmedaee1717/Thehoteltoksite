@@ -495,29 +495,77 @@ emailRoutes.post('/compose-assist', async (c) => {
   }
   
   try {
-    const { action, text, tone, context } = await c.req.json();
+    const { action, text, tone, context, subject } = await c.req.json();
     
     let prompt = '';
+    let systemPrompt = 'You are an expert email writing assistant for institutional professionals. Write clear, concise, professional emails.';
+    
+    // Check if context includes full conversation thread
+    const hasFullThread = context && context.includes('FULL CONVERSATION THREAD:');
+    
+    if (hasFullThread) {
+      // Enhanced system prompt for thread-aware AI
+      systemPrompt = `You are an expert email writing assistant for institutional professionals. 
+You have access to the FULL email conversation thread to understand context, tone, and history.
+When improving or expanding replies:
+1. Consider the entire conversation history
+2. Reference specific points from previous messages when relevant
+3. Maintain consistency with the conversation tone
+4. Avoid repeating what's already been said
+5. Provide contextually-aware, intelligent responses
+Write clear, concise, professional emails that demonstrate understanding of the full conversation.`;
+    }
     
     switch (action) {
       case 'improve':
-        prompt = `Improve this email while maintaining ${tone || 'professional'} tone:\n\n${text}`;
+        if (hasFullThread) {
+          prompt = `You have access to the full conversation thread below. Improve the current reply while maintaining ${tone || 'professional'} tone and considering the conversation context.\n\n${context}\n\nImprove this reply to be more effective and contextually appropriate.`;
+        } else {
+          prompt = `Improve this email while maintaining ${tone || 'professional'} tone:\n\n${text}`;
+        }
         break;
+        
+      case 'shorten':
+        if (hasFullThread) {
+          prompt = `You have access to the full conversation thread below. Make the current reply more concise while maintaining key points and conversation context.\n\n${context}\n\nMake this reply shorter and more focused.`;
+        } else {
+          prompt = `Make this email more concise:\n\n${text}`;
+        }
+        break;
+        
       case 'expand':
-        prompt = `Expand these bullet points into a complete ${tone || 'professional'} email:\n\n${text}`;
+        if (hasFullThread) {
+          prompt = `You have access to the full conversation thread below. Expand the current reply with more detail, considering the conversation history.\n\n${context}\n\nExpand this reply with relevant details and context.`;
+        } else {
+          prompt = `Expand these bullet points into a complete ${tone || 'professional'} email:\n\n${text}`;
+        }
         break;
+        
+      case 'fix':
+        if (hasFullThread) {
+          prompt = `You have access to the full conversation thread below. Fix any grammar, spelling, or clarity issues in the current reply.\n\n${context}\n\nFix any errors and improve clarity.`;
+        } else {
+          prompt = `Fix grammar and improve clarity:\n\n${text}`;
+        }
+        break;
+        
       case 'summarize':
         prompt = `Summarize this email concisely:\n\n${text}`;
         break;
+        
       case 'reply':
         prompt = `Write a ${tone || 'professional'} reply to this email:\n\n${context}\n\nKey points to address:\n${text}`;
         break;
+        
       case 'translate':
         prompt = `Translate this email to ${tone}:\n\n${text}`;
         break;
+        
       default:
         return c.json({ success: false, error: 'Invalid action' }, 400);
     }
+    
+    console.log(`🤖 AI Compose Assist: action=${action}, hasFullThread=${hasFullThread}, tone=${tone}`);
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -530,7 +578,7 @@ emailRoutes.post('/compose-assist', async (c) => {
         messages: [
           {
             role: 'system',
-            content: 'You are an expert email writing assistant for institutional professionals. Write clear, concise, professional emails.'
+            content: systemPrompt
           },
           {
             role: 'user',
@@ -538,7 +586,7 @@ emailRoutes.post('/compose-assist', async (c) => {
           }
         ],
         temperature: 0.7,
-        max_tokens: 1000
+        max_tokens: 1500  // Increased for thread-aware responses
       })
     });
     

@@ -2152,6 +2152,7 @@ window.addEventListener('DOMContentLoaded', function() {
       const [sending, setSending] = useState(false);
       const [threadEmails, setThreadEmails] = useState([email]); // Start with current email
       const [loadingThread, setLoadingThread] = useState(false);
+      const [aiProcessing, setAiProcessing] = useState(false);
       
       // Load full thread on mount
       useEffect(() => {
@@ -2173,6 +2174,56 @@ window.addEventListener('DOMContentLoaded', function() {
           console.error('❌ Failed to load thread:', err);
         } finally {
           setLoadingThread(false);
+        }
+      };
+      
+      // AI Assist for reply - WITH FULL THREAD CONTEXT
+      const handleReplyAIAssist = async (action, tone = 'professional') => {
+        if (!replyBody.trim() && action !== 'expand') {
+          alert('✍️ Please write some text first!');
+          return;
+        }
+        
+        setAiProcessing(true);
+        try {
+          // Build full conversation context for AI
+          const conversationContext = threadEmails
+            .map((msg, idx) => {
+              const sender = msg.from_email || 'Unknown';
+              const date = new Date(msg.sent_at || msg.created_at).toLocaleString();
+              const body = msg.body_text || msg.snippet || '';
+              return `[Message ${idx + 1} from ${sender} at ${date}]:\n${body}`;
+            })
+            .join('\n\n---\n\n');
+          
+          const fullContext = `FULL CONVERSATION THREAD:\n${conversationContext}\n\n---\n\nCURRENT REPLY BEING WRITTEN:\n${replyBody}`;
+          
+          console.log('🤖 Sending AI assist request with full thread context');
+          
+          const response = await fetch('/api/email/compose-assist', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action,
+              text: replyBody,
+              tone,
+              context: fullContext,
+              subject: email.subject || 'Reply'
+            })
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            setReplyBody(data.text);
+          } else {
+            alert('❌ AI assist failed: ' + data.error);
+          }
+        } catch (error) {
+          console.error('AI assist error:', error);
+          alert('❌ AI error: ' + error.message);
+        } finally {
+          setAiProcessing(false);
         }
       };
       
@@ -2920,6 +2971,114 @@ window.addEventListener('DOMContentLoaded', function() {
                 fontFamily: 'inherit'
               }
             }),
+            
+            // AI Assist Buttons
+            h('div', {
+              style: {
+                marginTop: '12px',
+                display: 'flex',
+                gap: '8px',
+                flexWrap: 'wrap'
+              }
+            },
+              h('div', {
+                style: {
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  color: 'rgba(139, 92, 246, 0.8)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  marginRight: '8px'
+                }
+              }, '✨ AI Assist:'),
+              h('button', {
+                onClick: () => handleReplyAIAssist('improve', 'professional'),
+                disabled: aiProcessing,
+                style: {
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  background: aiProcessing ? 'rgba(139, 92, 246, 0.2)' : 'rgba(139, 92, 246, 0.15)',
+                  border: '1px solid rgba(139, 92, 246, 0.3)',
+                  color: '#a78bfa',
+                  cursor: aiProcessing ? 'not-allowed' : 'pointer',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  transition: 'all 0.2s'
+                },
+                onMouseEnter: (e) => {
+                  if (!aiProcessing) e.target.style.background = 'rgba(139, 92, 246, 0.25)';
+                },
+                onMouseLeave: (e) => {
+                  if (!aiProcessing) e.target.style.background = 'rgba(139, 92, 246, 0.15)';
+                }
+              }, aiProcessing ? '⏳' : '✨ Improve'),
+              h('button', {
+                onClick: () => handleReplyAIAssist('shorten'),
+                disabled: aiProcessing,
+                style: {
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  background: aiProcessing ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.15)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  color: '#60a5fa',
+                  cursor: aiProcessing ? 'not-allowed' : 'pointer',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  transition: 'all 0.2s'
+                },
+                onMouseEnter: (e) => {
+                  if (!aiProcessing) e.target.style.background = 'rgba(59, 130, 246, 0.25)';
+                },
+                onMouseLeave: (e) => {
+                  if (!aiProcessing) e.target.style.background = 'rgba(59, 130, 246, 0.15)';
+                }
+              }, aiProcessing ? '⏳' : '📏 Shorten'),
+              h('button', {
+                onClick: () => handleReplyAIAssist('expand'),
+                disabled: aiProcessing,
+                style: {
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  background: aiProcessing ? 'rgba(34, 197, 94, 0.2)' : 'rgba(34, 197, 94, 0.15)',
+                  border: '1px solid rgba(34, 197, 94, 0.3)',
+                  color: '#4ade80',
+                  cursor: aiProcessing ? 'not-allowed' : 'pointer',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  transition: 'all 0.2s'
+                },
+                onMouseEnter: (e) => {
+                  if (!aiProcessing) e.target.style.background = 'rgba(34, 197, 94, 0.25)';
+                },
+                onMouseLeave: (e) => {
+                  if (!aiProcessing) e.target.style.background = 'rgba(34, 197, 94, 0.15)';
+                }
+              }, aiProcessing ? '⏳' : '📝 Expand'),
+              h('button', {
+                onClick: () => handleReplyAIAssist('fix'),
+                disabled: aiProcessing,
+                style: {
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  background: aiProcessing ? 'rgba(251, 191, 36, 0.2)' : 'rgba(251, 191, 36, 0.15)',
+                  border: '1px solid rgba(251, 191, 36, 0.3)',
+                  color: '#fbbf24',
+                  cursor: aiProcessing ? 'not-allowed' : 'pointer',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  transition: 'all 0.2s'
+                },
+                onMouseEnter: (e) => {
+                  if (!aiProcessing) e.target.style.background = 'rgba(251, 191, 36, 0.25)';
+                },
+                onMouseLeave: (e) => {
+                  if (!aiProcessing) e.target.style.background = 'rgba(251, 191, 36, 0.15)';
+                }
+              }, aiProcessing ? '⏳' : '🔧 Fix Grammar')
+            ),
             h('div', {
               style: {
                 marginTop: '16px',
