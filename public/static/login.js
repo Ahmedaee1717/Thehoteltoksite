@@ -505,7 +505,7 @@ function LoginApp() {
                     type="email"
                     value=${email}
                     onChange=${(e) => setEmail(e.target.value)}
-                    placeholder="your-email@investay.com"
+                    placeholder="your-email@investaycapital.com"
                     required
                     disabled=${loading}
                     style=${{
@@ -667,7 +667,7 @@ function LoginApp() {
                     type="email"
                     value=${email}
                     onChange=${(e) => setEmail(e.target.value)}
-                    placeholder="your-email@investay.com"
+                    placeholder="your-email@investaycapital.com"
                     required
                     disabled=${loading}
                     style=${{
@@ -821,7 +821,7 @@ function LoginApp() {
                     type="email"
                     value=${email}
                     onChange=${(e) => setEmail(e.target.value)}
-                    placeholder="your-email@investay.com"
+                    placeholder="your-email@investaycapital.com"
                     required
                     disabled=${loading}
                     style=${{

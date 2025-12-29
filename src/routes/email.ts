@@ -643,8 +643,8 @@ emailRoutes.post('/search', async (c) => {
       ORDER BY received_at DESC
       LIMIT 50
     `).bind(
-      userEmail || 'admin@investay.com',
-      userEmail || 'admin@investay.com',
+      userEmail || 'admin@investaycapital.com',
+      userEmail || 'admin@investaycapital.com',
       `%${query}%`,
       `%${query}%`
     ).all();
@@ -1315,7 +1315,7 @@ emailRoutes.post('/accounts/create', async (c) => {
     if (!emailRegex.test(email)) {
       return c.json({ 
         success: false, 
-        error: 'Invalid email format. Must be @investay.com' 
+        error: 'Invalid email format. Must be @investaycapital.com' 
       }, 400);
     }
     
