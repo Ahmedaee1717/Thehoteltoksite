@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { serveStatic } from 'hono/cloudflare-workers'
+import { getCookie } from 'hono/cookie'
 import { blogRoutes } from './routes/blog'
 import { adminRoutes } from './routes/admin'
 import { aiAdminRoutes } from './routes/ai-admin'
@@ -161,7 +162,7 @@ app.get('/mail/test', (c) => {
 // Email client page - requires login
 app.get('/mail', (c) => {
   // Check if user is logged in
-  const authToken = c.req.header('Cookie')?.match(/auth_token=([^;]+)/)?.[1];
+  const authToken = getCookie(c, 'auth_token');
   
   if (!authToken) {
     // Not logged in - redirect to login page

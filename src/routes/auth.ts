@@ -188,16 +188,16 @@ authRoutes.post('/login', async (c) => {
     // Set secure HTTP-only cookie
     setCookie(c, 'session_id', sessionId, {
       httpOnly: true,
-      secure: true,
-      sameSite: 'Strict',
+      secure: false, // Allow HTTP for development
+      sameSite: 'Lax',
       maxAge: 60 * 60 * 24 * 7, // 7 days
       path: '/'
     })
     
     setCookie(c, 'auth_token', token, {
       httpOnly: true,
-      secure: true,
-      sameSite: 'Strict',
+      secure: false, // Allow HTTP for development
+      sameSite: 'Lax', // Changed from Strict for better compatibility
       maxAge: 60 * 60 * 24 * 7, // 7 days
       path: '/'
     })
