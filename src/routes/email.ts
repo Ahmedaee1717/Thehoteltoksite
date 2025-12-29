@@ -1695,6 +1695,34 @@ emailRoutes.patch('/:id/expiry', async (c) => {
 });
 
 // ============================================
+// PATCH /api/email/:id/mark-read
+// Mark an email as read
+// ============================================
+emailRoutes.patch('/:id/mark-read', async (c) => {
+  const { DB } = c.env;
+  const userEmail = c.get('userEmail');
+  const emailId = c.req.param('id');
+  
+  if (!userEmail) {
+    return c.json({ success: false, error: 'Authentication required' }, 401);
+  }
+  
+  try {
+    // Mark as read only if user is the recipient
+    await DB.prepare(`
+      UPDATE emails 
+      SET is_read = 1, opened_at = CURRENT_TIMESTAMP
+      WHERE id = ? AND to_email = ?
+    `).bind(emailId, userEmail).run();
+    
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error('Mark as read error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================
 // GET /api/email/thread/:thread_id
 // Get all emails in a thread (conversation view)
 // 🔒 SECURITY: Users can ONLY see threads they're part of

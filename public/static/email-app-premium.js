@@ -838,6 +838,20 @@ window.addEventListener('DOMContentLoaded', function() {
                   key: email.id || i,
                   onClick: () => {
                     console.log('📧 Email clicked:', email);
+                    
+                    // Mark as read when opening
+                    if (!email.is_read) {
+                      fetch(`/api/email/${email.id}/mark-read`, {
+                        method: 'PATCH'
+                      }).then(res => {
+                        if (res.ok) {
+                          // Update local state
+                          email.is_read = 1;
+                          console.log('✅ Marked as read');
+                        }
+                      }).catch(err => console.error('❌ Mark as read failed:', err));
+                    }
+                    
                     setSelectedEmail(email);
                     setShowCollabPanel(true);
                     loadCollabData(email.id);
