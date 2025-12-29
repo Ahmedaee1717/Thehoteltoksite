@@ -324,12 +324,12 @@ window.addEventListener('DOMContentLoaded', function() {
                 h('div', { 
                   style: { 
                     fontSize: '11px', 
-                    color: 'rgba(201, 169, 98, 0.6)',
-                    fontWeight: '600',
-                    letterSpacing: '2px',
-                    textTransform: 'uppercase'
+                    color: 'rgba(201, 169, 98, 0.7)',
+                    fontWeight: '400',
+                    letterSpacing: '0.3px',
+                    fontStyle: 'italic'
                   } 
-                }, 'Professional')
+                }, 'If it's still important, it will still be here.')
               )
             ),
             
