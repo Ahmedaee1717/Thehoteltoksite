@@ -1558,4 +1558,65 @@ emailRoutes.post('/receive', async (c) => {
   }
 });
 
+// ============================================
+// PATCH /api/email/:id/expiry
+// Update email expiry settings
+// ============================================
+emailRoutes.patch('/:id/expiry', async (c) => {
+  const { DB } = c.env;
+  const userEmail = c.get('userEmail');
+  
+  if (!userEmail) {
+    return c.json({ success: false, error: 'Authentication required' }, 401);
+  }
+  
+  try {
+    const emailId = c.req.param('id');
+    const { expiry_type } = await c.req.json();
+    
+    // Validate expiry_type
+    const validTypes = ['1h', '24h', '7d', '30d', 'keep'];
+    if (!validTypes.includes(expiry_type)) {
+      return c.json({ success: false, error: 'Invalid expiry type' }, 400);
+    }
+    
+    // Calculate new expires_at based on expiry_type
+    let expiresAt;
+    if (expiry_type === 'keep') {
+      expiresAt = null; // Keep forever
+    } else if (expiry_type === '1h') {
+      expiresAt = "datetime('now', '+1 hour')";
+    } else if (expiry_type === '24h') {
+      expiresAt = "datetime('now', '+1 day')";
+    } else if (expiry_type === '7d') {
+      expiresAt = "datetime('now', '+7 days')";
+    } else if (expiry_type === '30d') {
+      expiresAt = "datetime('now', '+30 days')";
+    }
+    
+    // Update email expiry
+    const result = await DB.prepare(`
+      UPDATE emails 
+      SET expiry_type = ?, 
+          expires_at = ${expiry_type === 'keep' ? 'NULL' : expiresAt},
+          is_expired = 0
+      WHERE id = ? AND (from_email = ? OR to_email = ?)
+    `).bind(expiry_type, emailId, userEmail, userEmail).run();
+    
+    if (result.success) {
+      console.log(`✅ Email ${emailId} expiry updated to: ${expiry_type}`);
+      return c.json({ 
+        success: true, 
+        expiry_type,
+        message: `Expiry set to: ${expiry_type}` 
+      });
+    } else {
+      return c.json({ success: false, error: 'Failed to update expiry' }, 500);
+    }
+  } catch (error: any) {
+    console.error('Expiry update error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
 export { emailRoutes }

@@ -2359,6 +2359,107 @@ window.addEventListener('DOMContentLoaded', function() {
               }, email.body_text || email.snippet || '(No content)')
             ),
             
+            // ⏳ INBOX = NOW Quick Expiry Selector
+            h('div', {
+              style: {
+                marginTop: '24px',
+                padding: '20px',
+                background: 'linear-gradient(135deg, rgba(201, 169, 98, 0.1) 0%, rgba(139, 115, 85, 0.1) 100%)',
+                borderRadius: '12px',
+                border: '1px solid rgba(201, 169, 98, 0.2)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+              }
+            },
+              h('div', {
+                style: {
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  color: 'rgba(201, 169, 98, 0.9)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }
+              }, '⏳ Expiry Settings'),
+              h('div', {
+                style: {
+                  display: 'flex',
+                  gap: '8px',
+                  flexWrap: 'wrap'
+                }
+              },
+                ['1h', '24h', '7d', '30d', 'keep'].map(expiry =>
+                  h('button', {
+                    key: expiry,
+                    onClick: async () => {
+                      try {
+                        const response = await fetch(`/api/email/${email.id}/expiry`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ expiry_type: expiry })
+                        });
+                        if (response.ok) {
+                          email.expiry_type = expiry;
+                          alert(`✅ Expiry set to: ${expiry === 'keep' ? 'Keep forever' : expiry}`);
+                        }
+                      } catch (err) {
+                        alert('❌ Failed to update expiry');
+                      }
+                    },
+                    style: {
+                      padding: '10px 20px',
+                      borderRadius: '10px',
+                      background: email.expiry_type === expiry
+                        ? 'linear-gradient(135deg, #C9A962 0%, #8B7355 100%)'
+                        : 'rgba(255, 255, 255, 0.05)',
+                      border: email.expiry_type === expiry
+                        ? '1px solid rgba(201, 169, 98, 0.5)'
+                        : '1px solid rgba(255, 255, 255, 0.1)',
+                      color: email.expiry_type === expiry
+                        ? 'white'
+                        : 'rgba(255, 255, 255, 0.7)',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    },
+                    onMouseEnter: (e) => {
+                      if (email.expiry_type !== expiry) {
+                        e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                        e.target.style.borderColor = 'rgba(201, 169, 98, 0.3)';
+                      }
+                    },
+                    onMouseLeave: (e) => {
+                      if (email.expiry_type !== expiry) {
+                        e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                        e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                      }
+                    }
+                  },
+                    expiry === 'keep' ? '∞' : '⏳',
+                    ' ',
+                    expiry === 'keep' ? 'Keep Forever' : expiry.toUpperCase()
+                  )
+                )
+              ),
+              h('div', {
+                style: {
+                  fontSize: '12px',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  marginTop: '8px',
+                  fontStyle: 'italic'
+                }
+              }, email.expiry_type === 'keep' 
+                ? '∞ This email will be kept forever' 
+                : `⏳ Expires: ${getTimeRemaining(email.expires_at)}`)
+            ),
+            
             // AI Summary (if available)
             email.ai_summary && h('div', {
               style: {
