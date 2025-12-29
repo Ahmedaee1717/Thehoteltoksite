@@ -52,6 +52,12 @@ window.addEventListener('DOMContentLoaded', function() {
       const [forwardTo, setForwardTo] = useState('');
       const [unreadCount, setUnreadCount] = useState(0);
       
+      // Task creation state
+      const [newTaskTitle, setNewTaskTitle] = useState('');
+      const [newTaskDescription, setNewTaskDescription] = useState('');
+      const [newTaskPriority, setNewTaskPriority] = useState('medium');
+      const [newTaskDueDate, setNewTaskDueDate] = useState('');
+      
       useEffect(() => {
         loadData();
       }, [view]);
@@ -239,6 +245,98 @@ window.addEventListener('DOMContentLoaded', function() {
           }
         } catch (error) {
           console.error('Add comment error:', error);
+        }
+      };
+      
+      // Task management functions
+      const createTask = async () => {
+        if (!newTaskTitle.trim()) {
+          alert('⚠️ Please enter a task title');
+          return;
+        }
+        try {
+          const res = await fetch('/api/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userEmail: user,
+              title: newTaskTitle,
+              description: newTaskDescription || null,
+              priority: newTaskPriority,
+              due_date: newTaskDueDate || null,
+              category: 'general',
+              status: 'pending'
+            })
+          });
+          const result = await res.json();
+          if (result.success) {
+            setNewTaskTitle('');
+            setNewTaskDescription('');
+            setNewTaskPriority('medium');
+            setNewTaskDueDate('');
+            loadData(); // Reload tasks
+            alert('✅ Task created!');
+          }
+        } catch (error) {
+          console.error('Create task error:', error);
+          alert('❌ Failed to create task');
+        }
+      };
+      
+      const toggleTaskComplete = async (taskId, currentStatus) => {
+        try {
+          const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
+          const res = await fetch(`/api/tasks/${taskId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+          });
+          const result = await res.json();
+          if (result.success) {
+            loadData(); // Reload tasks
+          }
+        } catch (error) {
+          console.error('Toggle task error:', error);
+        }
+      };
+      
+      const deleteTask = async (taskId) => {
+        if (!confirm('🗑️ Delete this task?')) return;
+        try {
+          const res = await fetch(`/api/tasks/${taskId}`, {
+            method: 'DELETE'
+          });
+          const result = await res.json();
+          if (result.success) {
+            loadData(); // Reload tasks
+            alert('✅ Task deleted');
+          }
+        } catch (error) {
+          console.error('Delete task error:', error);
+        }
+      };
+      
+      const createTaskFromEmail = async (email) => {
+        try {
+          const res = await fetch('/api/tasks/from-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              emailId: email.id,
+              userEmail: user,
+              title: `Follow up: ${email.subject}`,
+              description: email.body_text || email.snippet || '',
+              priority: 'medium'
+            })
+          });
+          const result = await res.json();
+          if (result.success) {
+            alert('✅ Task created from email!');
+            setView('tasks'); // Switch to tasks view
+          }
+        } catch (error) {
+          console.error('Create task from email error:', error);
+          alert('❌ Failed to create task');
         }
       };
       
@@ -791,7 +889,113 @@ window.addEventListener('DOMContentLoaded', function() {
             // Tasks View
             view === 'tasks' ? h('div', {},
               h('h3', { style: { color: '#C9A962', marginBottom: '16px', fontSize: '18px' } }, '✅ Your Tasks'),
+              
+              // Create Task Form
+              h('div', { 
+                style: { 
+                  marginBottom: '24px', 
+                  padding: '20px', 
+                  background: 'rgba(26, 31, 58, 0.6)', 
+                  border: '1px solid rgba(255, 255, 255, 0.08)', 
+                  borderRadius: '12px' 
+                } 
+              },
+                h('h4', { style: { color: 'rgba(255, 255, 255, 0.9)', marginBottom: '16px', fontSize: '15px' } }, '➕ Create New Task'),
+                h('input', {
+                  type: 'text',
+                  placeholder: 'Task title *',
+                  value: newTaskTitle,
+                  onInput: (e) => setNewTaskTitle(e.target.value),
+                  style: {
+                    width: '100%',
+                    padding: '12px',
+                    marginBottom: '12px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '8px',
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    fontSize: '14px',
+                    fontFamily: 'inherit'
+                  }
+                }),
+                h('textarea', {
+                  placeholder: 'Description (optional)',
+                  value: newTaskDescription,
+                  onInput: (e) => setNewTaskDescription(e.target.value),
+                  style: {
+                    width: '100%',
+                    padding: '12px',
+                    marginBottom: '12px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '8px',
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    fontSize: '14px',
+                    fontFamily: 'inherit',
+                    resize: 'vertical',
+                    minHeight: '80px'
+                  }
+                }),
+                h('div', { style: { display: 'flex', gap: '12px', marginBottom: '12px' } },
+                  h('select', {
+                    value: newTaskPriority,
+                    onChange: (e) => setNewTaskPriority(e.target.value),
+                    style: {
+                      flex: 1,
+                      padding: '12px',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '8px',
+                      color: 'rgba(255, 255, 255, 0.9)',
+                      fontSize: '14px',
+                      fontFamily: 'inherit',
+                      cursor: 'pointer'
+                    }
+                  },
+                    h('option', { value: 'low' }, '🟢 Low Priority'),
+                    h('option', { value: 'medium' }, '🟡 Medium Priority'),
+                    h('option', { value: 'high' }, '🟠 High Priority'),
+                    h('option', { value: 'urgent' }, '🔴 Urgent')
+                  ),
+                  h('input', {
+                    type: 'date',
+                    value: newTaskDueDate,
+                    onChange: (e) => setNewTaskDueDate(e.target.value),
+                    style: {
+                      flex: 1,
+                      padding: '12px',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '8px',
+                      color: 'rgba(255, 255, 255, 0.9)',
+                      fontSize: '14px',
+                      fontFamily: 'inherit',
+                      cursor: 'pointer'
+                    }
+                  })
+                ),
+                h('button', {
+                  onClick: createTask,
+                  disabled: !newTaskTitle.trim(),
+                  style: {
+                    width: '100%',
+                    padding: '12px',
+                    background: newTaskTitle.trim() ? 'linear-gradient(135deg, #C9A962 0%, #A88B4E 100%)' : 'rgba(100, 100, 100, 0.3)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: '#fff',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: newTaskTitle.trim() ? 'pointer' : 'not-allowed',
+                    transition: 'all 0.3s'
+                  }
+                }, '➕ Create Task')
+              ),
+              
+              // Tasks List
               h('div', { style: { display: 'grid', gap: '12px' } },
+                tasks.length === 0 ? 
+                  h('div', { style: { textAlign: 'center', padding: '40px', color: 'rgba(255, 255, 255, 0.4)' } }, 'No tasks yet. Create one above!') :
                 tasks.map((task, i) =>
                   h('div', {
                     key: task.id || i,
@@ -800,8 +1004,8 @@ window.addEventListener('DOMContentLoaded', function() {
                       background: 'rgba(26, 31, 58, 0.6)',
                       border: '1px solid rgba(255, 255, 255, 0.08)',
                       borderRadius: '12px',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s'
+                      transition: 'all 0.3s',
+                      opacity: task.status === 'completed' ? 0.6 : 1
                     },
                     onMouseEnter: (e) => {
                       e.currentTarget.style.borderColor = 'rgba(201, 169, 98, 0.3)';
@@ -812,21 +1016,70 @@ window.addEventListener('DOMContentLoaded', function() {
                       e.currentTarget.style.transform = 'translateX(0)';
                     }
                   },
-                    h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' } },
-                      h('span', { style: { fontWeight: '600', color: 'rgba(255, 255, 255, 0.9)' } }, task.title),
-                      h('span', { 
-                        style: { 
-                          fontSize: '11px', 
-                          padding: '4px 12px', 
-                          borderRadius: '12px',
-                          background: task.status === 'completed' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(234, 179, 8, 0.2)',
-                          color: task.status === 'completed' ? '#22c55e' : '#eab308'
-                        } 
-                      }, task.status || 'pending')
-                    ),
-                    task.description && h('div', { style: { fontSize: '13px', color: 'rgba(255, 255, 255, 0.5)' } }, task.description),
-                    task.due_date && h('div', { style: { fontSize: '12px', color: '#C9A962', marginTop: '8px' } }, 
-                      `⏰ Due: ${new Date(task.due_date).toLocaleDateString()}`
+                    h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' } },
+                      h('div', { style: { display: 'flex', alignItems: 'flex-start', gap: '12px', flex: 1 } },
+                        h('input', {
+                          type: 'checkbox',
+                          checked: task.status === 'completed',
+                          onChange: () => toggleTaskComplete(task.id, task.status),
+                          style: {
+                            width: '20px',
+                            height: '20px',
+                            marginTop: '2px',
+                            cursor: 'pointer',
+                            accentColor: '#C9A962'
+                          }
+                        }),
+                        h('div', { style: { flex: 1 } },
+                          h('div', { 
+                            style: { 
+                              fontWeight: '600', 
+                              color: 'rgba(255, 255, 255, 0.9)',
+                              textDecoration: task.status === 'completed' ? 'line-through' : 'none'
+                            } 
+                          }, task.title),
+                          task.description && h('div', { style: { fontSize: '13px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '4px' } }, task.description),
+                          h('div', { style: { display: 'flex', gap: '12px', marginTop: '8px', flexWrap: 'wrap' } },
+                            h('span', { 
+                              style: { 
+                                fontSize: '11px', 
+                                padding: '4px 12px', 
+                                borderRadius: '12px',
+                                background: task.priority === 'urgent' ? 'rgba(239, 68, 68, 0.2)' :
+                                           task.priority === 'high' ? 'rgba(251, 146, 60, 0.2)' :
+                                           task.priority === 'medium' ? 'rgba(234, 179, 8, 0.2)' : 'rgba(34, 197, 94, 0.2)',
+                                color: task.priority === 'urgent' ? '#ef4444' :
+                                       task.priority === 'high' ? '#fb923c' :
+                                       task.priority === 'medium' ? '#eab308' : '#22c55e'
+                              } 
+                            }, task.priority || 'low'),
+                            task.due_date && h('span', { style: { fontSize: '12px', color: '#C9A962' } }, 
+                              `⏰ ${new Date(task.due_date).toLocaleDateString()}`
+                            )
+                          )
+                        )
+                      ),
+                      h('button', {
+                        onClick: () => deleteTask(task.id),
+                        style: {
+                          background: 'none',
+                          border: 'none',
+                          color: 'rgba(239, 68, 68, 0.6)',
+                          fontSize: '18px',
+                          cursor: 'pointer',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          transition: 'all 0.2s'
+                        },
+                        onMouseEnter: (e) => {
+                          e.currentTarget.style.color = '#ef4444';
+                          e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                        },
+                        onMouseLeave: (e) => {
+                          e.currentTarget.style.color = 'rgba(239, 68, 68, 0.6)';
+                          e.currentTarget.style.background = 'none';
+                        }
+                      }, '🗑️')
                     )
                   )
                 )
@@ -2994,7 +3247,27 @@ window.addEventListener('DOMContentLoaded', function() {
               onMouseLeave: (e) => {
                 e.target.style.background = 'rgba(239, 68, 68, 0.15)';
               }
-            }, '🗑️ Delete')
+            }, '🗑️ Delete'),
+            h('button', {
+              onClick: () => createTaskFromEmail(email),
+              style: {
+                padding: '12px 24px',
+                borderRadius: '10px',
+                background: 'rgba(201, 169, 98, 0.15)',
+                border: '1px solid rgba(201, 169, 98, 0.3)',
+                color: '#C9A962',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              },
+              onMouseEnter: (e) => {
+                e.target.style.background = 'rgba(201, 169, 98, 0.25)';
+              },
+              onMouseLeave: (e) => {
+                e.target.style.background = 'rgba(201, 169, 98, 0.15)';
+              }
+            }, '📝 Create Task')
           ),
           
           // Inline Reply Form (Gmail-style)
