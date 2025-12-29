@@ -27,7 +27,10 @@ const emailRoutes = new Hono<{ Bindings: Bindings }>()
 const requireAuth = async (c: any, next: any) => {
   const token = getCookie(c, 'auth_token');
   
+  console.log('🔐 Auth check - Token present:', !!token);
+  
   if (!token) {
+    console.log('❌ No auth_token cookie found');
     return c.json({ success: false, error: 'Unauthorized - Please login' }, 401);
   }
   
@@ -35,8 +38,11 @@ const requireAuth = async (c: any, next: any) => {
   const decoded = await verifyToken(token, secret);
   
   if (!decoded) {
+    console.log('❌ Token verification failed');
     return c.json({ success: false, error: 'Invalid or expired token' }, 401);
   }
+  
+  console.log('✅ Auth successful for:', decoded.email);
   
   // Set authenticated user email in context
   c.set('userEmail', decoded.email);
@@ -79,7 +85,10 @@ emailRoutes.get('/inbox', async (c) => {
   // 🔒 Get email from authenticated session - NO query parameter!
   const userEmail = c.get('userEmail');
   
+  console.log('📥 Inbox request for user:', userEmail);
+  
   if (!userEmail) {
+    console.log('❌ No userEmail in context');
     return c.json({ success: false, error: 'Authentication required' }, 401);
   }
   
@@ -98,6 +107,8 @@ emailRoutes.get('/inbox', async (c) => {
       ORDER BY received_at DESC
       LIMIT 50
     `).bind(userEmail).all();
+    
+    console.log(`✅ Found ${results.length} emails for ${userEmail}`);
     
     return c.json({ success: true, emails: results });
   } catch (error: any) {
