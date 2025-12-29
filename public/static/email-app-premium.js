@@ -335,6 +335,7 @@ window.addEventListener('DOMContentLoaded', function() {
             
             // Compose Button - Ultra Premium
             h('button', {
+              id: 'compose-button',
               onClick: () => setShowCompose(true),
               style: {
                 width: '100%',
@@ -2578,7 +2579,23 @@ window.addEventListener('DOMContentLoaded', function() {
           },
             h('button', {
               onClick: () => {
-                alert('Reply feature coming soon!');
+                // Close the modal and open compose with pre-filled data
+                onClose();
+                setTimeout(() => {
+                  const composeBtn = document.querySelector('#compose-button');
+                  if (composeBtn) composeBtn.click();
+                  // Pre-fill the compose form
+                  setTimeout(() => {
+                    const toInput = document.querySelector('input[placeholder="To:"]');
+                    const subjectInput = document.querySelector('input[placeholder="Subject"]');
+                    const bodyTextarea = document.querySelector('textarea[placeholder="Email body"]');
+                    if (toInput) toInput.value = email.from_email;
+                    if (subjectInput) subjectInput.value = 'Re: ' + (email.subject || 'No Subject');
+                    if (bodyTextarea) {
+                      bodyTextarea.value = '\n\n---\nOn ' + formatDate(email.sent_at || email.received_at) + ', ' + email.from_email + ' wrote:\n> ' + (email.body_text || email.snippet || '').split('\n').join('\n> ');
+                    }
+                  }, 100);
+                }, 100);
               },
               style: {
                 padding: '12px 24px',
@@ -2600,7 +2617,21 @@ window.addEventListener('DOMContentLoaded', function() {
             }, '↩️ Reply'),
             h('button', {
               onClick: () => {
-                alert('Forward feature coming soon!');
+                // Close the modal and open compose with pre-filled data
+                onClose();
+                setTimeout(() => {
+                  const composeBtn = document.querySelector('#compose-button');
+                  if (composeBtn) composeBtn.click();
+                  // Pre-fill the compose form
+                  setTimeout(() => {
+                    const subjectInput = document.querySelector('input[placeholder="Subject"]');
+                    const bodyTextarea = document.querySelector('textarea[placeholder="Email body"]');
+                    if (subjectInput) subjectInput.value = 'Fwd: ' + (email.subject || 'No Subject');
+                    if (bodyTextarea) {
+                      bodyTextarea.value = '\n\n---\nForwarded message:\nFrom: ' + email.from_email + '\nDate: ' + formatDate(email.sent_at || email.received_at) + '\nSubject: ' + (email.subject || 'No Subject') + '\n\n' + (email.body_text || email.snippet || '');
+                    }
+                  }, 100);
+                }, 100);
               },
               style: {
                 padding: '12px 24px',
@@ -2621,9 +2652,24 @@ window.addEventListener('DOMContentLoaded', function() {
               }
             }, '↪️ Forward'),
             h('button', {
-              onClick: () => {
+              onClick: async () => {
                 if (confirm('Are you sure you want to delete this email?')) {
-                  alert('Delete feature coming soon!');
+                  try {
+                    const response = await fetch(`/api/email/${email.id}`, {
+                      method: 'DELETE'
+                    });
+                    if (response.ok) {
+                      alert('✅ Email deleted successfully!');
+                      onClose();
+                      // Reload the email list
+                      window.location.reload();
+                    } else {
+                      alert('❌ Failed to delete email');
+                    }
+                  } catch (err) {
+                    console.error('Delete error:', err);
+                    alert('❌ Error deleting email');
+                  }
                 }
               },
               style: {
