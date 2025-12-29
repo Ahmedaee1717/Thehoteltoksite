@@ -9,6 +9,7 @@ import { emailRoutes } from './routes/email'
 import { authRoutes } from './routes/auth'
 import tasks from './routes/tasks'
 import crm from './routes/crm'
+import filebank from './routes/filebank'
 import collab from './routes/collaboration'
 import analytics from './routes/analytics'
 import meetings from './routes/meetings'
@@ -55,6 +56,7 @@ app.route('/api/email', emailRoutes)
 app.route('/api/auth', authRoutes)
 app.route('/api/tasks', tasks)
 app.route('/api/crm', crm)
+app.route('/api/filebank', filebank)
 app.route('/api/collaboration', collab)
 app.route('/api/analytics', analytics)
 app.route('/api/meetings', meetings)
