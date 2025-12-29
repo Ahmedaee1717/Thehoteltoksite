@@ -402,39 +402,29 @@ window.addEventListener('DOMContentLoaded', function() {
                 marginBottom: '24px'
               }
             },
-              // Premium Logo
+              // Premium Logo - Clean and Simple
               h('div', {
                 style: {
                   width: '48px',
                   height: '48px',
-                  borderRadius: '14px',
-                  background: 'linear-gradient(135deg, #C9A962 0%, #8B7355 100%)',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #C9A962 0%, #A88B4E 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '24px',
-                  boxShadow: '0 8px 24px rgba(201, 169, 98, 0.3)',
-                  position: 'relative'
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                  flexShrink: 0
                 }
               },
+                // Simple "I" lettermark
                 h('div', {
                   style: {
-                    position: 'absolute',
-                    inset: '-2px',
-                    borderRadius: '16px',
-                    background: 'linear-gradient(135deg, rgba(201, 169, 98, 0.3), rgba(139, 115, 85, 0.3))',
-                    filter: 'blur(8px)',
-                    zIndex: -1
+                    fontSize: '28px',
+                    fontWeight: '700',
+                    color: 'white',
+                    fontFamily: 'Georgia, serif'
                   }
-                }),
-                // Professional Signal Icon
-                h('svg', {
-                  viewBox: '0 0 24 24',
-                  style: { width: '24px', height: '24px', fill: 'none', stroke: '#C9A962', strokeWidth: '2' }
-                },
-                  h('path', { d: 'M3 12l3-3 3 3 6-6 6 6', strokeLinecap: 'round', strokeLinejoin: 'round' }),
-                  h('path', { d: 'M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7', strokeLinecap: 'round', strokeLinejoin: 'round' })
-                )
+                }, 'I')
               ),
               h('div', null,
                 h('div', { 
@@ -450,13 +440,13 @@ window.addEventListener('DOMContentLoaded', function() {
                 h('div', { 
                   style: { 
                     fontSize: '11px', 
-                    color: 'rgba(201, 169, 98, 0.6)',
-                    fontWeight: '500',
-                    letterSpacing: '0.5px',
+                    color: 'rgba(201, 169, 98, 0.7)',
+                    fontWeight: '400',
+                    letterSpacing: '0.3px',
                     marginTop: '2px',
-                    textTransform: 'uppercase'
+                    fontStyle: 'italic'
                   } 
-                }, 'Enterprise Email')
+                }, 'If it\'s still important, it will still be here.')
               )
             ),
             
