@@ -157,7 +157,7 @@ app.get('/mail', (c) => {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>InvestMail - Complete Email System with Advanced Features</title>
+      <title>Investay Signal - Professional Email Platform</title>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:wght@400;600;700&display=swap" rel="stylesheet">
       <link href="/static/email-app-complete.css" rel="stylesheet">
     </head>
@@ -183,7 +183,7 @@ app.get('/login', (c) => {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Login - InvestMail</title>
+      <title>Login - Investay Signal</title>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
       <style>
         * {
@@ -304,7 +304,7 @@ app.get('/login', (c) => {
     <body>
       <div class="login-container">
         <div class="logo">
-          <h1>📧 InvestMail</h1>
+          <h1>📧 Investay Signal</h1>
           <p>Email, without the past</p>
         </div>
         
@@ -380,7 +380,7 @@ app.get('/logout', async (c) => {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Logged Out - InvestMail</title>
+      <title>Logged Out - Investay Signal</title>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
       <style>
         * {
@@ -512,7 +512,7 @@ app.get('/admin/email-accounts', (c) => {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Email Account Management - InvestMail Admin</title>
+      <title>Email Account Management - Investay Signal Admin</title>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     </head>
     <body>

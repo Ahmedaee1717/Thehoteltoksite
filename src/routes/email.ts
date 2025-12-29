@@ -343,7 +343,7 @@ emailRoutes.post('/send', async (c) => {
           // Use postmaster for actual sending (Mailgun requirement)
           // But set display name to show user's name
           fromEmail: `postmaster@${MAILGUN_DOMAIN}`,
-          fromName: `${displayName} (via InvestMail)`
+          fromName: `${displayName} (via Investay Signal)`
         });
         
         // Create HTML version of email with tracking pixel
@@ -369,7 +369,7 @@ emailRoutes.post('/send', async (c) => {
                   ${body.replace(/\n/g, '<br>')}
                 </div>
                 <div class="email-footer">
-                  <p>Sent via InvestMail</p>
+                  <p>Sent via Investay Signal</p>
                 </div>
               </div>
               <!-- Email open tracking pixel - Only loaded when recipient opens email in their email client -->

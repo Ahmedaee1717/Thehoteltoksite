@@ -1,10 +1,10 @@
 /**
- * InvestMail - ULTRA PREMIUM DARK MODE EMAIL SYSTEM
+ * Investay Signal - PROFESSIONAL EMAIL PLATFORM
  * The most impressive email client you've ever seen
  */
 
 window.addEventListener('DOMContentLoaded', function() {
-  console.log('🚀 Initializing Premium InvestMail...');
+  console.log('🚀 Initializing Investay Signal...');
   
   function initApp() {
     if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
@@ -215,16 +215,13 @@ window.addEventListener('DOMContentLoaded', function() {
       };
       
       const navItems = [
-        { id: 'inbox', icon: '📧', label: 'Inbox', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-        { id: 'sent', icon: '📤', label: 'Sent', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
-        { id: 'drafts', icon: '📝', label: 'Drafts', gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
-        { id: 'spam', icon: '🚫', label: 'Spam', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
-        { id: 'trash', icon: '🗑️', label: 'Trash', gradient: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)' },
-        { id: 'archived', icon: '📦', label: 'Archive', gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' },
-        { id: 'tasks', icon: '✅', label: 'Tasks', gradient: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)' },
-        { id: 'crm', icon: '👥', label: 'CRM', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
-        { id: 'analytics', icon: '📊', label: 'Analytics', gradient: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)' },
-        { id: 'team', icon: '👔', label: 'Team', gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' }
+        { id: 'inbox', icon: '◉', label: 'Inbox', gradient: 'linear-gradient(135deg, #C9A962 0%, #8B7355 100%)' },
+        { id: 'sent', icon: '↗', label: 'Sent', gradient: 'linear-gradient(135deg, #A88B5E 0%, #6B5942 100%)' },
+        { id: 'drafts', icon: '✎', label: 'Drafts', gradient: 'linear-gradient(135deg, #8B7355 0%, #5D4A3A 100%)' },
+        { id: 'spam', icon: '⊘', label: 'Spam', gradient: 'linear-gradient(135deg, #D4A574 0%, #9B7652 100%)' },
+        { id: 'trash', icon: '◻', label: 'Trash', gradient: 'linear-gradient(135deg, #BFA076 0%, #8A6E4F 100%)' },
+        { id: 'archived', icon: '▣', label: 'Archive', gradient: 'linear-gradient(135deg, #C4A976 0%, #937D5C 100%)' },
+        { id: 'tasks', icon: '✓', label: 'Tasks', gradient: 'linear-gradient(135deg, #D1AE6E 0%, #9E825A 100%)' }
       ];
       
       return h('div', { 
@@ -304,7 +301,14 @@ window.addEventListener('DOMContentLoaded', function() {
                     zIndex: -1
                   }
                 }),
-                '◆'
+                // Professional Signal Icon
+                h('svg', {
+                  viewBox: '0 0 24 24',
+                  style: { width: '24px', height: '24px', fill: 'none', stroke: '#C9A962', strokeWidth: '2' }
+                },
+                  h('path', { d: 'M3 12l3-3 3 3 6-6 6 6', strokeLinecap: 'round', strokeLinejoin: 'round' }),
+                  h('path', { d: 'M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7', strokeLinecap: 'round', strokeLinejoin: 'round' })
+                )
               ),
               h('div', null,
                 h('div', { 
@@ -316,15 +320,16 @@ window.addEventListener('DOMContentLoaded', function() {
                     WebkitTextFillColor: 'transparent',
                     letterSpacing: '-0.5px'
                   } 
-                }, 'InvestMail'),
+                }, 'Investay Signal'),
                 h('div', { 
                   style: { 
-                    fontSize: '12px', 
-                    color: 'rgba(255, 255, 255, 0.4)',
-                    fontWeight: '500',
-                    letterSpacing: '0.5px'
+                    fontSize: '11px', 
+                    color: 'rgba(201, 169, 98, 0.6)',
+                    fontWeight: '600',
+                    letterSpacing: '2px',
+                    textTransform: 'uppercase'
                   } 
-                }, 'PREMIUM EDITION')
+                }, 'Professional')
               )
             ),
             
@@ -359,7 +364,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 e.target.style.boxShadow = '0 8px 24px rgba(201, 169, 98, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
               }
             },
-              h('span', { style: { fontSize: '20px' } }, '✍️'),
+              h('span', { style: { fontSize: '18px', fontWeight: '600' } }, '✎'),
               'Compose New Email'
             )
           ),
