@@ -1311,7 +1311,7 @@ emailRoutes.post('/accounts/create', async (c) => {
     }
     
     // Validate email format
-    const emailRegex = /^[^\s@]+@investay\.com$/;
+    const emailRegex = /^[^\s@]+@investaycapital\.com$/;
     if (!emailRegex.test(email)) {
       return c.json({ 
         success: false, 
