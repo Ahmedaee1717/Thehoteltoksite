@@ -1504,7 +1504,7 @@ emailRoutes.patch('/accounts/:id/toggle', async (c) => {
 // Public endpoint - no auth required (Mailgun calls this)
 // ============================================
 emailRoutes.post('/receive', async (c) => {
-  const { DB } = c.env;
+  const { DB, OPENAI_API_KEY } = c.env;
   
   try {
     // Mailgun sends form data, not JSON
@@ -1535,14 +1535,40 @@ emailRoutes.post('/receive', async (c) => {
     const emailId = generateId('eml');
     const threadId = generateId('thr');
     
-    // Store in database
+    // AI enhancements for received emails
+    let aiSummary = null;
+    let aiActionItems = null;
+    let embeddingVector = null;
+    let category = 'inbox';
+    
+    if (OPENAI_API_KEY && bodyText) {
+      console.log('🤖 Processing AI enhancements for received email...');
+      try {
+        [aiSummary, aiActionItems, embeddingVector, category] = await Promise.all([
+          summarizeEmail(bodyText, OPENAI_API_KEY),
+          extractActionItems(bodyText, OPENAI_API_KEY),
+          generateEmbedding(bodyText, OPENAI_API_KEY),
+          categorizeEmail(subject + ' ' + bodyText, OPENAI_API_KEY)
+        ]);
+        console.log('✅ AI processing complete:', { aiSummary: !!aiSummary, category });
+      } catch (aiError) {
+        console.error('❌ AI processing error:', aiError);
+        // Continue without AI features
+        category = 'inbox';
+      }
+    } else {
+      console.log('⚠️ Skipping AI processing - no OpenAI API key or body text');
+    }
+    
+    // Store in database with AI data
     const result = await DB.prepare(`
       INSERT INTO emails (
         id, thread_id, from_email, from_name, to_email, subject,
         body_text, body_html, snippet, category, 
+        ai_summary, action_items, embedding_vector,
         is_read, received_at, created_at,
         expiry_type, expires_at, is_expired
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'inbox', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, datetime('now', '+30 days'), 0)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, datetime('now', '+30 days'), 0)
     `).bind(
       emailId,
       threadId,
@@ -1553,11 +1579,15 @@ emailRoutes.post('/receive', async (c) => {
       bodyText || '',
       bodyHtml || bodyText || '',
       (bodyText || '').substring(0, 150),
+      category, // Use AI-detected category or 'inbox'
+      aiSummary,
+      aiActionItems,
+      embeddingVector,
       '30d' // Default expiry: 30 days
     ).run();
     
     if (result.success) {
-      console.log('✅ Email stored in inbox:', emailId);
+      console.log('✅ Email stored in inbox with AI data:', emailId);
       return c.json({ success: true, emailId });
     } else {
       console.error('❌ Failed to store email');
