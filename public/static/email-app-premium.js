@@ -450,12 +450,13 @@ window.addEventListener('DOMContentLoaded', function() {
                 h('div', { 
                   style: { 
                     fontSize: '11px', 
-                    color: 'rgba(201, 169, 98, 0.7)',
-                    fontWeight: '400',
-                    letterSpacing: '0.3px',
-                    fontStyle: 'italic'
+                    color: 'rgba(201, 169, 98, 0.6)',
+                    fontWeight: '500',
+                    letterSpacing: '0.5px',
+                    marginTop: '2px',
+                    textTransform: 'uppercase'
                   } 
-                }, 'If it\'s still important, it will still be here.')
+                }, 'Enterprise Email')
               )
             ),
             
@@ -492,7 +493,7 @@ window.addEventListener('DOMContentLoaded', function() {
               }
             },
               h('span', { style: { fontSize: '18px', fontWeight: '600' } }, '✎'),
-              'Compose New Email'
+              'Compose'
             )
           ),
           
