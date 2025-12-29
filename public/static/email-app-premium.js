@@ -968,15 +968,51 @@ window.addEventListener('DOMContentLoaded', function() {
                       email.expiry_type === 'keep' ? 'Keep' : getTimeRemaining(email.expires_at)
                     )
                   ),
+                  
+                  // Subject Line - Clear & Bold
                   h('div', { 
                     style: { 
-                      fontWeight: '600', 
-                      marginBottom: '8px', 
-                      color: 'rgba(255, 255, 255, 0.9)',
-                      fontSize: '16px',
-                      letterSpacing: '-0.2px'
+                      fontWeight: '700', 
+                      marginBottom: '6px', 
+                      color: 'rgba(255, 255, 255, 0.95)',
+                      fontSize: '17px',
+                      letterSpacing: '-0.3px',
+                      lineHeight: '1.3'
                     } 
                   }, email.subject || '(No Subject)'),
+                  
+                  // Smart Summary Line - AI summary or snippet
+                  h('div', { 
+                    style: { 
+                      fontSize: '13px', 
+                      color: 'rgba(255, 255, 255, 0.6)',
+                      lineHeight: '1.5',
+                      marginBottom: '8px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      fontStyle: email.ai_summary ? 'italic' : 'normal'
+                    } 
+                  }, 
+                    email.ai_summary 
+                      ? `💡 ${email.ai_summary}` 
+                      : (email.snippet || email.body_text || 'No content')
+                  ),
+                  
+                  // Thread context & metadata
+                  h('div', {
+                    style: {
+                      display: 'flex',
+                      gap: '12px',
+                      alignItems: 'center',
+                      fontSize: '12px',
+                      color: 'rgba(255, 255, 255, 0.4)'
+                    }
+                  },
+                    view === 'sent' && h('span', {}, `→ ${email.to_email}`),
+                    email.snippet && h('span', {}, `${(email.snippet || email.body_text || '').length} chars`)
+                  ),
+                  
                   // Read status indicator for sent emails
                   view === 'sent' && readStatuses[email.id] && h('div', {
                     style: {
@@ -998,19 +1034,7 @@ window.addEventListener('DOMContentLoaded', function() {
                       h('span', { style: { fontSize: '11px', opacity: 0.7 } }, 
                         ` • ${new Date(readStatuses[email.id].receipts[0].opened_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
                       )
-                  ),
-                  h('div', { 
-                    style: { 
-                      fontSize: '14px', 
-                      color: 'rgba(255, 255, 255, 0.5)',
-                      lineHeight: '1.6',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      display: '-webkit-box',
-                      WebkitLineClamp: '2',
-                      WebkitBoxOrient: 'vertical'
-                    } 
-                  }, email.snippet || email.body_text || '')
+                  )
                 )
               )
             )
