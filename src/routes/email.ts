@@ -86,8 +86,7 @@ emailRoutes.get('/inbox', async (c) => {
       SELECT 
         id, thread_id, from_email, from_name, to_email, subject,
         snippet, category, priority, sentiment, is_read, is_starred,
-        is_archived, labels, received_at, sent_at,
-        expiry_type, expires_at, expiry_action, ai_summary
+        is_archived, labels, received_at, sent_at, ai_summary
       FROM emails
       WHERE to_email = ? 
         AND category != 'trash' 
@@ -123,8 +122,7 @@ emailRoutes.get('/sent', async (c) => {
       SELECT 
         id, thread_id, from_email, from_name, to_email, subject,
         snippet, category, priority, sentiment, is_read, is_starred,
-        is_archived, labels, received_at, sent_at,
-        expiry_type, expires_at, expiry_action, ai_summary
+        is_archived, labels, received_at, sent_at, ai_summary
       FROM emails
       WHERE from_email = ? 
         AND category != 'trash'
@@ -410,9 +408,8 @@ emailRoutes.post('/send', async (c) => {
       INSERT INTO emails (
         id, thread_id, from_email, from_name, to_email, cc, bcc, subject,
         body_text, body_html, snippet, category, ai_summary, 
-        action_items, embedding_vector, sent_at, created_at,
-        expiry_type, expires_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, datetime('now', '+30 days'))
+        action_items, embedding_vector, sent_at, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `).bind(
       emailId,
       threadId,
@@ -428,8 +425,7 @@ emailRoutes.post('/send', async (c) => {
       category,
       aiSummary,
       aiActionItems ? JSON.stringify(aiActionItems) : null,
-      embeddingVector ? JSON.stringify(embeddingVector) : null,
-      '30d' // Default expiry: 30 days for all emails
+      embeddingVector ? JSON.stringify(embeddingVector) : null
     ).run();
     
     console.log('📧 Email saved to database:', insertResult.success ? '✅ SUCCESS' : '❌ FAILED', emailId);
