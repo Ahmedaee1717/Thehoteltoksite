@@ -103,38 +103,6 @@ app.post('/api/ai-answer', async (c) => {
   }
 })
 
-// Login page - Ultra-secure authentication
-app.get('/login', (c) => {
-  return c.html(`
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Login - InvestMail</title>
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-      <script src="https://cdn.tailwindcss.com"></script>
-    </head>
-    <body>
-      <div id="root"></div>
-      
-      <!-- React -->
-      <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
-      <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
-      
-      <!-- HTM for JSX-like syntax -->
-      <script src="https://unpkg.com/htm@3.1.1/dist/htm.js"></script>
-      <script>
-        window.htm = window.htm.bind(window.React.createElement);
-      </script>
-      
-      <!-- Login App -->
-      <script src="/static/login.js"></script>
-    </body>
-    </html>
-  `)
-})
-
 // Test minimal compose modal
 app.get('/mail/test', (c) => {
   return c.html(`
