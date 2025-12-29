@@ -27,6 +27,20 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>()
 
+// Redirect bare domain to www
+app.use('*', async (c, next) => {
+  const host = c.req.header('host') || '';
+  
+  // If accessing bare domain, redirect to www
+  if (host === 'investaycapital.com') {
+    const url = new URL(c.req.url);
+    url.host = 'www.investaycapital.com';
+    return c.redirect(url.toString(), 301);
+  }
+  
+  await next();
+})
+
 // Enable CORS for API routes
 app.use('/api/*', cors())
 
