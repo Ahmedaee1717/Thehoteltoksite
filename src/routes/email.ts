@@ -2,6 +2,7 @@
 import { Hono } from 'hono'
 import { getCookie } from 'hono/cookie'
 import { verifyToken } from '../lib/auth'
+import { hashPassword } from '../lib/auth'
 import { generateId } from '../utils/id'
 import { generateEmbedding, categorizeEmail, summarizeEmail, extractActionItems } from '../services/ai-email'
 import { createMailgunService } from '../lib/mailgun'
@@ -1334,12 +1335,15 @@ emailRoutes.post('/accounts/create', async (c) => {
     // Generate account ID
     const accountId = generateId('acc');
     
-    // Create account (password is optional, used for SMTP if needed)
+    // Hash password if provided
+    const hashedPassword = password ? await hashPassword(password) : null;
+    
+    // Create account
     const result = await DB.prepare(`
       INSERT INTO email_accounts (
         id, email_address, display_name, password_hash, is_active, created_at
       ) VALUES (?, ?, ?, ?, 1, datetime('now'))
-    `).bind(accountId, email, display_name, password || null).run();
+    `).bind(accountId, email, display_name, hashedPassword).run();
     
     if (!result.success) {
       return c.json({ 
