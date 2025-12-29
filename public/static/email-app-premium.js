@@ -2359,8 +2359,8 @@ window.addEventListener('DOMContentLoaded', function() {
               }, email.body_text || email.snippet || '(No content)')
             ),
             
-            // ⏳ INBOX = NOW Quick Expiry Selector
-            h('div', {
+            // ⏳ INBOX = NOW Quick Expiry Selector (only if email has expiry data)
+            (email.expiry_type !== undefined) && h('div', {
               style: {
                 marginTop: '24px',
                 padding: '20px',
@@ -2457,7 +2457,9 @@ window.addEventListener('DOMContentLoaded', function() {
                 }
               }, email.expiry_type === 'keep' 
                 ? '∞ This email will be kept forever' 
-                : `⏳ Expires: ${getTimeRemaining(email.expires_at)}`)
+                : email.expires_at 
+                  ? `⏳ Expires: ${getTimeRemaining(email.expires_at)}`
+                  : '⏳ Expiry not set')
             ),
             
             // AI Summary (if available)
