@@ -833,6 +833,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 h('div', {
                   key: email.id || i,
                   onClick: () => {
+                    console.log('📧 Email clicked:', email);
                     setSelectedEmail(email);
                     setShowCollabPanel(true);
                     loadCollabData(email.id);
@@ -2076,17 +2077,30 @@ window.addEventListener('DOMContentLoaded', function() {
     
     // Email Viewer Modal Component
     function EmailViewerModal({ email, onClose, onShowCollab, view, showCollabPanel }) {
+      console.log('📧 EmailViewerModal rendering with email:', email);
+      
+      // Safety check
+      if (!email) {
+        console.error('❌ EmailViewerModal: No email provided!');
+        return null;
+      }
+      
       const formatDate = (dateString) => {
         if (!dateString) return 'Unknown date';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { 
-          weekday: 'long',
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
+        try {
+          const date = new Date(dateString);
+          return date.toLocaleDateString('en-US', { 
+            weekday: 'long',
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        } catch (err) {
+          console.error('❌ Date formatting error:', err);
+          return 'Invalid date';
+        }
       };
       
       return h('div', {
