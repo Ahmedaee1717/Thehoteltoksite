@@ -517,6 +517,26 @@ Write clear, concise, professional emails that demonstrate understanding of the 
     }
     
     switch (action) {
+      case 'generate_reply':
+        // NEW: Generate complete reply from scratch based on conversation context
+        systemPrompt = `You are an expert email writing assistant for institutional professionals.
+You have access to the FULL email conversation thread. Your task is to write a complete, contextually-aware reply.
+
+Guidelines:
+1. Read and understand the entire conversation history
+2. Identify what the last message is asking for or discussing
+3. Write a natural, professional reply that directly addresses the conversation
+4. Reference specific points from previous messages when relevant
+5. Maintain the conversation's tone and style
+6. Be concise but complete
+7. Include appropriate next steps or questions if needed
+8. Write ONLY the reply body - no greetings like "Dear X" or signatures
+
+The reply should feel like a natural continuation of the conversation.`;
+        
+        prompt = `Here is the full email conversation thread:\n\n${context}\n\n---\n\nBased on this conversation, write a complete, professional reply that appropriately addresses the latest message and moves the conversation forward. Write ONLY the email body, no subject line or signatures.`;
+        break;
+        
       case 'improve':
         if (hasFullThread) {
           prompt = `You have access to the full conversation thread below. Improve the current reply while maintaining ${tone || 'professional'} tone and considering the conversation context.\n\n${context}\n\nImprove this reply to be more effective and contextually appropriate.`;

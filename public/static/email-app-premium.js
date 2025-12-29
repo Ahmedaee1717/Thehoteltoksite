@@ -2972,7 +2972,98 @@ window.addEventListener('DOMContentLoaded', function() {
               }
             }),
             
-            // AI Assist Buttons
+            // AI Write Full Reply Button (prominent)
+            h('div', {
+              style: {
+                marginTop: '16px',
+                marginBottom: '12px'
+              }
+            },
+              h('button', {
+                onClick: async () => {
+                  setAiProcessing(true);
+                  try {
+                    // Build full conversation context
+                    const conversationContext = threadEmails
+                      .map((msg, idx) => {
+                        const sender = msg.from_email || 'Unknown';
+                        const date = new Date(msg.sent_at || msg.created_at).toLocaleString();
+                        const body = msg.body_text || msg.snippet || '';
+                        return `[Message ${idx + 1} from ${sender} at ${date}]:\n${body}`;
+                      })
+                      .join('\n\n---\n\n');
+                    
+                    console.log('🤖 Generating full AI reply from thread context');
+                    
+                    const response = await fetch('/api/email/compose-assist', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        action: 'generate_reply',
+                        text: '',
+                        tone: 'professional',
+                        context: conversationContext,
+                        subject: email.subject || 'Reply'
+                      })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                      setReplyBody(data.text);
+                    } else {
+                      alert('❌ AI generation failed: ' + data.error);
+                    }
+                  } catch (error) {
+                    console.error('AI generation error:', error);
+                    alert('❌ AI error: ' + error.message);
+                  } finally {
+                    setAiProcessing(false);
+                  }
+                },
+                disabled: aiProcessing,
+                style: {
+                  width: '100%',
+                  padding: '14px 20px',
+                  borderRadius: '10px',
+                  background: aiProcessing 
+                    ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(59, 130, 246, 0.3) 100%)'
+                    : 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%)',
+                  border: '2px solid rgba(139, 92, 246, 0.5)',
+                  color: '#a78bfa',
+                  cursor: aiProcessing ? 'not-allowed' : 'pointer',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  transition: 'all 0.3s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                },
+                onMouseEnter: (e) => {
+                  if (!aiProcessing) {
+                    e.target.style.background = 'linear-gradient(135deg, rgba(139, 92, 246, 0.35) 0%, rgba(59, 130, 246, 0.35) 100%)';
+                    e.target.style.borderColor = 'rgba(139, 92, 246, 0.7)';
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 8px 16px rgba(139, 92, 246, 0.3)';
+                  }
+                },
+                onMouseLeave: (e) => {
+                  if (!aiProcessing) {
+                    e.target.style.background = 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%)';
+                    e.target.style.borderColor = 'rgba(139, 92, 246, 0.5)';
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = 'none';
+                  }
+                }
+              }, 
+                aiProcessing ? '⏳ Generating AI Reply...' : '🤖 Write Full Reply with AI'
+              )
+            ),
+            
+            // AI Assist Buttons (for editing)
             h('div', {
               style: {
                 marginTop: '12px',
@@ -2993,7 +3084,7 @@ window.addEventListener('DOMContentLoaded', function() {
                   gap: '6px',
                   marginRight: '8px'
                 }
-              }, '✨ AI Assist:'),
+              }, '✨ Or Edit:'),
               h('button', {
                 onClick: () => handleReplyAIAssist('improve', 'professional'),
                 disabled: aiProcessing,
