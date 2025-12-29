@@ -3230,10 +3230,88 @@ window.addEventListener('DOMContentLoaded', function() {
       const [showAiTools, setShowAiTools] = useState(false);
       const [aiPrompt, setAiPrompt] = useState('');
       
+      // Contact suggestion state
+      const [showContactSuggestions, setShowContactSuggestions] = useState(false);
+      const [contactSuggestions, setContactSuggestions] = useState([]);
+      const [loadingContacts, setLoadingContacts] = useState(false);
+      
       // TEMP FIX: These were removed but code references them - set as empty/null
       const attachments = [];
       const spamCheck = null;
       const checkingSpam = false;
+      
+      // Load contact suggestions
+      const loadContactSuggestions = async (query) => {
+        if (!query || query.length < 2) {
+          setContactSuggestions([]);
+          setShowContactSuggestions(false);
+          return;
+        }
+        
+        setLoadingContacts(true);
+        try {
+          // Get CRM contacts
+          const crmRes = await fetch(`/api/crm/contacts?userEmail=${user}&search=${encodeURIComponent(query)}`);
+          const crmData = await crmRes.json();
+          
+          // Get company team members (all @investaycapital.com emails)
+          const teamEmails = [
+            { email: 'admin@investaycapital.com', name: 'Admin', company: 'Investay Capital' },
+            { email: 'test1@investaycapital.com', name: 'Test User 1', company: 'Investay Capital' },
+            { email: 'ahmed.enin@virgingates.com', name: 'Ahmed Enin', company: 'Virgin Gates' },
+            { email: 'talabatpromocode@gmail.com', name: 'Talabat Promo', company: 'External' }
+          ];
+          
+          // Combine and filter suggestions
+          const suggestions = [];
+          
+          // Add matching CRM contacts first
+          if (crmData.contacts) {
+            crmData.contacts.forEach(contact => {
+              if (contact.email.toLowerCase().includes(query.toLowerCase()) || 
+                  contact.name.toLowerCase().includes(query.toLowerCase())) {
+                suggestions.push({
+                  email: contact.email,
+                  name: contact.name,
+                  company: contact.company || '',
+                  type: 'crm'
+                });
+              }
+            });
+          }
+          
+          // Add matching team emails
+          teamEmails.forEach(teamMember => {
+            if ((teamMember.email.toLowerCase().includes(query.toLowerCase()) || 
+                 teamMember.name.toLowerCase().includes(query.toLowerCase())) &&
+                !suggestions.find(s => s.email === teamMember.email)) {
+              suggestions.push({
+                ...teamMember,
+                type: 'team'
+              });
+            }
+          });
+          
+          setContactSuggestions(suggestions.slice(0, 8)); // Limit to 8 suggestions
+          setShowContactSuggestions(suggestions.length > 0);
+        } catch (error) {
+          console.error('Error loading contacts:', error);
+        } finally {
+          setLoadingContacts(false);
+        }
+      };
+      
+      // Handle TO field change
+      const handleToChange = (value) => {
+        setTo(value);
+        loadContactSuggestions(value);
+      };
+      
+      // Select contact from suggestions
+      const selectContact = (contact) => {
+        setTo(contact.email);
+        setShowContactSuggestions(false);
+      };
       
       const handleAIAssist = async (action, tone = 'professional') => {
         if (!body.trim() && action !== 'generate') {
@@ -3413,7 +3491,7 @@ window.addEventListener('DOMContentLoaded', function() {
             }, '✕')
           ),
           
-          h('div', { style: { marginBottom: '16px' } },
+          h('div', { style: { marginBottom: '16px', position: 'relative' } },
             h('label', {
               style: {
                 display: 'block',
@@ -3427,9 +3505,26 @@ window.addEventListener('DOMContentLoaded', function() {
             }, 'To'),
             h('input', {
               type: 'text',
-              placeholder: 'ahmed.enin@virgingates.com',
+              placeholder: 'Start typing to see suggestions...',
               value: to,
-              onChange: (e) => setTo(e.target.value),
+              onChange: (e) => handleToChange(e.target.value),
+              onFocus: (e) => {
+                e.target.style.background = 'rgba(255, 255, 255, 0.08)';
+                e.target.style.borderColor = 'rgba(201, 169, 98, 0.5)';
+                e.target.style.boxShadow = '0 0 0 3px rgba(201, 169, 98, 0.1)';
+                if (to.length >= 2) {
+                  loadContactSuggestions(to);
+                }
+              },
+              onBlur: (e) => {
+                // Delay to allow click on suggestion
+                setTimeout(() => {
+                  e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                  e.target.style.boxShadow = 'none';
+                  setShowContactSuggestions(false);
+                }, 200);
+              },
               style: {
                 width: '100%',
                 padding: '14px 16px',
@@ -3441,18 +3536,92 @@ window.addEventListener('DOMContentLoaded', function() {
                 fontFamily: 'inherit',
                 transition: 'all 0.2s',
                 outline: 'none'
-              },
-              onFocus: (e) => {
-                e.target.style.background = 'rgba(255, 255, 255, 0.08)';
-                e.target.style.borderColor = 'rgba(201, 169, 98, 0.5)';
-                e.target.style.boxShadow = '0 0 0 3px rgba(201, 169, 98, 0.1)';
-              },
-              onBlur: (e) => {
-                e.target.style.background = 'rgba(255, 255, 255, 0.05)';
-                e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                e.target.style.boxShadow = 'none';
               }
-            })
+            }),
+            
+            // Contact suggestions dropdown
+            showContactSuggestions && contactSuggestions.length > 0 && h('div', {
+              style: {
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                background: 'linear-gradient(135deg, rgba(26, 31, 58, 0.98) 0%, rgba(15, 20, 41, 0.98) 100%)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(201, 169, 98, 0.2)',
+                borderRadius: '12px',
+                marginTop: '4px',
+                maxHeight: '320px',
+                overflowY: 'auto',
+                boxShadow: '0 12px 32px rgba(0, 0, 0, 0.5)',
+                zIndex: 1001
+              }
+            },
+              contactSuggestions.map((contact, i) =>
+                h('div', {
+                  key: i,
+                  onClick: () => selectContact(contact),
+                  style: {
+                    padding: '12px 16px',
+                    cursor: 'pointer',
+                    borderBottom: i < contactSuggestions.length - 1 ? '1px solid rgba(255, 255, 255, 0.05)' : 'none',
+                    transition: 'all 0.2s'
+                  },
+                  onMouseEnter: (e) => {
+                    e.currentTarget.style.background = 'rgba(201, 169, 98, 0.1)';
+                  },
+                  onMouseLeave: (e) => {
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                },
+                  h('div', { style: { display: 'flex', alignItems: 'center', gap: '12px' } },
+                    // Icon
+                    h('div', {
+                      style: {
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        background: contact.type === 'crm' ? 'rgba(201, 169, 98, 0.2)' : 'rgba(102, 126, 234, 0.2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '14px'
+                      }
+                    }, contact.type === 'crm' ? '👤' : '🏢'),
+                    
+                    // Contact info
+                    h('div', { style: { flex: 1 } },
+                      h('div', { style: { fontWeight: '600', color: 'rgba(255, 255, 255, 0.9)', fontSize: '14px', marginBottom: '2px' } }, contact.name),
+                      h('div', { style: { fontSize: '13px', color: 'rgba(255, 255, 255, 0.5)' } }, contact.email),
+                      contact.company && h('div', { style: { fontSize: '11px', color: '#C9A962', marginTop: '2px' } }, `🏢 ${contact.company}`)
+                    ),
+                    
+                    // Badge
+                    h('div', {
+                      style: {
+                        fontSize: '10px',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        background: contact.type === 'crm' ? 'rgba(201, 169, 98, 0.15)' : 'rgba(102, 126, 234, 0.15)',
+                        color: contact.type === 'crm' ? '#C9A962' : '#667eea',
+                        fontWeight: '600',
+                        textTransform: 'uppercase'
+                      }
+                    }, contact.type === 'crm' ? 'CRM' : 'TEAM')
+                  )
+                )
+              ),
+              
+              // Loading indicator
+              loadingContacts && h('div', {
+                style: {
+                  padding: '12px 16px',
+                  textAlign: 'center',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  fontSize: '13px'
+                }
+              }, '🔍 Searching contacts...')
+            )
           ),
           
           h('div', { style: { marginBottom: '16px' } },
