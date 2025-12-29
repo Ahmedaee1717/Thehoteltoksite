@@ -50,6 +50,7 @@ window.addEventListener('DOMContentLoaded', function() {
       const [replyMode, setReplyMode] = useState(null); // null, 'reply', or 'forward'
       const [replyText, setReplyText] = useState('');
       const [forwardTo, setForwardTo] = useState('');
+      const [unreadCount, setUnreadCount] = useState(0);
       
       useEffect(() => {
         loadData();
@@ -90,6 +91,12 @@ window.addEventListener('DOMContentLoaded', function() {
             const fetchedEmails = data.emails || data.drafts || [];
             setEmails(fetchedEmails);
             
+            // Calculate unread count for inbox
+            if (view === 'inbox') {
+              const unread = fetchedEmails.filter(e => e.is_read === 0).length;
+              setUnreadCount(unread);
+            }
+            
             // Load read statuses for sent emails
             if (view === 'sent' && fetchedEmails.length > 0) {
               const emailIds = fetchedEmails.map(e => e.id);
@@ -120,6 +127,24 @@ window.addEventListener('DOMContentLoaded', function() {
         }
         setLoading(false);
       };
+      
+      // Load unread count for inbox (always, regardless of current view)
+      const loadUnreadCount = async () => {
+        try {
+          const response = await fetch(`/api/email/inbox`);
+          const data = await response.json();
+          const fetchedEmails = data.emails || [];
+          const unread = fetchedEmails.filter(e => e.is_read === 0).length;
+          setUnreadCount(unread);
+        } catch (error) {
+          console.error('Unread count error:', error);
+        }
+      };
+      
+      // Load unread count on mount and when view changes
+      useEffect(() => {
+        loadUnreadCount();
+      }, [view, selectedEmail]); // Refresh when view changes or email is opened
       
       // 🕒 Calculate time remaining until expiry
       const getTimeRemaining = (expiresAt) => {
@@ -433,7 +458,42 @@ window.addEventListener('DOMContentLoaded', function() {
                   }
                 }, item.icon),
                 h('span', { style: { flex: 1, letterSpacing: '0.2px' } }, item.label),
-                view === item.id && h('div', {
+                
+                // Powerful psychological unread indicator for Inbox
+                item.id === 'inbox' && unreadCount > 0 && h('div', {
+                  style: {
+                    padding: '4px 10px',
+                    borderRadius: '20px',
+                    background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.2) 100%)',
+                    border: '1px solid rgba(239, 68, 68, 0.4)',
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    color: '#ef4444',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    animation: 'pulse 2s ease-in-out infinite',
+                    whiteSpace: 'nowrap'
+                  }
+                }, unreadCount === 1 ? '1 Unread' : `${unreadCount} Unread`),
+                
+                // Powerful "All Clear" indicator for Inbox when zero unread
+                item.id === 'inbox' && unreadCount === 0 && h('div', {
+                  style: {
+                    padding: '4px 10px',
+                    borderRadius: '20px',
+                    background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(16, 185, 129, 0.15) 100%)',
+                    border: '1px solid rgba(34, 197, 94, 0.3)',
+                    fontSize: '10px',
+                    fontWeight: '700',
+                    color: '#22c55e',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    whiteSpace: 'nowrap'
+                  }
+                }, '✓ All Clear'),
+                
+                // Active indicator dot for other tabs
+                view === item.id && item.id !== 'inbox' && h('div', {
                   style: {
                     width: '6px',
                     height: '6px',
