@@ -79,9 +79,23 @@ window.addEventListener('DOMContentLoaded', function() {
       const [newContactEmail, setNewContactEmail] = useState('');
       const [newContactPhone, setNewContactPhone] = useState('');
       const [newContactCompany, setNewContactCompany] = useState('');
+      const [newContactPosition, setNewContactPosition] = useState('');
+      const [newContactType, setNewContactType] = useState('client');
+      const [newContactNotes, setNewContactNotes] = useState('');
       const [newDealTitle, setNewDealTitle] = useState('');
       const [newDealValue, setNewDealValue] = useState('');
       const [newDealStage, setNewDealStage] = useState('lead');
+      const [newDealProbability, setNewDealProbability] = useState('50');
+      const [newDealCloseDate, setNewDealCloseDate] = useState('');
+      const [newDealNotes, setNewDealNotes] = useState('');
+      const [newDealContactId, setNewDealContactId] = useState('');
+      const [selectedContact, setSelectedContact] = useState(null);
+      const [selectedDeal, setSelectedDeal] = useState(null);
+      const [showContactDetail, setShowContactDetail] = useState(false);
+      const [showDealDetail, setShowDealDetail] = useState(false);
+      const [contactActivities, setContactActivities] = useState([]);
+      const [contactDeals, setContactDeals] = useState([]);
+      const [contactEmails, setContactEmails] = useState([]);
       
       useEffect(() => {
         loadData();
@@ -423,9 +437,13 @@ window.addEventListener('DOMContentLoaded', function() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               userEmail: user,
+              contactId: newDealContactId || null,
               title: newDealTitle,
               value: parseFloat(newDealValue) || 0,
-              stage: newDealStage
+              stage: newDealStage,
+              probability: parseInt(newDealProbability) || 50,
+              closeDate: newDealCloseDate || null,
+              notes: newDealNotes
             })
           });
           const result = await res.json();
@@ -433,6 +451,10 @@ window.addEventListener('DOMContentLoaded', function() {
             setNewDealTitle('');
             setNewDealValue('');
             setNewDealStage('lead');
+            setNewDealProbability('50');
+            setNewDealCloseDate('');
+            setNewDealNotes('');
+            setNewDealContactId('');
             setShowCreateDeal(false);
             loadData();
             alert('✅ Deal created!');
@@ -440,6 +462,108 @@ window.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
           console.error('Create deal error:', error);
           alert('❌ Failed to create deal');
+        }
+      };
+      
+      // Load contact details
+      const loadContactDetails = async (contactId) => {
+        try {
+          const res = await fetch(`/api/crm/contacts/${contactId}`);
+          const data = await res.json();
+          if (data.contact) {
+            setSelectedContact(data.contact);
+            setContactActivities(data.activities || []);
+            setContactDeals(data.deals || []);
+            setContactEmails(data.emails || []);
+            setShowContactDetail(true);
+          }
+        } catch (error) {
+          console.error('Load contact details error:', error);
+          alert('❌ Failed to load contact details');
+        }
+      };
+      
+      // Update contact
+      const updateContact = async (contactId, updates) => {
+        try {
+          const res = await fetch(`/api/crm/contacts/${contactId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates)
+          });
+          const result = await res.json();
+          if (result.success) {
+            alert('✅ Contact updated!');
+            loadContactDetails(contactId);
+            loadData();
+          }
+        } catch (error) {
+          console.error('Update contact error:', error);
+          alert('❌ Failed to update contact');
+        }
+      };
+      
+      // Delete contact
+      const deleteContact = async (contactId) => {
+        if (!confirm('⚠️ Delete this contact? This action cannot be undone.')) return;
+        try {
+          const res = await fetch(`/api/crm/contacts/${contactId}`, { method: 'DELETE' });
+          const result = await res.json();
+          if (result.success) {
+            alert('✅ Contact deleted!');
+            setShowContactDetail(false);
+            loadData();
+          }
+        } catch (error) {
+          console.error('Delete contact error:', error);
+          alert('❌ Failed to delete contact');
+        }
+      };
+      
+      // Update deal
+      const updateDeal = async (dealId, updates) => {
+        try {
+          const res = await fetch(`/api/crm/deals/${dealId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates)
+          });
+          const result = await res.json();
+          if (result.success) {
+            alert('✅ Deal updated!');
+            loadData();
+          }
+        } catch (error) {
+          console.error('Update deal error:', error);
+          alert('❌ Failed to update deal');
+        }
+      };
+      
+      // Link email to contact
+      const linkEmailToContact = async (emailId, contactEmail) => {
+        try {
+          // Log activity
+          const contact = contacts.find(c => c.email === contactEmail);
+          if (contact) {
+            const res = await fetch('/api/crm/activities', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userEmail: user,
+                contactId: contact.id,
+                emailId: emailId,
+                activityType: 'email',
+                subject: 'Email interaction',
+                activityDate: new Date().toISOString()
+              })
+            });
+            const result = await res.json();
+            if (result.success) {
+              alert('✅ Email linked to contact!');
+            }
+          }
+        } catch (error) {
+          console.error('Link email error:', error);
         }
       };
       
@@ -1067,57 +1191,156 @@ window.addEventListener('DOMContentLoaded', function() {
               `Loading your ${view}...`
             ) :
             // CRM View
-            view === 'crm' ? h('div', { style: { display: 'flex', gap: '24px' } },
-              // Contacts
-              h('div', { style: { flex: 1 } },
-                h('h3', { style: { color: '#C9A962', marginBottom: '16px', fontSize: '18px' } }, '👥 Contacts'),
-                h('div', { style: { display: 'grid', gap: '12px' } },
-                  contacts.map((contact, i) =>
-                    h('div', {
-                      key: contact.id || i,
-                      style: {
-                        padding: '16px',
-                        background: 'rgba(26, 31, 58, 0.6)',
-                        border: '1px solid rgba(255, 255, 255, 0.08)',
-                        borderRadius: '12px',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s'
-                      },
-                      onMouseEnter: (e) => {
-                        e.currentTarget.style.borderColor = 'rgba(201, 169, 98, 0.3)';
-                        e.currentTarget.style.transform = 'translateX(4px)';
-                      },
-                      onMouseLeave: (e) => {
-                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                        e.currentTarget.style.transform = 'translateX(0)';
-                      }
-                    },
-                      h('div', { style: { fontWeight: '600', color: 'rgba(255, 255, 255, 0.9)', marginBottom: '4px' } }, contact.name),
-                      h('div', { style: { fontSize: '13px', color: 'rgba(255, 255, 255, 0.5)' } }, contact.email),
-                      contact.company && h('div', { style: { fontSize: '12px', color: '#C9A962', marginTop: '4px' } }, contact.company)
-                    )
-                  )
+            view === 'crm' ? h('div', {},
+              // CRM Header with Actions
+              h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' } },
+                h('h2', { style: { color: '#C9A962', fontSize: '24px', margin: 0 } }, '🏢 CRM Dashboard'),
+                h('div', { style: { display: 'flex', gap: '12px' } },
+                  h('button', {
+                    onClick: () => setShowCreateContact(true),
+                    style: {
+                      padding: '10px 20px',
+                      background: 'linear-gradient(135deg, #C9A962 0%, #A88B4E 100%)',
+                      border: 'none',
+                      borderRadius: '10px',
+                      color: '#fff',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }
+                  }, '👤 New Contact'),
+                  h('button', {
+                    onClick: () => setShowCreateDeal(true),
+                    style: {
+                      padding: '10px 20px',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '10px',
+                      color: 'rgba(255, 255, 255, 0.9)',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }
+                  }, '💼 New Deal')
                 )
               ),
-              // Deals
-              h('div', { style: { flex: 1 } },
-                h('h3', { style: { color: '#C9A962', marginBottom: '16px', fontSize: '18px' } }, '💼 Deals'),
-                h('div', { style: { display: 'grid', gap: '12px' } },
-                  deals.map((deal, i) =>
-                    h('div', {
-                      key: deal.id || i,
-                      style: {
-                        padding: '16px',
-                        background: 'rgba(26, 31, 58, 0.6)',
-                        border: '1px solid rgba(255, 255, 255, 0.08)',
-                        borderRadius: '12px'
-                      }
-                    },
-                      h('div', { style: { fontWeight: '600', color: 'rgba(255, 255, 255, 0.9)', marginBottom: '4px' } }, deal.title),
-                      h('div', { style: { fontSize: '13px', color: 'rgba(255, 255, 255, 0.5)' } }, 
-                        deal.value ? `$${deal.value.toLocaleString()}` : 'No value'
-                      ),
-                      h('div', { style: { fontSize: '12px', color: '#C9A962', marginTop: '4px' } }, deal.stage || 'New')
+              
+              // Two-column layout
+              h('div', { style: { display: 'flex', gap: '24px' } },
+                // Contacts Column
+                h('div', { style: { flex: 1 } },
+                  h('h3', { style: { color: '#C9A962', marginBottom: '16px', fontSize: '18px' } }, `👥 Contacts (${contacts.length})`),
+                  contacts.length === 0 ? h('div', { 
+                    style: { 
+                      textAlign: 'center', 
+                      padding: '60px 20px', 
+                      color: 'rgba(255, 255, 255, 0.4)',
+                      background: 'rgba(26, 31, 58, 0.6)',
+                      borderRadius: '12px',
+                      border: '1px solid rgba(255, 255, 255, 0.08)'
+                    } 
+                  },
+                    h('div', { style: { fontSize: '48px', marginBottom: '16px' } }, '👤'),
+                    h('div', { style: { fontSize: '16px', marginBottom: '8px' } }, 'No contacts yet'),
+                    h('div', { style: { fontSize: '13px' } }, 'Click "New Contact" to add your first contact')
+                  ) : h('div', { style: { display: 'grid', gap: '12px' } },
+                    contacts.map((contact, i) =>
+                      h('div', {
+                        key: contact.id || i,
+                        onClick: () => loadContactDetails(contact.id),
+                        style: {
+                          padding: '16px',
+                          background: 'rgba(26, 31, 58, 0.6)',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          borderRadius: '12px',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s'
+                        },
+                        onMouseEnter: (e) => {
+                          e.currentTarget.style.borderColor = 'rgba(201, 169, 98, 0.3)';
+                          e.currentTarget.style.transform = 'translateX(4px)';
+                        },
+                        onMouseLeave: (e) => {
+                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                          e.currentTarget.style.transform = 'translateX(0)';
+                        }
+                      },
+                        h('div', { style: { fontWeight: '600', color: 'rgba(255, 255, 255, 0.9)', marginBottom: '4px' } }, contact.name),
+                        h('div', { style: { fontSize: '13px', color: 'rgba(255, 255, 255, 0.5)', marginBottom: '4px' } }, contact.email),
+                        contact.company && h('div', { style: { fontSize: '12px', color: '#C9A962', marginBottom: '4px' } }, `🏢 ${contact.company}`),
+                        contact.phone && h('div', { style: { fontSize: '12px', color: 'rgba(255, 255, 255, 0.4)' } }, `📞 ${contact.phone}`),
+                        h('div', { style: { fontSize: '11px', color: 'rgba(255, 255, 255, 0.3)', marginTop: '8px' } }, `💼 ${contact.deal_count || 0} deals • 📊 ${contact.activity_count || 0} activities`)
+                      )
+                    )
+                  )
+                ),
+                
+                // Deals Column
+                h('div', { style: { flex: 1 } },
+                  h('h3', { style: { color: '#C9A962', marginBottom: '16px', fontSize: '18px' } }, `💼 Deals (${deals.length})`),
+                  deals.length === 0 ? h('div', { 
+                    style: { 
+                      textAlign: 'center', 
+                      padding: '60px 20px', 
+                      color: 'rgba(255, 255, 255, 0.4)',
+                      background: 'rgba(26, 31, 58, 0.6)',
+                      borderRadius: '12px',
+                      border: '1px solid rgba(255, 255, 255, 0.08)'
+                    } 
+                  },
+                    h('div', { style: { fontSize: '48px', marginBottom: '16px' } }, '💼'),
+                    h('div', { style: { fontSize: '16px', marginBottom: '8px' } }, 'No deals yet'),
+                    h('div', { style: { fontSize: '13px' } }, 'Click "New Deal" to add your first deal')
+                  ) : h('div', { style: { display: 'grid', gap: '12px' } },
+                    deals.map((deal, i) =>
+                      h('div', {
+                        key: deal.id || i,
+                        onClick: () => {
+                          setSelectedDeal(deal);
+                          setShowDealDetail(true);
+                        },
+                        style: {
+                          padding: '16px',
+                          background: 'rgba(26, 31, 58, 0.6)',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          borderRadius: '12px',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s'
+                        },
+                        onMouseEnter: (e) => {
+                          e.currentTarget.style.borderColor = 'rgba(201, 169, 98, 0.3)';
+                          e.currentTarget.style.transform = 'translateX(4px)';
+                        },
+                        onMouseLeave: (e) => {
+                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                          e.currentTarget.style.transform = 'translateX(0)';
+                        }
+                      },
+                        h('div', { style: { fontWeight: '600', color: 'rgba(255, 255, 255, 0.9)', marginBottom: '4px' } }, deal.title),
+                        h('div', { style: { fontSize: '14px', color: '#4ade80', marginBottom: '4px' } }, 
+                          deal.value ? `$${deal.value.toLocaleString()}` : 'No value'
+                        ),
+                        h('div', { 
+                          style: { 
+                            display: 'inline-block',
+                            fontSize: '11px', 
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            background: deal.stage === 'won' ? 'rgba(74, 222, 128, 0.1)' : 
+                                       deal.stage === 'lost' ? 'rgba(239, 68, 68, 0.1)' :
+                                       'rgba(201, 169, 98, 0.1)',
+                            color: deal.stage === 'won' ? '#4ade80' : 
+                                   deal.stage === 'lost' ? '#ef4444' : '#C9A962'
+                          } 
+                        }, (deal.stage || 'lead').toUpperCase()),
+                        deal.contact_name && h('div', { style: { fontSize: '11px', color: 'rgba(255, 255, 255, 0.3)', marginTop: '4px' } }, `👤 ${deal.contact_name}`)
+                      )
                     )
                   )
                 )
@@ -2264,6 +2487,625 @@ window.addEventListener('DOMContentLoaded', function() {
                   h('div', { style: { fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)' } }, `${(file.file_size / 1024 / 1024).toFixed(2)} MB`)
                 )
               )
+            )
+          )
+        ),
+        
+        // Create Contact Modal
+        showCreateContact && h('div', {
+          style: {
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+            backdropFilter: 'blur(10px)'
+          },
+          onClick: (e) => {
+            if (e.target === e.currentTarget) setShowCreateContact(false);
+          }
+        },
+          h('div', {
+            style: {
+              background: 'linear-gradient(135deg, #1A1F3A 0%, #0F1425 100%)',
+              border: '1px solid rgba(201, 169, 98, 0.2)',
+              borderRadius: '16px',
+              padding: '32px',
+              maxWidth: '500px',
+              width: '90%',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)'
+            }
+          },
+            h('h3', { style: { color: '#C9A962', fontSize: '20px', marginBottom: '24px' } }, '👤 Create New Contact'),
+            
+            // Name
+            h('input', {
+              type: 'text',
+              placeholder: 'Full Name *',
+              value: newContactName,
+              onInput: (e) => setNewContactName(e.target.value),
+              style: {
+                width: '100%',
+                padding: '12px 16px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '10px',
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '14px',
+                marginBottom: '12px'
+              }
+            }),
+            
+            // Email
+            h('input', {
+              type: 'email',
+              placeholder: 'Email *',
+              value: newContactEmail,
+              onInput: (e) => setNewContactEmail(e.target.value),
+              style: {
+                width: '100%',
+                padding: '12px 16px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '10px',
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '14px',
+                marginBottom: '12px'
+              }
+            }),
+            
+            // Phone
+            h('input', {
+              type: 'tel',
+              placeholder: 'Phone',
+              value: newContactPhone,
+              onInput: (e) => setNewContactPhone(e.target.value),
+              style: {
+                width: '100%',
+                padding: '12px 16px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '10px',
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '14px',
+                marginBottom: '12px'
+              }
+            }),
+            
+            // Company
+            h('input', {
+              type: 'text',
+              placeholder: 'Company',
+              value: newContactCompany,
+              onInput: (e) => setNewContactCompany(e.target.value),
+              style: {
+                width: '100%',
+                padding: '12px 16px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '10px',
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '14px',
+                marginBottom: '24px'
+              }
+            }),
+            
+            h('div', { style: { display: 'flex', gap: '12px', justifyContent: 'flex-end' } },
+              h('button', {
+                onClick: () => {
+                  setShowCreateContact(false);
+                  setNewContactName('');
+                  setNewContactEmail('');
+                  setNewContactPhone('');
+                  setNewContactCompany('');
+                },
+                style: {
+                  padding: '12px 24px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '10px',
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }
+              }, 'Cancel'),
+              h('button', {
+                onClick: createContact,
+                style: {
+                  padding: '12px 24px',
+                  background: 'linear-gradient(135deg, #C9A962 0%, #A88B4E 100%)',
+                  border: 'none',
+                  borderRadius: '10px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }
+              }, 'Create Contact')
+            )
+          )
+        ),
+        
+        // Create Deal Modal
+        showCreateDeal && h('div', {
+          style: {
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+            backdropFilter: 'blur(10px)'
+          },
+          onClick: (e) => {
+            if (e.target === e.currentTarget) setShowCreateDeal(false);
+          }
+        },
+          h('div', {
+            style: {
+              background: 'linear-gradient(135deg, #1A1F3A 0%, #0F1425 100%)',
+              border: '1px solid rgba(201, 169, 98, 0.2)',
+              borderRadius: '16px',
+              padding: '32px',
+              maxWidth: '500px',
+              width: '90%',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)'
+            }
+          },
+            h('h3', { style: { color: '#C9A962', fontSize: '20px', marginBottom: '24px' } }, '💼 Create New Deal'),
+            
+            // Title
+            h('input', {
+              type: 'text',
+              placeholder: 'Deal Title *',
+              value: newDealTitle,
+              onInput: (e) => setNewDealTitle(e.target.value),
+              style: {
+                width: '100%',
+                padding: '12px 16px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '10px',
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '14px',
+                marginBottom: '12px'
+              }
+            }),
+            
+            // Value
+            h('input', {
+              type: 'number',
+              placeholder: 'Deal Value ($)',
+              value: newDealValue,
+              onInput: (e) => setNewDealValue(e.target.value),
+              style: {
+                width: '100%',
+                padding: '12px 16px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '10px',
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '14px',
+                marginBottom: '12px'
+              }
+            }),
+            
+            // Stage
+            h('select', {
+              value: newDealStage,
+              onChange: (e) => setNewDealStage(e.target.value),
+              style: {
+                width: '100%',
+                padding: '12px 16px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '10px',
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '14px',
+                marginBottom: '12px',
+                cursor: 'pointer'
+              }
+            },
+              h('option', { value: 'lead' }, 'Lead'),
+              h('option', { value: 'qualified' }, 'Qualified'),
+              h('option', { value: 'proposal' }, 'Proposal'),
+              h('option', { value: 'negotiation' }, 'Negotiation'),
+              h('option', { value: 'won' }, 'Won'),
+              h('option', { value: 'lost' }, 'Lost')
+            ),
+            
+            // Contact
+            h('select', {
+              value: newDealContactId,
+              onChange: (e) => setNewDealContactId(e.target.value),
+              style: {
+                width: '100%',
+                padding: '12px 16px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '10px',
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '14px',
+                marginBottom: '12px',
+                cursor: 'pointer'
+              }
+            },
+              h('option', { value: '' }, 'Select Contact (Optional)'),
+              contacts.map((contact, i) =>
+                h('option', { key: i, value: contact.id }, `${contact.name} (${contact.email})`)
+              )
+            ),
+            
+            // Probability
+            h('input', {
+              type: 'number',
+              placeholder: 'Probability (%) - Default 50%',
+              value: newDealProbability,
+              onInput: (e) => setNewDealProbability(e.target.value),
+              min: '0',
+              max: '100',
+              style: {
+                width: '100%',
+                padding: '12px 16px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '10px',
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '14px',
+                marginBottom: '12px'
+              }
+            }),
+            
+            // Close Date
+            h('input', {
+              type: 'date',
+              placeholder: 'Expected Close Date',
+              value: newDealCloseDate,
+              onInput: (e) => setNewDealCloseDate(e.target.value),
+              style: {
+                width: '100%',
+                padding: '12px 16px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '10px',
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '14px',
+                marginBottom: '12px'
+              }
+            }),
+            
+            // Notes
+            h('textarea', {
+              placeholder: 'Notes (Optional)',
+              value: newDealNotes,
+              onInput: (e) => setNewDealNotes(e.target.value),
+              style: {
+                width: '100%',
+                padding: '12px 16px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '10px',
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '14px',
+                marginBottom: '24px',
+                minHeight: '100px',
+                resize: 'vertical',
+                fontFamily: 'inherit'
+              }
+            }),
+            
+            h('div', { style: { display: 'flex', gap: '12px', justifyContent: 'flex-end' } },
+              h('button', {
+                onClick: () => {
+                  setShowCreateDeal(false);
+                  setNewDealTitle('');
+                  setNewDealValue('');
+                  setNewDealStage('lead');
+                },
+                style: {
+                  padding: '12px 24px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '10px',
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }
+              }, 'Cancel'),
+              h('button', {
+                onClick: createDeal,
+                style: {
+                  padding: '12px 24px',
+                  background: 'linear-gradient(135deg, #C9A962 0%, #A88B4E 100%)',
+                  border: 'none',
+                  borderRadius: '10px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }
+              }, 'Create Deal')
+            )
+          )
+        ),
+        
+        // Contact Detail Modal
+        showContactDetail && selectedContact && h('div', {
+          style: {
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10001,
+            backdropFilter: 'blur(10px)'
+          },
+          onClick: (e) => {
+            if (e.target === e.currentTarget) setShowContactDetail(false);
+          }
+        },
+          h('div', {
+            style: {
+              background: 'linear-gradient(135deg, #1A1F3A 0%, #0F1425 100%)',
+              border: '1px solid rgba(201, 169, 98, 0.2)',
+              borderRadius: '16px',
+              padding: '32px',
+              maxWidth: '700px',
+              width: '90%',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)'
+            }
+          },
+            h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' } },
+              h('div', {},
+                h('h3', { style: { color: '#C9A962', fontSize: '24px', marginBottom: '4px' } }, `👤 ${selectedContact.name}`),
+                h('div', { style: { color: 'rgba(255, 255, 255, 0.5)', fontSize: '14px' } }, selectedContact.email)
+              ),
+              h('button', {
+                onClick: () => setShowContactDetail(false),
+                style: {
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  cursor: 'pointer',
+                  fontSize: '24px'
+                }
+              }, '×')
+            ),
+            
+            // Contact Info
+            h('div', { style: { marginBottom: '24px' } },
+              h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' } },
+                selectedContact.phone && h('div', {},
+                  h('div', { style: { color: 'rgba(255, 255, 255, 0.4)', fontSize: '12px', marginBottom: '4px' } }, 'Phone'),
+                  h('div', { style: { color: 'rgba(255, 255, 255, 0.9)' } }, selectedContact.phone)
+                ),
+                selectedContact.company && h('div', {},
+                  h('div', { style: { color: 'rgba(255, 255, 255, 0.4)', fontSize: '12px', marginBottom: '4px' } }, 'Company'),
+                  h('div', { style: { color: 'rgba(255, 255, 255, 0.9)' } }, selectedContact.company)
+                ),
+                selectedContact.position && h('div', {},
+                  h('div', { style: { color: 'rgba(255, 255, 255, 0.4)', fontSize: '12px', marginBottom: '4px' } }, 'Position'),
+                  h('div', { style: { color: 'rgba(255, 255, 255, 0.9)' } }, selectedContact.position)
+                ),
+                selectedContact.contact_type && h('div', {},
+                  h('div', { style: { color: 'rgba(255, 255, 255, 0.4)', fontSize: '12px', marginBottom: '4px' } }, 'Type'),
+                  h('div', { style: { color: '#C9A962', textTransform: 'capitalize' } }, selectedContact.contact_type)
+                )
+              )
+            ),
+            
+            // Deals
+            h('div', { style: { marginBottom: '24px' } },
+              h('h4', { style: { color: '#C9A962', fontSize: '16px', marginBottom: '12px' } }, `💼 Deals (${contactDeals.length})`),
+              contactDeals.length === 0 ? h('div', { style: { padding: '20px', textAlign: 'center', color: 'rgba(255, 255, 255, 0.4)', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px' } }, 'No deals yet') :
+              h('div', { style: { display: 'grid', gap: '8px' } },
+                contactDeals.map((deal, i) =>
+                  h('div', {
+                    key: i,
+                    style: {
+                      padding: '12px',
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255, 255, 255, 0.05)'
+                    }
+                  },
+                    h('div', { style: { fontWeight: '600', color: 'rgba(255, 255, 255, 0.9)', marginBottom: '4px' } }, deal.title),
+                    h('div', { style: { fontSize: '14px', color: '#4ade80' } }, `$${(deal.value || 0).toLocaleString()}`)
+                  )
+                )
+              )
+            ),
+            
+            // Recent Emails
+            h('div', { style: { marginBottom: '24px' } },
+              h('h4', { style: { color: '#C9A962', fontSize: '16px', marginBottom: '12px' } }, `📧 Recent Emails (${contactEmails.length})`),
+              contactEmails.length === 0 ? h('div', { style: { padding: '20px', textAlign: 'center', color: 'rgba(255, 255, 255, 0.4)', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px' } }, 'No email history') :
+              h('div', { style: { display: 'grid', gap: '8px' } },
+                contactEmails.slice(0, 5).map((email, i) =>
+                  h('div', {
+                    key: i,
+                    style: {
+                      padding: '12px',
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                      cursor: 'pointer'
+                    },
+                    onClick: () => {
+                      setSelectedEmail(emails.find(e => e.id === email.id));
+                      setShowContactDetail(false);
+                    }
+                  },
+                    h('div', { style: { fontWeight: '600', color: 'rgba(255, 255, 255, 0.9)', fontSize: '14px', marginBottom: '4px' } }, email.subject),
+                    h('div', { style: { fontSize: '12px', color: 'rgba(255, 255, 255, 0.4)' } }, new Date(email.created_at).toLocaleDateString())
+                  )
+                )
+              )
+            ),
+            
+            // Actions
+            h('div', { style: { display: 'flex', gap: '12px', justifyContent: 'flex-end', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.08)' } },
+              h('button', {
+                onClick: () => {
+                  setShowCompose(true);
+                  setShowContactDetail(false);
+                },
+                style: {
+                  padding: '10px 20px',
+                  background: 'linear-gradient(135deg, #C9A962 0%, #A88B4E 100%)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }
+              }, '✉️ Send Email'),
+              h('button', {
+                onClick: () => deleteContact(selectedContact.id),
+                style: {
+                  padding: '10px 20px',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.2)',
+                  borderRadius: '8px',
+                  color: '#ef4444',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }
+              }, '🗑️ Delete')
+            )
+          )
+        ),
+        
+        // Deal Detail Modal
+        showDealDetail && selectedDeal && h('div', {
+          style: {
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10001,
+            backdropFilter: 'blur(10px)'
+          },
+          onClick: (e) => {
+            if (e.target === e.currentTarget) setShowDealDetail(false);
+          }
+        },
+          h('div', {
+            style: {
+              background: 'linear-gradient(135deg, #1A1F3A 0%, #0F1425 100%)',
+              border: '1px solid rgba(201, 169, 98, 0.2)',
+              borderRadius: '16px',
+              padding: '32px',
+              maxWidth: '600px',
+              width: '90%',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)'
+            }
+          },
+            h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' } },
+              h('div', {},
+                h('h3', { style: { color: '#C9A962', fontSize: '24px', marginBottom: '4px' } }, `💼 ${selectedDeal.title}`),
+                h('div', { style: { fontSize: '20px', color: '#4ade80', fontWeight: '600' } }, `$${(selectedDeal.value || 0).toLocaleString()}`)
+              ),
+              h('button', {
+                onClick: () => setShowDealDetail(false),
+                style: {
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  cursor: 'pointer',
+                  fontSize: '24px'
+                }
+              }, '×')
+            ),
+            
+            // Deal Info
+            h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' } },
+              h('div', {},
+                h('div', { style: { color: 'rgba(255, 255, 255, 0.4)', fontSize: '12px', marginBottom: '4px' } }, 'Stage'),
+                h('select', {
+                  value: selectedDeal.stage,
+                  onChange: (e) => {
+                    updateDeal(selectedDeal.id, { stage: e.target.value });
+                    setSelectedDeal({ ...selectedDeal, stage: e.target.value });
+                  },
+                  style: {
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '8px',
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    fontSize: '14px',
+                    cursor: 'pointer'
+                  }
+                },
+                  h('option', { value: 'lead' }, 'Lead'),
+                  h('option', { value: 'qualified' }, 'Qualified'),
+                  h('option', { value: 'proposal' }, 'Proposal'),
+                  h('option', { value: 'negotiation' }, 'Negotiation'),
+                  h('option', { value: 'won' }, 'Won'),
+                  h('option', { value: 'lost' }, 'Lost')
+                )
+              ),
+              selectedDeal.contact_name && h('div', {},
+                h('div', { style: { color: 'rgba(255, 255, 255, 0.4)', fontSize: '12px', marginBottom: '4px' } }, 'Contact'),
+                h('div', { style: { color: 'rgba(255, 255, 255, 0.9)' } }, selectedDeal.contact_name)
+              ),
+              selectedDeal.probability !== undefined && h('div', {},
+                h('div', { style: { color: 'rgba(255, 255, 255, 0.4)', fontSize: '12px', marginBottom: '4px' } }, 'Probability'),
+                h('div', { style: { color: '#C9A962' } }, `${selectedDeal.probability}%`)
+              ),
+              selectedDeal.close_date && h('div', {},
+                h('div', { style: { color: 'rgba(255, 255, 255, 0.4)', fontSize: '12px', marginBottom: '4px' } }, 'Close Date'),
+                h('div', { style: { color: 'rgba(255, 255, 255, 0.9)' } }, new Date(selectedDeal.close_date).toLocaleDateString())
+              )
+            ),
+            
+            // Notes
+            selectedDeal.notes && h('div', { style: { marginBottom: '24px' } },
+              h('div', { style: { color: 'rgba(255, 255, 255, 0.4)', fontSize: '12px', marginBottom: '8px' } }, 'Notes'),
+              h('div', { style: { padding: '12px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px', color: 'rgba(255, 255, 255, 0.7)', fontSize: '14px', lineHeight: '1.6' } }, selectedDeal.notes)
+            ),
+            
+            // Actions
+            h('div', { style: { display: 'flex', gap: '12px', justifyContent: 'flex-end' } },
+              h('button', {
+                onClick: () => setShowDealDetail(false),
+                style: {
+                  padding: '10px 20px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '8px',
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }
+              }, 'Close')
             )
           )
         ),
