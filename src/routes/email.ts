@@ -810,7 +810,7 @@ emailRoutes.post('/search', async (c) => {
         e.id, e.thread_id, e.from_email, e.from_name, e.to_email, e.subject,
         e.snippet, e.category, e.priority, e.is_read, e.is_starred, e.received_at,
         e.has_attachments,
-        (SELECT COUNT(*) FROM email_attachments WHERE email_id = e.id) as attachment_count
+        (SELECT COUNT(*) FROM attachments WHERE email_id = e.id) as attachment_count
       FROM emails e
       WHERE (e.to_email = ? OR e.from_email = ?)
     `;
