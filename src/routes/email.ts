@@ -1533,7 +1533,40 @@ emailRoutes.post('/receive', async (c) => {
     
     // Generate IDs
     const emailId = generateId('eml');
-    const threadId = generateId('thr');
+    
+    // Smart thread detection for replies
+    let threadId = generateId('thr');
+    
+    // Check if this is a reply (Re:, RE:, Fwd:, FW:)
+    const isReply = /^(re|fwd|fw):/i.test(subject);
+    
+    if (isReply) {
+      // Extract original subject by removing Re:/Fwd: prefixes
+      const originalSubject = subject.replace(/^(re|fwd|fw):\s*/gi, '').trim();
+      
+      console.log('🔍 Detected reply - searching for thread with subject:', originalSubject);
+      
+      // Try to find existing thread by matching subject
+      // Look for emails between same parties or with same subject
+      const existingThread = await DB.prepare(`
+        SELECT thread_id FROM emails 
+        WHERE (
+          (from_email = ? AND to_email = ?) OR 
+          (from_email = ? AND to_email = ?) OR
+          subject LIKE ?
+        )
+        AND thread_id IS NOT NULL
+        ORDER BY created_at DESC
+        LIMIT 1
+      `).bind(to, fromEmail, fromEmail, to, `%${originalSubject}%`).first();
+      
+      if (existingThread) {
+        threadId = existingThread.thread_id;
+        console.log('✅ Found existing thread:', threadId);
+      } else {
+        console.log('⚠️ No existing thread found, creating new one');
+      }
+    }
     
     // AI enhancements for received emails
     let aiSummary = null;
