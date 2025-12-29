@@ -88,7 +88,8 @@ emailRoutes.get('/inbox', async (c) => {
       SELECT 
         id, thread_id, from_email, from_name, to_email, subject,
         snippet, category, priority, sentiment, is_read, is_starred,
-        is_archived, labels, received_at, sent_at, ai_summary
+        is_archived, labels, received_at, sent_at, ai_summary,
+        expiry_type, expires_at, is_expired
       FROM emails
       WHERE to_email = ? 
         AND category != 'trash' 
@@ -124,7 +125,8 @@ emailRoutes.get('/sent', async (c) => {
       SELECT 
         id, thread_id, from_email, from_name, to_email, subject,
         snippet, category, priority, sentiment, is_read, is_starred,
-        is_archived, labels, received_at, sent_at, ai_summary
+        is_archived, labels, received_at, sent_at, ai_summary,
+        expiry_type, expires_at, is_expired
       FROM emails
       WHERE from_email = ? 
         AND category != 'trash'
@@ -410,13 +412,14 @@ emailRoutes.post('/send', async (c) => {
       INSERT INTO emails (
         id, thread_id, from_email, from_name, to_email, cc, bcc, subject,
         body_text, body_html, snippet, category, ai_summary, 
-        action_items, embedding_vector, sent_at, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        action_items, embedding_vector, sent_at, created_at,
+        expiry_type, expires_at, is_expired
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, datetime('now', '+30 days'), 0)
     `).bind(
       emailId,
       threadId,
       from,
-      displayName || from.split('@')[0], // Add from_name
+      displayName || from.split('@')[0],
       to,
       cc ? JSON.stringify(cc) : null,
       bcc ? JSON.stringify(bcc) : null,
@@ -427,10 +430,11 @@ emailRoutes.post('/send', async (c) => {
       category,
       aiSummary,
       aiActionItems ? JSON.stringify(aiActionItems) : null,
-      embeddingVector ? JSON.stringify(embeddingVector) : null
+      embeddingVector ? JSON.stringify(embeddingVector) : null,
+      '30d' // Default expiry: 30 days
     ).run();
     
-    console.log('📧 Email saved to database:', insertResult.success ? '✅ SUCCESS' : '❌ FAILED', emailId);
+    console.log('📧 Email saved to database:', insertResult.success ? '✅ SUCCESS' : '❌ FAILED', emailId, '⏳ Expires: 30d');
     
     // Track analytics
     await DB.prepare(`
@@ -1524,8 +1528,9 @@ emailRoutes.post('/receive', async (c) => {
       INSERT INTO emails (
         id, thread_id, from_email, from_name, to_email, subject,
         body_text, body_html, snippet, category, 
-        is_read, received_at, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'inbox', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        is_read, received_at, created_at,
+        expiry_type, expires_at, is_expired
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'inbox', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, datetime('now', '+30 days'), 0)
     `).bind(
       emailId,
       threadId,
@@ -1535,7 +1540,8 @@ emailRoutes.post('/receive', async (c) => {
       subject,
       bodyText || '',
       bodyHtml || bodyText || '',
-      (bodyText || '').substring(0, 150)
+      (bodyText || '').substring(0, 150),
+      '30d' // Default expiry: 30 days
     ).run();
     
     if (result.success) {
