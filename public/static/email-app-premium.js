@@ -38,6 +38,8 @@ window.addEventListener('DOMContentLoaded', function() {
       const [tasks, setTasks] = useState([]);
       const [contacts, setContacts] = useState([]);
       const [deals, setDeals] = useState([]);
+      const [files, setFiles] = useState([]);
+      const [folders, setFolders] = useState([]);
       const [loading, setLoading] = useState(false);
       const [showCompose, setShowCompose] = useState(false);
       const [selectedEmail, setSelectedEmail] = useState(null);
@@ -131,6 +133,18 @@ window.addEventListener('DOMContentLoaded', function() {
             const dealsData = await dealsRes.json();
             setContacts(contactsData.contacts || []);
             setDeals(dealsData.deals || []);
+          }
+          
+          // Load File Bank data
+          if (view === 'filebank') {
+            const [filesRes, foldersRes] = await Promise.all([
+              fetch(`/api/filebank/files?userEmail=${user}`),
+              fetch(`/api/filebank/folders?userEmail=${user}`)
+            ]);
+            const filesData = await filesRes.json();
+            const foldersData = await foldersRes.json();
+            setFiles(filesData.files || []);
+            setFolders(foldersData.folders || []);
           }
           
           // Load Tasks data
@@ -951,6 +965,113 @@ window.addEventListener('DOMContentLoaded', function() {
                         deal.value ? `$${deal.value.toLocaleString()}` : 'No value'
                       ),
                       h('div', { style: { fontSize: '12px', color: '#C9A962', marginTop: '4px' } }, deal.stage || 'New')
+                    )
+                  )
+                )
+              )
+            ) :
+            // File Bank View
+            view === 'filebank' ? h('div', {},
+              h('h3', { style: { color: '#C9A962', marginBottom: '16px', fontSize: '18px' } }, '📁 File Bank'),
+              
+              // Files Grid
+              h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' } },
+                files.length === 0 ? 
+                  h('div', { style: { gridColumn: '1 / -1', textAlign: 'center', padding: '60px 20px', color: 'rgba(255, 255, 255, 0.4)' } }, 
+                    h('div', { style: { fontSize: '48px', marginBottom: '16px' } }, '📁'),
+                    h('div', { style: { fontSize: '16px' } }, 'No files yet'),
+                    h('div', { style: { fontSize: '13px', marginTop: '8px' } }, 'Files you upload will appear here')
+                  ) :
+                files.map((file, i) =>
+                  h('div', {
+                    key: file.id || i,
+                    style: {
+                      padding: '16px',
+                      background: 'rgba(26, 31, 58, 0.6)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s'
+                    },
+                    onMouseEnter: (e) => {
+                      e.currentTarget.style.borderColor = 'rgba(201, 169, 98, 0.3)';
+                      e.currentTarget.style.transform = 'translateY(-4px)';
+                      e.currentTarget.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.2)';
+                    },
+                    onMouseLeave: (e) => {
+                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }
+                  },
+                    // File icon based on type
+                    h('div', { style: { fontSize: '48px', textAlign: 'center', marginBottom: '12px' } },
+                      file.file_extension === 'pdf' ? '📄' :
+                      file.file_extension === 'docx' || file.file_extension === 'doc' ? '📝' :
+                      file.file_extension === 'xlsx' || file.file_extension === 'xls' ? '📊' :
+                      file.file_extension === 'png' || file.file_extension === 'jpg' || file.file_extension === 'jpeg' ? '🖼️' :
+                      file.file_extension === 'zip' || file.file_extension === 'rar' ? '📦' : '📄'
+                    ),
+                    // Filename
+                    h('div', { 
+                      style: { 
+                        fontWeight: '600', 
+                        color: 'rgba(255, 255, 255, 0.9)', 
+                        marginBottom: '8px',
+                        fontSize: '14px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      } 
+                    }, file.filename),
+                    // File size
+                    h('div', { style: { fontSize: '12px', color: 'rgba(255, 255, 255, 0.5)', marginBottom: '4px' } }, 
+                      `${(file.file_size / 1024 / 1024).toFixed(2)} MB`
+                    ),
+                    // Folder name
+                    file.folder_name && h('div', { style: { fontSize: '11px', color: '#C9A962', marginBottom: '8px' } }, 
+                      `📁 ${file.folder_name}`
+                    ),
+                    // Stats
+                    h('div', { style: { fontSize: '11px', color: 'rgba(255, 255, 255, 0.4)', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255, 255, 255, 0.05)' } },
+                      file.thread_count > 0 ? `Used in ${file.thread_count} thread${file.thread_count > 1 ? 's' : ''}` : 'Not used yet'
+                    ),
+                    // Star indicator
+                    file.is_starred === 1 && h('div', { style: { position: 'absolute', top: '8px', right: '8px', fontSize: '16px' } }, '⭐')
+                  )
+                )
+              ),
+              
+              // Folders section (if we want to show them)
+              folders.length > 0 && h('div', { style: { marginTop: '32px' } },
+                h('h4', { style: { color: '#C9A962', marginBottom: '12px', fontSize: '16px' } }, '📂 Folders'),
+                h('div', { style: { display: 'flex', gap: '12px', flexWrap: 'wrap' } },
+                  folders.map((folder, i) =>
+                    h('div', {
+                      key: folder.id || i,
+                      style: {
+                        padding: '12px 20px',
+                        background: 'rgba(26, 31, 58, 0.6)',
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      },
+                      onMouseEnter: (e) => {
+                        e.currentTarget.style.borderColor = 'rgba(201, 169, 98, 0.3)';
+                        e.currentTarget.style.background = 'rgba(26, 31, 58, 0.8)';
+                      },
+                      onMouseLeave: (e) => {
+                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                        e.currentTarget.style.background = 'rgba(26, 31, 58, 0.6)';
+                      }
+                    },
+                      h('span', { style: { fontSize: '20px' } }, folder.icon || '📁'),
+                      h('span', { style: { fontWeight: '500', color: 'rgba(255, 255, 255, 0.9)' } }, folder.folder_name),
+                      folder.file_count > 0 && h('span', { style: { fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)' } }, `(${folder.file_count})`)
                     )
                   )
                 )
