@@ -325,11 +325,29 @@ fileBank.put('/files/:id', async (c) => {
   }
 })
 
-// Delete file (soft delete)
+// Delete file (soft delete) - only owner can delete
 fileBank.delete('/files/:id', async (c) => {
   const fileId = c.req.param('id')
+  const userEmail = c.req.header('X-User-Email') || c.req.query('userEmail') || 'unknown'
   
   try {
+    // First check if file exists and belongs to user
+    const file = await c.env.DB.prepare(`
+      SELECT user_email FROM file_bank_files WHERE id = ? AND deleted_at IS NULL
+    `).bind(fileId).first()
+    
+    if (!file) {
+      return c.json({ error: 'File not found' }, 404)
+    }
+    
+    // Check ownership (allow deletion only by owner or from shared folders owned by system)
+    if (file.user_email !== userEmail && file.user_email !== 'system@investaycapital.com') {
+      return c.json({ 
+        error: 'Permission denied',
+        message: 'You can only delete files you uploaded'
+      }, 403)
+    }
+    
     await c.env.DB.prepare(`
       UPDATE file_bank_files
       SET deleted_at = CURRENT_TIMESTAMP

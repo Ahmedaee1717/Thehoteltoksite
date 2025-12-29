@@ -505,14 +505,21 @@ window.addEventListener('DOMContentLoaded', function() {
         setIsDragging(false);
       };
       
-      const deleteFile = async (fileId) => {
+      const deleteFile = async (file) => {
+        // Check if user owns the file
+        if (file.user_email !== user && file.user_email !== 'system@investaycapital.com') {
+          alert('❌ You can only delete files you uploaded.\n\nThis file was uploaded by: ' + file.user_email);
+          return;
+        }
+        
         if (!confirm('🗑️ Delete this file? This cannot be undone.')) return;
         
         try {
-          const res = await fetch(`/api/filebank/files/${fileId}`, {
+          const res = await fetch(`/api/filebank/files/${file.id}?userEmail=${user}`, {
             method: 'DELETE',
             headers: {
-              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+              'X-User-Email': user
             }
           });
           
@@ -521,6 +528,8 @@ window.addEventListener('DOMContentLoaded', function() {
             alert('✅ File deleted!');
             setShowFilePreview(false);
             loadData();
+          } else {
+            alert('❌ ' + (result.message || result.error || 'Failed to delete file'));
           }
         } catch (error) {
           console.error('Delete file error:', error);
@@ -1118,7 +1127,34 @@ window.addEventListener('DOMContentLoaded', function() {
             view === 'filebank' ? h('div', {},
               // Header with actions
               h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' } },
-                h('h3', { style: { color: '#C9A962', fontSize: '18px', margin: 0 } }, '📁 File Bank'),
+                h('div', { style: { display: 'flex', alignItems: 'center', gap: '12px' } },
+                  h('h3', { style: { color: '#C9A962', fontSize: '18px', margin: 0 } }, '📁 File Bank'),
+                  currentFolder && h('div', {
+                    style: {
+                      padding: '6px 12px',
+                      background: 'rgba(201, 169, 98, 0.15)',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      color: '#C9A962',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }
+                  },
+                    `Filtering: ${currentFolder.folder_name}`,
+                    h('button', {
+                      onClick: () => setCurrentFolder(null),
+                      style: {
+                        background: 'none',
+                        border: 'none',
+                        color: '#C9A962',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        padding: '0 4px'
+                      }
+                    }, '✕')
+                  )
+                ),
                 h('div', { style: { display: 'flex', gap: '12px' } },
                   // Upload button
                   h('label', {
@@ -1222,12 +1258,18 @@ window.addEventListener('DOMContentLoaded', function() {
               ),
               
               // Files Grid
-              files.length === 0 ? h('div', { style: { textAlign: 'center', padding: '60px 20px', color: 'rgba(255, 255, 255, 0.4)' } }, 
-                h('div', { style: { fontSize: '48px', marginBottom: '16px' } }, '📁'),
-                h('div', { style: { fontSize: '16px' } }, 'No files yet'),
-                h('div', { style: { fontSize: '13px', marginTop: '8px' } }, 'Upload your first file to get started')
-              ) : h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' } },
-                files.map((file, i) =>
+              (() => {
+                // Filter files by current folder if selected
+                const filteredFiles = currentFolder 
+                  ? files.filter(f => f.folder_id === currentFolder.id)
+                  : files;
+                
+                return filteredFiles.length === 0 ? h('div', { style: { textAlign: 'center', padding: '60px 20px', color: 'rgba(255, 255, 255, 0.4)' } }, 
+                  h('div', { style: { fontSize: '48px', marginBottom: '16px' } }, '📁'),
+                  h('div', { style: { fontSize: '16px' } }, currentFolder ? `No files in ${currentFolder.folder_name}` : 'No files yet'),
+                  h('div', { style: { fontSize: '13px', marginTop: '8px' } }, 'Upload your first file to get started')
+                ) : h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' } },
+                  filteredFiles.map((file, i) =>
                   h('div', {
                     key: file.id || i,
                     onClick: () => {
@@ -1272,7 +1314,8 @@ window.addEventListener('DOMContentLoaded', function() {
                     file.version > 1 && h('div', { style: { position: 'absolute', top: '8px', left: '8px', padding: '2px 8px', background: '#C9A962', borderRadius: '4px', fontSize: '10px', fontWeight: '600' } }, `v${file.version}`)
                   )
                 )
-              ),
+              );
+              })(),
               
               // Folders section
               folders.length > 0 && h('div', { style: { marginTop: '32px' } },
@@ -2003,7 +2046,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 }
               }, '🔄 New Version'),
               h('button', {
-                onClick: () => deleteFile(selectedFile.id),
+                onClick: () => deleteFile(selectedFile),
                 style: {
                   padding: '12px',
                   background: 'rgba(220, 38, 38, 0.1)',
@@ -2228,7 +2271,10 @@ window.addEventListener('DOMContentLoaded', function() {
         // Ultra Premium Compose Modal
         showCompose && h(ComposeModal, {
           onClose: () => setShowCompose(false),
-          onSend: sendEmail
+          onSend: sendEmail,
+          files: files,
+          showFilePicker: showFilePicker,
+          setShowFilePicker: setShowFilePicker
         }),
         
         // Email Viewer Modal - Shows when email is selected
@@ -2333,7 +2379,7 @@ window.addEventListener('DOMContentLoaded', function() {
       );
     }
     
-    function ComposeModal({ onClose, onSend }) {
+    function ComposeModal({ onClose, onSend, files, showFilePicker, setShowFilePicker }) {
       console.log('🎨 ComposeModal START');
       const [to, setTo] = useState('');
       const [subject, setSubject] = useState('');
