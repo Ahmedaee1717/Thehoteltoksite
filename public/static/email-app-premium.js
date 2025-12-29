@@ -58,6 +58,17 @@ window.addEventListener('DOMContentLoaded', function() {
       const [newTaskPriority, setNewTaskPriority] = useState('medium');
       const [newTaskDueDate, setNewTaskDueDate] = useState('');
       
+      // CRM state
+      const [showCreateContact, setShowCreateContact] = useState(false);
+      const [showCreateDeal, setShowCreateDeal] = useState(false);
+      const [newContactName, setNewContactName] = useState('');
+      const [newContactEmail, setNewContactEmail] = useState('');
+      const [newContactPhone, setNewContactPhone] = useState('');
+      const [newContactCompany, setNewContactCompany] = useState('');
+      const [newDealTitle, setNewDealTitle] = useState('');
+      const [newDealValue, setNewDealValue] = useState('');
+      const [newDealStage, setNewDealStage] = useState('lead');
+      
       useEffect(() => {
         loadData();
       }, [view]);
@@ -340,6 +351,72 @@ window.addEventListener('DOMContentLoaded', function() {
         }
       };
       
+      // CRM functions
+      const createContact = async () => {
+        if (!newContactName.trim() || !newContactEmail.trim()) {
+          alert('⚠️ Please enter name and email');
+          return;
+        }
+        try {
+          const res = await fetch('/api/crm/contacts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userEmail: user,
+              name: newContactName,
+              email: newContactEmail,
+              phone: newContactPhone,
+              company: newContactCompany,
+              contactType: 'client'
+            })
+          });
+          const result = await res.json();
+          if (result.success) {
+            setNewContactName('');
+            setNewContactEmail('');
+            setNewContactPhone('');
+            setNewContactCompany('');
+            setShowCreateContact(false);
+            loadData();
+            alert('✅ Contact created!');
+          }
+        } catch (error) {
+          console.error('Create contact error:', error);
+          alert('❌ Failed to create contact');
+        }
+      };
+      
+      const createDeal = async () => {
+        if (!newDealTitle.trim()) {
+          alert('⚠️ Please enter deal title');
+          return;
+        }
+        try {
+          const res = await fetch('/api/crm/deals', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userEmail: user,
+              title: newDealTitle,
+              value: parseFloat(newDealValue) || 0,
+              stage: newDealStage
+            })
+          });
+          const result = await res.json();
+          if (result.success) {
+            setNewDealTitle('');
+            setNewDealValue('');
+            setNewDealStage('lead');
+            setShowCreateDeal(false);
+            loadData();
+            alert('✅ Deal created!');
+          }
+        } catch (error) {
+          console.error('Create deal error:', error);
+          alert('❌ Failed to create deal');
+        }
+      };
+      
       const navItems = [
         { id: 'inbox', icon: '◉', label: 'Inbox', gradient: 'linear-gradient(135deg, #C9A962 0%, #8B7355 100%)' },
         { id: 'sent', icon: '↗', label: 'Sent', gradient: 'linear-gradient(135deg, #A88B5E 0%, #6B5942 100%)' },
@@ -347,7 +424,8 @@ window.addEventListener('DOMContentLoaded', function() {
         { id: 'spam', icon: '⊘', label: 'Spam', gradient: 'linear-gradient(135deg, #D4A574 0%, #9B7652 100%)' },
         { id: 'trash', icon: '◻', label: 'Trash', gradient: 'linear-gradient(135deg, #BFA076 0%, #8A6E4F 100%)' },
         { id: 'archived', icon: '▣', label: 'Archive', gradient: 'linear-gradient(135deg, #C4A976 0%, #937D5C 100%)' },
-        { id: 'tasks', icon: '✓', label: 'Tasks', gradient: 'linear-gradient(135deg, #D1AE6E 0%, #9E825A 100%)' }
+        { id: 'tasks', icon: '✓', label: 'Tasks', gradient: 'linear-gradient(135deg, #D1AE6E 0%, #9E825A 100%)' },
+        { id: 'crm', icon: '👥', label: 'CRM', gradient: 'linear-gradient(135deg, #E8B86D 0%, #B89968 100%)' }
       ];
       
       return h('div', { 
