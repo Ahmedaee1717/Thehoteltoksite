@@ -705,7 +705,7 @@ emailRoutes.post('/smart-replies', async (c) => {
 
 // ============================================
 // POST /api/email/search
-// AI-Powered Smart Search with Intent Understanding
+// REAL AI-POWERED SMART SEARCH using GPT-4
 // ============================================
 emailRoutes.post('/search', async (c) => {
   const { DB, OPENAI_API_KEY } = c.env;
@@ -719,93 +719,104 @@ emailRoutes.post('/search', async (c) => {
     
     const user = userEmail || 'admin@investaycapital.com';
     
-    // AI-powered intent extraction
-    let searchIntent = {
-      keywords: [] as string[],
-      sender: null as string | null,
-      recipient: null as string | null,
-      dateRange: null as { start?: string; end?: string } | null,
+    console.log('🔍 AI Search Query:', query);
+    
+    // STEP 1: Use GPT-4 to extract search terms and understand intent
+    let searchTerms: string[] = [];
+    let searchIntent: any = {
+      sender: null,
+      recipient: null,
+      dateRange: null,
       hasAttachment: false,
       isUnread: false,
       isStarred: false,
       isPriority: false,
-      category: folder || null as string | null
+      category: folder || null
     };
     
-    // Parse natural language queries with AI
-    const queryLower = query.toLowerCase();
-    
-    // Extract sender (from)
-    const fromMatch = queryLower.match(/from\s+([^\s]+@[^\s]+|[\w\s]+)/i);
-    if (fromMatch) {
-      searchIntent.sender = fromMatch[1].trim();
+    if (OPENAI_API_KEY) {
+      try {
+        const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${OPENAI_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [{
+              role: 'system',
+              content: `You are an email search assistant. Extract search terms and filters from natural language queries. 
+              
+CRITICAL: Be VERY LENIENT with search terms. Include:
+- Main topic words (financial, report, meeting, review, etc.)
+- Contextual terms (Q1, Q2, quarter, annual, monthly, etc.)
+- Related concepts (even partial matches)
+- Variations and synonyms
+
+Return JSON with:
+{
+  "searchTerms": ["term1", "term2", ...],  // ALL relevant terms, be generous
+  "sender": "email or name or null",
+  "recipient": "email or name or null",
+  "dateRange": {"start": "YYYY-MM-DD", "end": "YYYY-MM-DD"} or null,
+  "hasAttachment": boolean,
+  "isUnread": boolean,
+  "isStarred": boolean,
+  "isPriority": boolean
+}
+
+Examples:
+"financial report" → {"searchTerms": ["financial", "report", "finance", "reporting"], ...}
+"q1 review" → {"searchTerms": ["q1", "review", "quarter", "quarterly", "first quarter"], ...}
+"meeting schedule" → {"searchTerms": ["meeting", "schedule", "scheduled", "calendar"], ...}`
+            }, {
+              role: 'user',
+              content: `Extract search terms from: "${query}"`
+            }],
+            temperature: 0.3,
+            max_tokens: 500
+          })
+        });
+        
+        if (aiResponse.ok) {
+          const aiData = await aiResponse.json();
+          const content = aiData.choices[0].message.content;
+          console.log('🤖 AI Response:', content);
+          
+          // Parse JSON response
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            searchTerms = parsed.searchTerms || [];
+            searchIntent.sender = parsed.sender;
+            searchIntent.recipient = parsed.recipient;
+            searchIntent.dateRange = parsed.dateRange;
+            searchIntent.hasAttachment = parsed.hasAttachment;
+            searchIntent.isUnread = parsed.isUnread;
+            searchIntent.isStarred = parsed.isStarred;
+            searchIntent.isPriority = parsed.isPriority;
+          }
+        }
+      } catch (aiError) {
+        console.error('AI extraction failed, using fallback:', aiError);
+      }
     }
     
-    // Extract recipient (to)
-    const toMatch = queryLower.match(/to\s+([^\s]+@[^\s]+|[\w\s]+)/i);
-    if (toMatch) {
-      searchIntent.recipient = toMatch[1].trim();
+    // FALLBACK: If AI fails or no search terms, use simple extraction
+    if (searchTerms.length === 0) {
+      // Very lenient keyword extraction
+      searchTerms = query
+        .toLowerCase()
+        .split(/\s+/)
+        .filter(w => w.length >= 2) // Accept 2+ char words
+        .filter(w => !['and', 'or', 'the'].includes(w)); // Only remove most common words
     }
     
-    // Check for attachments
-    if (queryLower.includes('attachment') || queryLower.includes('attached') || queryLower.includes('with file')) {
-      searchIntent.hasAttachment = true;
-    }
+    console.log('🔍 Search Terms:', searchTerms);
+    console.log('🔍 Search Terms:', searchTerms);
     
-    // Check for unread
-    if (queryLower.includes('unread') || queryLower.includes('not read')) {
-      searchIntent.isUnread = true;
-    }
-    
-    // Check for starred
-    if (queryLower.includes('starred') || queryLower.includes('important') || queryLower.includes('flagged')) {
-      searchIntent.isStarred = true;
-    }
-    
-    // Check for priority
-    if (queryLower.includes('priority') || queryLower.includes('urgent')) {
-      searchIntent.isPriority = true;
-    }
-    
-    // Extract date ranges
-    const today = new Date();
-    if (queryLower.includes('today')) {
-      const todayStr = today.toISOString().split('T')[0];
-      searchIntent.dateRange = { start: todayStr };
-    } else if (queryLower.includes('yesterday')) {
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
-      searchIntent.dateRange = { start: yesterdayStr, end: yesterdayStr };
-    } else if (queryLower.includes('this week') || queryLower.includes('last 7 days')) {
-      const weekAgo = new Date(today);
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      searchIntent.dateRange = { start: weekAgo.toISOString().split('T')[0] };
-    } else if (queryLower.includes('this month')) {
-      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-      searchIntent.dateRange = { start: monthStart.toISOString().split('T')[0] };
-    } else if (queryLower.includes('last month')) {
-      const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
-      searchIntent.dateRange = { 
-        start: lastMonthStart.toISOString().split('T')[0],
-        end: lastMonthEnd.toISOString().split('T')[0]
-      };
-    }
-    
-    // Extract keywords (remove special operators and common words)
-    const stopWords = ['email', 'emails', 'about', 'with', 'from', 'for', 'the', 'this', 'that', 'and', 'or'];
-    let keywords = query
-      .replace(/from\s+[^\s]+/gi, '')
-      .replace(/to\s+[^\s]+/gi, '')
-      .replace(/\b(unread|starred|important|attachment|attachments|attached|today|yesterday|this week|last week|this month|last month|with file|with files)\b/gi, '')
-      .trim()
-      .split(/\s+/)
-      .filter(w => w.length > 2 && !stopWords.includes(w.toLowerCase()));
-    
-    searchIntent.keywords = keywords;
-    
-    // Build dynamic SQL query
+    // STEP 2: Build LENIENT SQL query
     let sql = `
       SELECT DISTINCT
         e.id, e.thread_id, e.from_email, e.from_name, e.to_email, e.subject,
@@ -826,7 +837,6 @@ emailRoutes.post('/search', async (c) => {
         sql += ` AND e.from_email = ?`;
         bindings.push(user);
       } else if (folder === 'drafts') {
-        // Check email_drafts table
         sql = `
           SELECT 
             d.id, d.thread_id, '' as from_email, ? as from_name, d.to_email, d.subject,
@@ -895,42 +905,36 @@ emailRoutes.post('/search', async (c) => {
       sql += ` AND e.priority = 'high'`;
     }
     
-    // Apply keyword search (OR logic - any keyword matches)
-    if (searchIntent.keywords.length > 0) {
-      const keywordConditions = searchIntent.keywords.map(() => 
+    // VERY LENIENT keyword search - OR logic with ANY match
+    if (searchTerms.length > 0) {
+      const keywordConditions = searchTerms.map(() => 
         `(e.subject LIKE ? OR e.body_text LIKE ? OR e.snippet LIKE ?)`
       ).join(' OR ');
       sql += ` AND (${keywordConditions})`;
       
-      searchIntent.keywords.forEach(keyword => {
-        const likePattern = `%${keyword}%`;
+      searchTerms.forEach(term => {
+        const likePattern = `%${term}%`;
         bindings.push(likePattern, likePattern, likePattern);
       });
     }
     
     sql += ` ORDER BY e.received_at DESC LIMIT 100`;
     
-    // Debug logging
-    console.log('🔍 Smart Search Debug:', {
-      query,
-      intent: searchIntent,
-      sqlLength: sql.length,
-      bindingsCount: bindings.length
-    });
+    console.log('🔍 SQL Bindings:', bindings.length);
     
     const { results } = await DB.prepare(sql).bind(...bindings).all();
     
-    console.log(`✅ Search found ${results.length} results`);
+    console.log(`✅ Found ${results.length} results`);
     
     return c.json({ 
       success: true, 
       results, 
       query,
-      intent: searchIntent,
+      intent: { ...searchIntent, searchTerms },
       count: results.length
     });
   } catch (error: any) {
-    console.error('Search error:', error);
+    console.error('❌ Search error:', error);
     return c.json({ success: false, error: error.message }, 500);
   }
 });
