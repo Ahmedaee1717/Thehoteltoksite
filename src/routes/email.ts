@@ -735,7 +735,10 @@ emailRoutes.post('/search', async (c) => {
     };
     
     if (OPENAI_API_KEY) {
+      console.log('✅ OPENAI_API_KEY found, using AI search');
       try {
+        console.log('🤖 Calling OpenAI API with query:', query);
+        
         const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -751,7 +754,7 @@ emailRoutes.post('/search', async (c) => {
 CRITICAL INSTRUCTIONS - BE EXTREMELY CREATIVE AND LENIENT:
 
 1. SEMANTIC UNDERSTANDING: Understand the MEANING, not just words
-   - "animal brawl" → cat, dog, fight, brawl, animals, pets, fighting, altercation
+   - "animal brawl" → cat, dog, fight, brawl, animals, pets, fighting, altercation, incident
    - "financial report" → financial, report, finance, fiscal, budget, earnings, revenue
    - "q1 review" → q1, review, quarter, quarterly, first quarter, Q1, 1st quarter
 
@@ -764,7 +767,8 @@ CRITICAL INSTRUCTIONS - BE EXTREMELY CREATIVE AND LENIENT:
 3. EXPAND CONCEPTS: What would appear in an email about this?
    - "meeting" → meeting, schedule, calendar, appointment, conference, call, zoom, teams
    - "urgent" → urgent, important, asap, critical, priority, rush, immediate
-   - "brawl" → fight, fighting, brawl, altercation, incident, conflict, dispute
+   - "brawl" → fight, fighting, brawl, altercation, incident, conflict, dispute, fighting, fought
+   - "animal" → animal, animals, cat, cats, dog, dogs, pet, pets, creature, creatures
 
 4. INCLUDE ALL VARIATIONS:
    - Singular/plural: cat/cats, dog/dogs
@@ -774,56 +778,67 @@ CRITICAL INSTRUCTIONS - BE EXTREMELY CREATIVE AND LENIENT:
 
 Return JSON with ALL possible search terms:
 {
-  "searchTerms": ["term1", "term2", "synonym1", "related1", ...],  // 10-20 terms is good!
-  "sender": "email or name or null",
-  "recipient": "email or name or null", 
-  "dateRange": {"start": "YYYY-MM-DD", "end": "YYYY-MM-DD"} or null,
-  "hasAttachment": boolean,
-  "isUnread": boolean,
-  "isStarred": boolean,
-  "isPriority": boolean
+  "searchTerms": ["term1", "term2", "synonym1", "related1", ...],
+  "sender": null,
+  "recipient": null, 
+  "dateRange": null,
+  "hasAttachment": false,
+  "isUnread": false,
+  "isStarred": false,
+  "isPriority": false
 }
+
+GENERATE 15-25 SEARCH TERMS! Be very generous!
 
 EXAMPLES:
 
 Query: "animal brawl"
 Response: {
-  "searchTerms": ["animal", "brawl", "animals", "fight", "fighting", "cat", "dog", "pets", "altercation", "incident", "conflict", "dispute", "witnessed", "saw", "occurred"],
-  ...
+  "searchTerms": ["animal", "animals", "brawl", "fight", "fighting", "fought", "cat", "cats", "dog", "dogs", "pets", "pet", "altercation", "incident", "conflict", "dispute", "witnessed", "saw", "occurred", "happened", "creature", "creatures"],
+  "sender": null,
+  "recipient": null,
+  "dateRange": null,
+  "hasAttachment": false,
+  "isUnread": false,
+  "isStarred": false,
+  "isPriority": false
 }
 
 Query: "financial report q1"
 Response: {
-  "searchTerms": ["financial", "report", "q1", "quarter", "quarterly", "first quarter", "Q1", "finance", "fiscal", "budget", "earnings", "revenue", "1st quarter"],
-  ...
+  "searchTerms": ["financial", "report", "q1", "quarter", "quarterly", "first quarter", "Q1", "finance", "fiscal", "budget", "earnings", "revenue", "1st quarter", "reporting", "statement", "analysis"],
+  "sender": null,
+  "recipient": null,
+  "dateRange": null,
+  "hasAttachment": false,
+  "isUnread": false,
+  "isStarred": false,
+  "isPriority": false
 }
 
-Query: "meeting schedule"
-Response: {
-  "searchTerms": ["meeting", "schedule", "scheduled", "calendar", "appointment", "conference", "call", "zoom", "teams", "discussion", "session"],
-  ...
-}
-
-BE CREATIVE! Think: "What words might appear in an email about this topic?"`
+BE CREATIVE! Generate many terms!`
             }, {
               role: 'user',
               content: `Extract search terms from: "${query}"`
             }],
-            temperature: 0.7,  // Higher temp for more creativity
-            max_tokens: 800  // More tokens for more terms
+            temperature: 0.8,  // Even more creative
+            max_tokens: 1000  // More space for terms
           })
         });
+        
+        console.log('📡 OpenAI Response Status:', aiResponse.status, aiResponse.statusText);
         
         if (aiResponse.ok) {
           const aiData = await aiResponse.json();
           const content = aiData.choices[0].message.content;
-          console.log('🤖 AI Response:', content);
+          console.log('🤖 AI Full Response:', content);
           
           // Parse JSON response
           const jsonMatch = content.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             const parsed = JSON.parse(jsonMatch[0]);
             searchTerms = parsed.searchTerms || [];
+            console.log('✅ AI Generated Terms:', searchTerms);
             searchIntent.sender = parsed.sender;
             searchIntent.recipient = parsed.recipient;
             searchIntent.dateRange = parsed.dateRange;
@@ -831,11 +846,18 @@ BE CREATIVE! Think: "What words might appear in an email about this topic?"`
             searchIntent.isUnread = parsed.isUnread;
             searchIntent.isStarred = parsed.isStarred;
             searchIntent.isPriority = parsed.isPriority;
+          } else {
+            console.error('❌ Could not parse JSON from AI response');
           }
+        } else {
+          const errorText = await aiResponse.text();
+          console.error('❌ OpenAI API Error:', aiResponse.status, errorText);
         }
-      } catch (aiError) {
-        console.error('AI extraction failed, using fallback:', aiError);
+      } catch (aiError: any) {
+        console.error('❌ AI extraction failed:', aiError.message, aiError);
       }
+    } else {
+      console.warn('⚠️ No OPENAI_API_KEY found, using fallback');
     }
     
     // FALLBACK: If AI fails or no search terms, use simple extraction
