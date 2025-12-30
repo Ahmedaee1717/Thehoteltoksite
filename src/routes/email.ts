@@ -809,8 +809,8 @@ emailRoutes.post('/search', async (c) => {
       SELECT DISTINCT
         e.id, e.thread_id, e.from_email, e.from_name, e.to_email, e.subject,
         e.snippet, e.category, e.priority, e.is_read, e.is_starred, e.received_at,
-        e.has_attachments,
-        (SELECT COUNT(*) FROM attachments WHERE email_id = e.id) as attachment_count
+        (SELECT COUNT(*) FROM attachments WHERE email_id = e.id) as attachment_count,
+        CASE WHEN EXISTS(SELECT 1 FROM attachments WHERE email_id = e.id) THEN 1 ELSE 0 END as has_attachments
       FROM emails e
       WHERE (e.to_email = ? OR e.from_email = ?)
     `;
@@ -886,7 +886,7 @@ emailRoutes.post('/search', async (c) => {
     
     // Apply attachment filter
     if (searchIntent.hasAttachment) {
-      sql += ` AND e.has_attachments = 1`;
+      sql += ` AND EXISTS(SELECT 1 FROM attachments WHERE email_id = e.id)`;
     }
     
     // Apply priority filter
