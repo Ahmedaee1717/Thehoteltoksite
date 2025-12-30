@@ -87,9 +87,9 @@ collaborationRoutes.get('/comments/:email_id', async (c) => {
   const currentUserEmail = c.get('userEmail');
   
   try {
-    // First, get the email to determine team members
+    // First, get the email to determine thread_id and team members
     const email = await DB.prepare(`
-      SELECT from_email, to_email, cc, bcc 
+      SELECT thread_id, from_email, to_email, cc, bcc 
       FROM emails 
       WHERE id = ?
     `).bind(emailId).first();
@@ -98,22 +98,31 @@ collaborationRoutes.get('/comments/:email_id', async (c) => {
       return c.json({ success: false, error: 'Email not found' }, 404);
     }
     
-    // Extract all participants (from, to, cc, bcc)
+    // Get ALL emails in this thread to collect all participants
+    const { results: threadEmails } = await DB.prepare(`
+      SELECT from_email, to_email, cc, bcc 
+      FROM emails 
+      WHERE thread_id = ?
+    `).bind(email.thread_id || emailId).all();
+    
+    // Extract all participants from entire thread (from, to, cc, bcc)
     const participants = new Set<string>();
-    if (email.from_email) participants.add(email.from_email.toLowerCase());
-    if (email.to_email) participants.add(email.to_email.toLowerCase());
-    if (email.cc) {
-      try {
-        const ccList = JSON.parse(email.cc);
-        ccList.forEach((e: string) => participants.add(e.toLowerCase()));
-      } catch {}
-    }
-    if (email.bcc) {
-      try {
-        const bccList = JSON.parse(email.bcc);
-        bccList.forEach((e: string) => participants.add(e.toLowerCase()));
-      } catch {}
-    }
+    threadEmails.forEach((threadEmail: any) => {
+      if (threadEmail.from_email) participants.add(threadEmail.from_email.toLowerCase());
+      if (threadEmail.to_email) participants.add(threadEmail.to_email.toLowerCase());
+      if (threadEmail.cc) {
+        try {
+          const ccList = JSON.parse(threadEmail.cc);
+          ccList.forEach((e: string) => participants.add(e.toLowerCase()));
+        } catch {}
+      }
+      if (threadEmail.bcc) {
+        try {
+          const bccList = JSON.parse(threadEmail.bcc);
+          bccList.forEach((e: string) => participants.add(e.toLowerCase()));
+        } catch {}
+      }
+    });
     
     // Get domain from participants (e.g., @investaycapital.com)
     const domains = new Set<string>();
@@ -122,10 +131,12 @@ collaborationRoutes.get('/comments/:email_id', async (c) => {
       if (domain) domains.add(domain.toLowerCase());
     });
     
-    console.log('📧 Email participants:', Array.from(participants));
+    console.log('🧵 Thread ID:', email.thread_id);
+    console.log('📧 Thread participants:', Array.from(participants));
     console.log('🏢 Team domains:', Array.from(domains));
     
-    // Get all comments for this email
+    // Get all comments for this THREAD (not just this email)
+    // This ensures all team members see all comments in the conversation
     const { results } = await DB.prepare(`
       SELECT 
         id, email_id, thread_id, author_email, author_name,
@@ -133,9 +144,9 @@ collaborationRoutes.get('/comments/:email_id', async (c) => {
         is_resolved, is_private, parent_comment_id,
         created_at, updated_at, edited_at
       FROM email_internal_comments
-      WHERE email_id = ?
+      WHERE thread_id = ? OR email_id = ?
       ORDER BY created_at ASC
-    `).bind(emailId).all();
+    `).bind(email.thread_id || emailId, emailId).all();
     
     // Filter comments: show only to team members (same domain) or participants
     const visibleComments = results.filter((comment: any) => {
