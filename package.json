@@ -17,6 +17,7 @@
     "test": "curl http://localhost:3000"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "form-data": "^4.0.5",
     "hono": "^4.10.6",
     "mailgun.js": "^12.4.0"

@@ -2,20 +2,32 @@
 // Ultra-secure authentication with bcrypt, JWT, rate limiting
 
 import { sign, verify } from 'hono/jwt'
+import bcrypt from 'bcryptjs'
 
-// Bcrypt-compatible password hashing using Web Crypto API
+// 🔒 SECURITY UPGRADE: bcrypt password hashing (industry standard)
+// - Automatic salting (prevents rainbow table attacks)
+// - Slow hashing (prevents brute force attacks)
+// - Adaptive cost factor (can be increased over time)
 export async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  return hashHex;
+  const salt = await bcrypt.genSalt(12); // Cost factor: 12 (recommended)
+  return await bcrypt.hash(password, salt);
 }
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  const inputHash = await hashPassword(password);
-  return inputHash === hash;
+  // Support legacy SHA-256 hashes (for migration)
+  if (hash.length === 64 && /^[a-f0-9]+$/.test(hash)) {
+    console.warn('⚠️  Legacy SHA-256 hash detected - please reset password');
+    // Legacy SHA-256 verification (DEPRECATED)
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const legacyHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return legacyHash === hash;
+  }
+  
+  // Modern bcrypt verification
+  return await bcrypt.compare(password, hash);
 }
 
 // Generate secure JWT token
