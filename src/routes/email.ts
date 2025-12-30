@@ -746,19 +746,37 @@ emailRoutes.post('/search', async (c) => {
             model: 'gpt-4o-mini',
             messages: [{
               role: 'system',
-              content: `You are an email search assistant. Extract search terms and filters from natural language queries. 
-              
-CRITICAL: Be VERY LENIENT with search terms. Include:
-- Main topic words (financial, report, meeting, review, etc.)
-- Contextual terms (Q1, Q2, quarter, annual, monthly, etc.)
-- Related concepts (even partial matches)
-- Variations and synonyms
+              content: `You are an advanced email search assistant with deep semantic understanding. Extract search terms and filters from natural language queries.
 
-Return JSON with:
+CRITICAL INSTRUCTIONS - BE EXTREMELY CREATIVE AND LENIENT:
+
+1. SEMANTIC UNDERSTANDING: Understand the MEANING, not just words
+   - "animal brawl" → cat, dog, fight, brawl, animals, pets, fighting, altercation
+   - "financial report" → financial, report, finance, fiscal, budget, earnings, revenue
+   - "q1 review" → q1, review, quarter, quarterly, first quarter, Q1, 1st quarter
+
+2. GENERATE CREATIVE SYNONYMS: Think like a human searching
+   - Technical terms + casual terms
+   - Formal + informal language
+   - Abbreviations + full words
+   - Related concepts and contexts
+
+3. EXPAND CONCEPTS: What would appear in an email about this?
+   - "meeting" → meeting, schedule, calendar, appointment, conference, call, zoom, teams
+   - "urgent" → urgent, important, asap, critical, priority, rush, immediate
+   - "brawl" → fight, fighting, brawl, altercation, incident, conflict, dispute
+
+4. INCLUDE ALL VARIATIONS:
+   - Singular/plural: cat/cats, dog/dogs
+   - Verb forms: fight/fighting/fought
+   - Related entities: animals, pets, creatures
+   - Action words: saw, witnessed, occurred, happened
+
+Return JSON with ALL possible search terms:
 {
-  "searchTerms": ["term1", "term2", ...],  // ALL relevant terms, be generous
+  "searchTerms": ["term1", "term2", "synonym1", "related1", ...],  // 10-20 terms is good!
   "sender": "email or name or null",
-  "recipient": "email or name or null",
+  "recipient": "email or name or null", 
   "dateRange": {"start": "YYYY-MM-DD", "end": "YYYY-MM-DD"} or null,
   "hasAttachment": boolean,
   "isUnread": boolean,
@@ -766,16 +784,33 @@ Return JSON with:
   "isPriority": boolean
 }
 
-Examples:
-"financial report" → {"searchTerms": ["financial", "report", "finance", "reporting"], ...}
-"q1 review" → {"searchTerms": ["q1", "review", "quarter", "quarterly", "first quarter"], ...}
-"meeting schedule" → {"searchTerms": ["meeting", "schedule", "scheduled", "calendar"], ...}`
+EXAMPLES:
+
+Query: "animal brawl"
+Response: {
+  "searchTerms": ["animal", "brawl", "animals", "fight", "fighting", "cat", "dog", "pets", "altercation", "incident", "conflict", "dispute", "witnessed", "saw", "occurred"],
+  ...
+}
+
+Query: "financial report q1"
+Response: {
+  "searchTerms": ["financial", "report", "q1", "quarter", "quarterly", "first quarter", "Q1", "finance", "fiscal", "budget", "earnings", "revenue", "1st quarter"],
+  ...
+}
+
+Query: "meeting schedule"
+Response: {
+  "searchTerms": ["meeting", "schedule", "scheduled", "calendar", "appointment", "conference", "call", "zoom", "teams", "discussion", "session"],
+  ...
+}
+
+BE CREATIVE! Think: "What words might appear in an email about this topic?"`
             }, {
               role: 'user',
               content: `Extract search terms from: "${query}"`
             }],
-            temperature: 0.3,
-            max_tokens: 500
+            temperature: 0.7,  // Higher temp for more creativity
+            max_tokens: 800  // More tokens for more terms
           })
         });
         
