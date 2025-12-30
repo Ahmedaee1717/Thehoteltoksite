@@ -1836,8 +1836,9 @@ emailRoutes.post('/receive', async (c) => {
     const bodyText = formData.get('body-plain') as string;
     const bodyHtml = formData.get('body-html') as string;
     const timestamp = formData.get('timestamp') as string;
+    const replyTo = formData.get('Reply-To') as string; // Get Reply-To header
     
-    console.log('📬 Incoming email from Mailgun:', { from, to, subject });
+    console.log('📬 Incoming email from Mailgun:', { from, to, subject, replyTo });
     
     // Validate required fields
     if (!from || !to || !subject) {
@@ -1846,9 +1847,23 @@ emailRoutes.post('/receive', async (c) => {
     }
     
     // Extract sender name and email
-    const fromMatch = from.match(/^(.+?)\s*<(.+?)>$/);
-    const fromEmail = fromMatch ? fromMatch[2] : from;
-    const fromName = fromMatch ? fromMatch[1].trim() : fromEmail.split('@')[0];
+    // 🔧 FIX: If Reply-To exists, use it as the actual sender (for emails sent via postmaster)
+    let fromEmail: string;
+    let fromName: string;
+    
+    if (replyTo && replyTo.includes('@')) {
+      // Email was sent via postmaster with Reply-To - use Reply-To as actual sender
+      const replyToMatch = replyTo.match(/^(.+?)\s*<(.+?)>$/);
+      fromEmail = replyToMatch ? replyToMatch[2] : replyTo;
+      fromName = replyToMatch ? replyToMatch[1].trim() : fromEmail.split('@')[0];
+      console.log('✅ Using Reply-To as sender:', { fromEmail, fromName });
+    } else {
+      // Normal external email - use FROM header
+      const fromMatch = from.match(/^(.+?)\s*<(.+?)>$/);
+      fromEmail = fromMatch ? fromMatch[2] : from;
+      fromName = fromMatch ? fromMatch[1].trim() : fromEmail.split('@')[0];
+      console.log('✅ Using FROM as sender:', { fromEmail, fromName });
+    }
     
     // Generate IDs
     const emailId = generateId('eml');
