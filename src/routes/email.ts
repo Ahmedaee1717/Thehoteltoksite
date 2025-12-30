@@ -793,14 +793,15 @@ emailRoutes.post('/search', async (c) => {
       };
     }
     
-    // Extract keywords (remove special operators)
+    // Extract keywords (remove special operators and common words)
+    const stopWords = ['email', 'emails', 'about', 'with', 'from', 'for', 'the', 'this', 'that', 'and', 'or'];
     let keywords = query
       .replace(/from\s+[^\s]+/gi, '')
       .replace(/to\s+[^\s]+/gi, '')
-      .replace(/\b(unread|starred|important|attachment|today|yesterday|this week|last week|this month|last month)\b/gi, '')
+      .replace(/\b(unread|starred|important|attachment|attachments|attached|today|yesterday|this week|last week|this month|last month|with file|with files)\b/gi, '')
       .trim()
       .split(/\s+/)
-      .filter(w => w.length > 2);
+      .filter(w => w.length > 2 && !stopWords.includes(w.toLowerCase()));
     
     searchIntent.keywords = keywords;
     
@@ -894,11 +895,11 @@ emailRoutes.post('/search', async (c) => {
       sql += ` AND e.priority = 'high'`;
     }
     
-    // Apply keyword search
+    // Apply keyword search (OR logic - any keyword matches)
     if (searchIntent.keywords.length > 0) {
       const keywordConditions = searchIntent.keywords.map(() => 
         `(e.subject LIKE ? OR e.body_text LIKE ? OR e.snippet LIKE ?)`
-      ).join(' AND ');
+      ).join(' OR ');
       sql += ` AND (${keywordConditions})`;
       
       searchIntent.keywords.forEach(keyword => {
@@ -909,7 +910,17 @@ emailRoutes.post('/search', async (c) => {
     
     sql += ` ORDER BY e.received_at DESC LIMIT 100`;
     
+    // Debug logging
+    console.log('🔍 Smart Search Debug:', {
+      query,
+      intent: searchIntent,
+      sqlLength: sql.length,
+      bindingsCount: bindings.length
+    });
+    
     const { results } = await DB.prepare(sql).bind(...bindings).all();
+    
+    console.log(`✅ Search found ${results.length} results`);
     
     return c.json({ 
       success: true, 
