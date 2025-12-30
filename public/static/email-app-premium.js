@@ -345,6 +345,7 @@ window.addEventListener('DOMContentLoaded', function() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               email_id: selectedEmail.id,
+              thread_id: selectedEmail.thread_id, // 🔧 CRITICAL: Include thread_id for thread-based comments
               author_email: user,
               author_name: 'Admin',
               comment_text: newComment
