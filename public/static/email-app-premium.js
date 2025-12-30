@@ -3435,38 +3435,195 @@ window.addEventListener('DOMContentLoaded', function() {
             )
           ),
           h('div', { style: { flex: 1, overflow: 'auto', padding: '20px' } },
-            h('div', { style: { fontSize: '13px', color: '#C9A962', marginBottom: '16px', fontWeight: '600' } }, '💬 Team Comments'),
-            h('div', { style: { display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' } },
+            h('div', { style: { fontSize: '14px', color: '#C9A962', marginBottom: '20px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' } }, 
+              '💬',
+              'Team Comments',
+              h('span', { style: { fontSize: '11px', color: 'rgba(255, 255, 255, 0.4)', fontWeight: '400' } }, '(Internal - Team Only)')
+            ),
+            h('div', { style: { display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' } },
               comments.length === 0 ? 
-                h('div', { style: { textAlign: 'center', padding: '40px 20px', color: 'rgba(255, 255, 255, 0.4)', fontSize: '13px' } }, 'No comments yet') :
-                comments.map((comment, i) =>
-                  h('div', {
+                h('div', { 
+                  style: { 
+                    textAlign: 'center', 
+                    padding: '60px 20px', 
+                    color: 'rgba(255, 255, 255, 0.3)', 
+                    fontSize: '13px',
+                    background: 'linear-gradient(135deg, rgba(201, 169, 98, 0.03) 0%, rgba(168, 139, 78, 0.03) 100%)',
+                    borderRadius: '12px',
+                    border: '1px dashed rgba(201, 169, 98, 0.2)'
+                  } 
+                }, 
+                  h('div', { style: { fontSize: '32px', marginBottom: '12px' } }, '📝'),
+                  'No comments yet',
+                  h('div', { style: { fontSize: '11px', marginTop: '8px', color: 'rgba(255, 255, 255, 0.2)' } }, 'Start the conversation with your team')
+                ) :
+                comments.map((comment, i) => {
+                  // Sticky note colors (professional neon highlights)
+                  const colors = [
+                    { bg: 'linear-gradient(135deg, rgba(255, 235, 59, 0.12) 0%, rgba(255, 213, 79, 0.08) 100%)', border: 'rgba(255, 235, 59, 0.3)', glow: 'rgba(255, 235, 59, 0.15)', text: '#FFF9C4' },  // Neon Yellow
+                    { bg: 'linear-gradient(135deg, rgba(129, 212, 250, 0.12) 0%, rgba(79, 195, 247, 0.08) 100%)', border: 'rgba(129, 212, 250, 0.3)', glow: 'rgba(129, 212, 250, 0.15)', text: '#E1F5FE' },  // Neon Blue
+                    { bg: 'linear-gradient(135deg, rgba(165, 214, 167, 0.12) 0%, rgba(129, 199, 132, 0.08) 100%)', border: 'rgba(165, 214, 167, 0.3)', glow: 'rgba(165, 214, 167, 0.15)', text: '#E8F5E9' },  // Neon Green
+                    { bg: 'linear-gradient(135deg, rgba(240, 98, 146, 0.12) 0%, rgba(244, 143, 177, 0.08) 100%)', border: 'rgba(240, 98, 146, 0.3)', glow: 'rgba(240, 98, 146, 0.15)', text: '#FCE4EC' },  // Neon Pink
+                    { bg: 'linear-gradient(135deg, rgba(179, 157, 219, 0.12) 0%, rgba(149, 117, 205, 0.08) 100%)', border: 'rgba(179, 157, 219, 0.3)', glow: 'rgba(179, 157, 219, 0.15)', text: '#F3E5F5' },  // Neon Purple
+                  ];
+                  const colorIndex = i % colors.length;
+                  const stickyColor = colors[colorIndex];
+                  
+                  return h('div', {
                     key: i,
-                    style: { padding: '12px', background: 'rgba(26, 31, 58, 0.6)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '8px' }
+                    style: { 
+                      padding: '16px 18px',
+                      background: stickyColor.bg,
+                      border: `1.5px solid ${stickyColor.border}`,
+                      borderRadius: '10px',
+                      boxShadow: `0 4px 16px ${stickyColor.glow}, 0 0 0 1px rgba(255, 255, 255, 0.03)`,
+                      position: 'relative',
+                      transform: 'translateZ(0)',
+                      transition: 'all 0.2s ease',
+                      cursor: 'default'
+                    },
+                    onMouseEnter: (e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px) translateZ(0)';
+                      e.currentTarget.style.boxShadow = `0 8px 24px ${stickyColor.glow}, 0 0 0 1.5px ${stickyColor.border}`;
+                    },
+                    onMouseLeave: (e) => {
+                      e.currentTarget.style.transform = 'translateZ(0)';
+                      e.currentTarget.style.boxShadow = `0 4px 16px ${stickyColor.glow}, 0 0 0 1px rgba(255, 255, 255, 0.03)`;
+                    }
                   },
-                    h('div', { style: { fontSize: '12px', fontWeight: '600', color: '#C9A962', marginBottom: '8px' } }, comment.author_name || comment.author_email),
-                    h('div', { style: { fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)', marginBottom: '8px' } }, comment.comment_text),
-                    h('div', { style: { fontSize: '11px', color: 'rgba(255, 255, 255, 0.4)' } }, new Date(comment.created_at).toLocaleString())
-                  )
-                )
+                    // Top edge highlight (sticky note effect)
+                    h('div', { 
+                      style: { 
+                        position: 'absolute', 
+                        top: 0, 
+                        left: 0, 
+                        right: 0, 
+                        height: '3px', 
+                        background: stickyColor.border,
+                        borderRadius: '10px 10px 0 0',
+                        opacity: 0.6
+                      } 
+                    }),
+                    // Author header
+                    h('div', { 
+                      style: { 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        marginBottom: '12px',
+                        paddingBottom: '10px',
+                        borderBottom: `1px solid ${stickyColor.border}`
+                      } 
+                    },
+                      h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+                        h('div', { 
+                          style: { 
+                            width: '28px', 
+                            height: '28px', 
+                            borderRadius: '50%', 
+                            background: stickyColor.border,
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            color: 'rgba(0, 0, 0, 0.7)',
+                            boxShadow: `0 2px 8px ${stickyColor.glow}`
+                          } 
+                        }, (comment.author_name || comment.author_email || 'U')[0].toUpperCase()),
+                        h('div', {},
+                          h('div', { style: { fontSize: '13px', fontWeight: '600', color: stickyColor.text } }, comment.author_name || comment.author_email?.split('@')[0]),
+                          h('div', { style: { fontSize: '10px', color: 'rgba(255, 255, 255, 0.35)', marginTop: '2px' } }, new Date(comment.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }))
+                        )
+                      ),
+                      comment.comment_type && h('div', { 
+                        style: { 
+                          fontSize: '10px', 
+                          padding: '3px 8px', 
+                          background: stickyColor.border,
+                          color: 'rgba(0, 0, 0, 0.6)',
+                          borderRadius: '4px',
+                          fontWeight: '600',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
+                        } 
+                      }, comment.comment_type)
+                    ),
+                    // Comment text
+                    h('div', { 
+                      style: { 
+                        fontSize: '14px', 
+                        color: 'rgba(255, 255, 255, 0.85)', 
+                        lineHeight: '1.6',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word'
+                      } 
+                    }, comment.comment_text),
+                    // Resolve button (if unresolved)
+                    !comment.is_resolved && h('div', { 
+                      style: { 
+                        marginTop: '12px', 
+                        paddingTop: '12px', 
+                        borderTop: `1px solid ${stickyColor.border}`,
+                        display: 'flex',
+                        justifyContent: 'flex-end'
+                      } 
+                    },
+                      h('button', {
+                        onClick: () => {
+                          fetch(`/api/collaboration/comments/${comment.id}/resolve`, { method: 'PUT' })
+                            .then(() => loadCollabData(selectedEmail.id));
+                        },
+                        style: {
+                          padding: '6px 12px',
+                          fontSize: '11px',
+                          background: stickyColor.border,
+                          color: 'rgba(0, 0, 0, 0.7)',
+                          border: 'none',
+                          borderRadius: '5px',
+                          cursor: 'pointer',
+                          fontWeight: '600',
+                          transition: 'all 0.2s'
+                        },
+                        onMouseEnter: (e) => {
+                          e.target.style.transform = 'scale(1.05)';
+                          e.target.style.boxShadow = `0 2px 8px ${stickyColor.glow}`;
+                        },
+                        onMouseLeave: (e) => {
+                          e.target.style.transform = 'scale(1)';
+                          e.target.style.boxShadow = 'none';
+                        }
+                      }, '✓ Resolve')
+                    )
+                  );
+                })
             ),
             h('div', {},
               h('textarea', {
                 value: newComment,
                 onChange: (e) => setNewComment(e.target.value),
-                placeholder: 'Add internal team comment (private)...',
+                placeholder: 'Add internal team comment (visible to @investaycapital.com team members)...',
                 style: {
                   width: '100%',
-                  padding: '12px',
+                  padding: '14px',
                   background: 'rgba(26, 31, 58, 0.6)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '8px',
+                  border: '1.5px solid rgba(201, 169, 98, 0.3)',
+                  borderRadius: '10px',
                   color: 'rgba(255, 255, 255, 0.9)',
                   fontSize: '13px',
                   fontFamily: 'inherit',
                   resize: 'vertical',
-                  minHeight: '80px',
-                  marginBottom: '12px'
+                  minHeight: '90px',
+                  marginBottom: '12px',
+                  transition: 'all 0.2s'
+                },
+                onFocus: (e) => {
+                  e.target.style.borderColor = 'rgba(201, 169, 98, 0.5)';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(201, 169, 98, 0.1)';
+                },
+                onBlur: (e) => {
+                  e.target.style.borderColor = 'rgba(201, 169, 98, 0.3)';
+                  e.target.style.boxShadow = 'none';
                 }
               }),
               h('button', {
@@ -3474,14 +3631,26 @@ window.addEventListener('DOMContentLoaded', function() {
                 disabled: !newComment.trim(),
                 style: {
                   width: '100%',
-                  padding: '12px',
+                  padding: '14px',
                   background: newComment.trim() ? 'linear-gradient(135deg, #C9A962 0%, #A88B4E 100%)' : 'rgba(100, 100, 100, 0.3)',
                   border: 'none',
-                  borderRadius: '8px',
+                  borderRadius: '10px',
                   color: '#fff',
                   fontSize: '14px',
                   fontWeight: '600',
-                  cursor: newComment.trim() ? 'pointer' : 'not-allowed'
+                  cursor: newComment.trim() ? 'pointer' : 'not-allowed',
+                  boxShadow: newComment.trim() ? '0 4px 16px rgba(201, 169, 98, 0.3)' : 'none',
+                  transition: 'all 0.2s'
+                },
+                onMouseEnter: (e) => {
+                  if (newComment.trim()) {
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 6px 20px rgba(201, 169, 98, 0.4)';
+                  }
+                },
+                onMouseLeave: (e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = newComment.trim() ? '0 4px 16px rgba(201, 169, 98, 0.3)' : 'none';
                 }
               }, '💬 Add Comment')
             )

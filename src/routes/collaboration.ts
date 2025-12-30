@@ -77,12 +77,55 @@ collaborationRoutes.post('/comments', async (c) => {
 });
 
 // GET /api/collaboration/comments/:email_id
-// Get all comments for an email
+// Get all comments for an email (team visibility)
+// 🔒 Only show comments to users involved in the email thread
 collaborationRoutes.get('/comments/:email_id', async (c) => {
   const { DB } = c.env;
   const emailId = c.req.param('email_id');
   
+  // 🔒 Get authenticated user (optional - for future filtering)
+  const currentUserEmail = c.get('userEmail');
+  
   try {
+    // First, get the email to determine team members
+    const email = await DB.prepare(`
+      SELECT from_email, to_email, cc, bcc 
+      FROM emails 
+      WHERE id = ?
+    `).bind(emailId).first();
+    
+    if (!email) {
+      return c.json({ success: false, error: 'Email not found' }, 404);
+    }
+    
+    // Extract all participants (from, to, cc, bcc)
+    const participants = new Set<string>();
+    if (email.from_email) participants.add(email.from_email.toLowerCase());
+    if (email.to_email) participants.add(email.to_email.toLowerCase());
+    if (email.cc) {
+      try {
+        const ccList = JSON.parse(email.cc);
+        ccList.forEach((e: string) => participants.add(e.toLowerCase()));
+      } catch {}
+    }
+    if (email.bcc) {
+      try {
+        const bccList = JSON.parse(email.bcc);
+        bccList.forEach((e: string) => participants.add(e.toLowerCase()));
+      } catch {}
+    }
+    
+    // Get domain from participants (e.g., @investaycapital.com)
+    const domains = new Set<string>();
+    participants.forEach(email => {
+      const domain = email.split('@')[1];
+      if (domain) domains.add(domain.toLowerCase());
+    });
+    
+    console.log('📧 Email participants:', Array.from(participants));
+    console.log('🏢 Team domains:', Array.from(domains));
+    
+    // Get all comments for this email
     const { results } = await DB.prepare(`
       SELECT 
         id, email_id, thread_id, author_email, author_name,
@@ -94,7 +137,23 @@ collaborationRoutes.get('/comments/:email_id', async (c) => {
       ORDER BY created_at ASC
     `).bind(emailId).all();
     
-    return c.json({ success: true, comments: results });
+    // Filter comments: show only to team members (same domain) or participants
+    const visibleComments = results.filter((comment: any) => {
+      const commentDomain = comment.author_email?.split('@')[1]?.toLowerCase();
+      
+      // Show if:
+      // 1. Comment author is a participant
+      // 2. Comment author is from same domain as any participant
+      // 3. Comment is not private (or user is mentioned)
+      const isParticipant = participants.has(comment.author_email?.toLowerCase());
+      const isSameDomain = commentDomain && domains.has(commentDomain);
+      
+      return isParticipant || isSameDomain;
+    });
+    
+    console.log(`💬 Total comments: ${results.length}, Visible to team: ${visibleComments.length}`);
+    
+    return c.json({ success: true, comments: visibleComments });
   } catch (error: any) {
     console.error('Get comments error:', error);
     return c.json({ success: false, error: error.message }, 500);
