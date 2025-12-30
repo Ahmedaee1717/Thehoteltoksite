@@ -104,7 +104,7 @@ emailRoutes.get('/inbox', async (c) => {
         AND category != 'trash' 
         AND category != 'spam'
         AND is_archived = 0
-      ORDER BY received_at DESC
+      ORDER BY COALESCE(received_at, sent_at, created_at) DESC
       LIMIT 50
     `).bind(userEmail).all();
     
@@ -176,7 +176,7 @@ emailRoutes.get('/spam', async (c) => {
       FROM emails
       WHERE to_email = ? 
         AND category = 'spam'
-      ORDER BY received_at DESC
+      ORDER BY COALESCE(received_at, sent_at, created_at) DESC
       LIMIT 50
     `).bind(userEmail).all();
     
@@ -211,7 +211,7 @@ emailRoutes.get('/trash', async (c) => {
       FROM emails
       WHERE (to_email = ? OR from_email = ?)
         AND category = 'trash'
-      ORDER BY received_at DESC
+      ORDER BY COALESCE(received_at, sent_at, created_at) DESC
       LIMIT 50
     `).bind(userEmail, userEmail).all();
     
@@ -246,7 +246,7 @@ emailRoutes.get('/archived', async (c) => {
       WHERE (to_email = ? OR from_email = ?)
         AND is_archived = 1
         AND category != 'trash'
-      ORDER BY received_at DESC
+      ORDER BY COALESCE(received_at, sent_at, created_at) DESC
       LIMIT 50
     `).bind(userEmail, userEmail).all();
     
