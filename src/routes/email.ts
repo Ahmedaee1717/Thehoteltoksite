@@ -1837,13 +1837,41 @@ emailRoutes.post('/receive', async (c) => {
     const bodyHtml = formData.get('body-html') as string;
     const timestamp = formData.get('timestamp') as string;
     const replyTo = formData.get('Reply-To') as string; // Get Reply-To header
+    const messageId = formData.get('Message-Id') as string; // Unique message identifier
     
-    console.log('📬 Incoming email from Mailgun:', { from, to, subject, replyTo });
+    console.log('📬 Incoming email from Mailgun:', { from, to, subject, replyTo, messageId });
     
     // Validate required fields
     if (!from || !to || !subject) {
       console.error('❌ Missing required fields:', { from, to, subject });
       return c.json({ success: false, error: 'Missing required fields' }, 400);
+    }
+    
+    // 🔒 DEDUPLICATION: Check if this email already exists using Message-Id or timestamp
+    // Mailgun may send webhooks multiple times for reliability
+    if (messageId) {
+      const existing = await DB.prepare(`
+        SELECT id FROM emails WHERE snippet LIKE ?
+      `).bind(`%${messageId}%`).first();
+      
+      if (existing) {
+        console.log('⚠️ Duplicate email detected (Message-Id exists):', messageId);
+        return c.json({ success: true, message: 'Email already processed', duplicate: true });
+      }
+    } else {
+      // Fallback: check for duplicate by from/to/subject/timestamp
+      const timeWindow = timestamp ? new Date(parseInt(timestamp) * 1000).toISOString() : new Date().toISOString();
+      const existing = await DB.prepare(`
+        SELECT id FROM emails 
+        WHERE from_email = ? AND to_email = ? AND subject = ? 
+        AND datetime(created_at) >= datetime(?, '-10 seconds')
+        AND datetime(created_at) <= datetime(?, '+10 seconds')
+      `).bind(from.includes('<') ? from.match(/<(.+?)>/)?.[1] || from : from, to, subject, timeWindow, timeWindow).first();
+      
+      if (existing) {
+        console.log('⚠️ Duplicate email detected (time-based):', { from, to, subject, timeWindow });
+        return c.json({ success: true, message: 'Email already processed', duplicate: true });
+      }
     }
     
     // Extract sender name and email
