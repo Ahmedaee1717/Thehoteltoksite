@@ -54,6 +54,10 @@ window.addEventListener('DOMContentLoaded', function() {
       const [forwardTo, setForwardTo] = useState('');
       const [unreadCount, setUnreadCount] = useState(0);
       
+      // User profile state
+      const [userProfile, setUserProfile] = useState({ displayName: user.split('@')[0], profileImage: null });
+      const [showProfileModal, setShowProfileModal] = useState(false);
+      
       // Search state
       const [searchQuery, setSearchQuery] = useState('');
       const [searchResults, setSearchResults] = useState([]);
@@ -205,9 +209,26 @@ window.addEventListener('DOMContentLoaded', function() {
         }
       };
       
+      // Load user profile
+      const loadUserProfile = async () => {
+        try {
+          const response = await fetch('/api/auth/profile');
+          const data = await response.json();
+          if (data.success) {
+            setUserProfile({
+              displayName: data.user.displayName,
+              profileImage: data.user.profileImage
+            });
+          }
+        } catch (error) {
+          console.error('Load profile error:', error);
+        }
+      };
+      
       // Load unread count on mount and when view changes
       useEffect(() => {
         loadUnreadCount();
+        loadUserProfile(); // Load profile on mount
       }, [view, selectedEmail]); // Refresh when view changes or email is opened
       
       // 🕒 Calculate time remaining until expiry
@@ -340,6 +361,11 @@ window.addEventListener('DOMContentLoaded', function() {
       const addComment = async () => {
         if (!newComment.trim() || !selectedEmail) return;
         try {
+          // Fetch user profile to get actual display name
+          const profileRes = await fetch('/api/auth/profile');
+          const profileData = await profileRes.json();
+          const displayName = profileData.success ? profileData.user.displayName : user.split('@')[0];
+          
           const res = await fetch('/api/collaboration/comments', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -347,7 +373,7 @@ window.addEventListener('DOMContentLoaded', function() {
               email_id: selectedEmail.id,
               thread_id: selectedEmail.thread_id, // 🔧 CRITICAL: Include thread_id for thread-based comments
               author_email: user,
-              author_name: 'Admin',
+              author_name: displayName, // 🔧 Use actual display name from profile
               comment_text: newComment
             })
           });
@@ -1083,6 +1109,74 @@ window.addEventListener('DOMContentLoaded', function() {
               borderTop: '1px solid rgba(255, 255, 255, 0.05)'
             }
           },
+            // User Profile Section
+            h('div', {
+              onClick: () => setShowProfileModal(true),
+              style: {
+                padding: '12px',
+                background: 'rgba(201, 169, 98, 0.05)',
+                border: '1px solid rgba(201, 169, 98, 0.2)',
+                borderRadius: '10px',
+                marginBottom: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              },
+              onMouseEnter: (e) => {
+                e.currentTarget.style.background = 'rgba(201, 169, 98, 0.1)';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              },
+              onMouseLeave: (e) => {
+                e.currentTarget.style.background = 'rgba(201, 169, 98, 0.05)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }
+            },
+              // Profile Image / Avatar
+              h('div', {
+                style: {
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '50%',
+                  background: userProfile.profileImage 
+                    ? `url(${userProfile.profileImage}) center/cover` 
+                    : 'linear-gradient(135deg, #C9A962 0%, #8B7355 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  color: 'white',
+                  boxShadow: '0 2px 8px rgba(201, 169, 98, 0.3)',
+                  flexShrink: 0
+                }
+              }, !userProfile.profileImage && (userProfile.displayName || user.split('@')[0])[0].toUpperCase()),
+              // User Info
+              h('div', { style: { flex: 1, minWidth: 0 } },
+                h('div', { 
+                  style: { 
+                    fontSize: '14px', 
+                    fontWeight: '600', 
+                    color: '#C9A962',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  } 
+                }, userProfile.displayName || user.split('@')[0]),
+                h('div', { 
+                  style: { 
+                    fontSize: '11px', 
+                    color: 'rgba(255, 255, 255, 0.4)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    marginTop: '2px'
+                  } 
+                }, user)
+              ),
+              h('div', { style: { fontSize: '16px', color: 'rgba(201, 169, 98, 0.5)' } }, '⚙️')
+            ),
             h('button', {
               onClick: () => {
                 if (confirm('Are you sure you want to logout?')) {
@@ -3389,6 +3483,17 @@ window.addEventListener('DOMContentLoaded', function() {
           setShowFilePicker: setShowFilePicker
         }),
         
+        // Profile Modal
+        showProfileModal && h(ProfileModal, {
+          user: user,
+          userProfile: userProfile,
+          onClose: () => setShowProfileModal(false),
+          onUpdate: (updatedProfile) => {
+            setUserProfile(updatedProfile);
+            setShowProfileModal(false);
+          }
+        }),
+        
         // Email Viewer Modal - Shows when email is selected
         selectedEmail && h(EmailViewerModal, {
           email: selectedEmail,
@@ -3654,6 +3759,200 @@ window.addEventListener('DOMContentLoaded', function() {
                   e.target.style.boxShadow = newComment.trim() ? '0 4px 16px rgba(201, 169, 98, 0.3)' : 'none';
                 }
               }, '💬 Add Comment')
+            )
+          )
+        )
+      );
+    }
+    
+    function ProfileModal({ user, userProfile, onClose, onUpdate }) {
+      const [displayName, setDisplayName] = useState(userProfile.displayName || '');
+      const [profileImageUrl, setProfileImageUrl] = useState(userProfile.profileImage || '');
+      const [updating, setUpdating] = useState(false);
+      
+      const handleSave = async () => {
+        setUpdating(true);
+        try {
+          const response = await fetch('/api/auth/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              displayName: displayName,
+              profileImage: profileImageUrl || null
+            })
+          });
+          
+          const result = await response.json();
+          
+          if (result.success) {
+            onUpdate({ displayName, profileImage: profileImageUrl || null });
+            alert('✅ Profile updated successfully!');
+          } else {
+            alert('❌ Failed to update profile: ' + result.error);
+          }
+        } catch (error) {
+          console.error('Update profile error:', error);
+          alert('❌ Error updating profile');
+        } finally {
+          setUpdating(false);
+        }
+      };
+      
+      return h('div', {
+        onClick: onClose,
+        style: {
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          backdropFilter: 'blur(12px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000
+        }
+      },
+        h('div', {
+          onClick: (e) => e.stopPropagation(),
+          style: {
+            background: 'linear-gradient(135deg, rgba(26, 31, 58, 0.98) 0%, rgba(15, 20, 41, 0.98) 100%)',
+            borderRadius: '16px',
+            border: '1px solid rgba(201, 169, 98, 0.3)',
+            boxShadow: '0 24px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(201, 169, 98, 0.1)',
+            width: '500px',
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            overflow: 'auto'
+          }
+        },
+          // Header
+          h('div', {
+            style: {
+              padding: '24px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }
+          },
+            h('div', {},
+              h('h2', { style: { margin: 0, fontSize: '20px', fontWeight: '600', color: '#C9A962' } }, '⚙️ Profile Settings'),
+              h('p', { style: { margin: '4px 0 0 0', fontSize: '13px', color: 'rgba(255, 255, 255, 0.4)' } }, user)
+            ),
+            h('button', {
+              onClick: onClose,
+              style: {
+                background: 'transparent',
+                border: 'none',
+                fontSize: '24px',
+                color: 'rgba(255, 255, 255, 0.4)',
+                cursor: 'pointer',
+                padding: '8px',
+                lineHeight: 1
+              }
+            }, '×')
+          ),
+          
+          // Content
+          h('div', { style: { padding: '24px' } },
+            // Profile Image Section
+            h('div', { style: { marginBottom: '24px', textAlign: 'center' } },
+              h('div', { style: { fontSize: '13px', fontWeight: '600', color: '#C9A962', marginBottom: '16px' } }, 'Profile Picture'),
+              h('div', {
+                style: {
+                  width: '120px',
+                  height: '120px',
+                  borderRadius: '50%',
+                  background: profileImageUrl 
+                    ? `url(${profileImageUrl}) center/cover` 
+                    : 'linear-gradient(135deg, #C9A962 0%, #8B7355 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '48px',
+                  fontWeight: '600',
+                  color: 'white',
+                  margin: '0 auto 16px auto',
+                  boxShadow: '0 4px 16px rgba(201, 169, 98, 0.3)',
+                  border: '3px solid rgba(201, 169, 98, 0.3)'
+                }
+              }, !profileImageUrl && (displayName || user.split('@')[0])[0].toUpperCase()),
+              h('input', {
+                type: 'text',
+                value: profileImageUrl,
+                onChange: (e) => setProfileImageUrl(e.target.value),
+                placeholder: 'Profile image URL (e.g., https://...)',
+                style: {
+                  width: '100%',
+                  padding: '12px',
+                  background: 'rgba(26, 31, 58, 0.6)',
+                  border: '1.5px solid rgba(201, 169, 98, 0.3)',
+                  borderRadius: '10px',
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  fontSize: '13px',
+                  outline: 'none'
+                }
+              }),
+              h('div', { style: { fontSize: '11px', color: 'rgba(255, 255, 255, 0.3)', marginTop: '8px' } }, 
+                'Paste a URL to an image (jpg, png, gif)'
+              )
+            ),
+            
+            // Display Name Section
+            h('div', { style: { marginBottom: '24px' } },
+              h('label', { style: { fontSize: '13px', fontWeight: '600', color: '#C9A962', marginBottom: '8px', display: 'block' } }, 'Display Name'),
+              h('input', {
+                type: 'text',
+                value: displayName,
+                onChange: (e) => setDisplayName(e.target.value),
+                placeholder: 'Your display name',
+                style: {
+                  width: '100%',
+                  padding: '12px',
+                  background: 'rgba(26, 31, 58, 0.6)',
+                  border: '1.5px solid rgba(201, 169, 98, 0.3)',
+                  borderRadius: '10px',
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  fontSize: '14px',
+                  outline: 'none'
+                }
+              })
+            ),
+            
+            // Buttons
+            h('div', { style: { display: 'flex', gap: '12px' } },
+              h('button', {
+                onClick: onClose,
+                style: {
+                  flex: 1,
+                  padding: '14px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '10px',
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }
+              }, 'Cancel'),
+              h('button', {
+                onClick: handleSave,
+                disabled: updating,
+                style: {
+                  flex: 1,
+                  padding: '14px',
+                  background: updating ? 'rgba(201, 169, 98, 0.3)' : 'linear-gradient(135deg, #C9A962 0%, #8B7355 100%)',
+                  border: 'none',
+                  borderRadius: '10px',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: updating ? 'not-allowed' : 'pointer',
+                  boxShadow: updating ? 'none' : '0 4px 16px rgba(201, 169, 98, 0.3)'
+                }
+              }, updating ? '⏳ Saving...' : '💾 Save Changes')
             )
           )
         )

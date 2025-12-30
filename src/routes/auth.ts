@@ -632,4 +632,122 @@ authRoutes.post('/first-login-setup', async (c) => {
   }
 })
 
+// ============================================
+// GET /api/auth/profile
+// Get current user profile
+// ============================================
+authRoutes.get('/profile', async (c) => {
+  const { DB } = c.env
+  const headers = getSecurityHeaders()
+  
+  try {
+    // Get email from auth token cookie
+    const authToken = getCookie(c, 'auth_token')
+    
+    if (!authToken) {
+      return c.json({ 
+        success: false, 
+        error: 'Not authenticated' 
+      }, { status: 401, headers })
+    }
+    
+    const secret = c.env.JWT_SECRET || 'investay-super-secret-key-2025'
+    const decoded = await verifyToken(authToken, secret)
+    
+    if (!decoded || !decoded.email) {
+      return c.json({ 
+        success: false, 
+        error: 'Invalid token' 
+      }, { status: 401, headers })
+    }
+    
+    // Get user profile from database
+    const user = await DB.prepare(`
+      SELECT email_address, display_name, profile_image, is_admin, created_at 
+      FROM email_accounts 
+      WHERE email_address = ?
+    `).bind(decoded.email).first()
+    
+    if (!user) {
+      return c.json({ 
+        success: false, 
+        error: 'User not found' 
+      }, { status: 404, headers })
+    }
+    
+    return c.json({ 
+      success: true, 
+      user: {
+        email: user.email_address,
+        displayName: user.display_name,
+        profileImage: user.profile_image,
+        isAdmin: user.is_admin === 1,
+        createdAt: user.created_at
+      }
+    }, { headers })
+    
+  } catch (error: any) {
+    console.error('Get profile error:', error)
+    return c.json({ 
+      success: false, 
+      error: 'Failed to get profile' 
+    }, { status: 500, headers })
+  }
+})
+
+// ============================================
+// PUT /api/auth/profile
+// Update user profile (display name and profile image)
+// ============================================
+authRoutes.put('/profile', async (c) => {
+  const { DB } = c.env
+  const headers = getSecurityHeaders()
+  
+  try {
+    // Get email from auth token cookie
+    const authToken = getCookie(c, 'auth_token')
+    
+    if (!authToken) {
+      return c.json({ 
+        success: false, 
+        error: 'Not authenticated' 
+      }, { status: 401, headers })
+    }
+    
+    const secret = c.env.JWT_SECRET || 'investay-super-secret-key-2025'
+    const decoded = await verifyToken(authToken, secret)
+    
+    if (!decoded || !decoded.email) {
+      return c.json({ 
+        success: false, 
+        error: 'Invalid token' 
+      }, { status: 401, headers })
+    }
+    
+    const { displayName, profileImage } = await c.req.json()
+    
+    // Update user profile
+    await DB.prepare(`
+      UPDATE email_accounts 
+      SET display_name = COALESCE(?, display_name),
+          profile_image = COALESCE(?, profile_image),
+          updated_at = datetime('now')
+      WHERE email_address = ?
+    `).bind(displayName || null, profileImage || null, decoded.email).run()
+    
+    return c.json({ 
+      success: true, 
+      message: 'Profile updated successfully' 
+    }, { headers })
+    
+  } catch (error: any) {
+    console.error('Update profile error:', error)
+    return c.json({ 
+      success: false, 
+      error: 'Failed to update profile' 
+    }, { status: 500, headers })
+  }
+})
+
+
 export { authRoutes }
