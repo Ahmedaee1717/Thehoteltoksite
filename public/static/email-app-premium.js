@@ -1053,55 +1053,6 @@ window.addEventListener('DOMContentLoaded', function() {
             )
           ),
           
-          // User Profile - Premium
-          h('div', {
-            style: {
-              padding: '20px 24px',
-              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              background: 'rgba(255, 255, 255, 0.02)',
-              position: 'relative',
-              zIndex: 1
-            }
-          },
-            h('div', {
-              style: {
-                width: '44px',
-                height: '44px',
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: '600',
-                fontSize: '16px',
-                color: 'white',
-                boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
-              }
-            }, 'A'),
-            h('div', { style: { flex: 1, minWidth: 0 } },
-              h('div', { 
-                style: { 
-                  fontSize: '14px', 
-                  fontWeight: '600',
-                  color: 'rgba(255, 255, 255, 0.9)',
-                  marginBottom: '2px'
-                } 
-              }, 'Admin'),
-              h('div', { 
-                style: { 
-                  fontSize: '12px', 
-                  color: 'rgba(255, 255, 255, 0.4)',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
-                } 
-              }, user || 'admin@investay...')
-            )
-          ),
-          
           // Logout Button
           h('div', {
             style: {
