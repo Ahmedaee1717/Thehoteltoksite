@@ -1400,16 +1400,30 @@ emailRoutes.get('/:id', async (c) => {
     if (ENCRYPTION_KEY) {
       try {
         if (email.body_text) {
-          decryptedEmail.body_text = await safeDecrypt(email.body_text, ENCRYPTION_KEY);
+          const decrypted = await safeDecrypt(email.body_text, ENCRYPTION_KEY);
+          // Only update if decryption succeeded (not null)
+          if (decrypted !== null) {
+            decryptedEmail.body_text = decrypted;
+          } else {
+            console.warn('⚠️  Decryption returned null for body_text');
+          }
         }
         if (email.body_html) {
-          decryptedEmail.body_html = await safeDecrypt(email.body_html, ENCRYPTION_KEY);
+          const decrypted = await safeDecrypt(email.body_html, ENCRYPTION_KEY);
+          // Only update if decryption succeeded (not null)
+          if (decrypted !== null) {
+            decryptedEmail.body_html = decrypted;
+          } else {
+            console.warn('⚠️  Decryption returned null for body_html');
+          }
         }
-        console.log('🔓 Email content decrypted');
+        console.log('🔓 Email content decrypted successfully');
       } catch (decError) {
         console.error('⚠️  Decryption failed:', decError);
-        // Return encrypted content if decryption fails (shouldn't happen)
+        // Keep original encrypted content if decryption fails
       }
+    } else {
+      console.warn('⚠️  ENCRYPTION_KEY not set - cannot decrypt content');
     }
     
     // Mark as read (only if recipient)
