@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mailgun Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1f3a; color: #fff; }
+        .container { max-width: 800px; margin: 0 auto; }
+        button { padding: 10px 20px; background: #C9A962; border: none; color: #000; cursor: pointer; margin: 5px; }
+        pre { background: #0f1429; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        input { padding: 8px; margin: 5px 0; width: 100%; background: #0f1429; border: 1px solid #C9A962; color: #fff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Mailgun Configuration Test</h1>
+        
+        <h2>Step 1: Login First</h2>
+        <input type="email" id="email" placeholder="Email (e.g., ahmed@investaycapital.com)" value="ahmed@investaycapital.com">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">🔑 Login</button>
+        <div id="loginResult"></div>
+        
+        <h2>Step 2: Send Test Email</h2>
+        <input type="email" id="toEmail" placeholder="To: (e.g., test1@investaycapital.com)" value="test1@investaycapital.com">
+        <input type="text" id="subject" placeholder="Subject" value="Mailgun Test Email">
+        <input type="text" id="body" placeholder="Body" value="This is a test email from Mailgun">
+        <button onclick="sendEmail()">📧 Send Test Email</button>
+        <div id="sendResult"></div>
+        
+        <h2>Step 3: Check Logs</h2>
+        <div id="logs"></div>
+    </div>
+
+    <script>
+        let authCookie = '';
+        
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('loginResult');
+            
+            resultDiv.innerHTML = '<p>⏳ Logging in...</p>';
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password }),
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `<pre class="success">✅ Login successful!\nUser: ${email}</pre>`;
+                } else {
+                    resultDiv.innerHTML = `<pre class="error">❌ Login failed: ${data.error}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<pre class="error">❌ Error: ${error.message}</pre>`;
+            }
+        }
+        
+        async function sendEmail() {
+            const to = document.getElementById('toEmail').value;
+            const subject = document.getElementById('subject').value;
+            const body = document.getElementById('body').value;
+            const resultDiv = document.getElementById('sendResult');
+            const logsDiv = document.getElementById('logs');
+            
+            resultDiv.innerHTML = '<p>⏳ Sending email...</p>';
+            logsDiv.innerHTML = '';
+            
+            try {
+                const response = await fetch('/api/email/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ to, subject, body }),
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                let html = '<pre>';
+                html += `Status: ${response.status}\n`;
+                html += `Response: ${JSON.stringify(data, null, 2)}\n`;
+                html += '</pre>';
+                
+                if (data.success && data.emailSent) {
+                    resultDiv.innerHTML = `<pre class="success">✅ Email sent successfully!\nMessage ID: ${data.messageId}\nEmail ID: ${data.emailId}</pre>`;
+                } else if (data.success && !data.emailSent) {
+                    resultDiv.innerHTML = `<pre class="error">⚠️  Email saved but NOT sent\nError: ${data.error}</pre>`;
+                } else {
+                    resultDiv.innerHTML = `<pre class="error">❌ Failed to send email\nError: ${data.error}</pre>`;
+                }
+                
+                logsDiv.innerHTML = html;
+            } catch (error) {
+                resultDiv.innerHTML = `<pre class="error">❌ Error: ${error.message}</pre>`;
+            }
+        }
+    </script>
+</body>
+</html>
