@@ -1,14 +1,21 @@
 # Investay Signal - Enterprise Email Management Platform
 
+## ⚠️ IMPORTANT: Current Status
+**Encryption is DISABLED** to restore email functionality.
+- Emails stored as **plaintext** (not encrypted at rest)
+- Fixes display issues with encrypted content
+- Security features (auth, password hashing) still active  
+- See `ENCRYPTION_ROLLBACK_SUCCESS.md` for full details
+
 ## Project Overview
 - **Name**: Investay Signal
 - **Type**: Full-featured email management platform with AI-powered features
-- **Purpose**: Professional email solution with encryption, spam detection, collaboration, and CRM
-- **Tech Stack**: Hono + Cloudflare Pages + D1 Database + TypeScript + AES-256-GCM Encryption
+- **Purpose**: Professional email solution with spam detection, collaboration, and CRM
+- **Tech Stack**: Hono + Cloudflare Pages + D1 Database + TypeScript
 
 ## 🌐 URLs
 - **Production**: https://www.investaycapital.com/mail
-- **Latest Deployment**: https://52a9c823.investay-email-system.pages.dev
+- **Latest Deployment**: https://ac5e0015.investay-email-system.pages.dev
 - **GitHub**: https://github.com/Ahmedaee1717/Thehoteltoksite
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/
 
