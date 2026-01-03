@@ -7,7 +7,8 @@ import { generateId } from '../utils/id'
 import { generateEmbedding, categorizeEmail, summarizeEmail, extractActionItems } from '../services/ai-email'
 import { createMailgunService } from '../lib/mailgun'
 import { checkSpamScore, getSpamScoreSummary } from '../lib/spam-checker'
-import { safeEncrypt, safeDecrypt, isEncrypted } from '../lib/encryption'
+// Encryption temporarily disabled for debugging
+// import { safeEncrypt, safeDecrypt, isEncrypted } from '../lib/encryption'
 
 type Bindings = {
   DB: D1Database;
@@ -19,7 +20,7 @@ type Bindings = {
   MAILGUN_FROM_EMAIL?: string;
   MAILGUN_FROM_NAME?: string;
   JWT_SECRET?: string;
-  ENCRYPTION_KEY?: string; // 🔒 Master key for email encryption
+  // ENCRYPTION_KEY?: string; // 🔒 Temporarily disabled for debugging
 }
 
 const emailRoutes = new Hono<{ Bindings: Bindings }>()
@@ -265,7 +266,7 @@ emailRoutes.get('/archived', async (c) => {
 // 🔒 SECURITY: Users can ONLY send emails from their own address
 // ============================================
 emailRoutes.post('/send', async (c) => {
-  const { DB, OPENAI_API_KEY, MAILGUN_API_KEY, MAILGUN_DOMAIN, MAILGUN_REGION, MAILGUN_FROM_EMAIL, MAILGUN_FROM_NAME, ENCRYPTION_KEY } = c.env;
+  const { DB, OPENAI_API_KEY, MAILGUN_API_KEY, MAILGUN_DOMAIN, MAILGUN_REGION, MAILGUN_FROM_EMAIL, MAILGUN_FROM_NAME } = c.env;
   
   // 🔒 Get authenticated user email
   const authenticatedUserEmail = c.get('userEmail');
@@ -421,19 +422,10 @@ emailRoutes.post('/send', async (c) => {
       console.warn('⚠️ Mailgun credentials not found in environment');
     }
     
-    // 🔒 ENCRYPT email content before storing
-    let encryptedBody = body;
-    if (ENCRYPTION_KEY) {
-      try {
-        encryptedBody = await safeEncrypt(body, ENCRYPTION_KEY) || body;
-        console.log('🔒 Email content encrypted');
-      } catch (encError) {
-        console.error('⚠️  Encryption failed, storing plaintext:', encError);
-        // Fall back to plaintext if encryption fails
-      }
-    } else {
-      console.warn('⚠️  ENCRYPTION_KEY not set - storing email in plaintext (INSECURE)');
-    }
+    // ⚠️ ENCRYPTION DISABLED FOR DEBUGGING - Store plaintext
+    const bodyToStore = body;
+    const snippet = body.substring(0, 150);
+    console.log('📝 Storing email as plaintext (encryption disabled)');
     
     // Store email in database
     const insertResult = await DB.prepare(`
@@ -452,9 +444,9 @@ emailRoutes.post('/send', async (c) => {
       cc ? JSON.stringify(cc) : null,
       bcc ? JSON.stringify(bcc) : null,
       subject,
-      encryptedBody, // 🔒 Store encrypted
-      encryptedBody, // 🔒 Store encrypted
-      body.substring(0, 150), // Snippet stays plaintext for preview
+      bodyToStore, // Plaintext (encryption disabled)
+      bodyToStore, // Plaintext (encryption disabled)
+      snippet, // Plaintext snippet for preview
       category,
       aiSummary,
       aiActionItems ? JSON.stringify(aiActionItems) : null,
@@ -1369,7 +1361,7 @@ emailRoutes.get('/templates', async (c) => {
 // NOTE: This MUST be last among GET routes as it's a catch-all
 // ============================================
 emailRoutes.get('/:id', async (c) => {
-  const { DB, ENCRYPTION_KEY } = c.env;
+  const { DB } = c.env;
   const emailId = c.req.param('id');
   // 🔒 Get authenticated user email
   const userEmail = c.get('userEmail');
@@ -1395,36 +1387,9 @@ emailRoutes.get('/:id', async (c) => {
       }, 403);
     }
     
-    // 🔓 DECRYPT email content before sending to client
-    let decryptedEmail = { ...email };
-    if (ENCRYPTION_KEY) {
-      try {
-        if (email.body_text) {
-          const decrypted = await safeDecrypt(email.body_text, ENCRYPTION_KEY);
-          // Only update if decryption succeeded (not null)
-          if (decrypted !== null) {
-            decryptedEmail.body_text = decrypted;
-          } else {
-            console.warn('⚠️  Decryption returned null for body_text');
-          }
-        }
-        if (email.body_html) {
-          const decrypted = await safeDecrypt(email.body_html, ENCRYPTION_KEY);
-          // Only update if decryption succeeded (not null)
-          if (decrypted !== null) {
-            decryptedEmail.body_html = decrypted;
-          } else {
-            console.warn('⚠️  Decryption returned null for body_html');
-          }
-        }
-        console.log('🔓 Email content decrypted successfully');
-      } catch (decError) {
-        console.error('⚠️  Decryption failed:', decError);
-        // Keep original encrypted content if decryption fails
-      }
-    } else {
-      console.warn('⚠️  ENCRYPTION_KEY not set - cannot decrypt content');
-    }
+    // ⚠️ NO DECRYPTION - emails stored as plaintext
+    const emailData = { ...email };
+    console.log('📧 Returning email (no decryption needed)');
     
     // Mark as read (only if recipient)
     if (email.to_email === userEmail) {
@@ -1442,7 +1407,7 @@ emailRoutes.get('/:id', async (c) => {
     
     return c.json({ 
       success: true, 
-      email: { ...decryptedEmail, attachments }
+      email: { ...emailData, attachments }
     });
   } catch (error: any) {
     console.error('Email fetch error:', error);
@@ -1870,7 +1835,7 @@ emailRoutes.patch('/accounts/:id/toggle', async (c) => {
 // Public endpoint - no auth required (Mailgun calls this)
 // ============================================
 emailRoutes.post('/receive', async (c) => {
-  const { DB, OPENAI_API_KEY, ENCRYPTION_KEY } = c.env;
+  const { DB, OPENAI_API_KEY } = c.env;
   
   try {
     // Mailgun sends form data, not JSON
@@ -2002,18 +1967,11 @@ emailRoutes.post('/receive', async (c) => {
       console.log('⚠️ Skipping AI processing - no OpenAI API key or body text');
     }
     
-    // 🔒 ENCRYPT email content before storing
-    let encryptedBodyText = bodyText || '';
-    let encryptedBodyHtml = bodyHtml || bodyText || '';
-    if (ENCRYPTION_KEY) {
-      try {
-        encryptedBodyText = await safeEncrypt(bodyText || '', ENCRYPTION_KEY) || (bodyText || '');
-        encryptedBodyHtml = await safeEncrypt(bodyHtml || bodyText || '', ENCRYPTION_KEY) || (bodyHtml || bodyText || '');
-        console.log('🔒 Incoming email content encrypted');
-      } catch (encError) {
-        console.error('⚠️  Encryption failed, storing plaintext:', encError);
-      }
-    }
+    // ⚠️ ENCRYPTION DISABLED FOR DEBUGGING - Store plaintext
+    const bodyTextToStore = bodyText || '';
+    const bodyHtmlToStore = bodyHtml || bodyText || '';
+    const snippet = (bodyText || '').substring(0, 150);
+    console.log('📝 Storing incoming email as plaintext (encryption disabled)');
     
     // Store in database with AI data
     const result = await DB.prepare(`
@@ -2031,9 +1989,9 @@ emailRoutes.post('/receive', async (c) => {
       fromName,
       to,
       subject,
-      encryptedBodyText, // 🔒 Store encrypted
-      encryptedBodyHtml, // 🔒 Store encrypted
-      (bodyText || '').substring(0, 150), // Snippet stays plaintext
+      bodyTextToStore, // Plaintext (encryption disabled)
+      bodyHtmlToStore, // Plaintext (encryption disabled)
+      snippet, // Plaintext snippet
       category, // Use AI-detected category or 'inbox'
       aiSummary,
       aiActionItems,
