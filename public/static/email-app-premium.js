@@ -4139,22 +4139,32 @@ window.addEventListener('DOMContentLoaded', function() {
             background: 'linear-gradient(135deg, rgba(26, 31, 58, 0.95) 0%, rgba(15, 20, 41, 0.95) 100%)',
             backdropFilter: 'blur(40px)',
             borderRadius: '24px',
-            padding: '32px',
-            width: '700px',
-            maxWidth: '90%',
+            padding: '0',
+            width: 'min(900px, 90vw)',
+            maxHeight: '90vh',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             boxShadow: '0 24px 64px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(201, 169, 98, 0.1)',
-            animation: 'slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+            animation: 'slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden'
           }
         },
+          // Header - Fixed at top
           h('div', {
             style: {
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '28px'
+              padding: '28px 32px 20px 32px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              flexShrink: 0
             }
           },
+            h('div', {
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }
+            },
             h('h2', { 
               style: { 
                 margin: 0,
@@ -4188,7 +4198,20 @@ window.addEventListener('DOMContentLoaded', function() {
                 e.target.style.background = 'rgba(255, 255, 255, 0.05)';
               }
             }, '✕')
+            )
           ),
+          
+          // Scrollable content area
+          h('div', {
+            style: {
+              flex: 1,
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              padding: '24px 32px 16px 32px',
+              scrollbarWidth: 'thin',
+              scrollbarColor: 'rgba(201, 169, 98, 0.3) rgba(0, 0, 0, 0.2)'
+            }
+          },
           
           h('div', { style: { marginBottom: '16px', position: 'relative' } },
             h('label', {
@@ -4975,10 +4998,23 @@ window.addEventListener('DOMContentLoaded', function() {
                 }
               }, `+ ${spamCheck.issues.length - 3} more issues`)
             )
+          )
+          // End of scrollable content area
           ),
           
+          // Fixed footer with action buttons
+          h('div', {
+            style: {
+              padding: '20px 32px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'linear-gradient(135deg, rgba(26, 31, 58, 0.98) 0%, rgba(15, 20, 41, 0.98) 100%)',
+              backdropFilter: 'blur(20px)',
+              flexShrink: 0
+            }
+          },
+          
           // Attach from File Bank Button
-          h('div', { style: { marginBottom: '16px' } },
+          h('div', { style: { marginBottom: '12px' } },
             h('button', {
               onClick: () => setShowFilePicker(true),
               style: {
@@ -5050,6 +5086,8 @@ window.addEventListener('DOMContentLoaded', function() {
                 e.target.style.boxShadow = '0 8px 24px rgba(201, 169, 98, 0.4)';
               }
             }, '🚀 Send Email')
+          )
+          // End of footer
           )
         )
       );
