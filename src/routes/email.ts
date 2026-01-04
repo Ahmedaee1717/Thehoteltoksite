@@ -1952,9 +1952,9 @@ emailRoutes.post('/receive', async (c) => {
       await DB.prepare(`
         INSERT INTO emails (
           id, from_email, to_email, subject, 
-          body_text, body_html, snippet,
+          body_text, body_html, snippet, category,
           received_at, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'inbox', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `).bind(
         emailId,
         from,
