@@ -1908,86 +1908,90 @@ emailRoutes.patch('/accounts/:id/toggle', async (c) => {
 // Public endpoint - no auth required (Mailgun calls this)
 // ============================================
 emailRoutes.post('/receive', async (c) => {
-  console.log('📨 Email webhook called');
   const { DB, OPENAI_API_KEY } = c.env;
   
   try {
     const formData = await c.req.formData();
     
-    // Extract fields
+    // Extract fields with multiple fallbacks
     const from = (formData.get('from') || formData.get('sender') || formData.get('From')) as string;
     const to = (formData.get('recipient') || formData.get('To')) as string;
     const subject = (formData.get('subject') || formData.get('Subject')) as string;
     const bodyText = (formData.get('Body-plain') || formData.get('body-plain') || formData.get('stripped-text') || '') as string;
     const bodyHtml = (formData.get('body-html') || formData.get('Body-html') || formData.get('stripped-html') || '') as string;
-    const timestamp = formData.get('timestamp') as string;
     const replyTo = formData.get('Reply-To') as string;
     const messageId = formData.get('Message-Id') as string;
-    
-    console.log('📬 Email:', { from, to, subject, messageId });
     
     if (!from || !to || !subject) {
       return c.json({ success: false, error: 'Missing required fields' }, 400);
     }
     
-    // Deduplication check
+    // Check for duplicates (quick check, don't fail if error)
     if (messageId) {
-      const existing = await DB.prepare(`SELECT id FROM emails WHERE snippet LIKE ?`).bind(`%${messageId}%`).first();
-      if (existing) {
-        console.log('⚠️ Duplicate email:', messageId);
-        return c.json({ success: true, duplicate: true, emailId: existing.id });
+      try {
+        const existing = await DB.prepare(`SELECT id FROM emails WHERE snippet LIKE ? LIMIT 1`).bind(`%${messageId}%`).first();
+        if (existing) {
+          return c.json({ success: true, duplicate: true, emailId: existing.id });
+        }
+      } catch (e) {
+        // Ignore duplicate check errors
       }
     }
     
-    // Determine actual sender (use Reply-To if from postmaster)
+    // Parse sender
     let senderEmail = from;
     let senderName = '';
     
-    if (replyTo) {
-      console.log('Using Reply-To as sender:', replyTo);
-      const replyToMatch = replyTo.match(/(?:"?([^"]*)"?\s)?<?([^>]+)>?/);
-      if (replyToMatch) {
-        senderName = replyToMatch[1] || '';
-        senderEmail = replyToMatch[2] || replyTo;
+    try {
+      if (replyTo) {
+        const match = replyTo.match(/(?:"?([^"]*)"?\s)?<?([^>]+)>?/);
+        if (match) {
+          senderName = match[1] || '';
+          senderEmail = match[2] || replyTo;
+        }
       } else {
-        senderEmail = replyTo;
+        const match = from.match(/(?:"?([^"]*)"?\s)?<?([^>]+)>?/);
+        if (match) {
+          senderName = match[1] || '';
+          senderEmail = match[2] || from;
+        }
       }
-    } else {
-      const fromMatch = from.match(/(?:"?([^"]*)"?\s)?<?([^>]+)>?/);
-      if (fromMatch) {
-        senderName = fromMatch[1] || '';
-        senderEmail = fromMatch[2] || from;
-      }
+    } catch (e) {
+      senderEmail = from;
     }
     
     // Generate IDs
     const emailId = `eml_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     let threadId = `thr_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     
-    // Thread detection for replies
-    const isReply = /^(Re:|Fwd?:|FW:)/i.test(subject);
-    if (isReply) {
-      const originalSubject = subject.replace(/^(Re:|Fwd?:|FW:)\s*/gi, '').trim();
-      const existingThread = await DB.prepare(`
-        SELECT thread_id FROM emails 
-        WHERE ((from_email = ? AND to_email = ?) OR (from_email = ? AND to_email = ?))
-          OR subject LIKE ?
-        AND thread_id IS NOT NULL
-        ORDER BY created_at DESC LIMIT 1
-      `).bind(senderEmail, to, to, senderEmail, `%${originalSubject}%`).first();
-      
-      if (existingThread?.thread_id) {
-        threadId = existingThread.thread_id;
-        console.log('📎 Linked to thread:', threadId);
+    // Try thread detection (don't fail if error)
+    try {
+      const isReply = /^(Re:|Fwd?:|FW:)/i.test(subject);
+      if (isReply) {
+        const originalSubject = subject.replace(/^(Re:|Fwd?:|FW:)\s*/gi, '').trim();
+        const existingThread = await DB.prepare(`
+          SELECT thread_id FROM emails 
+          WHERE ((from_email = ? AND to_email = ?) OR (from_email = ? AND to_email = ?))
+            OR subject LIKE ?
+          AND thread_id IS NOT NULL
+          ORDER BY created_at DESC LIMIT 1
+        `).bind(senderEmail, to, to, senderEmail, `%${originalSubject}%`).first();
+        
+        if (existingThread?.thread_id) {
+          threadId = existingThread.thread_id;
+        }
       }
+    } catch (e) {
+      // Thread detection failed, use new thread
     }
     
-    // AI Processing (optional - skip if no API key)
+    // Try AI summary (don't fail if error)
     let aiSummary = null;
-    let category = 'inbox';
-    
     if (OPENAI_API_KEY && bodyText && bodyText.length > 20) {
       try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000); // 3 sec timeout
+        
         const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -2002,39 +2006,40 @@ emailRoutes.post('/receive', async (c) => {
             }],
             max_tokens: 50,
             temperature: 0.3
-          })
+          }),
+          signal: controller.signal
         });
+        
+        clearTimeout(timeout);
         
         if (aiResponse.ok) {
           const aiData = await aiResponse.json();
           aiSummary = aiData.choices[0]?.message?.content?.trim() || null;
-          console.log('🤖 AI Summary generated');
         }
-      } catch (aiError) {
-        console.error('AI processing failed:', aiError);
+      } catch (e) {
+        // AI failed, continue without summary
       }
     }
     
-    // Insert email
+    // Insert email (this MUST succeed)
     await DB.prepare(`
       INSERT INTO emails (
         id, thread_id, from_email, from_name, to_email, 
         subject, body_text, body_html, snippet, category,
         ai_summary, is_read, received_at, created_at,
         expiry_type, expires_at, is_expired
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'timer', datetime('now', '+30 days'), 0)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'inbox', ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'timer', datetime('now', '+30 days'), 0)
     `).bind(
       emailId, threadId, senderEmail, senderName, to,
       subject, bodyText || '[No body]', bodyHtml || '',
-      (bodyText || subject).substring(0, 150), category,
+      (bodyText || subject).substring(0, 150),
       aiSummary
     ).run();
     
-    console.log('✅ Email stored:', emailId);
     return c.json({ success: true, emailId, threadId });
     
   } catch (error: any) {
-    console.error('❌ Webhook error:', error);
+    console.error('❌ Webhook error:', error.message, error.stack);
     return c.json({ success: false, error: error.message }, 500);
   }
 });
