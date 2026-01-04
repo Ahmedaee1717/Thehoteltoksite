@@ -1908,75 +1908,237 @@ emailRoutes.patch('/accounts/:id/toggle', async (c) => {
 // Public endpoint - no auth required (Mailgun calls this)
 // ============================================
 emailRoutes.post('/receive', async (c) => {
-  console.log('📨 Email webhook called');
-  const { DB } = c.env;
+  // MINIMAL TEST - Just log and return success immediately
+  console.log('🚀 MINIMAL WEBHOOK TEST - Request received');
+  console.log('🚀 User-Agent:', c.req.header('user-agent'));
+  console.log('🚀 Content-Type:', c.req.header('content-type'));
+  console.log('🚀 Content-Length:', c.req.header('content-length'));
+  
+  // Return success immediately WITHOUT parsing FormData
+  return c.json({ 
+    success: true, 
+    message: 'Minimal webhook - received but not processed',
+    timestamp: new Date().toISOString()
+  });
+  
+  /* ORIGINAL CODE COMMENTED OUT FOR TESTING
+  const { DB, OPENAI_API_KEY } = c.env;
   
   try {
-    // Try to get FormData fields
-    const formData = await c.req.formData();
+    console.log('📨 Webhook called - starting to parse FormData...');
     
-    // Extract basic fields (these should always work)
-    const from = (formData.get('from') || formData.get('sender') || formData.get('From')) as string;
-    const to = (formData.get('recipient') || formData.get('To')) as string;
-    const subject = (formData.get('subject') || formData.get('Subject')) as string;
-    
-    // For body, try multiple field names and handle gracefully
-    let bodyText = '';
-    let bodyHtml = '';
-    
-    try {
-      bodyText = (formData.get('Body-plain') || formData.get('body-plain') || formData.get('stripped-text') || '') as string;
-      bodyHtml = (formData.get('body-html') || formData.get('Body-html') || formData.get('stripped-html') || '') as string;
-    } catch (e) {
-      console.error('Error getting body fields:', e);
-      bodyText = '[Body parsing failed]';
+    // Check request size
+    const contentLength = c.req.header('content-length');
+    if (contentLength && parseInt(contentLength) > 25 * 1024 * 1024) {
+      console.error('❌ Request too large:', contentLength, 'bytes');
+      return c.json({ success: false, error: 'Request too large' }, 413);
     }
     
+    // Mailgun sends form data, not JSON
+    let formData;
+    try {
+      formData = await c.req.formData();
+      console.log('✅ FormData parsed successfully');
+    } catch (parseError: any) {
+      console.error('❌ Failed to parse FormData:', parseError);
+      return c.json({ 
+        success: false, 
+        error: 'Failed to parse form data',
+        details: parseError.message 
+      }, 400);
+    }
+  */
+    
+    // 🔍 DEBUG: Log ALL form fields to see what Mailgun is actually sending
+    console.log('📋 ALL FormData fields from Mailgun:');
+    try {
+      for (const [key, value] of formData.entries()) {
+        const valuePreview = typeof value === 'string' ? value.substring(0, 100) : '[File]';
+        console.log(`  ${key}: ${valuePreview}`);
+      }
+    } catch (logError) {
+      console.error('❌ Error logging form fields:', logError);
+    }
+    
+    // Extract email data from Mailgun webhook
+    // Note: Mailgun sends 'Body-plain' (capital B) not 'body-plain'
+    const from = formData.get('from') || formData.get('sender') || formData.get('From') as string;
+    const to = formData.get('recipient') || formData.get('To') as string;
+    const subject = formData.get('subject') || formData.get('Subject') as string;
+    const bodyText = formData.get('Body-plain') || formData.get('body-plain') || formData.get('stripped-text') as string;
+    const bodyHtml = formData.get('body-html') || formData.get('Body-html') || formData.get('stripped-html') as string;
     const timestamp = formData.get('timestamp') as string;
     const replyTo = formData.get('Reply-To') as string;
-    const messageId = formData.get('Message-Id') as string;
+    const messageId = formData.get('Message-Id') || formData.get('message-id') as string;
     
-    console.log('📬 Email received:', { from, to, subject, hasBody: !!bodyText });
+    console.log('📬 Extracted email data:', { from, to, subject, replyTo, messageId, hasBody: !!bodyText });
     
     // Validate required fields
     if (!from || !to || !subject) {
       console.error('❌ Missing required fields:', { from: !!from, to: !!to, subject: !!subject });
-      return c.json({ success: false, error: 'Missing required fields' }, 400);
+      return c.json({ success: false, error: 'Missing required fields', debug: { from, to, subject } }, 400);
     }
     
-    // Generate email ID
-    const emailId = `eml_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    
-    // Store in database (minimal - no AI processing to avoid timeouts)
-    try {
-      await DB.prepare(`
-        INSERT INTO emails (
-          id, from_email, to_email, subject, 
-          body_text, body_html, snippet,
-          received_at, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      `).bind(
-        emailId,
-        from,
-        to,
-        subject,
-        bodyText || '[No body]',
-        bodyHtml || '',
-        (bodyText || subject).substring(0, 150)
-      ).run();
+    // 🔒 DEDUPLICATION: Check if this email already exists using Message-Id or timestamp
+    // Mailgun may send webhooks multiple times for reliability
+    if (messageId) {
+      const existing = await DB.prepare(`
+        SELECT id FROM emails WHERE snippet LIKE ?
+      `).bind(`%${messageId}%`).first();
       
-      console.log('✅ Email stored:', emailId);
+      if (existing) {
+        console.log('⚠️ Duplicate email detected (Message-Id exists):', messageId);
+        return c.json({ success: true, message: 'Email already processed', duplicate: true });
+      }
+    } else {
+      // Fallback: check for duplicate by from/to/subject/timestamp
+      const timeWindow = timestamp ? new Date(parseInt(timestamp) * 1000).toISOString() : new Date().toISOString();
+      const existing = await DB.prepare(`
+        SELECT id FROM emails 
+        WHERE from_email = ? AND to_email = ? AND subject = ? 
+        AND datetime(created_at) >= datetime(?, '-10 seconds')
+        AND datetime(created_at) <= datetime(?, '+10 seconds')
+      `).bind(from.includes('<') ? from.match(/<(.+?)>/)?.[1] || from : from, to, subject, timeWindow, timeWindow).first();
+      
+      if (existing) {
+        console.log('⚠️ Duplicate email detected (time-based):', { from, to, subject, timeWindow });
+        return c.json({ success: true, message: 'Email already processed', duplicate: true });
+      }
+    }
+    
+    // Extract sender name and email
+    // 🔧 FIX: If Reply-To exists, use it as the actual sender (for emails sent via postmaster)
+    let fromEmail: string;
+    let fromName: string;
+    
+    if (replyTo && replyTo.includes('@')) {
+      // Email was sent via postmaster with Reply-To - use Reply-To as actual sender
+      const replyToMatch = replyTo.match(/^(.+?)\s*<(.+?)>$/);
+      fromEmail = replyToMatch ? replyToMatch[2] : replyTo;
+      fromName = replyToMatch ? replyToMatch[1].trim() : fromEmail.split('@')[0];
+      console.log('✅ Using Reply-To as sender:', { fromEmail, fromName });
+    } else {
+      // Normal external email - use FROM header
+      const fromMatch = from.match(/^(.+?)\s*<(.+?)>$/);
+      fromEmail = fromMatch ? fromMatch[2] : from;
+      fromName = fromMatch ? fromMatch[1].trim() : fromEmail.split('@')[0];
+      console.log('✅ Using FROM as sender:', { fromEmail, fromName });
+    }
+    
+    // Generate IDs
+    const emailId = generateId('eml');
+    
+    // Smart thread detection for replies
+    let threadId = generateId('thr');
+    
+    // Check if this is a reply (Re:, RE:, Fwd:, FW:)
+    const isReply = /^(re|fwd|fw):/i.test(subject);
+    
+    if (isReply) {
+      // Extract original subject by removing Re:/Fwd: prefixes
+      const originalSubject = subject.replace(/^(re|fwd|fw):\s*/gi, '').trim();
+      
+      console.log('🔍 Detected reply - searching for thread with subject:', originalSubject);
+      
+      // Try to find existing thread by matching subject
+      // Look for emails between same parties or with same subject
+      const existingThread = await DB.prepare(`
+        SELECT thread_id FROM emails 
+        WHERE (
+          (from_email = ? AND to_email = ?) OR 
+          (from_email = ? AND to_email = ?) OR
+          subject LIKE ?
+        )
+        AND thread_id IS NOT NULL
+        ORDER BY created_at DESC
+        LIMIT 1
+      `).bind(to, fromEmail, fromEmail, to, `%${originalSubject}%`).first();
+      
+      if (existingThread) {
+        threadId = existingThread.thread_id;
+        console.log('✅ Found existing thread:', threadId);
+      } else {
+        console.log('⚠️ No existing thread found, creating new one');
+      }
+    }
+    
+    // AI enhancements for received emails
+    let aiSummary = null;
+    let aiActionItems = null;
+    let embeddingVector = null;
+    let category = 'inbox';
+    
+    if (OPENAI_API_KEY && bodyText) {
+      console.log('🤖 Processing AI enhancements for received email...');
+      try {
+        [aiSummary, aiActionItems, embeddingVector, category] = await Promise.all([
+          summarizeEmail(bodyText, OPENAI_API_KEY),
+          extractActionItems(bodyText, OPENAI_API_KEY),
+          generateEmbedding(bodyText, OPENAI_API_KEY),
+          categorizeEmail(subject + ' ' + bodyText, OPENAI_API_KEY)
+        ]);
+        console.log('✅ AI processing complete:', { aiSummary: !!aiSummary, category });
+      } catch (aiError) {
+        console.error('❌ AI processing error:', aiError);
+        // Continue without AI features
+        category = 'inbox';
+      }
+    } else {
+      console.log('⚠️ Skipping AI processing - no OpenAI API key or body text');
+    }
+    
+    // ⚠️ ENCRYPTION DISABLED FOR DEBUGGING - Store plaintext
+    const bodyTextToStore = bodyText || '';
+    const bodyHtmlToStore = bodyHtml || bodyText || '';
+    const snippet = (bodyText || '').substring(0, 150);
+    console.log('📝 Storing incoming email as plaintext (encryption disabled)');
+    
+    // Store in database with AI data
+    const result = await DB.prepare(`
+      INSERT INTO emails (
+        id, thread_id, from_email, from_name, to_email, subject,
+        body_text, body_html, snippet, category, 
+        ai_summary, action_items, embedding_vector,
+        is_read, received_at, created_at,
+        expiry_type, expires_at, is_expired
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, datetime('now', '+30 days'), 0)
+    `).bind(
+      emailId,
+      threadId,
+      fromEmail,
+      fromName,
+      to,
+      subject,
+      bodyTextToStore, // Plaintext (encryption disabled)
+      bodyHtmlToStore, // Plaintext (encryption disabled)
+      snippet, // Plaintext snippet
+      category, // Use AI-detected category or 'inbox'
+      aiSummary,
+      aiActionItems,
+      embeddingVector ? JSON.stringify(embeddingVector) : null, // Convert array to JSON string
+      '30d' // Default expiry: 30 days
+    ).run();
+    
+    if (result.success) {
+      console.log('✅ Email stored in inbox with AI data:', emailId);
       return c.json({ success: true, emailId });
-    } catch (dbError: any) {
-      console.error('❌ Database error:', dbError);
+    } else {
+      console.error('❌ Failed to store email');
       return c.json({ success: false, error: 'Failed to store email' }, 500);
     }
     
   } catch (error: any) {
     console.error('❌ Webhook error:', error);
+    console.error('❌ Stack trace:', error.stack);
+    console.error('❌ Error details:', { 
+      message: error.message, 
+      name: error.name,
+      cause: error.cause 
+    });
     return c.json({ 
       success: false, 
-      error: error.message || 'Internal server error'
+      error: error.message || 'Internal server error',
+      details: error.stack 
     }, 500);
   }
 });

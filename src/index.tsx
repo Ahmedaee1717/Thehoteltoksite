@@ -28,6 +28,22 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>()
 
+// 🔍 GLOBAL ERROR HANDLER - Catch ALL unhandled errors
+app.onError((err, c) => {
+  console.error('🚨 GLOBAL ERROR CAUGHT:', err);
+  console.error('🚨 Error message:', err.message);
+  console.error('🚨 Error stack:', err.stack);
+  console.error('🚨 Request path:', c.req.path);
+  console.error('🚨 Request method:', c.req.method);
+  
+  return c.json({
+    success: false,
+    error: 'Internal server error',
+    details: err.message,
+    path: c.req.path
+  }, 500);
+});
+
 // Redirect bare domain to www (but NOT API routes - needed for Mailgun webhook)
 app.use('*', async (c, next) => {
   const host = c.req.header('host') || '';
