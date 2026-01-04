@@ -1924,11 +1924,11 @@ emailRoutes.post('/receive', async (c) => {
     const replyTo = formData.get('Reply-To') as string; // Get Reply-To header
     const messageId = formData.get('Message-Id') as string; // Unique message identifier
     
-    console.log('📬 Incoming email from Mailgun:', { from, to, subject, replyTo, messageId });
+    console.log('📬 Incoming email from Mailgun:', { from, to, subject, replyTo, messageId, hasBody: !!bodyText });
     
     // Validate required fields
     if (!from || !to || !subject) {
-      console.error('❌ Missing required fields:', { from, to, subject });
+      console.error('❌ Missing required fields:', { from: !!from, to: !!to, subject: !!subject });
       return c.json({ success: false, error: 'Missing required fields' }, 400);
     }
     
@@ -2082,7 +2082,17 @@ emailRoutes.post('/receive', async (c) => {
     
   } catch (error: any) {
     console.error('❌ Webhook error:', error);
-    return c.json({ success: false, error: error.message }, 500);
+    console.error('❌ Stack trace:', error.stack);
+    console.error('❌ Error details:', { 
+      message: error.message, 
+      name: error.name,
+      cause: error.cause 
+    });
+    return c.json({ 
+      success: false, 
+      error: error.message || 'Internal server error',
+      details: error.stack 
+    }, 500);
   }
 });
 
