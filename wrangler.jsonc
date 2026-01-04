@@ -6,6 +6,9 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  "vars": {
+    "MAILGUN_DOMAIN": "investaycapital.com"
+  },
   "d1_databases": [
     {
       "binding": "DB",

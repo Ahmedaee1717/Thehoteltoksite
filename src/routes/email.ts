@@ -54,6 +54,77 @@ const requireAuth = async (c: any, next: any) => {
   await next();
 }
 
+// ============================================
+// GET /api/email/test-mailgun-send
+// Test sending via Mailgun API directly
+// PUBLIC endpoint - defined BEFORE auth middleware
+// ============================================
+emailRoutes.get('/test-mailgun-send', async (c) => {
+  const { MAILGUN_API_KEY, MAILGUN_DOMAIN, MAILGUN_REGION } = c.env;
+  
+  if (!MAILGUN_API_KEY || !MAILGUN_DOMAIN) {
+    return c.json({
+      success: false,
+      error: 'Missing Mailgun credentials',
+      hasApiKey: !!MAILGUN_API_KEY,
+      hasDomain: !!MAILGUN_DOMAIN
+    }, 500);
+  }
+
+  try {
+    // Send test email via Mailgun API
+    const formData = new FormData();
+    formData.append('from', `API Test <test@${MAILGUN_DOMAIN}>`);
+    formData.append('to', 'test1@investaycapital.com');
+    formData.append('subject', `Mailgun API Direct Test ${Date.now()}`);
+    formData.append('text', 'SUCCESS! This email was sent directly via Mailgun API, bypassing Gmail entirely. If you see this, the entire email flow is working perfectly.');
+    formData.append('html', '<h2>✅ SUCCESS!</h2><p>This email was sent directly via <strong>Mailgun API</strong>, bypassing Gmail entirely.</p><p><strong>This proves everything is working!</strong></p>');
+
+    const region = MAILGUN_REGION === 'EU' ? 'api.eu.mailgun.net' : 'api.mailgun.net';
+    const url = `https://${region}/v3/${MAILGUN_DOMAIN}/messages`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Basic ' + btoa(`api:${MAILGUN_API_KEY}`)
+      },
+      body: formData
+    });
+
+    const resultText = await response.text();
+
+    if (!response.ok) {
+      return c.json({
+        success: false,
+        error: 'Mailgun API error',
+        status: response.status,
+        body: resultText,
+        domain: MAILGUN_DOMAIN
+      }, response.status);
+    }
+
+    let mailgunResult;
+    try {
+      mailgunResult = JSON.parse(resultText);
+    } catch {
+      mailgunResult = { raw: resultText };
+    }
+
+    return c.json({
+      success: true,
+      message: 'Email sent via Mailgun API! Check inbox in 10-30 seconds.',
+      mailgun: mailgunResult,
+      checkInbox: 'Login at https://www.investaycapital.com/mail as test1@investaycapital.com'
+    });
+
+  } catch (error: any) {
+    return c.json({
+      success: false,
+      error: error.message
+    }, 500);
+  }
+});
+
 // Apply auth middleware to ALL routes EXCEPT tracking pixel and admin account management
 // Tracking pixel must be public (loaded from external email clients)
 // Admin account management should be accessible without email login
@@ -64,9 +135,11 @@ emailRoutes.use('/*', async (c, next) => {
   // 1. Tracking pixel (external email clients)
   // 2. Admin email account management (admin dashboard access)
   // 3. Email receive webhook (Mailgun calls this)
+  // 4. Test endpoint for Mailgun API
   if (
     path.includes('/track/') ||
     path.includes('/receive') ||
+    path.includes('/test-mailgun-send') ||
     path.includes('/accounts/create') ||
     path.includes('/accounts/list') ||
     path.includes('/accounts/') && (c.req.method === 'DELETE' || c.req.method === 'PATCH')
