@@ -1911,25 +1911,50 @@ emailRoutes.post('/receive', async (c) => {
   const { DB, OPENAI_API_KEY } = c.env;
   
   try {
+    console.log('📨 Webhook called - starting to parse FormData...');
+    
     // Mailgun sends form data, not JSON
-    const formData = await c.req.formData();
+    let formData;
+    try {
+      formData = await c.req.formData();
+      console.log('✅ FormData parsed successfully');
+    } catch (parseError: any) {
+      console.error('❌ Failed to parse FormData:', parseError);
+      return c.json({ 
+        success: false, 
+        error: 'Failed to parse form data',
+        details: parseError.message 
+      }, 400);
+    }
+    
+    // 🔍 DEBUG: Log ALL form fields to see what Mailgun is actually sending
+    console.log('📋 ALL FormData fields from Mailgun:');
+    try {
+      for (const [key, value] of formData.entries()) {
+        const valuePreview = typeof value === 'string' ? value.substring(0, 100) : '[File]';
+        console.log(`  ${key}: ${valuePreview}`);
+      }
+    } catch (logError) {
+      console.error('❌ Error logging form fields:', logError);
+    }
     
     // Extract email data from Mailgun webhook
-    const from = formData.get('from') as string;
-    const to = formData.get('recipient') as string;
-    const subject = formData.get('subject') as string;
-    const bodyText = formData.get('body-plain') as string;
-    const bodyHtml = formData.get('body-html') as string;
+    // Note: Mailgun sends 'Body-plain' (capital B) not 'body-plain'
+    const from = formData.get('from') || formData.get('sender') || formData.get('From') as string;
+    const to = formData.get('recipient') || formData.get('To') as string;
+    const subject = formData.get('subject') || formData.get('Subject') as string;
+    const bodyText = formData.get('Body-plain') || formData.get('body-plain') || formData.get('stripped-text') as string;
+    const bodyHtml = formData.get('body-html') || formData.get('Body-html') || formData.get('stripped-html') as string;
     const timestamp = formData.get('timestamp') as string;
-    const replyTo = formData.get('Reply-To') as string; // Get Reply-To header
-    const messageId = formData.get('Message-Id') as string; // Unique message identifier
+    const replyTo = formData.get('Reply-To') as string;
+    const messageId = formData.get('Message-Id') || formData.get('message-id') as string;
     
-    console.log('📬 Incoming email from Mailgun:', { from, to, subject, replyTo, messageId, hasBody: !!bodyText });
+    console.log('📬 Extracted email data:', { from, to, subject, replyTo, messageId, hasBody: !!bodyText });
     
     // Validate required fields
     if (!from || !to || !subject) {
       console.error('❌ Missing required fields:', { from: !!from, to: !!to, subject: !!subject });
-      return c.json({ success: false, error: 'Missing required fields' }, 400);
+      return c.json({ success: false, error: 'Missing required fields', debug: { from, to, subject } }, 400);
     }
     
     // 🔒 DEDUPLICATION: Check if this email already exists using Message-Id or timestamp
