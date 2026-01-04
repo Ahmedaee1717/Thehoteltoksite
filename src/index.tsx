@@ -28,9 +28,15 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>()
 
-// Redirect bare domain to www
+// Redirect bare domain to www (but NOT API routes - needed for Mailgun webhook)
 app.use('*', async (c, next) => {
   const host = c.req.header('host') || '';
+  const path = c.req.path;
+  
+  // Skip redirect for API routes (Mailgun webhook needs bare domain)
+  if (path.startsWith('/api/')) {
+    return next();
+  }
   
   // If accessing bare domain, redirect to www
   if (host === 'investaycapital.com') {
