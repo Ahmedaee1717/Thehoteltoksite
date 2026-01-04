@@ -1909,75 +1909,133 @@ emailRoutes.patch('/accounts/:id/toggle', async (c) => {
 // ============================================
 emailRoutes.post('/receive', async (c) => {
   console.log('📨 Email webhook called');
-  const { DB } = c.env;
+  const { DB, OPENAI_API_KEY } = c.env;
   
   try {
-    // Try to get FormData fields
     const formData = await c.req.formData();
     
-    // Extract basic fields (these should always work)
+    // Extract fields
     const from = (formData.get('from') || formData.get('sender') || formData.get('From')) as string;
     const to = (formData.get('recipient') || formData.get('To')) as string;
     const subject = (formData.get('subject') || formData.get('Subject')) as string;
-    
-    // For body, try multiple field names and handle gracefully
-    let bodyText = '';
-    let bodyHtml = '';
-    
-    try {
-      bodyText = (formData.get('Body-plain') || formData.get('body-plain') || formData.get('stripped-text') || '') as string;
-      bodyHtml = (formData.get('body-html') || formData.get('Body-html') || formData.get('stripped-html') || '') as string;
-    } catch (e) {
-      console.error('Error getting body fields:', e);
-      bodyText = '[Body parsing failed]';
-    }
-    
+    const bodyText = (formData.get('Body-plain') || formData.get('body-plain') || formData.get('stripped-text') || '') as string;
+    const bodyHtml = (formData.get('body-html') || formData.get('Body-html') || formData.get('stripped-html') || '') as string;
     const timestamp = formData.get('timestamp') as string;
     const replyTo = formData.get('Reply-To') as string;
     const messageId = formData.get('Message-Id') as string;
     
-    console.log('📬 Email received:', { from, to, subject, hasBody: !!bodyText });
+    console.log('📬 Email:', { from, to, subject, messageId });
     
-    // Validate required fields
     if (!from || !to || !subject) {
-      console.error('❌ Missing required fields:', { from: !!from, to: !!to, subject: !!subject });
       return c.json({ success: false, error: 'Missing required fields' }, 400);
     }
     
-    // Generate email ID
-    const emailId = `eml_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    
-    // Store in database (minimal - no AI processing to avoid timeouts)
-    try {
-      await DB.prepare(`
-        INSERT INTO emails (
-          id, from_email, to_email, subject, 
-          body_text, body_html, snippet, category,
-          received_at, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'inbox', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      `).bind(
-        emailId,
-        from,
-        to,
-        subject,
-        bodyText || '[No body]',
-        bodyHtml || '',
-        (bodyText || subject).substring(0, 150)
-      ).run();
-      
-      console.log('✅ Email stored:', emailId);
-      return c.json({ success: true, emailId });
-    } catch (dbError: any) {
-      console.error('❌ Database error:', dbError);
-      return c.json({ success: false, error: 'Failed to store email' }, 500);
+    // Deduplication check
+    if (messageId) {
+      const existing = await DB.prepare(`SELECT id FROM emails WHERE snippet LIKE ?`).bind(`%${messageId}%`).first();
+      if (existing) {
+        console.log('⚠️ Duplicate email:', messageId);
+        return c.json({ success: true, duplicate: true, emailId: existing.id });
+      }
     }
+    
+    // Determine actual sender (use Reply-To if from postmaster)
+    let senderEmail = from;
+    let senderName = '';
+    
+    if (replyTo) {
+      console.log('Using Reply-To as sender:', replyTo);
+      const replyToMatch = replyTo.match(/(?:"?([^"]*)"?\s)?<?([^>]+)>?/);
+      if (replyToMatch) {
+        senderName = replyToMatch[1] || '';
+        senderEmail = replyToMatch[2] || replyTo;
+      } else {
+        senderEmail = replyTo;
+      }
+    } else {
+      const fromMatch = from.match(/(?:"?([^"]*)"?\s)?<?([^>]+)>?/);
+      if (fromMatch) {
+        senderName = fromMatch[1] || '';
+        senderEmail = fromMatch[2] || from;
+      }
+    }
+    
+    // Generate IDs
+    const emailId = `eml_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    let threadId = `thr_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    
+    // Thread detection for replies
+    const isReply = /^(Re:|Fwd?:|FW:)/i.test(subject);
+    if (isReply) {
+      const originalSubject = subject.replace(/^(Re:|Fwd?:|FW:)\s*/gi, '').trim();
+      const existingThread = await DB.prepare(`
+        SELECT thread_id FROM emails 
+        WHERE ((from_email = ? AND to_email = ?) OR (from_email = ? AND to_email = ?))
+          OR subject LIKE ?
+        AND thread_id IS NOT NULL
+        ORDER BY created_at DESC LIMIT 1
+      `).bind(senderEmail, to, to, senderEmail, `%${originalSubject}%`).first();
+      
+      if (existingThread?.thread_id) {
+        threadId = existingThread.thread_id;
+        console.log('📎 Linked to thread:', threadId);
+      }
+    }
+    
+    // AI Processing (optional - skip if no API key)
+    let aiSummary = null;
+    let category = 'inbox';
+    
+    if (OPENAI_API_KEY && bodyText && bodyText.length > 20) {
+      try {
+        const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENAI_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-3.5-turbo',
+            messages: [{
+              role: 'user',
+              content: `Summarize this email in one short sentence (max 15 words):\n\nSubject: ${subject}\n\n${bodyText.substring(0, 500)}`
+            }],
+            max_tokens: 50,
+            temperature: 0.3
+          })
+        });
+        
+        if (aiResponse.ok) {
+          const aiData = await aiResponse.json();
+          aiSummary = aiData.choices[0]?.message?.content?.trim() || null;
+          console.log('🤖 AI Summary generated');
+        }
+      } catch (aiError) {
+        console.error('AI processing failed:', aiError);
+      }
+    }
+    
+    // Insert email
+    await DB.prepare(`
+      INSERT INTO emails (
+        id, thread_id, from_email, from_name, to_email, 
+        subject, body_text, body_html, snippet, category,
+        ai_summary, is_read, received_at, created_at,
+        expiry_type, expires_at, is_expired
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'timer', datetime('now', '+30 days'), 0)
+    `).bind(
+      emailId, threadId, senderEmail, senderName, to,
+      subject, bodyText || '[No body]', bodyHtml || '',
+      (bodyText || subject).substring(0, 150), category,
+      aiSummary
+    ).run();
+    
+    console.log('✅ Email stored:', emailId);
+    return c.json({ success: true, emailId, threadId });
     
   } catch (error: any) {
     console.error('❌ Webhook error:', error);
-    return c.json({ 
-      success: false, 
-      error: error.message || 'Internal server error'
-    }, 500);
+    return c.json({ success: false, error: error.message }, 500);
   }
 });
 
