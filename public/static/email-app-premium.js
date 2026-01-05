@@ -2214,9 +2214,9 @@ window.addEventListener('DOMContentLoaded', function() {
                         method: 'PATCH'
                       }).then(res => {
                         if (res.ok) {
-                          // Update local state
-                          email.is_read = 1;
-                          console.log('✅ Marked as read');
+                          console.log('✅ Marked as read - refreshing inbox...');
+                          // Reload data to show updated read status
+                          loadData();
                         }
                       }).catch(err => console.error('❌ Mark as read failed:', err));
                     }
@@ -2340,8 +2340,8 @@ window.addEventListener('DOMContentLoaded', function() {
                         gap: '8px'
                       }
                     },
-                      // 🔵 Unread indicator badge
-                      !email.is_read && h('div', {
+                      // 🔵 Unread indicator badge (ONLY show in INBOX view, NOT in SENT)
+                      !email.is_read && view === 'inbox' && h('div', {
                         style: {
                           display: 'flex',
                           alignItems: 'center',
