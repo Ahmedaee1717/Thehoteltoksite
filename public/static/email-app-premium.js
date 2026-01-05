@@ -54,6 +54,10 @@ window.addEventListener('DOMContentLoaded', function() {
       const [forwardTo, setForwardTo] = useState('');
       const [unreadCount, setUnreadCount] = useState(0);
       
+      // Sending state - prevents duplicate sends and shows animation
+      const [sendingEmail, setSendingEmail] = useState(false);
+      const [sendStatus, setSendStatus] = useState(null); // null, 'sending', 'success', 'error', 'warning'
+      
       // User profile state
       const [userProfile, setUserProfile] = useState({ displayName: user.split('@')[0], profileImage: null });
       const [showProfileModal, setShowProfileModal] = useState(false);
@@ -302,6 +306,15 @@ window.addEventListener('DOMContentLoaded', function() {
       };
       
       const sendEmail = async (to, subject, body) => {
+        // Prevent duplicate sends
+        if (sendingEmail) {
+          console.log('⚠️ Email send already in progress - ignoring duplicate click');
+          return;
+        }
+        
+        setSendingEmail(true);
+        setSendStatus('sending');
+        
         try {
           const response = await fetch('/api/email/send', {
             method: 'POST',
@@ -311,17 +324,41 @@ window.addEventListener('DOMContentLoaded', function() {
           const result = await response.json();
           
           if (result.success && result.emailSent) {
-            alert('✅ Email sent successfully via Mailgun!\n\nMessage ID: ' + result.messageId);
+            // Success animation
+            setSendStatus('success');
+            console.log('✅ Email sent successfully:', result.messageId);
+            
+            // Wait for animation to complete, then close
+            setTimeout(() => {
+              loadData();
+              setShowCompose(false);
+              setSendingEmail(false);
+              setSendStatus(null);
+            }, 2500); // 2.5 seconds for smooth animation
           } else if (result.success && !result.emailSent) {
-            alert('⚠️ Email saved but not sent:\n\n' + (result.mailgunError || 'Check Mailgun configuration'));
+            // Partial success
+            setSendStatus('warning');
+            setTimeout(() => {
+              alert('⚠️ Email saved but not sent:\n\n' + (result.mailgunError || 'Check Mailgun configuration'));
+              setSendingEmail(false);
+              setSendStatus(null);
+            }, 1500);
           } else {
-            alert('❌ Failed to send:\n\n' + (result.error || 'Unknown error'));
+            // Error
+            setSendStatus('error');
+            setTimeout(() => {
+              alert('❌ Failed to send:\n\n' + (result.error || 'Unknown error'));
+              setSendingEmail(false);
+              setSendStatus(null);
+            }, 1500);
           }
-          
-          loadData();
-          setShowCompose(false);
         } catch (error) {
-          alert('❌ Network error: ' + error.message);
+          setSendStatus('error');
+          setTimeout(() => {
+            alert('❌ Network error: ' + error.message);
+            setSendingEmail(false);
+            setSendStatus(null);
+          }, 1500);
         }
       };
       
@@ -3446,6 +3483,11 @@ window.addEventListener('DOMContentLoaded', function() {
           setShowFilePicker: setShowFilePicker
         }),
         
+        // 🎬 STUNNING SENDING ANIMATION OVERLAY
+        sendStatus && h(SendingAnimationOverlay, {
+          status: sendStatus // 'sending', 'success', 'error', 'warning'
+        }),
+        
         // Profile Modal
         showProfileModal && h(ProfileModal, {
           user: user,
@@ -3922,6 +3964,213 @@ window.addEventListener('DOMContentLoaded', function() {
       );
     }
     
+    // ============================================
+    // 🎬 STUNNING SENDING ANIMATION OVERLAY
+    // Professional animation that prevents duplicate sends
+    // ============================================
+    function SendingAnimationOverlay({ status }) {
+      // Status can be: 'sending', 'success', 'error', 'warning'
+      
+      const getStatusConfig = () => {
+        switch(status) {
+          case 'sending':
+            return {
+              icon: '✉️',
+              title: 'Sending Email',
+              subtitle: 'Please wait...',
+              color: '#C9A962',
+              bgGradient: 'linear-gradient(135deg, rgba(201, 169, 98, 0.1) 0%, rgba(139, 115, 85, 0.1) 100%)',
+              borderColor: 'rgba(201, 169, 98, 0.3)',
+              showSpinner: true
+            };
+          case 'success':
+            return {
+              icon: '✅',
+              title: 'Email Sent!',
+              subtitle: 'Your message is on its way',
+              color: '#22c55e',
+              bgGradient: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(22, 163, 74, 0.1) 100%)',
+              borderColor: 'rgba(34, 197, 94, 0.3)',
+              showSpinner: false
+            };
+          case 'error':
+            return {
+              icon: '❌',
+              title: 'Send Failed',
+              subtitle: 'Please try again',
+              color: '#ef4444',
+              bgGradient: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%)',
+              borderColor: 'rgba(239, 68, 68, 0.3)',
+              showSpinner: false
+            };
+          case 'warning':
+            return {
+              icon: '⚠️',
+              title: 'Partially Sent',
+              subtitle: 'Check configuration',
+              color: '#f59e0b',
+              bgGradient: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%)',
+              borderColor: 'rgba(245, 158, 11, 0.3)',
+              showSpinner: false
+            };
+          default:
+            return null;
+        }
+      };
+      
+      const config = getStatusConfig();
+      if (!config) return null;
+      
+      return h('div', {
+        style: {
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.85)',
+          backdropFilter: 'blur(20px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000,
+          animation: 'fadeIn 0.3s ease-out'
+        }
+      },
+        h('div', {
+          style: {
+            background: config.bgGradient,
+            backdropFilter: 'blur(40px)',
+            border: `2px solid ${config.borderColor}`,
+            borderRadius: '32px',
+            padding: '64px 80px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '24px',
+            boxShadow: `0 32px 128px rgba(0, 0, 0, 0.6), 0 0 0 1px ${config.borderColor}`,
+            animation: status === 'sending' ? 'pulseScale 2s ease-in-out infinite' : 'successPop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+            transform: status === 'success' ? 'scale(1)' : 'scale(0.95)',
+            transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+            maxWidth: '500px',
+            textAlign: 'center'
+          }
+        },
+          // Icon with animation
+          h('div', {
+            style: {
+              fontSize: '96px',
+              lineHeight: 1,
+              animation: status === 'sending' ? 'float 3s ease-in-out infinite' : 
+                        status === 'success' ? 'successBounce 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55)' : 
+                        'shake 0.5s ease-in-out',
+              transform: 'translateZ(0)',
+              filter: 'drop-shadow(0 8px 24px rgba(0, 0, 0, 0.3))'
+            }
+          }, config.icon),
+          
+          // Title
+          h('div', {
+            style: {
+              fontSize: '36px',
+              fontWeight: '800',
+              color: config.color,
+              letterSpacing: '-0.5px',
+              textShadow: `0 2px 8px ${config.color}40`,
+              animation: status === 'sending' ? 'shimmer 2s ease-in-out infinite' : 'none'
+            }
+          }, config.title),
+          
+          // Subtitle
+          h('div', {
+            style: {
+              fontSize: '18px',
+              fontWeight: '500',
+              color: 'rgba(255, 255, 255, 0.7)',
+              letterSpacing: '0.5px',
+              marginTop: '-8px'
+            }
+          }, config.subtitle),
+          
+          // Spinner (only for sending state)
+          config.showSpinner && h('div', {
+            style: {
+              marginTop: '16px',
+              display: 'flex',
+              gap: '12px',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }
+          },
+            // Three animated dots
+            [0, 1, 2].map(i => 
+              h('div', {
+                key: i,
+                style: {
+                  width: '16px',
+                  height: '16px',
+                  borderRadius: '50%',
+                  background: config.color,
+                  animation: `bounce 1.4s ease-in-out infinite`,
+                  animationDelay: `${i * 0.16}s`,
+                  boxShadow: `0 4px 12px ${config.color}60`
+                }
+              })
+            )
+          ),
+          
+          // Progress bar for sending
+          status === 'sending' && h('div', {
+            style: {
+              width: '100%',
+              height: '6px',
+              background: 'rgba(255, 255, 255, 0.1)',
+              borderRadius: '3px',
+              overflow: 'hidden',
+              marginTop: '16px'
+            }
+          },
+            h('div', {
+              style: {
+                width: '60%',
+                height: '100%',
+                background: `linear-gradient(90deg, transparent, ${config.color}, transparent)`,
+                borderRadius: '3px',
+                animation: 'progressSlide 1.5s ease-in-out infinite',
+                boxShadow: `0 0 20px ${config.color}`
+              }
+            })
+          ),
+          
+          // Success checkmark circle animation
+          status === 'success' && h('div', {
+            style: {
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              border: `4px solid ${config.color}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginTop: '8px',
+              animation: 'checkmarkDraw 0.8s ease-out',
+              boxShadow: `0 0 40px ${config.color}60`
+            }
+          },
+            h('div', {
+              style: {
+                fontSize: '48px',
+                animation: 'fadeIn 0.5s ease-out 0.4s both'
+              }
+            }, '✓')
+          )
+        )
+      );
+    }
+    
+    // ============================================
+    // COMPOSE MODAL COMPONENT
+    // ============================================
     function ComposeModal({ onClose, onSend, files, showFilePicker, setShowFilePicker }) {
       console.log('🎨 ComposeModal START');
       const [to, setTo] = useState('');
@@ -6408,6 +6657,57 @@ window.addEventListener('DOMContentLoaded', function() {
       }
       @keyframes spin {
         to { transform: rotate(360deg); }
+      }
+      
+      /* 🎬 STUNNING SENDING ANIMATIONS */
+      @keyframes pulseScale {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.05); opacity: 0.9; }
+      }
+      @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-20px); }
+      }
+      @keyframes successPop {
+        0% { transform: scale(0.8); opacity: 0; }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); opacity: 1; }
+      }
+      @keyframes successBounce {
+        0% { transform: scale(0) rotate(-45deg); }
+        50% { transform: scale(1.2) rotate(10deg); }
+        100% { transform: scale(1) rotate(0deg); }
+      }
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-10px); }
+        75% { transform: translateX(10px); }
+      }
+      @keyframes shimmer {
+        0% { opacity: 1; }
+        50% { opacity: 0.7; }
+        100% { opacity: 1; }
+      }
+      @keyframes bounce {
+        0%, 100% { transform: translateY(0); opacity: 1; }
+        50% { transform: translateY(-20px); opacity: 0.7; }
+      }
+      @keyframes progressSlide {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(300%); }
+      }
+      @keyframes checkmarkDraw {
+        0% { 
+          transform: scale(0) rotate(-45deg); 
+          opacity: 0;
+        }
+        50% { 
+          transform: scale(1.2) rotate(5deg); 
+        }
+        100% { 
+          transform: scale(1) rotate(0deg); 
+          opacity: 1;
+        }
       }
       ::-webkit-scrollbar {
         width: 8px;
