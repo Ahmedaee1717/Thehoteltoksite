@@ -1578,6 +1578,38 @@ emailRoutes.get('/track/:tracking_id', async (c) => {
                       c.req.header('x-forwarded-for') || 
                       c.req.header('x-real-ip') || '';
     
+    // 🚨 CRITICAL: Detect Gmail Image Proxy prefetch
+    // Gmail prefetches ALL images when email arrives, NOT when user opens it
+    // This causes FALSE POSITIVES - email shows "read" but user never opened it!
+    const isGmailProxy = userAgent.includes('GoogleImageProxy') ||
+                         userAgent.includes('Google-Image-Proxy') ||
+                         userAgent.includes('via googlemail.com') ||
+                         userAgent.includes('Googlebot-Image');
+    
+    // 🚨 Also detect other email proxy services
+    const isOutlookProxy = userAgent.includes('Outlook-iOS') || 
+                           userAgent.includes('Microsoft Outlook') ||
+                           userAgent.includes('OutlookProxy');
+    const isYahooProxy = userAgent.includes('YahooMailProxy');
+    const isAppleProxy = userAgent.includes('AppleWebKit') && ipAddress.includes('17.'); // Apple IP range
+    
+    const isEmailProxy = isGmailProxy || isOutlookProxy || isYahooProxy || isAppleProxy;
+    
+    if (isEmailProxy) {
+      const proxyType = isGmailProxy ? 'Gmail' : 
+                       isOutlookProxy ? 'Outlook' : 
+                       isYahooProxy ? 'Yahoo' : 'Apple';
+      console.log(`⏭️ Skipping tracking - ${proxyType} image proxy prefetch (NOT real user open)`);
+      return new Response(TRACKING_PIXEL, {
+        headers: {
+          'Content-Type': 'image/gif',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+    }
+    
     // IMPORTANT: Only track if request is NOT from the sender viewing their own email
     // Check if the request is from our app or a real email client
     const referer = c.req.header('referer') || '';
