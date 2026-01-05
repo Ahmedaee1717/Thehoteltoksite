@@ -3505,6 +3505,8 @@ window.addEventListener('DOMContentLoaded', function() {
           onClose: () => {
             setSelectedEmail(null);
             setShowCollabPanel(false);
+            // Reload email list to show updated read status
+            loadData();
           },
           onShowCollab: () => setShowCollabPanel(true),
           view: view,
