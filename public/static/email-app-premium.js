@@ -5860,19 +5860,20 @@ window.addEventListener('DOMContentLoaded', function() {
                     }
                   }, msg.body_text || msg.snippet || '(No content)'),
                   
-                  // Latest message indicator
+                  // Latest message indicator - positioned on LEFT to avoid date overlap
                   idx === threadEmails.length - 1 && h('div', {
                     style: {
                       position: 'absolute',
                       top: '12px',
-                      right: '12px',
+                      left: '12px',
                       fontSize: '10px',
                       fontWeight: '600',
                       color: '#3b82f6',
                       background: 'rgba(59, 130, 246, 0.15)',
                       padding: '4px 10px',
                       borderRadius: '12px',
-                      border: '1px solid rgba(59, 130, 246, 0.3)'
+                      border: '1px solid rgba(59, 130, 246, 0.3)',
+                      zIndex: 10
                     }
                   }, '💬 Latest')
                 )
