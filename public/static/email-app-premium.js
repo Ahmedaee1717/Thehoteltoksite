@@ -5831,6 +5831,33 @@ window.addEventListener('DOMContentLoaded', function() {
       const [loadingThread, setLoadingThread] = useState(false);
       const [aiProcessing, setAiProcessing] = useState(false);
       
+      // 📎 ATTACHMENTS STATE
+      const [attachments, setAttachments] = useState([]);
+      const [loadingAttachments, setLoadingAttachments] = useState(false);
+      
+      // Load attachments on mount
+      useEffect(() => {
+        if (email.id) {
+          loadAttachments();
+        }
+      }, [email.id]);
+      
+      const loadAttachments = async () => {
+        setLoadingAttachments(true);
+        try {
+          const response = await fetch(`/api/email/${email.id}/attachments`);
+          const data = await response.json();
+          if (data.success && data.attachments) {
+            setAttachments(data.attachments);
+            console.log(`📎 Loaded ${data.attachments.length} attachments for email ${email.id}`);
+          }
+        } catch (err) {
+          console.error('❌ Failed to load attachments:', err);
+        } finally {
+          setLoadingAttachments(false);
+        }
+      };
+      
       // Load full thread on mount
       useEffect(() => {
         if (email.thread_id) {

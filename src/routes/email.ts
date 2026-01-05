@@ -1556,6 +1556,51 @@ emailRoutes.get('/:id', async (c) => {
 });
 
 // ============================================
+// GET /api/email/:id/attachments
+// Get attachments for a specific email
+// ============================================
+emailRoutes.get('/:id/attachments', async (c) => {
+  const { DB } = c.env;
+  const emailId = c.req.param('id');
+  const userEmail = c.get('userEmail');
+  
+  if (!userEmail) {
+    return c.json({ success: false, error: 'Authentication required' }, 401);
+  }
+  
+  try {
+    // First verify user has access to this email
+    const email = await DB.prepare(`
+      SELECT id FROM emails 
+      WHERE id = ? AND (from_email = ? OR to_email = ?)
+    `).bind(emailId, userEmail, userEmail).first();
+    
+    if (!email) {
+      return c.json({ success: false, error: 'Email not found or access denied' }, 404);
+    }
+    
+    // Get attachments
+    const { results: attachments } = await DB.prepare(`
+      SELECT id, email_id, filename, content_type, size, r2_url, created_at
+      FROM attachments 
+      WHERE email_id = ?
+      ORDER BY created_at ASC
+    `).bind(emailId).all();
+    
+    console.log(`📎 Found ${attachments?.length || 0} attachments for email ${emailId}`);
+    
+    return c.json({ 
+      success: true, 
+      attachments: attachments || [],
+      count: attachments?.length || 0
+    });
+  } catch (error: any) {
+    console.error('Attachments fetch error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================
 // GET /api/email/track/:tracking_id
 // Email open tracking pixel endpoint
 // Returns a 1x1 transparent GIF
