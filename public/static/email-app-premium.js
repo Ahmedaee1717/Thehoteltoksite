@@ -404,7 +404,7 @@ window.addEventListener('DOMContentLoaded', function() {
         setSearchIntent(null);
       };
       
-      const sendEmail = async (to, subject, body) => {
+      const sendEmail = async (to, subject, body, attachments = []) => {
         // Prevent duplicate sends
         if (sendingEmail) {
           console.log('⚠️ Email send already in progress - ignoring duplicate click');
@@ -415,10 +415,25 @@ window.addEventListener('DOMContentLoaded', function() {
         setSendStatus('sending');
         
         try {
+          // Prepare attachment data for backend
+          const attachmentData = attachments.map(att => ({
+            id: att.id,
+            filename: att.filename,
+            url: att.url,
+            size: att.size,
+            content_type: att.content_type
+          }));
+          
+          console.log(`📎 Sending email with ${attachments.length} attachments:`, attachmentData);
+          
           const response = await fetch('/api/email/send', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ from: user, to, subject, body, useAI: true })
+            body: JSON.stringify({ 
+              from: user, to, subject, body, 
+              useAI: true,
+              attachments: attachmentData // ✅ Include attachments!
+            })
           });
           const result = await response.json();
           
@@ -3272,7 +3287,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 h('div', {
                   key: file.id || i,
                   onClick: () => {
-                    alert(`✅ Attached: ${file.filename}\n\nIn production, this file would be attached to your email.`);
+                    addAttachment(file); // ✅ Actually add to attachments!
                     setShowFilePicker(false);
                   },
                   style: {
@@ -4641,8 +4656,32 @@ window.addEventListener('DOMContentLoaded', function() {
       const [contactSuggestions, setContactSuggestions] = useState([]);
       const [loadingContacts, setLoadingContacts] = useState(false);
       
-      // TEMP FIX: These were removed but code references them - set as empty/null
-      const attachments = [];
+      // 📎 ATTACHMENTS STATE (was hardcoded empty!)
+      const [attachments, setAttachments] = useState([]);
+      
+      // Add attachment from FileBank
+      const addAttachment = (file) => {
+        // Normalize FileBank file structure to match expected format
+        const normalizedFile = {
+          id: file.id,
+          name: file.filename, // FileBank uses 'filename'
+          filename: file.filename,
+          size: file.size,
+          content_type: file.content_type,
+          url: file.url,
+          preview: file.preview || null
+        };
+        setAttachments(prev => [...prev, normalizedFile]);
+        console.log('📎 Added attachment:', file.filename);
+      };
+      
+      // Remove attachment
+      const removeAttachment = (index) => {
+        setAttachments(prev => prev.filter((_, i) => i !== index));
+        console.log('📎 Removed attachment at index:', index);
+      };
+      
+      // TEMP: Keep these for backward compatibility
       const spamCheck = null;
       const checkingSpam = false;
       
@@ -4829,7 +4868,7 @@ window.addEventListener('DOMContentLoaded', function() {
           if (!proceed) return;
         }
         
-        onSend(to, subject, body);
+        onSend(to, subject, body, attachments); // ✅ Pass attachments!
       };
       
       console.log('🎨 ComposeModal return - to:', to, 'subject:', subject, 'body length:', body.length);
@@ -5757,6 +5796,97 @@ window.addEventListener('DOMContentLoaded', function() {
                 e.target.style.borderColor = 'rgba(201, 169, 98, 0.3)';
               }
             }, '📁 Attach from File Bank')
+          ),
+          
+          // 📎 ATTACHMENT BUTTONS - Add before Send/Cancel
+          h('div', { 
+            style: { 
+              display: 'flex', 
+              gap: '12px', 
+              marginTop: '16px',
+              paddingTop: '16px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)'
+            } 
+          },
+            // Computer file upload button
+            h('div', { style: { position: 'relative' } },
+              h('input', {
+                type: 'file',
+                multiple: true,
+                id: 'computer-file-input',
+                style: {
+                  position: 'absolute',
+                  opacity: 0,
+                  width: '1px',
+                  height: '1px'
+                },
+                onChange: (e) => {
+                  const files = Array.from(e.target.files || []);
+                  files.forEach(file => {
+                    // Create file object compatible with FileBank structure
+                    const fileObj = {
+                      id: `temp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+                      name: file.name,
+                      filename: file.name,
+                      size: file.size,
+                      content_type: file.type || 'application/octet-stream',
+                      file: file, // Store actual File object for upload
+                      isLocalFile: true // Flag to identify computer uploads
+                    };
+                    addAttachment(fileObj);
+                  });
+                  e.target.value = ''; // Reset input
+                }
+              }),
+              h('label', {
+                htmlFor: 'computer-file-input',
+                style: {
+                  padding: '12px 20px',
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  borderRadius: '10px',
+                  color: 'rgba(59, 130, 246, 0.9)',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s'
+                },
+                onMouseEnter: (e) => {
+                  e.target.style.background = 'rgba(59, 130, 246, 0.15)';
+                },
+                onMouseLeave: (e) => {
+                  e.target.style.background = 'rgba(59, 130, 246, 0.1)';
+                }
+              }, '💻 From Computer')
+            ),
+            
+            // FileBank button
+            h('button', {
+              onClick: () => setShowFilePicker(true),
+              style: {
+                padding: '12px 20px',
+                background: 'rgba(201, 169, 98, 0.1)',
+                border: '1px solid rgba(201, 169, 98, 0.3)',
+                borderRadius: '10px',
+                color: 'rgba(201, 169, 98, 0.9)',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.2s'
+              },
+              onMouseEnter: (e) => {
+                e.target.style.background = 'rgba(201, 169, 98, 0.15)';
+              },
+              onMouseLeave: (e) => {
+                e.target.style.background = 'rgba(201, 169, 98, 0.1)';
+              }
+            }, '📁 From FileBank')
           ),
           
           h('div', { style: { display: 'flex', gap: '12px', justifyContent: 'flex-end' } },
