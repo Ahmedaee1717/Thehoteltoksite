@@ -1522,16 +1522,20 @@ emailRoutes.get('/:id', async (c) => {
     
     // Mark as read (only if recipient)
     if (email.to_email === userEmail) {
-      await DB.prepare(`
+      console.log(`🔄 ATTEMPTING to mark email ${emailId} as READ...`);
+      const updateResult = await DB.prepare(`
         UPDATE emails 
         SET is_read = 1, opened_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `).bind(emailId).run();
       
+      console.log(`📊 UPDATE result:`, JSON.stringify(updateResult));
+      
       // Update the email object to reflect the change
       emailData.is_read = 1;
       emailData.opened_at = new Date().toISOString();
       console.log(`✅ Marked email ${emailId} as READ for recipient ${userEmail}`);
+      console.log(`📧 Updated emailData.is_read = ${emailData.is_read}`);
     } else {
       console.log(`⏭️ NOT marking as read - user ${userEmail} is not the recipient (${email.to_email})`);
     }
@@ -2324,12 +2328,17 @@ emailRoutes.patch('/:id/mark-read', async (c) => {
   }
   
   try {
+    console.log(`🔄 PATCH /mark-read: Attempting to mark email ${emailId} as READ for user ${userEmail}`);
+    
     // Mark as read only if user is the recipient
-    await DB.prepare(`
+    const updateResult = await DB.prepare(`
       UPDATE emails 
       SET is_read = 1, opened_at = CURRENT_TIMESTAMP
       WHERE id = ? AND to_email = ?
     `).bind(emailId, userEmail).run();
+    
+    console.log(`📊 PATCH UPDATE result:`, JSON.stringify(updateResult));
+    console.log(`✅ PATCH mark-read completed for email ${emailId}`);
     
     return c.json({ success: true });
   } catch (error: any) {
