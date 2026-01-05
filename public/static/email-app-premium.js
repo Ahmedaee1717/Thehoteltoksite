@@ -459,15 +459,39 @@ window.addEventListener('DOMContentLoaded', function() {
         
         try {
           // Prepare attachment data for backend
-          const attachmentData = attachments.map(att => ({
-            id: att.id,
-            filename: att.filename,
-            url: att.url,
-            size: att.size,
-            content_type: att.content_type
-          }));
+          const attachmentData = [];
           
-          console.log(`📎 Sending email with ${attachments.length} attachments:`, attachmentData);
+          for (const att of attachments) {
+            if (att.isLocalFile && att.file) {
+              // Computer upload: Read file as base64
+              const reader = new FileReader();
+              const base64Data = await new Promise((resolve, reject) => {
+                reader.onload = () => resolve(reader.result.split(',')[1]); // Get base64 without data: prefix
+                reader.onerror = reject;
+                reader.readAsDataURL(att.file);
+              });
+              
+              attachmentData.push({
+                filename: att.filename,
+                content_type: att.content_type,
+                size: att.size,
+                data: base64Data, // Base64 string
+                isLocalFile: true
+              });
+            } else {
+              // FileBank file: Send ID for backend to fetch
+              attachmentData.push({
+                id: att.id,
+                filename: att.filename,
+                url: att.url,
+                size: att.size,
+                content_type: att.content_type,
+                isLocalFile: false
+              });
+            }
+          }
+          
+          console.log(`📎 Sending email with ${attachments.length} attachments:`, attachmentData.map(a => ({ filename: a.filename, isLocalFile: a.isLocalFile })));
           
           const response = await fetch('/api/email/send', {
             method: 'POST',

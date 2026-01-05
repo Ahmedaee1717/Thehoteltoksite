@@ -522,7 +522,7 @@ emailRoutes.post('/send', async (c) => {
         // Also wrap links in plain text version
         const textBodyWithTracking = wrapPlainTextLinks(body, emailId, baseUrl);
         
-        // 📎 HANDLE ATTACHMENTS (FileBank files)
+        // 📎 HANDLE ATTACHMENTS (FileBank files + Computer uploads)
         const mailgunAttachments: Array<{ filename: string; data: Buffer | string }> = [];
         
         if (attachments && Array.isArray(attachments) && attachments.length > 0) {
@@ -530,34 +530,45 @@ emailRoutes.post('/send', async (c) => {
           
           for (const att of attachments) {
             try {
-              // Load file from FileBank database
-              const fileRecord = await DB.prepare(`
-                SELECT * FROM files WHERE id = ?
-              `).bind(att.id).first();
-              
-              if (fileRecord && fileRecord.url) {
-                console.log(`📎 Fetching attachment: ${att.filename} from ${fileRecord.url}`);
-                
-                // Fetch file content
-                const fileResponse = await fetch(fileRecord.url);
-                if (!fileResponse.ok) {
-                  console.error(`❌ Failed to fetch attachment ${att.filename}: ${fileResponse.statusText}`);
-                  continue;
-                }
-                
-                // Convert to Buffer
-                const arrayBuffer = await fileResponse.arrayBuffer();
-                const buffer = Buffer.from(arrayBuffer);
-                
-                // Add to Mailgun attachments
+              if (att.isLocalFile && att.data) {
+                // Computer upload: data is base64 string
+                console.log(`📎 Processing computer upload: ${att.filename}`);
+                const buffer = Buffer.from(att.data, 'base64');
                 mailgunAttachments.push({
                   filename: att.filename,
                   data: buffer
                 });
-                
-                console.log(`✅ Added attachment: ${att.filename} (${buffer.length} bytes)`);
+                console.log(`✅ Added computer upload: ${att.filename} (${buffer.length} bytes)`);
               } else {
-                console.warn(`⚠️ FileBank record not found for attachment ID: ${att.id}`);
+                // FileBank file: Load from database
+                const fileRecord = await DB.prepare(`
+                  SELECT * FROM files WHERE id = ?
+                `).bind(att.id).first();
+                
+                if (fileRecord && fileRecord.url) {
+                  console.log(`📎 Fetching FileBank file: ${att.filename} from ${fileRecord.url}`);
+                  
+                  // Fetch file content
+                  const fileResponse = await fetch(fileRecord.url);
+                  if (!fileResponse.ok) {
+                    console.error(`❌ Failed to fetch attachment ${att.filename}: ${fileResponse.statusText}`);
+                    continue;
+                  }
+                  
+                  // Convert to Buffer
+                  const arrayBuffer = await fileResponse.arrayBuffer();
+                  const buffer = Buffer.from(arrayBuffer);
+                  
+                  // Add to Mailgun attachments
+                  mailgunAttachments.push({
+                    filename: att.filename,
+                    data: buffer
+                  });
+                  
+                  console.log(`✅ Added FileBank file: ${att.filename} (${buffer.length} bytes)`);
+                } else {
+                  console.warn(`⚠️ FileBank record not found for attachment ID: ${att.id}`);
+                }
               }
             } catch (attError: any) {
               console.error(`❌ Error processing attachment ${att.filename}:`, attError.message);
