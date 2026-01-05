@@ -1517,6 +1517,8 @@ emailRoutes.get('/:id', async (c) => {
     // ⚠️ NO DECRYPTION - emails stored as plaintext
     const emailData = { ...email };
     console.log('📧 Returning email (no decryption needed)');
+    console.log(`📧 Email from: ${email.from_email}, to: ${email.to_email}, current user: ${userEmail}`);
+    console.log(`📧 Current is_read status: ${email.is_read}`);
     
     // Mark as read (only if recipient)
     if (email.to_email === userEmail) {
@@ -1525,6 +1527,13 @@ emailRoutes.get('/:id', async (c) => {
         SET is_read = 1, opened_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `).bind(emailId).run();
+      
+      // Update the email object to reflect the change
+      emailData.is_read = 1;
+      emailData.opened_at = new Date().toISOString();
+      console.log(`✅ Marked email ${emailId} as READ for recipient ${userEmail}`);
+    } else {
+      console.log(`⏭️ NOT marking as read - user ${userEmail} is not the recipient (${email.to_email})`);
     }
     
     // Get attachments
