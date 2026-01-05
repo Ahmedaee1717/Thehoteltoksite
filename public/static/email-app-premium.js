@@ -6307,21 +6307,14 @@ window.addEventListener('DOMContentLoaded', function() {
                   ),
                   
                   // Message body
-                  h('div', {
-                    style: {
-                      fontSize: '14px',
-                      lineHeight: '1.7',
-                      color: 'rgba(255, 255, 255, 0.85)',
-                      whiteSpace: 'pre-wrap'
-                    }
-                  }, msg.body_text || msg.snippet || '(No content)'),
+                  h('div', { style: { fontSize: '14px', lineHeight: '1.7', color: 'rgba(255, 255, 255, 0.85)', whiteSpace: 'pre-wrap' } }, msg.body_text || msg.snippet || '(No content)'),
                   
-                  // Latest message indicator - positioned on LEFT to avoid date overlap
+                  // Latest message indicator - positioned BOTTOM RIGHT to avoid overlap
                   idx === threadEmails.length - 1 && h('div', {
                     style: {
                       position: 'absolute',
-                      top: '12px',
-                      left: '12px',
+                      bottom: '12px',
+                      right: '12px',
                       fontSize: '10px',
                       fontWeight: '600',
                       color: '#3b82f6',
