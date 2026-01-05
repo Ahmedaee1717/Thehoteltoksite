@@ -84,6 +84,7 @@ window.addEventListener('DOMContentLoaded', function() {
       const [selectedFile, setSelectedFile] = useState(null);
       const [showFilePreview, setShowFilePreview] = useState(false);
       const [showFilePicker, setShowFilePicker] = useState(false);
+      const [composeAttachments, setComposeAttachments] = useState([]); // Attachments for compose modal
       const [isDragging, setIsDragging] = useState(false);
       const [showCreateFolder, setShowCreateFolder] = useState(false);
       const [newFolderName, setNewFolderName] = useState('');
@@ -264,6 +265,34 @@ window.addEventListener('DOMContentLoaded', function() {
           console.error('❌ Failed to load FileBank files:', err);
           setFiles([]);
         }
+      };
+      
+      // Handle adding attachment (called from global FilePicker)
+      const handleAddAttachment = (file) => {
+        const normalizedFile = {
+          id: file.id,
+          name: file.filename,
+          filename: file.filename,
+          size: file.size,
+          content_type: file.content_type,
+          url: file.url,
+          preview: file.preview || null
+        };
+        setComposeAttachments(prev => [...prev, normalizedFile]);
+        console.log('📎 Added attachment:', file.filename);
+        setShowFilePicker(false);
+      };
+      
+      // Handle removing attachment
+      const handleRemoveAttachment = (index) => {
+        setComposeAttachments(prev => prev.filter((_, i) => i !== index));
+        console.log('📎 Removed attachment at index:', index);
+      };
+      
+      // Clear attachments when compose closes
+      const handleCloseCompose = () => {
+        setShowCompose(false);
+        setComposeAttachments([]);
       };
       
       // Create new forwarding rule
@@ -3301,8 +3330,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 h('div', {
                   key: file.id || i,
                   onClick: () => {
-                    addAttachment(file); // ✅ Actually add to attachments!
-                    setShowFilePicker(false);
+                    handleAddAttachment(file); // Use main scope handler
                   },
                   style: {
                     padding: '16px',
@@ -3959,12 +3987,14 @@ window.addEventListener('DOMContentLoaded', function() {
         
         // Ultra Premium Compose Modal
         showCompose && h(ComposeModal, {
-          onClose: () => setShowCompose(false),
+          onClose: handleCloseCompose,
           onSend: sendEmail,
           files: files,
           showFilePicker: showFilePicker,
           setShowFilePicker: setShowFilePicker,
-          loadFiles: loadFileBankFiles
+          loadFiles: loadFileBankFiles,
+          attachments: composeAttachments,
+          onRemoveAttachment: handleRemoveAttachment
         }),
         
         // 🎬 STUNNING SENDING ANIMATION OVERLAY
@@ -4657,7 +4687,7 @@ window.addEventListener('DOMContentLoaded', function() {
     // ============================================
     // COMPOSE MODAL COMPONENT
     // ============================================
-    function ComposeModal({ onClose, onSend, files, showFilePicker, setShowFilePicker, loadFiles }) {
+    function ComposeModal({ onClose, onSend, files, showFilePicker, setShowFilePicker, loadFiles, attachments, onRemoveAttachment }) {
       console.log('🎨 ComposeModal START');
       const [to, setTo] = useState('');
       const [subject, setSubject] = useState('');
@@ -4671,9 +4701,6 @@ window.addEventListener('DOMContentLoaded', function() {
       const [contactSuggestions, setContactSuggestions] = useState([]);
       const [loadingContacts, setLoadingContacts] = useState(false);
       
-      // 📎 ATTACHMENTS STATE (was hardcoded empty!)
-      const [attachments, setAttachments] = useState([]);
-      
       // Helper: Format file size
       const formatFileSize = (bytes) => {
         if (!bytes || bytes === 0) return '0 B';
@@ -4681,27 +4708,6 @@ window.addEventListener('DOMContentLoaded', function() {
         const sizes = ['B', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-      };
-      
-      const addAttachment = (file) => {
-        // Normalize FileBank file structure to match expected format
-        const normalizedFile = {
-          id: file.id,
-          name: file.filename, // FileBank uses 'filename'
-          filename: file.filename,
-          size: file.size,
-          content_type: file.content_type,
-          url: file.url,
-          preview: file.preview || null
-        };
-        setAttachments(prev => [...prev, normalizedFile]);
-        console.log('📎 Added attachment:', file.filename);
-      };
-      
-      // Remove attachment
-      const removeAttachment = (index) => {
-        setAttachments(prev => prev.filter((_, i) => i !== index));
-        console.log('📎 Removed attachment at index:', index);
       };
       
       // TEMP: Keep these for backward compatibility
@@ -5365,7 +5371,7 @@ window.addEventListener('DOMContentLoaded', function() {
                       h('div', { style: { fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)' } }, formatFileSize(att.size))
                     ),
                     h('button', {
-                      onClick: () => removeAttachment(idx),
+                      onClick: () => onRemoveAttachment(idx),
                       style: {
                         padding: '4px 8px',
                         background: 'rgba(239, 68, 68, 0.1)',
