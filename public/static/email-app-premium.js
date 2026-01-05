@@ -4018,7 +4018,8 @@ window.addEventListener('DOMContentLoaded', function() {
           setShowFilePicker: setShowFilePicker,
           loadFiles: loadFileBankFiles,
           attachments: composeAttachments,
-          onRemoveAttachment: handleRemoveAttachment
+          onRemoveAttachment: handleRemoveAttachment,
+          onAddAttachment: handleAddAttachment
         }),
         
         // 🎬 STUNNING SENDING ANIMATION OVERLAY
@@ -4711,7 +4712,7 @@ window.addEventListener('DOMContentLoaded', function() {
     // ============================================
     // COMPOSE MODAL COMPONENT
     // ============================================
-    function ComposeModal({ onClose, onSend, files, showFilePicker, setShowFilePicker, loadFiles, attachments, onRemoveAttachment }) {
+    function ComposeModal({ onClose, onSend, files, showFilePicker, setShowFilePicker, loadFiles, attachments, onRemoveAttachment, onAddAttachment }) {
       console.log('🎨 ComposeModal START');
       const [to, setTo] = useState('');
       const [subject, setSubject] = useState('');
@@ -5886,7 +5887,7 @@ window.addEventListener('DOMContentLoaded', function() {
                       file: file, // Store actual File object for upload
                       isLocalFile: true // Flag to identify computer uploads
                     };
-                    addAttachment(fileObj);
+                    onAddAttachment(fileObj); // Use prop handler
                   });
                   e.target.value = ''; // Reset input
                 }
