@@ -62,17 +62,34 @@ export class MailgunService {
       // Add attachments if provided
       if (options.attachments && options.attachments.length > 0) {
         console.log(`📎 Mailgun: Adding ${options.attachments.length} attachments`);
+        // Mailgun.js expects attachments as an array of objects with filename and data
+        // The data can be a Buffer, and the library will handle it with form-data
         emailData.attachment = options.attachments.map((att, idx) => {
-          console.log(`📎 Mailgun attachment ${idx + 1}: ${att.filename} (${att.data instanceof Buffer ? att.data.length : att.data?.length} bytes)`);
+          const isBuffer = att.data instanceof Buffer;
+          const dataLength = isBuffer ? att.data.length : (typeof att.data === 'string' ? att.data.length : 0);
+          console.log(`📎 Mailgun attachment ${idx + 1}: ${att.filename} (${dataLength} bytes, isBuffer: ${isBuffer})`);
+          
+          // Return attachment in format expected by mailgun.js
           return {
             filename: att.filename,
-            data: att.data,
+            data: att.data  // Buffer or string
           };
         });
-        console.log('📎 Mailgun: Attachments prepared for send');
+        console.log(`📎 Mailgun: Prepared ${emailData.attachment.length} attachments for send`);
       } else {
         console.log('📎 Mailgun: No attachments to add');
       }
+
+      // DEBUG: Log final emailData structure before sending
+      console.log('📬 Final emailData for Mailgun:', {
+        from: emailData.from,
+        to: emailData.to,
+        subject: emailData.subject,
+        hasText: !!emailData.text,
+        hasHtml: !!emailData.html,
+        attachmentCount: emailData.attachment?.length || 0,
+        attachmentNames: emailData.attachment?.map((a: any) => a.filename) || []
+      });
 
       // Send email
       const response = await client.messages.create(this.config.domain, emailData);
