@@ -89,6 +89,15 @@ window.addEventListener('DOMContentLoaded', function() {
       const [newFolderName, setNewFolderName] = useState('');
       const [newFolderIsShared, setNewFolderIsShared] = useState(false);
       const [currentFolder, setCurrentFolder] = useState(null);
+      
+      // Forwarding state
+      const [forwardingRules, setForwardingRules] = useState([]);
+      const [showCreateRule, setShowCreateRule] = useState(false);
+      const [newRuleForwardTo, setNewRuleForwardTo] = useState('');
+      const [newRuleMatchSender, setNewRuleMatchSender] = useState('');
+      const [newRuleMatchSubject, setNewRuleMatchSubject] = useState('');
+      const [newRuleKeepOriginal, setNewRuleKeepOriginal] = useState(true);
+      const [newRuleAddPrefix, setNewRuleAddPrefix] = useState(true);
       const [showCreateDeal, setShowCreateDeal] = useState(false);
       const [newContactName, setNewContactName] = useState('');
       const [newContactEmail, setNewContactEmail] = useState('');
@@ -229,10 +238,100 @@ window.addEventListener('DOMContentLoaded', function() {
         }
       };
       
+      // Load forwarding rules
+      const loadForwardingRules = async () => {
+        try {
+          const response = await fetch('/api/forwarding/rules');
+          const data = await response.json();
+          if (data.success) {
+            setForwardingRules(data.rules || []);
+            console.log('📨 Loaded forwarding rules:', data.rules.length);
+          }
+        } catch (error) {
+          console.error('Load forwarding rules error:', error);
+        }
+      };
+      
+      // Create new forwarding rule
+      const createForwardingRule = async () => {
+        if (!newRuleForwardTo.trim() || !newRuleForwardTo.includes('@')) {
+          alert('❌ Please enter a valid email address!');
+          return;
+        }
+        
+        try {
+          const response = await fetch('/api/forwarding/rules', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              forward_to: newRuleForwardTo,
+              match_sender: newRuleMatchSender || null,
+              match_subject: newRuleMatchSubject || null,
+              keep_original: newRuleKeepOriginal ? 1 : 0,
+              add_prefix: newRuleAddPrefix ? 1 : 0
+            })
+          });
+          
+          const data = await response.json();
+          if (data.success) {
+            alert('✅ Forwarding rule created!');
+            setShowCreateRule(false);
+            setNewRuleForwardTo('');
+            setNewRuleMatchSender('');
+            setNewRuleMatchSubject('');
+            loadForwardingRules();
+          } else {
+            alert('❌ Failed to create rule: ' + data.error);
+          }
+        } catch (error) {
+          console.error('Create rule error:', error);
+          alert('❌ Error creating rule');
+        }
+      };
+      
+      // Toggle rule enabled/disabled
+      const toggleRule = async (ruleId, currentEnabled) => {
+        try {
+          const response = await fetch(`/api/forwarding/rules/${ruleId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ is_enabled: currentEnabled ? 0 : 1 })
+          });
+          
+          if (response.ok) {
+            loadForwardingRules();
+          }
+        } catch (error) {
+          console.error('Toggle rule error:', error);
+        }
+      };
+      
+      // Delete forwarding rule
+      const deleteRule = async (ruleId) => {
+        if (!confirm('🗑️ Delete this forwarding rule?')) return;
+        
+        try {
+          const response = await fetch(`/api/forwarding/rules/${ruleId}`, {
+            method: 'DELETE'
+          });
+          
+          if (response.ok) {
+            alert('✅ Rule deleted!');
+            loadForwardingRules();
+          }
+        } catch (error) {
+          console.error('Delete rule error:', error);
+          alert('❌ Error deleting rule');
+        }
+      };
+      
       // Load unread count on mount and when view changes
       useEffect(() => {
         loadUnreadCount();
         loadUserProfile(); // Load profile on mount
+        if (view === 'forwarding') {
+          loadForwardingRules(); // Load forwarding rules when viewing forwarding tab
+        }
       }, [view, selectedEmail]); // Refresh when view changes or email is opened
       
       // 🕒 Calculate time remaining until expiry
@@ -1270,6 +1369,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 view === 'spam' ? '🚫 Spam' :
                 view === 'trash' ? '🗑️ Trash' :
                 view === 'archived' ? '📦 Archive' :
+                view === 'forwarding' ? '⚡ Email Forwarding' :
                 'InvestMail'
               ),
               h('p', {
@@ -1689,6 +1789,359 @@ window.addEventListener('DOMContentLoaded', function() {
                         deal.contact_name && h('div', { style: { fontSize: '11px', color: 'rgba(255, 255, 255, 0.3)', marginTop: '4px' } }, `👤 ${deal.contact_name}`)
                       )
                     )
+                  )
+                )
+              )
+            ) :
+            // Forwarding View
+            view === 'forwarding' ? h('div', {},
+              // Header
+              h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' } },
+                h('h3', { style: { color: '#60A5FA', fontSize: '20px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '12px' } },
+                  '⚡ Email Forwarding',
+                  h('span', { style: { fontSize: '14px', color: 'rgba(255, 255, 255, 0.5)', fontWeight: '400' } }, 
+                    `${forwardingRules.length} ${forwardingRules.length === 1 ? 'rule' : 'rules'}`
+                  )
+                ),
+                h('button', {
+                  onClick: () => setShowCreateRule(true),
+                  style: {
+                    padding: '12px 24px',
+                    background: 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)',
+                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                    borderRadius: '10px',
+                    color: 'white',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                  }
+                }, '+ New Rule')
+              ),
+              
+              // Info Banner
+              h('div', {
+                style: {
+                  padding: '16px 20px',
+                  background: 'linear-gradient(135deg, rgba(96, 165, 250, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)',
+                  border: '1px solid rgba(96, 165, 250, 0.2)',
+                  borderRadius: '12px',
+                  marginBottom: '24px',
+                  fontSize: '13px',
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  lineHeight: '1.6'
+                }
+              },
+                '⚡ Auto-forward emails to external addresses based on sender, subject, or keywords. Forward incoming emails in real-time!'
+              ),
+              
+              // Rules List
+              forwardingRules.length === 0 ? h('div', {
+                style: {
+                  textAlign: 'center',
+                  padding: '80px 20px',
+                  color: 'rgba(255, 255, 255, 0.4)',
+                  background: 'rgba(26, 31, 58, 0.6)',
+                  borderRadius: '16px',
+                  border: '2px dashed rgba(96, 165, 250, 0.2)'
+                }
+              },
+                h('div', { style: { fontSize: '64px', marginBottom: '16px' } }, '⚡'),
+                h('div', { style: { fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: 'rgba(255, 255, 255, 0.6)' } }, 'No forwarding rules yet'),
+                h('div', { style: { fontSize: '14px', marginBottom: '24px' } }, 'Create a rule to automatically forward emails to external addresses'),
+                h('button', {
+                  onClick: () => setShowCreateRule(true),
+                  style: {
+                    padding: '12px 32px',
+                    background: 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)',
+                    border: 'none',
+                    borderRadius: '10px',
+                    color: 'white',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }
+                }, '+ Create Your First Rule')
+              ) : h('div', { style: { display: 'grid', gap: '16px' } },
+                forwardingRules.map((rule, i) =>
+                  h('div', {
+                    key: rule.id || i,
+                    style: {
+                      padding: '20px',
+                      background: rule.is_enabled 
+                        ? 'linear-gradient(135deg, rgba(26, 31, 58, 0.8) 0%, rgba(15, 20, 41, 0.8) 100%)'
+                        : 'rgba(26, 31, 58, 0.4)',
+                      border: rule.is_enabled
+                        ? '1px solid rgba(96, 165, 250, 0.3)'
+                        : '1px solid rgba(255, 255, 255, 0.05)',
+                      borderRadius: '12px',
+                      opacity: rule.is_enabled ? 1 : 0.6,
+                      transition: 'all 0.3s'
+                    }
+                  },
+                    // Header Row
+                    h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' } },
+                      h('div', { style: { display: 'flex', alignItems: 'center', gap: '12px' } },
+                        h('div', {
+                          style: {
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '10px',
+                            background: rule.is_enabled
+                              ? 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)'
+                              : 'rgba(255, 255, 255, 0.1)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '20px'
+                          }
+                        }, '⚡'),
+                        h('div', {},
+                          h('div', { style: { fontWeight: '600', color: 'rgba(255, 255, 255, 0.9)', fontSize: '15px' } }, `Forward to: ${rule.forward_to}`),
+                          h('div', { style: { fontSize: '12px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '2px' } }, 
+                            rule.trigger_count ? `✅ Triggered ${rule.trigger_count} times` : '⏳ Not triggered yet'
+                          )
+                        )
+                      ),
+                      h('div', { style: { display: 'flex', gap: '8px' } },
+                        // Enable/Disable Toggle
+                        h('button', {
+                          onClick: () => toggleRule(rule.id, rule.is_enabled),
+                          style: {
+                            padding: '8px 16px',
+                            background: rule.is_enabled
+                              ? 'rgba(34, 197, 94, 0.2)'
+                              : 'rgba(156, 163, 175, 0.2)',
+                            border: '1px solid ' + (rule.is_enabled ? 'rgba(34, 197, 94, 0.3)' : 'rgba(156, 163, 175, 0.3)'),
+                            borderRadius: '8px',
+                            color: rule.is_enabled ? '#22c55e' : 'rgba(255, 255, 255, 0.5)',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }
+                        }, rule.is_enabled ? '✓ Enabled' : '○ Disabled'),
+                        // Delete Button
+                        h('button', {
+                          onClick: () => deleteRule(rule.id),
+                          style: {
+                            padding: '8px 12px',
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            border: '1px solid rgba(239, 68, 68, 0.2)',
+                            borderRadius: '8px',
+                            color: '#ef4444',
+                            cursor: 'pointer',
+                            fontSize: '12px'
+                          }
+                        }, '🗑️')
+                      )
+                    ),
+                    
+                    // Conditions
+                    h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' } },
+                      rule.match_sender && h('div', {
+                        style: {
+                          padding: '6px 12px',
+                          background: 'rgba(59, 130, 246, 0.15)',
+                          border: '1px solid rgba(59, 130, 246, 0.3)',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          color: '#60a5fa'
+                        }
+                      }, `📧 From: ${rule.match_sender}`),
+                      rule.match_subject && h('div', {
+                        style: {
+                          padding: '6px 12px',
+                          background: 'rgba(139, 92, 246, 0.15)',
+                          border: '1px solid rgba(139, 92, 246, 0.3)',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          color: '#a78bfa'
+                        }
+                      }, `📝 Subject: "${rule.match_subject}"`),
+                      rule.match_category && h('div', {
+                        style: {
+                          padding: '6px 12px',
+                          background: 'rgba(34, 197, 94, 0.15)',
+                          border: '1px solid rgba(34, 197, 94, 0.3)',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          color: '#22c55e'
+                        }
+                      }, `📂 Category: ${rule.match_category}`),
+                      !rule.match_sender && !rule.match_subject && !rule.match_category && h('div', {
+                        style: {
+                          padding: '6px 12px',
+                          background: 'rgba(201, 169, 98, 0.15)',
+                          border: '1px solid rgba(201, 169, 98, 0.3)',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          color: '#C9A962'
+                        }
+                      }, '✨ Forward ALL emails'),
+                      h('div', {
+                        style: {
+                          padding: '6px 12px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          borderRadius: '8px',
+                          fontSize: '11px',
+                          color: 'rgba(255, 255, 255, 0.5)'
+                        }
+                      }, rule.keep_original ? '📥 Keep original' : '🗑️ Delete after forward')
+                    )
+                  )
+                )
+              ),
+              
+              // Create Rule Modal
+              showCreateRule && h('div', {
+                onClick: () => setShowCreateRule(false),
+                style: {
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'rgba(0, 0, 0, 0.8)',
+                  backdropFilter: 'blur(8px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 1000,
+                  padding: '20px'
+                }
+              },
+                h('div', {
+                  onClick: (e) => e.stopPropagation(),
+                  style: {
+                    background: 'linear-gradient(135deg, rgba(26, 31, 58, 0.98) 0%, rgba(15, 20, 41, 0.98) 100%)',
+                    borderRadius: '16px',
+                    padding: '32px',
+                    width: '600px',
+                    maxWidth: '90%',
+                    border: '1px solid rgba(96, 165, 250, 0.2)',
+                    boxShadow: '0 24px 64px rgba(0, 0, 0, 0.5)'
+                  }
+                },
+                  h('h3', { style: { color: '#60A5FA', fontSize: '24px', marginBottom: '8px' } }, '⚡ Create Forwarding Rule'),
+                  h('p', { style: { color: 'rgba(255, 255, 255, 0.5)', fontSize: '14px', marginBottom: '24px' } }, 
+                    'Automatically forward emails to external addresses'
+                  ),
+                  
+                  // Forward To (Required)
+                  h('div', { style: { marginBottom: '20px' } },
+                    h('label', { style: { display: 'block', color: 'rgba(255, 255, 255, 0.7)', fontSize: '13px', marginBottom: '8px', fontWeight: '600' } }, 
+                      'Forward To (Required) *'
+                    ),
+                    h('input', {
+                      type: 'email',
+                      placeholder: 'external@gmail.com',
+                      value: newRuleForwardTo,
+                      onChange: (e) => setNewRuleForwardTo(e.target.value),
+                      style: {
+                        width: '100%',
+                        padding: '12px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '8px',
+                        color: 'white',
+                        fontSize: '14px'
+                      }
+                    })
+                  ),
+                  
+                  // Match Sender (Optional)
+                  h('div', { style: { marginBottom: '20px' } },
+                    h('label', { style: { display: 'block', color: 'rgba(255, 255, 255, 0.7)', fontSize: '13px', marginBottom: '8px', fontWeight: '600' } }, 
+                      'Match Sender (Optional)'
+                    ),
+                    h('input', {
+                      type: 'email',
+                      placeholder: 'boss@company.com (leave empty to forward all)',
+                      value: newRuleMatchSender,
+                      onChange: (e) => setNewRuleMatchSender(e.target.value),
+                      style: {
+                        width: '100%',
+                        padding: '12px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '8px',
+                        color: 'white',
+                        fontSize: '14px'
+                      }
+                    })
+                  ),
+                  
+                  // Match Subject (Optional)
+                  h('div', { style: { marginBottom: '20px' } },
+                    h('label', { style: { display: 'block', color: 'rgba(255, 255, 255, 0.7)', fontSize: '13px', marginBottom: '8px', fontWeight: '600' } }, 
+                      'Match Subject Keywords (Optional)'
+                    ),
+                    h('input', {
+                      type: 'text',
+                      placeholder: 'urgent, important (leave empty to forward all)',
+                      value: newRuleMatchSubject,
+                      onChange: (e) => setNewRuleMatchSubject(e.target.value),
+                      style: {
+                        width: '100%',
+                        padding: '12px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '8px',
+                        color: 'white',
+                        fontSize: '14px'
+                      }
+                    })
+                  ),
+                  
+                  // Options
+                  h('div', { style: { marginBottom: '24px', display: 'flex', gap: '16px' } },
+                    h('label', { style: { display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' } },
+                      h('input', {
+                        type: 'checkbox',
+                        checked: newRuleKeepOriginal,
+                        onChange: (e) => setNewRuleKeepOriginal(e.target.checked),
+                        style: { width: '16px', height: '16px', cursor: 'pointer' }
+                      }),
+                      h('span', { style: { color: 'rgba(255, 255, 255, 0.7)', fontSize: '13px' } }, '📥 Keep original in inbox')
+                    ),
+                    h('label', { style: { display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' } },
+                      h('input', {
+                        type: 'checkbox',
+                        checked: newRuleAddPrefix,
+                        onChange: (e) => setNewRuleAddPrefix(e.target.checked),
+                        style: { width: '16px', height: '16px', cursor: 'pointer' }
+                      }),
+                      h('span', { style: { color: 'rgba(255, 255, 255, 0.7)', fontSize: '13px' } }, '📝 Add [Fwd:] prefix')
+                    )
+                  ),
+                  
+                  // Buttons
+                  h('div', { style: { display: 'flex', gap: '12px', justifyContent: 'flex-end' } },
+                    h('button', {
+                      onClick: () => setShowCreateRule(false),
+                      style: {
+                        padding: '12px 24px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '8px',
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        cursor: 'pointer',
+                        fontSize: '14px'
+                      }
+                    }, 'Cancel'),
+                    h('button', {
+                      onClick: createForwardingRule,
+                      style: {
+                        padding: '12px 24px',
+                        background: 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)',
+                        border: 'none',
+                        borderRadius: '8px',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '600'
+                      }
+                    }, '✨ Create Rule')
                   )
                 )
               )

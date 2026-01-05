@@ -2208,6 +2208,126 @@ emailRoutes.post('/receive', async (c) => {
       aiSummary
     ).run();
     
+    console.log(`✅ Email ${emailId} received and stored`);
+    
+    // 🔄 AUTO-FORWARDING: Check for matching forwarding rules
+    try {
+      const { results: rules } = await DB.prepare(`
+        SELECT * FROM email_forwarding_rules
+        WHERE user_email = ? AND is_enabled = 1
+      `).bind(to).all();
+      
+      if (rules && rules.length > 0) {
+        console.log(`📨 Checking ${rules.length} forwarding rules for ${to}`);
+        
+        for (const rule of rules as any[]) {
+          let shouldForward = false;
+          
+          // Check if rule matches
+          if (!rule.match_sender && !rule.match_subject && !rule.match_category) {
+            // Forward ALL emails if no conditions
+            shouldForward = true;
+            console.log(`✅ Rule ${rule.id}: Forward ALL matched`);
+          } else {
+            // Check individual conditions
+            const senderMatch = !rule.match_sender || senderEmail.includes(rule.match_sender);
+            const subjectMatch = !rule.match_subject || subject.toLowerCase().includes(rule.match_subject.toLowerCase());
+            const categoryMatch = !rule.match_category || rule.match_category === 'inbox';
+            
+            if (senderMatch && subjectMatch && categoryMatch) {
+              shouldForward = true;
+              console.log(`✅ Rule ${rule.id}: Conditions matched (sender:${senderMatch}, subject:${subjectMatch})`);
+            }
+          }
+          
+          if (shouldForward) {
+            // Forward the email
+            const { MAILGUN_API_KEY, MAILGUN_DOMAIN, MAILGUN_REGION } = c.env;
+            
+            if (MAILGUN_API_KEY && MAILGUN_DOMAIN) {
+              try {
+                const forwardSubject = rule.add_prefix 
+                  ? `Fwd: ${subject}` 
+                  : subject;
+                
+                const forwardBody = `---------- Forwarded message ---------\nFrom: ${senderEmail}\nDate: ${new Date().toISOString()}\nSubject: ${subject}\nTo: ${to}\n\n${bodyText}`;
+                
+                const fwdFormData = new FormData();
+                fwdFormData.append('from', to);
+                fwdFormData.append('to', rule.forward_to);
+                fwdFormData.append('subject', forwardSubject);
+                fwdFormData.append('text', forwardBody);
+                
+                const mailgunUrl = MAILGUN_REGION === 'EU' 
+                  ? `https://api.eu.mailgun.net/v3/${MAILGUN_DOMAIN}/messages`
+                  : `https://api.mailgun.net/v3/${MAILGUN_DOMAIN}/messages`;
+                
+                const fwdResponse = await fetch(mailgunUrl, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Basic ${btoa(`api:${MAILGUN_API_KEY}`)}`
+                  },
+                  body: fwdFormData
+                });
+                
+                if (fwdResponse.ok) {
+                  console.log(`✅ Auto-forwarded ${emailId} to ${rule.forward_to} via rule ${rule.id}`);
+                  
+                  // Log successful forward
+                  await DB.prepare(`
+                    INSERT INTO email_forwarding_log (
+                      id, rule_id, original_email_id, forwarded_to, success
+                    ) VALUES (?, ?, ?, ?, 1)
+                  `).bind(
+                    generateId('flog'),
+                    rule.id,
+                    emailId,
+                    rule.forward_to
+                  ).run();
+                  
+                  // Update rule trigger count
+                  await DB.prepare(`
+                    UPDATE email_forwarding_rules
+                    SET trigger_count = trigger_count + 1,
+                        last_triggered_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                  `).bind(rule.id).run();
+                  
+                  // Delete original if rule says so
+                  if (rule.keep_original === 0) {
+                    await DB.prepare(`DELETE FROM emails WHERE id = ?`).bind(emailId).run();
+                    console.log(`🗑️ Deleted original email ${emailId} (rule: keep_original = 0)`);
+                  }
+                } else {
+                  console.error(`❌ Forward failed for rule ${rule.id}:`, await fwdResponse.text());
+                  
+                  // Log failed forward
+                  await DB.prepare(`
+                    INSERT INTO email_forwarding_log (
+                      id, rule_id, original_email_id, forwarded_to, success, error_message
+                    ) VALUES (?, ?, ?, ?, 0, ?)
+                  `).bind(
+                    generateId('flog'),
+                    rule.id,
+                    emailId,
+                    rule.forward_to,
+                    'Mailgun API error'
+                  ).run();
+                }
+              } catch (forwardError: any) {
+                console.error(`❌ Forward error for rule ${rule.id}:`, forwardError);
+              }
+            } else {
+              console.log(`⚠️ Mailgun not configured - cannot auto-forward`);
+            }
+          }
+        }
+      }
+    } catch (forwardingError: any) {
+      console.error('❌ Auto-forwarding check error:', forwardingError);
+      // Don't fail the webhook if forwarding fails
+    }
+    
     return c.json({ success: true, emailId, threadId });
     
   } catch (error: any) {
