@@ -522,6 +522,52 @@ emailRoutes.post('/send', async (c) => {
         // Also wrap links in plain text version
         const textBodyWithTracking = wrapPlainTextLinks(body, emailId, baseUrl);
         
+        // 📎 HANDLE ATTACHMENTS (FileBank files)
+        const mailgunAttachments: Array<{ filename: string; data: Buffer | string }> = [];
+        
+        if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+          console.log(`📎 Processing ${attachments.length} attachments for sending`);
+          
+          for (const att of attachments) {
+            try {
+              // Load file from FileBank database
+              const fileRecord = await DB.prepare(`
+                SELECT * FROM files WHERE id = ?
+              `).bind(att.id).first();
+              
+              if (fileRecord && fileRecord.url) {
+                console.log(`📎 Fetching attachment: ${att.filename} from ${fileRecord.url}`);
+                
+                // Fetch file content
+                const fileResponse = await fetch(fileRecord.url);
+                if (!fileResponse.ok) {
+                  console.error(`❌ Failed to fetch attachment ${att.filename}: ${fileResponse.statusText}`);
+                  continue;
+                }
+                
+                // Convert to Buffer
+                const arrayBuffer = await fileResponse.arrayBuffer();
+                const buffer = Buffer.from(arrayBuffer);
+                
+                // Add to Mailgun attachments
+                mailgunAttachments.push({
+                  filename: att.filename,
+                  data: buffer
+                });
+                
+                console.log(`✅ Added attachment: ${att.filename} (${buffer.length} bytes)`);
+              } else {
+                console.warn(`⚠️ FileBank record not found for attachment ID: ${att.id}`);
+              }
+            } catch (attError: any) {
+              console.error(`❌ Error processing attachment ${att.filename}:`, attError.message);
+              // Continue with other attachments even if one fails
+            }
+          }
+          
+          console.log(`✅ Prepared ${mailgunAttachments.length} attachments for Mailgun`);
+        }
+        
         const result = await mailgunService.sendEmail({
           to,
           subject,
@@ -529,7 +575,8 @@ emailRoutes.post('/send', async (c) => {
           html: htmlBody,
           cc,
           bcc,
-          replyTo: from  // Set reply-to as the actual user's email
+          replyTo: from,  // Set reply-to as the actual user's email
+          attachments: mailgunAttachments.length > 0 ? mailgunAttachments : undefined // ✅ Add attachments!
         });
         
         if (result.success) {
