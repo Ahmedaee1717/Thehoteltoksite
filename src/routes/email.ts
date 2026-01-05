@@ -551,14 +551,14 @@ emailRoutes.post('/send', async (c) => {
                 // FileBank file: Load from database
                 console.log(`📎 Looking up FileBank file ID: ${att.id}`);
                 const fileRecord = await DB.prepare(`
-                  SELECT * FROM files WHERE id = ?
+                  SELECT * FROM file_bank_files WHERE id = ?
                 `).bind(att.id).first();
                 
-                if (fileRecord && fileRecord.url) {
-                  console.log(`📎 Fetching FileBank file: ${att.filename} from ${fileRecord.url}`);
+                if (fileRecord && fileRecord.file_url) {
+                  console.log(`📎 Fetching FileBank file: ${att.filename} from ${fileRecord.file_url}`);
                   
                   // Fetch file content
-                  const fileResponse = await fetch(fileRecord.url);
+                  const fileResponse = await fetch(fileRecord.file_url);
                   if (!fileResponse.ok) {
                     console.error(`❌ Failed to fetch attachment ${att.filename}: ${fileResponse.statusText}`);
                     continue;
