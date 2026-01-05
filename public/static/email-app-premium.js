@@ -885,26 +885,38 @@ window.addEventListener('DOMContentLoaded', function() {
                 }, 'I')
               ),
               h('div', null,
-                h('div', { 
-                  style: { 
-                    fontSize: '20px', 
-                    fontWeight: '700',
-                    background: 'linear-gradient(135deg, #C9A962 0%, #f5e6d3 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    letterSpacing: '-0.5px'
-                  } 
-                }, 'Investay Signal'),
-                h('div', { 
-                  style: { 
-                    fontSize: '11px', 
-                    color: 'rgba(201, 169, 98, 0.7)',
-                    fontWeight: '400',
-                    letterSpacing: '0.3px',
-                    marginTop: '2px',
-                    fontStyle: 'italic'
-                  } 
-                }, 'If it\'s still important, it will still be here.')
+                h('div', {
+                  style: {
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px'
+                  }
+                },
+                  // Main brand name
+                  h('div', { 
+                    style: { 
+                      fontSize: '19px', 
+                      fontWeight: '800',
+                      color: '#FFFFFF',
+                      letterSpacing: '2px',
+                      textTransform: 'uppercase',
+                      lineHeight: '1.2'
+                    } 
+                  }, 'INVESTAYCAPITAL'),
+                  // Tagline
+                  h('div', { 
+                    style: { 
+                      fontSize: '10px', 
+                      color: 'rgba(201, 169, 98, 0.85)',
+                      fontWeight: '600',
+                      letterSpacing: '1.5px',
+                      textTransform: 'uppercase',
+                      borderTop: '1px solid rgba(201, 169, 98, 0.3)',
+                      paddingTop: '6px',
+                      marginTop: '2px'
+                    } 
+                  }, 'Internal Email System')
+                )
               )
             ),
             
