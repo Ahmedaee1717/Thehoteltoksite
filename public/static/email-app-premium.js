@@ -480,6 +480,7 @@ window.addEventListener('DOMContentLoaded', function() {
               });
             } else {
               // FileBank file: Send ID for backend to fetch
+              console.log(`📎 FileBank attachment: ${att.filename}, ID: ${att.id}`);
               attachmentData.push({
                 id: att.id,
                 filename: att.filename,
@@ -519,7 +520,8 @@ window.addEventListener('DOMContentLoaded', function() {
             // Wait for animation to complete, then close
             setTimeout(() => {
               loadData();
-              onClose(); // Use onClose to properly clear attachments
+              setShowCompose(false);
+              setComposeAttachments([]); // Clear attachments
               setSendingEmail(false);
               setSendStatus(null);
             }, 2500); // 2.5 seconds for smooth animation
