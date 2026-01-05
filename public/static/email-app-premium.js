@@ -6466,9 +6466,121 @@ window.addEventListener('DOMContentLoaded', function() {
                       fontSize: isLatest ? '15px' : '14px', 
                       lineHeight: '1.7', 
                       color: isLatest ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.85)', 
-                      whiteSpace: 'pre-wrap' 
+                      whiteSpace: 'pre-wrap',
+                      marginBottom: '16px'
                     } 
-                  }, stripQuotedReply(msg.body_text) || msg.snippet || '(No content)')
+                  }, stripQuotedReply(msg.body_text) || msg.snippet || '(No content)'),
+                  
+                  // 📎 ATTACHMENTS for this message (only if it's the main email)
+                  isLatest && attachments.length > 0 && h('div', {
+                    style: {
+                      marginTop: '16px',
+                      padding: '16px',
+                      background: 'rgba(201, 169, 98, 0.08)',
+                      border: '1px solid rgba(201, 169, 98, 0.2)',
+                      borderRadius: '12px'
+                    }
+                  },
+                    h('div', {
+                      style: {
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        color: 'rgba(201, 169, 98, 0.9)',
+                        marginBottom: '12px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }
+                    }, 
+                      '📎',
+                      `${attachments.length} Attachment${attachments.length > 1 ? 's' : ''}`
+                    ),
+                    
+                    h('div', {
+                      style: {
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px'
+                      }
+                    },
+                      attachments.map((att, idx) =>
+                        h('a', {
+                          key: idx,
+                          href: att.r2_url || '#',
+                          target: '_blank',
+                          download: att.filename,
+                          style: {
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            padding: '12px 16px',
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '8px',
+                            textDecoration: 'none',
+                            transition: 'all 0.2s ease',
+                            cursor: 'pointer'
+                          },
+                          onMouseOver: (e) => {
+                            e.target.style.background = 'rgba(201, 169, 98, 0.15)';
+                            e.target.style.borderColor = 'rgba(201, 169, 98, 0.4)';
+                          },
+                          onMouseOut: (e) => {
+                            e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                            e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                          }
+                        },
+                          // File icon
+                          h('div', {
+                            style: {
+                              width: '40px',
+                              height: '40px',
+                              background: 'linear-gradient(135deg, rgba(201, 169, 98, 0.2) 0%, rgba(139, 115, 85, 0.2) 100%)',
+                              borderRadius: '8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '20px',
+                              flexShrink: 0
+                            }
+                          }, '📄'),
+                          
+                          // File info
+                          h('div', { style: { flex: 1, minWidth: 0 } },
+                            h('div', { 
+                              style: { 
+                                fontWeight: '600', 
+                                color: 'rgba(255, 255, 255, 0.9)',
+                                fontSize: '14px',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              } 
+                            }, att.filename),
+                            h('div', { 
+                              style: { 
+                                fontSize: '12px', 
+                                color: 'rgba(255, 255, 255, 0.5)',
+                                marginTop: '2px'
+                              } 
+                            }, 
+                              `${Math.round(att.size / 1024)} KB • ${att.content_type || 'Unknown type'}`
+                            )
+                          ),
+                          
+                          // Download icon
+                          h('div', {
+                            style: {
+                              fontSize: '18px',
+                              color: 'rgba(201, 169, 98, 0.8)'
+                            }
+                          }, '⬇️')
+                        )
+                      )
+                    )
+                  )
                 );
               }),
               
