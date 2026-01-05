@@ -1603,29 +1603,6 @@ emailRoutes.get('/track/:tracking_id', async (c) => {
     const readMethod = isGmailProxy ? 'tracking_pixel_proxy' : 'tracking_pixel';
     console.log(`📊 Tracking open for email ${emailId} via ${readMethod}`);
     
-    // IMPORTANT: Only track if request is NOT from the sender viewing their own email
-    // Check if the request is from our app or a real email client
-    const referer = c.req.header('referer') || '';
-    const isFromOurApp = referer.includes('/mail') || 
-                         referer.includes('investay') || 
-                         referer.includes('localhost') ||
-                         referer.includes('sandbox') ||
-                         userAgent.includes('Chrome') && referer.includes('3000-');
-    
-    // If request is from our own app viewing sent emails, don't track
-    // Only track when email is opened by recipient in their actual email client
-    if (isFromOurApp) {
-      console.log('⏭️ Skipping tracking - request from app interface, not email client');
-      return new Response(TRACKING_PIXEL, {
-        headers: {
-          'Content-Type': 'image/gif',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
-      });
-    }
-    
     console.log(`✅ Tracking email open from recipient email client for email ${emailId}`);
     
     // Detect device type
