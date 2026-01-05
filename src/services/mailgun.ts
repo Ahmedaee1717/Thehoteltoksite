@@ -61,10 +61,17 @@ export class MailgunService {
 
       // Add attachments if provided
       if (options.attachments && options.attachments.length > 0) {
-        emailData.attachment = options.attachments.map(att => ({
-          filename: att.filename,
-          data: att.data,
-        }));
+        console.log(`📎 Mailgun: Adding ${options.attachments.length} attachments`);
+        emailData.attachment = options.attachments.map((att, idx) => {
+          console.log(`📎 Mailgun attachment ${idx + 1}: ${att.filename} (${att.data instanceof Buffer ? att.data.length : att.data?.length} bytes)`);
+          return {
+            filename: att.filename,
+            data: att.data,
+          };
+        });
+        console.log('📎 Mailgun: Attachments prepared for send');
+      } else {
+        console.log('📎 Mailgun: No attachments to add');
       }
 
       // Send email

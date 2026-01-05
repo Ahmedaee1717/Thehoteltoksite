@@ -525,6 +525,14 @@ emailRoutes.post('/send', async (c) => {
         // 📎 HANDLE ATTACHMENTS (FileBank files + Computer uploads)
         const mailgunAttachments: Array<{ filename: string; data: Buffer | string }> = [];
         
+        console.log('📎 DEBUG: Raw attachments received:', JSON.stringify(attachments?.map(a => ({
+          filename: a.filename,
+          isLocalFile: a.isLocalFile,
+          hasData: !!a.data,
+          hasFile: !!a.file,
+          hasId: !!a.id
+        }))));
+        
         if (attachments && Array.isArray(attachments) && attachments.length > 0) {
           console.log(`📎 Processing ${attachments.length} attachments for sending`);
           
@@ -532,7 +540,7 @@ emailRoutes.post('/send', async (c) => {
             try {
               if (att.isLocalFile && att.data) {
                 // Computer upload: data is base64 string
-                console.log(`📎 Processing computer upload: ${att.filename}`);
+                console.log(`📎 Processing computer upload: ${att.filename} (${att.data?.length} chars of base64)`);
                 const buffer = Buffer.from(att.data, 'base64');
                 mailgunAttachments.push({
                   filename: att.filename,
@@ -541,6 +549,7 @@ emailRoutes.post('/send', async (c) => {
                 console.log(`✅ Added computer upload: ${att.filename} (${buffer.length} bytes)`);
               } else {
                 // FileBank file: Load from database
+                console.log(`📎 Looking up FileBank file ID: ${att.id}`);
                 const fileRecord = await DB.prepare(`
                   SELECT * FROM files WHERE id = ?
                 `).bind(att.id).first();
@@ -577,7 +586,23 @@ emailRoutes.post('/send', async (c) => {
           }
           
           console.log(`✅ Prepared ${mailgunAttachments.length} attachments for Mailgun`);
+          console.log('📎 DEBUG: Mailgun attachments:', mailgunAttachments.map(a => ({
+            filename: a.filename,
+            dataType: typeof a.data,
+            dataLength: a.data instanceof Buffer ? a.data.length : a.data?.length
+          })));
+        } else {
+          console.log('📎 No attachments to process');
         }
+        
+        console.log('📬 Calling Mailgun with:', {
+          to,
+          subject,
+          textLength: textBodyWithTracking?.length,
+          htmlLength: htmlBody?.length,
+          attachmentCount: mailgunAttachments.length,
+          hasAttachments: mailgunAttachments.length > 0
+        });
         
         const result = await mailgunService.sendEmail({
           to,
