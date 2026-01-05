@@ -4660,6 +4660,20 @@ window.addEventListener('DOMContentLoaded', function() {
       const [attachments, setAttachments] = useState([]);
       
       // Add attachment from FileBank
+      // Load files from FileBank when FilePicker opens
+      const loadFileBankFiles = async () => {
+        try {
+          console.log('📂 Loading FileBank files...');
+          const res = await fetch(`/api/filebank/files?userEmail=${user}`);
+          const data = await res.json();
+          console.log('📂 FileBank files loaded:', data.files?.length || 0);
+          setFiles(data.files || []);
+        } catch (err) {
+          console.error('❌ Failed to load FileBank files:', err);
+          setFiles([]);
+        }
+      };
+      
       const addAttachment = (file) => {
         // Normalize FileBank file structure to match expected format
         const normalizedFile = {
@@ -5865,7 +5879,10 @@ window.addEventListener('DOMContentLoaded', function() {
             
             // FileBank button
             h('button', {
-              onClick: () => setShowFilePicker(true),
+              onClick: () => {
+                loadFileBankFiles(); // Load files before opening picker
+                setShowFilePicker(true);
+              },
               style: {
                 padding: '12px 20px',
                 background: 'rgba(201, 169, 98, 0.1)',
@@ -6099,6 +6116,15 @@ window.addEventListener('DOMContentLoaded', function() {
           console.error('❌ Date formatting error:', err);
           return 'Invalid date';
         }
+      };
+      
+      // Format file size (bytes to human-readable)
+      const formatFileSize = (bytes) => {
+        if (!bytes || bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
       };
       
       // Strip quoted replies from email body to avoid showing history in threads
