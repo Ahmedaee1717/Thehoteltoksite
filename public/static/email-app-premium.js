@@ -5844,8 +5844,14 @@ window.addEventListener('DOMContentLoaded', function() {
           const response = await fetch(`/api/email/thread/${email.thread_id}`);
           const data = await response.json();
           if (data.success && data.emails) {
-            setThreadEmails(data.emails);
-            console.log('🧵 Thread loaded:', data.emails.length, 'messages');
+            // CRITICAL: Sort by timestamp DESC (newest first) on client-side too!
+            const sortedEmails = [...data.emails].sort((a, b) => {
+              const timeA = new Date(a.sent_at || a.received_at || a.created_at).getTime();
+              const timeB = new Date(b.sent_at || b.received_at || b.created_at).getTime();
+              return timeB - timeA; // DESC = newest first
+            });
+            setThreadEmails(sortedEmails);
+            console.log('🧵 Thread loaded and sorted:', sortedEmails.length, 'messages (newest first)');
           }
         } catch (err) {
           console.error('❌ Failed to load thread:', err);
@@ -6233,11 +6239,17 @@ window.addEventListener('DOMContentLoaded', function() {
                 }, `${threadEmails.length} messages`)
               ),
               
-              // Show all messages in thread (NEWEST FIRST - sorted DESC from backend)
+              // Show all messages in thread (NEWEST FIRST - sorted DESC)
               threadEmails.map((msg, idx) => {
-                // Calculate message number (reversed since newest is first)
+                // Since we sort NEWEST FIRST (DESC), idx=0 is the latest
+                const isLatest = idx === 0;
+                
+                // Message number: Since newest is first, we need to reverse
+                // Example: 3 messages total
+                // idx=0 (latest) → messageNum = 3
+                // idx=1 (middle) → messageNum = 2  
+                // idx=2 (oldest) → messageNum = 1
                 const messageNum = threadEmails.length - idx;
-                const isLatest = idx === 0; // First message is now the latest!
                 
                 return h('div', {
                   key: msg.id,
