@@ -7,6 +7,7 @@ import { adminRoutes } from './routes/admin'
 import { aiAdminRoutes } from './routes/ai-admin'
 import { emailRoutes } from './routes/email'
 import { authRoutes } from './routes/auth'
+import forwardingRoutes from './routes/forwarding'
 import tasks from './routes/tasks'
 import crm from './routes/crm'
 import filebank from './routes/filebank'
@@ -76,6 +77,7 @@ app.route('/api/admin', adminRoutes)
 app.route('/api/ai', aiAdminRoutes)
 app.route('/api/email', emailRoutes)
 app.route('/api/auth', authRoutes)
+app.route('/api/forwarding', forwardingRoutes)
 app.route('/api/tasks', tasks)
 app.route('/api/crm', crm)
 app.route('/api/filebank', filebank)

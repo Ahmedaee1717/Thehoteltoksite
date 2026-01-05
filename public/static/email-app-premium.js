@@ -840,6 +840,7 @@ window.addEventListener('DOMContentLoaded', function() {
         { id: 'spam', icon: '⊘', label: 'Spam', gradient: 'linear-gradient(135deg, #D4A574 0%, #9B7652 100%)' },
         { id: 'trash', icon: '◻', label: 'Trash', gradient: 'linear-gradient(135deg, #BFA076 0%, #8A6E4F 100%)' },
         { id: 'archived', icon: '▣', label: 'Archive', gradient: 'linear-gradient(135deg, #C4A976 0%, #937D5C 100%)' },
+        { id: 'forwarding', icon: '⚡', label: 'Forwarding', gradient: 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)' },
         { id: 'tasks', icon: '✓', label: 'Tasks', gradient: 'linear-gradient(135deg, #D1AE6E 0%, #9E825A 100%)' },
         { id: 'crm', icon: '👥', label: 'CRM', gradient: 'linear-gradient(135deg, #E8B86D 0%, #B89968 100%)' },
         { id: 'filebank', icon: '📁', label: 'Files', gradient: 'linear-gradient(135deg, #DDB76A 0%, #AA9265 100%)' }
