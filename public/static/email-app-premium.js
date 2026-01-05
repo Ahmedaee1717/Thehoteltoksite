@@ -491,7 +491,14 @@ window.addEventListener('DOMContentLoaded', function() {
             }
           }
           
-          console.log(`📎 Sending email with ${attachments.length} attachments:`, attachmentData.map(a => ({ filename: a.filename, isLocalFile: a.isLocalFile })));
+          console.log(`📎 Sending email with ${attachments.length} attachments:`);
+          console.log('📎 Attachment details:', JSON.stringify(attachmentData.map(a => ({
+            filename: a.filename,
+            isLocalFile: a.isLocalFile,
+            hasData: !!a.data,
+            dataLength: a.data?.length,
+            hasId: !!a.id
+          })), null, 2));
           
           const response = await fetch('/api/email/send', {
             method: 'POST',
@@ -512,7 +519,7 @@ window.addEventListener('DOMContentLoaded', function() {
             // Wait for animation to complete, then close
             setTimeout(() => {
               loadData();
-              setShowCompose(false);
+              onClose(); // Use onClose to properly clear attachments
               setSendingEmail(false);
               setSendStatus(null);
             }, 2500); // 2.5 seconds for smooth animation
