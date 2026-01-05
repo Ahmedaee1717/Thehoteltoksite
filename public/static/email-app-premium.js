@@ -2340,8 +2340,8 @@ window.addEventListener('DOMContentLoaded', function() {
                         gap: '8px'
                       }
                     },
-                      // 🔵 Unread indicator badge (ONLY show in INBOX view, NOT in SENT)
-                      !email.is_read && view === 'inbox' && h('div', {
+                      // 🔵 Unread indicator badge (CRITICAL: ONLY in INBOX, never in SENT/DRAFTS)
+                      !email.is_read && (view === 'inbox' || view === 'search') && h('div', {
                         style: {
                           display: 'flex',
                           alignItems: 'center',
