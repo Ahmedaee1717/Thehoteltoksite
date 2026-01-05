@@ -2227,13 +2227,13 @@ window.addEventListener('DOMContentLoaded', function() {
                   },
                   style: {
                     padding: '24px',
-                    // Read emails: darker, dimmed (lights off)
-                    // Unread emails: brighter, highlighted
-                    background: email.is_read 
+                    // INBOX: Read emails dimmed (lights off), Unread emails bright
+                    // SENT: Always same brightness (recipient read status shown separately)
+                    background: view === 'inbox' && email.is_read 
                       ? 'linear-gradient(135deg, rgba(15, 20, 35, 0.4) 0%, rgba(10, 13, 25, 0.4) 100%)'
                       : 'linear-gradient(135deg, rgba(26, 31, 58, 0.8) 0%, rgba(15, 20, 41, 0.8) 100%)',
                     backdropFilter: 'blur(20px)',
-                    border: email.is_read 
+                    border: view === 'inbox' && email.is_read 
                       ? '1px solid rgba(255, 255, 255, 0.03)'
                       : '1px solid rgba(201, 169, 98, 0.2)',
                     borderRadius: '16px',
@@ -2244,7 +2244,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     boxShadow: email.is_read
                       ? '0 2px 12px rgba(0, 0, 0, 0.3)'
                       : '0 4px 24px rgba(201, 169, 98, 0.15)',
-                    opacity: email.is_read ? 0.7 : 1
+                    opacity: (view === 'inbox' && email.is_read) ? 0.7 : 1
                   },
                   onMouseEnter: (e) => {
                     e.currentTarget.style.transform = 'translateY(-4px) scale(1.01)';
@@ -2254,13 +2254,13 @@ window.addEventListener('DOMContentLoaded', function() {
                   },
                   onMouseLeave: (e) => {
                     e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                    e.currentTarget.style.borderColor = email.is_read 
+                    e.currentTarget.style.borderColor = (view === 'inbox' && email.is_read)
                       ? 'rgba(255, 255, 255, 0.03)'
                       : 'rgba(201, 169, 98, 0.2)';
-                    e.currentTarget.style.boxShadow = email.is_read
+                    e.currentTarget.style.boxShadow = (view === 'inbox' && email.is_read)
                       ? '0 2px 12px rgba(0, 0, 0, 0.3)'
                       : '0 4px 24px rgba(201, 169, 98, 0.15)';
-                    e.currentTarget.style.opacity = email.is_read ? '0.7' : '1';
+                    e.currentTarget.style.opacity = (view === 'inbox' && email.is_read) ? '0.7' : '1';
                   }
                 },
                   // Gradient shine effect

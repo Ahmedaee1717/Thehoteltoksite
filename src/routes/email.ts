@@ -1590,6 +1590,13 @@ emailRoutes.get('/track/:tracking_id', async (c) => {
     const ipAddress = c.req.header('cf-connecting-ip') || 
                       c.req.header('x-forwarded-for') || 
                       c.req.header('x-real-ip') || '';
+    const referer = c.req.header('referer') || '';
+    
+    console.log(`🔍 ===== TRACKING REQUEST for email ${emailId} =====`);
+    console.log(`   📧 To: ${email.to_email}, From: ${email.from_email}`);
+    console.log(`   🌐 User-Agent: ${userAgent}`);
+    console.log(`   📍 IP: ${ipAddress}`);
+    console.log(`   🔗 Referer: ${referer || '(none)'}`);
     
     // 🚨 CRITICAL: Detect Gmail Image Proxy prefetch
     // 🚨 Gmail Image Proxy Detection
@@ -1601,9 +1608,8 @@ emailRoutes.get('/track/:tracking_id', async (c) => {
                          userAgent.includes('Googlebot-Image');
     
     const readMethod = isGmailProxy ? 'tracking_pixel_proxy' : 'tracking_pixel';
-    console.log(`📊 Tracking open for email ${emailId} via ${readMethod}`);
-    
-    console.log(`✅ Tracking email open from recipient email client for email ${emailId}`);
+    console.log(`   🎯 Method: ${readMethod} (isGmailProxy: ${isGmailProxy})`);
+    console.log(`✅ Processing tracking...`);
     
     // Detect device type
     const deviceType = userAgent.toLowerCase().includes('mobile') ? 'mobile' :
