@@ -5944,6 +5944,57 @@ window.addEventListener('DOMContentLoaded', function() {
         }
       };
       
+      // Strip quoted replies from email body to avoid showing history in threads
+      const stripQuotedReply = (body) => {
+        if (!body) return body;
+        
+        // Common quote patterns that indicate start of quoted/forwarded content
+        const quotePatterns = [
+          /^On .+wrote:$/m,                           // "On Mon, 5 Jan 2026 at 14:10, <email> wrote:"
+          /^-+\s*Original Message\s*-+$/mi,           // "--- Original Message ---"
+          /^_{10,}$/m,                                 // "________________________________"
+          /^From:.+\nSent:.+\nTo:.+\nSubject:/mi,    // Outlook-style header
+          /^>\s*.+/m,                                  // Lines starting with ">"
+          /^━{3,}$/m,                                  // "━━━━━━━━━━━━━━━━━━"
+        ];
+        
+        let cleanBody = body;
+        
+        // Find the earliest quote pattern match
+        let earliestIndex = cleanBody.length;
+        
+        for (const pattern of quotePatterns) {
+          const match = cleanBody.match(pattern);
+          if (match && match.index < earliestIndex) {
+            earliestIndex = match.index;
+          }
+        }
+        
+        // If we found a quote pattern, cut everything after it
+        if (earliestIndex < cleanBody.length) {
+          cleanBody = cleanBody.substring(0, earliestIndex).trim();
+        }
+        
+        // Also remove lines that start with ">" (quoted text)
+        const lines = cleanBody.split('\n');
+        const nonQuotedLines = [];
+        let foundQuote = false;
+        
+        for (const line of lines) {
+          if (line.trim().startsWith('>')) {
+            foundQuote = true;
+            break; // Stop at first quoted line
+          }
+          nonQuotedLines.push(line);
+        }
+        
+        if (foundQuote) {
+          cleanBody = nonQuotedLines.join('\n').trim();
+        }
+        
+        return cleanBody || body; // Fallback to original if stripping removed everything
+      };
+      
       return h('div', {
         onClick: onClose,
         style: {
@@ -6382,7 +6433,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     }, formatDate(msg.sent_at || msg.received_at || msg.created_at))
                   ),
                   
-                  // Message body
+                  // Message body - strip quoted replies to avoid showing history
                   h('div', { 
                     style: { 
                       fontSize: isLatest ? '15px' : '14px', 
@@ -6390,7 +6441,7 @@ window.addEventListener('DOMContentLoaded', function() {
                       color: isLatest ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.85)', 
                       whiteSpace: 'pre-wrap' 
                     } 
-                  }, msg.body_text || msg.snippet || '(No content)')
+                  }, stripQuotedReply(msg.body_text) || msg.snippet || '(No content)')
                 );
               }),
               
