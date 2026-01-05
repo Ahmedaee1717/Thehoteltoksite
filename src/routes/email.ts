@@ -2210,6 +2210,90 @@ emailRoutes.post('/receive', async (c) => {
     
     console.log(`✅ Email ${emailId} received and stored`);
     
+    // 📎 PROCESS ATTACHMENTS from Mailgun
+    // Mailgun sends attachments as: attachment-1, attachment-2, etc.
+    try {
+      const attachmentCount = parseInt(formData.get('attachment-count') as string || '0');
+      console.log(`📎 Processing ${attachmentCount} attachments for email ${emailId}`);
+      
+      if (attachmentCount > 0) {
+        for (let i = 1; i <= attachmentCount; i++) {
+          const attachmentFile = formData.get(`attachment-${i}`) as File;
+          
+          if (attachmentFile && attachmentFile.size > 0) {
+            const attachmentId = `att_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+            const filename = attachmentFile.name || `attachment-${i}`;
+            const contentType = attachmentFile.type || 'application/octet-stream';
+            const size = attachmentFile.size;
+            
+            console.log(`📎 Processing attachment ${i}: ${filename} (${size} bytes, ${contentType})`);
+            
+            // Check if R2 bucket is available
+            const R2 = c.env.R2_BUCKET;
+            let r2Key = null;
+            let r2Url = null;
+            
+            if (R2) {
+              // Upload to R2
+              try {
+                r2Key = `attachments/${emailId}/${attachmentId}/${filename}`;
+                const fileBuffer = await attachmentFile.arrayBuffer();
+                
+                await R2.put(r2Key, fileBuffer, {
+                  httpMetadata: {
+                    contentType: contentType
+                  }
+                });
+                
+                // Generate public URL (adjust domain as needed)
+                r2Url = `https://files.investaycapital.com/${r2Key}`;
+                console.log(`✅ Uploaded to R2: ${r2Key}`);
+              } catch (r2Error: any) {
+                console.error(`❌ R2 upload failed for ${filename}:`, r2Error.message);
+              }
+            } else {
+              // NO R2: Store as base64 in database (temporary solution)
+              console.warn(`⚠️ R2 not configured - storing ${filename} as base64 in database`);
+              
+              try {
+                const fileBuffer = await attachmentFile.arrayBuffer();
+                const base64Data = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)));
+                
+                // Store in r2_url field temporarily (we'll show data URI)
+                r2Url = `data:${contentType};base64,${base64Data}`;
+                console.log(`✅ Stored ${filename} as base64 (${base64Data.length} chars)`);
+              } catch (base64Error: any) {
+                console.error(`❌ Base64 encoding failed for ${filename}:`, base64Error.message);
+              }
+            }
+            
+            // Insert attachment record
+            await DB.prepare(`
+              INSERT INTO attachments (
+                id, email_id, filename, content_type, size, 
+                r2_key, r2_url, created_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            `).bind(
+              attachmentId,
+              emailId,
+              filename,
+              contentType,
+              size,
+              r2Key,
+              r2Url
+            ).run();
+            
+            console.log(`✅ Attachment ${i} saved: ${filename}`);
+          }
+        }
+        
+        console.log(`✅ All ${attachmentCount} attachments processed for email ${emailId}`);
+      }
+    } catch (attachmentError: any) {
+      console.error('❌ Attachment processing error:', attachmentError.message);
+      // Don't fail the webhook if attachment processing fails
+    }
+    
     // 🔄 AUTO-FORWARDING: Check for matching forwarding rules
     try {
       const { results: rules } = await DB.prepare(`
