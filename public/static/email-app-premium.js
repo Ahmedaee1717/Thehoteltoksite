@@ -6233,100 +6233,154 @@ window.addEventListener('DOMContentLoaded', function() {
                 }, `${threadEmails.length} messages`)
               ),
               
-              // Show all messages in thread
-              threadEmails.map((msg, idx) =>
-                h('div', {
+              // Show all messages in thread (NEWEST FIRST - sorted DESC from backend)
+              threadEmails.map((msg, idx) => {
+                // Calculate message number (reversed since newest is first)
+                const messageNum = threadEmails.length - idx;
+                const isLatest = idx === 0; // First message is now the latest!
+                
+                return h('div', {
                   key: msg.id,
                   style: {
                     marginBottom: idx < threadEmails.length - 1 ? '16px' : '0',
                     padding: '20px',
-                    background: idx === threadEmails.length - 1 
-                      ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%)'
-                      : 'rgba(255, 255, 255, 0.02)',
+                    // Latest message gets STRONG highlight
+                    background: isLatest 
+                      ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%)'
+                      : 'rgba(255, 255, 255, 0.03)',
                     borderRadius: '12px',
-                    border: idx === threadEmails.length - 1
-                      ? '1px solid rgba(59, 130, 246, 0.2)'
-                      : '1px solid rgba(255, 255, 255, 0.05)',
-                    position: 'relative'
+                    border: isLatest
+                      ? '2px solid rgba(59, 130, 246, 0.4)'
+                      : '1px solid rgba(255, 255, 255, 0.08)',
+                    position: 'relative',
+                    // Add subtle scale effect to latest
+                    transform: isLatest ? 'scale(1.01)' : 'none',
+                    transition: 'all 0.2s ease'
                   }
                 },
+                  // Message number badge (TOP LEFT)
+                  h('div', {
+                    style: {
+                      position: 'absolute',
+                      top: '12px',
+                      left: '12px',
+                      fontSize: '10px',
+                      fontWeight: '700',
+                      color: isLatest ? '#3b82f6' : 'rgba(255, 255, 255, 0.4)',
+                      background: isLatest ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                      padding: '4px 8px',
+                      borderRadius: '8px',
+                      border: isLatest ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(255, 255, 255, 0.1)',
+                      zIndex: 10
+                    }
+                  }, `#${messageNum}`),
+                  
+                  // Latest indicator (TOP RIGHT)
+                  isLatest && h('div', {
+                    style: {
+                      position: 'absolute',
+                      top: '12px',
+                      right: '12px',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      color: '#10b981',
+                      background: 'rgba(16, 185, 129, 0.15)',
+                      padding: '6px 12px',
+                      borderRadius: '12px',
+                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                      zIndex: 10,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }
+                  }, 
+                    '✨',
+                    'LATEST'
+                  ),
+                  
                   // Message header
                   h('div', {
                     style: {
                       display: 'flex',
                       justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: '12px',
-                      paddingBottom: '12px',
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+                      alignItems: 'flex-start',
+                      marginBottom: '16px',
+                      paddingBottom: '16px',
+                      borderBottom: isLatest ? '2px solid rgba(59, 130, 246, 0.2)' : '1px solid rgba(255, 255, 255, 0.08)',
+                      marginTop: '30px' // Space for badges
                     }
                   },
                     h('div', {
                       style: {
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '10px'
+                        gap: '12px',
+                        flex: 1
                       }
                     },
                       h('div', {
                         style: {
-                          width: '32px',
-                          height: '32px',
+                          width: isLatest ? '40px' : '36px',
+                          height: isLatest ? '40px' : '36px',
                           borderRadius: '50%',
-                          background: 'linear-gradient(135deg, #C9A962 0%, #8B7355 100%)',
+                          background: isLatest 
+                            ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
+                            : 'linear-gradient(135deg, #C9A962 0%, #8B7355 100%)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontSize: '14px',
-                          flexShrink: 0
+                          fontSize: isLatest ? '18px' : '15px',
+                          flexShrink: 0,
+                          border: isLatest ? '2px solid rgba(59, 130, 246, 0.4)' : 'none'
                         }
                       }, msg.from_name ? msg.from_name.charAt(0).toUpperCase() : '📧'),
-                      h('div', {},
+                      h('div', { style: { flex: 1, minWidth: 0 } },
                         h('div', {
                           style: {
-                            fontSize: '13px',
-                            fontWeight: '600',
-                            color: 'rgba(255, 255, 255, 0.9)'
+                            fontSize: isLatest ? '15px' : '13px',
+                            fontWeight: isLatest ? '700' : '600',
+                            color: isLatest ? 'rgba(255, 255, 255, 1)' : 'rgba(255, 255, 255, 0.9)',
+                            marginBottom: '4px'
                           }
                         }, msg.from_name || msg.from_email),
                         h('div', {
                           style: {
-                            fontSize: '11px',
-                            color: 'rgba(255, 255, 255, 0.5)'
+                            fontSize: '12px',
+                            color: 'rgba(255, 255, 255, 0.5)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
                           }
-                        }, '→ ' + msg.to_email)
+                        }, 
+                          '→',
+                          msg.to_email
+                        )
                       )
                     ),
+                    // Timestamp - LARGER and clearer
                     h('div', {
                       style: {
-                        fontSize: '11px',
-                        color: 'rgba(255, 255, 255, 0.5)',
-                        textAlign: 'right'
+                        fontSize: isLatest ? '13px' : '11px',
+                        fontWeight: isLatest ? '600' : '500',
+                        color: isLatest ? 'rgba(59, 130, 246, 0.9)' : 'rgba(255, 255, 255, 0.5)',
+                        textAlign: 'right',
+                        whiteSpace: 'nowrap',
+                        paddingLeft: '12px'
                       }
                     }, formatDate(msg.sent_at || msg.received_at || msg.created_at))
                   ),
                   
                   // Message body
-                  h('div', { style: { fontSize: '14px', lineHeight: '1.7', color: 'rgba(255, 255, 255, 0.85)', whiteSpace: 'pre-wrap' } }, msg.body_text || msg.snippet || '(No content)'),
-                  
-                  // Latest message indicator - positioned BOTTOM RIGHT to avoid overlap
-                  idx === threadEmails.length - 1 && h('div', {
-                    style: {
-                      position: 'absolute',
-                      bottom: '12px',
-                      right: '12px',
-                      fontSize: '10px',
-                      fontWeight: '600',
-                      color: '#3b82f6',
-                      background: 'rgba(59, 130, 246, 0.15)',
-                      padding: '4px 10px',
-                      borderRadius: '12px',
-                      border: '1px solid rgba(59, 130, 246, 0.3)',
-                      zIndex: 10
-                    }
-                  }, '💬 Latest')
-                )
-              ),
+                  h('div', { 
+                    style: { 
+                      fontSize: isLatest ? '15px' : '14px', 
+                      lineHeight: '1.7', 
+                      color: isLatest ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.85)', 
+                      whiteSpace: 'pre-wrap' 
+                    } 
+                  }, msg.body_text || msg.snippet || '(No content)')
+                );
+              }),
               
               loadingThread && h('div', {
                 style: {

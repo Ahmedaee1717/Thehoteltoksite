@@ -2446,6 +2446,7 @@ emailRoutes.get('/thread/:thread_id', async (c) => {
   
   try {
     // Get all emails in thread where user is sender or recipient
+    // 🔄 ORDER BY DESC = NEWEST FIRST (most intuitive for users)
     const { results } = await DB.prepare(`
       SELECT 
         id, thread_id, from_email, from_name, to_email, subject,
@@ -2456,7 +2457,7 @@ emailRoutes.get('/thread/:thread_id', async (c) => {
       WHERE thread_id = ? 
         AND (from_email = ? OR to_email = ?)
         AND category != 'trash'
-      ORDER BY sent_at ASC, created_at ASC
+      ORDER BY sent_at DESC, created_at DESC
     `).bind(threadId, userEmail, userEmail).all();
     
     return c.json({ success: true, emails: results, thread_id: threadId });
