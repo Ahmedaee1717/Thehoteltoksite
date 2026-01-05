@@ -252,6 +252,20 @@ window.addEventListener('DOMContentLoaded', function() {
         }
       };
       
+      // Load FileBank files (for attachment picker)
+      const loadFileBankFiles = async () => {
+        try {
+          console.log('📂 Loading FileBank files for attachment picker...');
+          const res = await fetch(`/api/filebank/files?userEmail=${user}`);
+          const data = await res.json();
+          console.log('📂 FileBank files loaded:', data.files?.length || 0);
+          setFiles(data.files || []);
+        } catch (err) {
+          console.error('❌ Failed to load FileBank files:', err);
+          setFiles([]);
+        }
+      };
+      
       // Create new forwarding rule
       const createForwardingRule = async () => {
         if (!newRuleForwardTo.trim() || !newRuleForwardTo.includes('@')) {
@@ -3949,7 +3963,8 @@ window.addEventListener('DOMContentLoaded', function() {
           onSend: sendEmail,
           files: files,
           showFilePicker: showFilePicker,
-          setShowFilePicker: setShowFilePicker
+          setShowFilePicker: setShowFilePicker,
+          loadFiles: loadFileBankFiles
         }),
         
         // 🎬 STUNNING SENDING ANIMATION OVERLAY
@@ -4642,7 +4657,7 @@ window.addEventListener('DOMContentLoaded', function() {
     // ============================================
     // COMPOSE MODAL COMPONENT
     // ============================================
-    function ComposeModal({ onClose, onSend, files, showFilePicker, setShowFilePicker }) {
+    function ComposeModal({ onClose, onSend, files, showFilePicker, setShowFilePicker, loadFiles }) {
       console.log('🎨 ComposeModal START');
       const [to, setTo] = useState('');
       const [subject, setSubject] = useState('');
@@ -4659,19 +4674,13 @@ window.addEventListener('DOMContentLoaded', function() {
       // 📎 ATTACHMENTS STATE (was hardcoded empty!)
       const [attachments, setAttachments] = useState([]);
       
-      // Add attachment from FileBank
-      // Load files from FileBank when FilePicker opens
-      const loadFileBankFiles = async () => {
-        try {
-          console.log('📂 Loading FileBank files...');
-          const res = await fetch(`/api/filebank/files?userEmail=${user}`);
-          const data = await res.json();
-          console.log('📂 FileBank files loaded:', data.files?.length || 0);
-          setFiles(data.files || []);
-        } catch (err) {
-          console.error('❌ Failed to load FileBank files:', err);
-          setFiles([]);
-        }
+      // Helper: Format file size
+      const formatFileSize = (bytes) => {
+        if (!bytes || bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
       };
       
       const addAttachment = (file) => {
@@ -5880,7 +5889,7 @@ window.addEventListener('DOMContentLoaded', function() {
             // FileBank button
             h('button', {
               onClick: () => {
-                loadFileBankFiles(); // Load files before opening picker
+                if (loadFiles) loadFiles(); // Load files if callback provided
                 setShowFilePicker(true);
               },
               style: {
