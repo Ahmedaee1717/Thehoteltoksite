@@ -136,8 +136,12 @@ window.addEventListener('DOMContentLoaded', function() {
       
       useEffect(() => {
         loadData();
-        loadSharedMailboxes(); // Load shared mailboxes on mount
       }, [view]);
+      
+      // Load shared mailboxes once on mount
+      useEffect(() => {
+        loadSharedMailboxes();
+      }, []);
       
       // Auto-refresh read statuses in Sent folder
       useEffect(() => {
