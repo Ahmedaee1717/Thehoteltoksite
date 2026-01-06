@@ -1018,7 +1018,7 @@ function CreateAccountModal({ onClose, onCreate }) {
 // SHARED MAILBOX CARD COMPONENT
 // ============================================
 function SharedMailboxCard({ mailbox, onDelete, onToggle, onViewMembers }) {
-  const isActive = mailbox.active === 1;
+  const isActive = mailbox.is_active === 1;
   const createdDate = new Date(mailbox.created_at).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',

@@ -187,12 +187,17 @@ emailRoutes.use('/*', async (c, next) => {
   // 2. Admin email account management (admin dashboard access)
   // 3. Email receive webhook (Mailgun calls this)
   // 4. Test endpoint for Mailgun API
+  // 5. Shared mailbox admin endpoints (admin dashboard)
   if (
     path.includes('/track/') ||
     path.includes('/receive') ||
     path.includes('/test-mailgun-send') ||
     path.includes('/accounts/create') ||
     path.includes('/accounts/list') ||
+    path.includes('/shared-mailboxes/list') ||
+    path.includes('/shared-mailboxes/create') ||
+    (path.includes('/shared-mailboxes/') && path.includes('/toggle')) ||
+    (path.includes('/shared-mailboxes/') && path.includes('/members')) ||
     path.includes('/accounts/') && (c.req.method === 'DELETE' || c.req.method === 'PATCH')
   ) {
     return next();
@@ -3009,22 +3014,22 @@ emailRoutes.patch('/shared-mailboxes/:id/toggle', async (c) => {
   try {
     // Get current status
     const mailbox = await DB.prepare(`
-      SELECT active FROM shared_mailboxes WHERE id = ?
+      SELECT is_active FROM shared_mailboxes WHERE id = ?
     `).bind(mailboxId).first() as any;
     
     if (!mailbox) {
       return c.json({ success: false, error: 'Mailbox not found' }, 404);
     }
     
-    const newStatus = mailbox.active === 1 ? 0 : 1;
+    const newStatus = mailbox.is_active === 1 ? 0 : 1;
     
     await DB.prepare(`
-      UPDATE shared_mailboxes SET active = ? WHERE id = ?
+      UPDATE shared_mailboxes SET is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
     `).bind(newStatus, mailboxId).run();
     
     return c.json({ 
       success: true,
-      active: newStatus,
+      is_active: newStatus,
       message: `Shared mailbox ${newStatus === 1 ? 'activated' : 'deactivated'} successfully`
     });
   } catch (error: any) {
