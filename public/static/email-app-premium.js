@@ -1370,7 +1370,7 @@ window.addEventListener('DOMContentLoaded', function() {
               )
             ),
             
-            // 📬 SHARED MAILBOX SELECTOR - PREMIUM UI
+            // 📬 PREMIUM MAILBOX SELECTOR - CARD BASED
             sharedMailboxes && sharedMailboxes.length > 0 && h('div', {
               style: {
                 padding: '16px',
@@ -1378,56 +1378,326 @@ window.addEventListener('DOMContentLoaded', function() {
                 marginBottom: '16px'
               }
             },
+              // Section Header
               h('div', {
                 style: {
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  color: 'rgba(255, 255, 255, 0.5)',
-                  marginBottom: '8px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '1px'
-                }
-              }, '📬 Mailbox'),
-              
-              // Current Mailbox Display + Dropdown
-              h('select', {
-                value: currentMailbox ? currentMailbox.id : 'personal',
-                onChange: (e) => {
-                  const mailboxId = e.target.value;
-                  if (mailboxId === 'personal') {
-                    switchToMailbox(null);
-                  } else {
-                    const mailbox = sharedMailboxes.find(m => m.id === parseInt(mailboxId));
-                    switchToMailbox(mailbox);
-                  }
-                },
-                style: {
-                  width: '100%',
-                  padding: '12px 16px',
-                  background: 'rgba(26, 31, 58, 0.6)',
-                  border: '1px solid rgba(201, 169, 98, 0.3)',
-                  borderRadius: '10px',
-                  color: 'rgba(255, 255, 255, 0.9)',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  appearance: 'none',
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23C9A962' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 12px center'
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '12px'
                 }
               },
-                h('option', { value: 'personal' }, `👤 Personal (${user})`),
-                sharedMailboxes.map(mailbox =>
-                  h('option', { 
-                    key: mailbox.id, 
-                    value: mailbox.id 
-                  }, `📬 ${mailbox.display_name}`)
+                h('div', {
+                  style: {
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    color: 'rgba(255, 255, 255, 0.5)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px'
+                  }
+                }, 'Mailboxes'),
+                currentMailbox && h('div', {
+                  style: {
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '4px 10px',
+                    background: 'rgba(34, 197, 94, 0.15)',
+                    border: '1px solid rgba(34, 197, 94, 0.3)',
+                    borderRadius: '12px',
+                    fontSize: '10px',
+                    fontWeight: '600',
+                    color: '#22c55e'
+                  }
+                },
+                  h('div', {
+                    style: {
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
+                      background: '#22c55e',
+                      animation: 'pulse 2s infinite'
+                    }
+                  }),
+                  'SHARED'
                 )
               ),
               
-              // Active Users Indicator (if in shared mailbox)
+              // Personal Mailbox Card
+              h('div', {
+                onClick: () => switchToMailbox(null),
+                style: {
+                  padding: '14px',
+                  background: !currentMailbox 
+                    ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.1) 100%)'
+                    : 'rgba(255, 255, 255, 0.03)',
+                  border: !currentMailbox
+                    ? '2px solid rgba(59, 130, 246, 0.5)'
+                    : '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  marginBottom: '8px',
+                  boxShadow: !currentMailbox ? '0 4px 12px rgba(59, 130, 246, 0.2)' : 'none',
+                  transform: !currentMailbox ? 'translateY(-2px)' : 'none'
+                },
+                onMouseEnter: (e) => {
+                  if (currentMailbox) {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                    e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+                  }
+                },
+                onMouseLeave: (e) => {
+                  if (currentMailbox) {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                  }
+                }
+              },
+                h('div', {
+                  style: {
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px'
+                  }
+                },
+                  h('div', {
+                    style: {
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '10px',
+                      background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '18px',
+                      flexShrink: 0
+                    }
+                  }, '👤'),
+                  h('div', {
+                    style: {
+                      flex: 1,
+                      minWidth: 0
+                    }
+                  },
+                    h('div', {
+                      style: {
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        color: '#fff',
+                        marginBottom: '2px'
+                      }
+                    }, 'Personal'),
+                    h('div', {
+                      style: {
+                        fontSize: '11px',
+                        color: 'rgba(255, 255, 255, 0.6)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }
+                    }, user)
+                  ),
+                  !currentMailbox && h('div', {
+                    style: {
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '50%',
+                      background: 'rgba(59, 130, 246, 0.3)',
+                      border: '2px solid #3b82f6',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '10px',
+                      color: '#3b82f6'
+                    }
+                  }, '✓')
+                )
+              ),
+              
+              // Shared Mailboxes
+              sharedMailboxes.map(mailbox => 
+                h('div', {
+                  key: mailbox.id,
+                  onClick: () => switchToMailbox(mailbox),
+                  style: {
+                    padding: '14px',
+                    background: currentMailbox?.id === mailbox.id
+                      ? 'linear-gradient(135deg, rgba(201, 169, 98, 0.2) 0%, rgba(139, 115, 85, 0.15) 100%)'
+                      : 'rgba(255, 255, 255, 0.03)',
+                    border: currentMailbox?.id === mailbox.id
+                      ? '2px solid rgba(201, 169, 98, 0.6)'
+                      : '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    marginBottom: '8px',
+                    boxShadow: currentMailbox?.id === mailbox.id ? '0 4px 12px rgba(201, 169, 98, 0.25)' : 'none',
+                    transform: currentMailbox?.id === mailbox.id ? 'translateY(-2px)' : 'none',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  },
+                  onMouseEnter: (e) => {
+                    if (currentMailbox?.id !== mailbox.id) {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                      e.currentTarget.style.borderColor = 'rgba(201, 169, 98, 0.3)';
+                      e.currentTarget.style.transform = 'translateX(4px)';
+                    }
+                  },
+                  onMouseLeave: (e) => {
+                    if (currentMailbox?.id !== mailbox.id) {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                      e.currentTarget.style.transform = 'none';
+                    }
+                  }
+                },
+                  // Collaboration Indicator Strip (left side)
+                  currentMailbox?.id === mailbox.id && h('div', {
+                    style: {
+                      position: 'absolute',
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: '4px',
+                      background: 'linear-gradient(180deg, #C9A962 0%, #8B7355 100%)',
+                      boxShadow: '0 0 8px rgba(201, 169, 98, 0.5)'
+                    }
+                  }),
+                  
+                  h('div', {
+                    style: {
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px'
+                    }
+                  },
+                    // Icon
+                    h('div', {
+                      style: {
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '10px',
+                        background: currentMailbox?.id === mailbox.id
+                          ? 'linear-gradient(135deg, #C9A962 0%, #8B7355 100%)'
+                          : 'rgba(201, 169, 98, 0.15)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '18px',
+                        flexShrink: 0,
+                        boxShadow: currentMailbox?.id === mailbox.id ? '0 2px 8px rgba(201, 169, 98, 0.3)' : 'none'
+                      }
+                    }, '📬'),
+                    
+                    // Mailbox Info
+                    h('div', {
+                      style: {
+                        flex: 1,
+                        minWidth: 0
+                      }
+                    },
+                      h('div', {
+                        style: {
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          color: '#fff',
+                          marginBottom: '2px'
+                        }
+                      }, mailbox.display_name),
+                      h('div', {
+                        style: {
+                          fontSize: '11px',
+                          color: 'rgba(255, 255, 255, 0.6)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }
+                      }, mailbox.email_address)
+                    ),
+                    
+                    // Active Indicator / User Count
+                    currentMailbox?.id === mailbox.id
+                      ? h('div', {
+                          style: {
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }
+                        },
+                          // Live avatars
+                          activeUsers.length > 0 && h('div', {
+                            style: {
+                              display: 'flex',
+                              alignItems: 'center',
+                              marginRight: '4px'
+                            }
+                          },
+                            activeUsers.slice(0, 3).map((user, idx) =>
+                              h('div', {
+                                key: idx,
+                                style: {
+                                  width: '20px',
+                                  height: '20px',
+                                  borderRadius: '50%',
+                                  background: `linear-gradient(135deg, ${['#3b82f6', '#10b981', '#f59e0b'][idx % 3]} 0%, ${['#2563eb', '#059669', '#d97706'][idx % 3]} 100%)`,
+                                  border: '2px solid rgba(26, 31, 58, 0.9)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '10px',
+                                  marginLeft: idx > 0 ? '-8px' : '0',
+                                  zIndex: 3 - idx,
+                                  animation: 'pulse 2s infinite',
+                                  animationDelay: `${idx * 0.3}s`
+                                }
+                              }, user.user_email?.[0]?.toUpperCase() || '?')
+                            )
+                          ),
+                          h('div', {
+                            style: {
+                              width: '20px',
+                              height: '20px',
+                              borderRadius: '50%',
+                              background: 'rgba(201, 169, 98, 0.3)',
+                              border: '2px solid #C9A962',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '10px',
+                              color: '#C9A962'
+                            }
+                          }, '✓')
+                        )
+                      : activeUsers.length > 0 && h('div', {
+                          style: {
+                            padding: '4px 8px',
+                            background: 'rgba(34, 197, 94, 0.15)',
+                            borderRadius: '10px',
+                            fontSize: '10px',
+                            fontWeight: '600',
+                            color: '#22c55e',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }
+                        },
+                          h('div', {
+                            style: {
+                              width: '5px',
+                              height: '5px',
+                              borderRadius: '50%',
+                              background: '#22c55e',
+                              animation: 'pulse 2s infinite'
+                            }
+                          }),
+                          activeUsers.length
+                        )
+                  )
+                )
+              ),
+              
+              // Collaboration Status Bar (when in shared mailbox)
               currentMailbox && activeUsers.length > 0 && h('div', {
                 style: {
                   marginTop: '12px',
