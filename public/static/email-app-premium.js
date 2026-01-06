@@ -464,12 +464,26 @@ window.addEventListener('DOMContentLoaded', function() {
           for (const att of attachments) {
             if (att.isLocalFile && att.file) {
               // Computer upload: Read file as base64
+              console.log(`📎 Reading computer file: ${att.filename} (${att.size} bytes)`);
               const reader = new FileReader();
               const base64Data = await new Promise((resolve, reject) => {
-                reader.onload = () => resolve(reader.result.split(',')[1]); // Get base64 without data: prefix
-                reader.onerror = reject;
+                reader.onload = () => {
+                  const result = reader.result;
+                  const base64 = result.split(',')[1]; // Get base64 without data: prefix
+                  console.log(`📎 Base64 encoded: ${att.filename} - ${base64.length} chars`);
+                  resolve(base64);
+                };
+                reader.onerror = (error) => {
+                  console.error(`❌ FileReader error for ${att.filename}:`, error);
+                  reject(error);
+                };
                 reader.readAsDataURL(att.file);
               });
+              
+              if (!base64Data || base64Data.length === 0) {
+                console.error(`❌ Empty base64 data for ${att.filename}!`);
+                continue; // Skip this attachment
+              }
               
               attachmentData.push({
                 filename: att.filename,
@@ -478,6 +492,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 data: base64Data, // Base64 string
                 isLocalFile: true
               });
+              console.log(`✅ Added to attachmentData: ${att.filename} (${base64Data.length} chars)`);
             } else {
               // FileBank file: Send ID for backend to fetch
               console.log(`📎 FileBank attachment: ${att.filename}, ID: ${att.id}`);
