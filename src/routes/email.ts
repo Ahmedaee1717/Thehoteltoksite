@@ -700,6 +700,57 @@ emailRoutes.post('/send', async (c) => {
     
     console.log('📧 Email saved to database:', insertResult.success ? '✅ SUCCESS' : '❌ FAILED', emailId, '⏳ Expires: 30d');
     
+    // 📎 SAVE ATTACHMENTS TO DATABASE
+    if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+      console.log(`📎 Saving ${attachments.length} attachments to database for email ${emailId}`);
+      
+      for (let i = 0; i < attachments.length; i++) {
+        const att = attachments[i];
+        const attachmentId = generateId('att');
+        
+        try {
+          // For computer uploads, we could store base64 in r2_url as data URI
+          // For FileBank files, store the FileBank ID/URL
+          let r2Url = null;
+          let r2Key = null;
+          
+          if (att.isLocalFile && att.data) {
+            // Computer upload: store as data URI (for now)
+            r2Url = `data:${att.content_type || 'application/octet-stream'};base64,${att.data.substring(0, 100)}...`;
+            r2Key = `computer-upload-${Date.now()}-${i}`;
+            console.log(`📎 Storing computer upload: ${att.filename}`);
+          } else if (att.id) {
+            // FileBank file: store reference
+            r2Key = `filebank-${att.id}`;
+            r2Url = att.url || null;
+            console.log(`📎 Storing FileBank reference: ${att.filename} (ID: ${att.id})`);
+          }
+          
+          await DB.prepare(`
+            INSERT INTO attachments (
+              id, email_id, filename, content_type, size, 
+              r2_key, r2_url, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+          `).bind(
+            attachmentId,
+            emailId,
+            att.filename,
+            att.content_type || 'application/octet-stream',
+            att.size || 0,
+            r2Key,
+            r2Url
+          ).run();
+          
+          console.log(`✅ Saved attachment ${i + 1}/${attachments.length}: ${att.filename}`);
+        } catch (attSaveError: any) {
+          console.error(`❌ Failed to save attachment ${att.filename}:`, attSaveError.message);
+          // Continue with other attachments
+        }
+      }
+      
+      console.log(`✅ All ${attachments.length} attachments saved to database for email ${emailId}`);
+    }
+    
     // Track analytics
     await DB.prepare(`
       INSERT INTO email_analytics (id, user_email, event_type, email_id)
