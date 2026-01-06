@@ -165,18 +165,32 @@ window.addEventListener('DOMContentLoaded', function() {
         setLoading(true);
         try {
           let url = '';
-          if (view === 'inbox') url = `/api/email/inbox`;
-          else if (view === 'sent') url = `/api/email/sent`;
-          else if (view === 'spam') url = `/api/email/spam`;
-          else if (view === 'trash') url = `/api/email/trash`;
-          else if (view === 'drafts') url = `/api/email/drafts`;
-          else if (view === 'archived') url = `/api/email/archived`;
+          
+          // If in shared mailbox mode, load shared mailbox emails
+          if (currentMailbox) {
+            if (view === 'inbox') url = `/api/shared-mailboxes/${currentMailbox.id}/emails?folder=inbox`;
+            else if (view === 'sent') url = `/api/shared-mailboxes/${currentMailbox.id}/emails?folder=sent`;
+            else if (view === 'spam') url = `/api/shared-mailboxes/${currentMailbox.id}/emails?folder=spam`;
+            else if (view === 'trash') url = `/api/shared-mailboxes/${currentMailbox.id}/emails?folder=trash`;
+            else if (view === 'drafts') url = `/api/shared-mailboxes/${currentMailbox.id}/drafts`;
+            else if (view === 'archived') url = `/api/shared-mailboxes/${currentMailbox.id}/emails?folder=archived`;
+          } else {
+            // Personal mailbox
+            if (view === 'inbox') url = `/api/email/inbox`;
+            else if (view === 'sent') url = `/api/email/sent`;
+            else if (view === 'spam') url = `/api/email/spam`;
+            else if (view === 'trash') url = `/api/email/trash`;
+            else if (view === 'drafts') url = `/api/email/drafts`;
+            else if (view === 'archived') url = `/api/email/archived`;
+          }
           
           if (url) {
+            console.log('📬 Loading emails from:', url);
             const response = await fetch(url);
             const data = await response.json();
             const fetchedEmails = data.emails || data.drafts || [];
             setEmails(fetchedEmails);
+            console.log(`📬 Loaded ${fetchedEmails.length} emails`);
             
             // Calculate unread count for inbox
             if (view === 'inbox') {

@@ -535,4 +535,61 @@ sharedMailboxRoutes.get('/:id/activity', async (c) => {
   }
 })
 
+// GET /api/shared-mailboxes/:id/emails - Get emails for shared mailbox
+sharedMailboxRoutes.get('/:id/emails', async (c) => {
+  try {
+    const { DB } = c.env
+    const mailboxId = c.req.param('id')
+    const folder = c.req.query('folder') || 'inbox'
+    
+    // Get the shared mailbox email address
+    const mailbox = await DB.prepare(`
+      SELECT email_address FROM shared_mailboxes WHERE id = ?
+    `).bind(mailboxId).first()
+    
+    if (!mailbox) {
+      return c.json({ error: 'Mailbox not found' }, 404)
+    }
+    
+    // Build query based on folder
+    let query = `
+      SELECT 
+        e.id, e.thread_id, e.from_email, e.from_name, e.to_email,
+        e.subject, e.body_text, e.body_html, e.snippet,
+        e.category, e.priority, e.sentiment, e.is_read, e.is_starred,
+        e.is_archived, e.labels, e.received_at, e.sent_at,
+        e.ai_summary, e.action_items, e.created_at, e.updated_at
+      FROM emails e
+      WHERE 1=1
+    `
+    
+    const emailAddress = mailbox.email_address
+    
+    if (folder === 'inbox') {
+      query += ` AND e.to_email = '${emailAddress}' AND e.category NOT IN ('spam', 'trash') AND e.is_archived = 0`
+    } else if (folder === 'sent') {
+      query += ` AND e.from_email = '${emailAddress}'`
+    } else if (folder === 'spam') {
+      query += ` AND e.to_email = '${emailAddress}' AND e.category = 'spam'`
+    } else if (folder === 'trash') {
+      query += ` AND (e.to_email = '${emailAddress}' OR e.from_email = '${emailAddress}') AND e.category = 'trash'`
+    } else if (folder === 'archived') {
+      query += ` AND e.to_email = '${emailAddress}' AND e.is_archived = 1`
+    }
+    
+    query += ` ORDER BY e.received_at DESC, e.created_at DESC LIMIT 100`
+    
+    const result = await DB.prepare(query).all()
+    
+    return c.json({ 
+      success: true,
+      emails: result.results || [],
+      count: result.results?.length || 0
+    })
+  } catch (error: any) {
+    console.error('Error fetching shared mailbox emails:', error)
+    return c.json({ error: 'Failed to fetch emails', details: error.message }, 500)
+  }
+})
+
 export default sharedMailboxRoutes
