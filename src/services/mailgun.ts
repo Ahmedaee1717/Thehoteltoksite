@@ -39,7 +39,20 @@ export class MailgunService {
    */
   async sendEmail(options: EmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
-      console.log('🚀 Using Mailgun REST API directly (bypassing mailgun.js)');
+      console.log('🚀 Mailgun REST API - START');
+      console.log('📎 Received options.attachments:', options.attachments?.length || 0);
+      
+      if (options.attachments && options.attachments.length > 0) {
+        console.log('📎 Attachments array:', options.attachments.map((a, i) => ({
+          index: i,
+          filename: a.filename,
+          dataType: typeof a.data,
+          isBuffer: a.data instanceof Buffer,
+          size: a.data?.length || 0
+        })));
+      } else {
+        console.log('❌ NO ATTACHMENTS RECEIVED BY MAILGUN SERVICE!');
+      }
       
       // Build FormData
       const form = new FormData();
@@ -60,7 +73,10 @@ export class MailgunService {
         for (let i = 0; i < options.attachments.length; i++) {
           const att = options.attachments[i];
           const isBuffer = att.data instanceof Buffer;
-          console.log(`📎 Attachment ${i + 1}: ${att.filename}, isBuffer: ${isBuffer}, size: ${att.data.length}`);
+          console.log(`📎 Processing attachment ${i + 1}/${options.attachments.length}:`);
+          console.log(`  - filename: ${att.filename}`);
+          console.log(`  - isBuffer: ${isBuffer}`);
+          console.log(`  - size: ${att.data?.length || 0}`);
           
           if (isBuffer && att.data.length > 0) {
             // Convert Buffer to Blob
@@ -68,9 +84,13 @@ export class MailgunService {
             form.append('attachment', blob, att.filename);
             console.log(`✅ Appended ${att.filename} as Blob (${blob.size} bytes)`);
           } else {
-            console.error(`❌ Invalid attachment: ${att.filename}`);
+            console.error(`❌ SKIPPED attachment: ${att.filename} (not a Buffer or empty)`);
           }
         }
+        
+        console.log('📎 FormData built with attachments');
+      } else {
+        console.log('⚠️ No attachments to add to FormData');
       }
       
       // Send via Mailgun REST API
@@ -86,7 +106,8 @@ export class MailgunService {
       });
       
       const result = await response.json() as any;
-      console.log('📬 Mailgun response:', response.status, JSON.stringify(result));
+      console.log('📬 Mailgun HTTP response:', response.status, response.statusText);
+      console.log('📬 Mailgun response body:', JSON.stringify(result));
       
       if (response.ok) {
         console.log('✅ Email sent successfully via REST API!');

@@ -12,6 +12,11 @@ export interface EmailData {
   replyTo?: string;
   cc?: string;
   bcc?: string;
+  // Attachments support
+  attachments?: Array<{
+    filename: string;
+    data: Buffer | string;
+  }>;
   // Anti-spam features
   trackOpens?: boolean;
   trackClicks?: boolean;
@@ -155,6 +160,27 @@ export class MailgunService {
       // Test mode (sandbox mode - emails won't be delivered)
       if (data.testMode) {
         formData.append('o:testmode', 'yes');
+      }
+      
+      // 📎 ADD ATTACHMENTS SUPPORT
+      if (data.attachments && data.attachments.length > 0) {
+        console.log(`📎 [lib/mailgun] Adding ${data.attachments.length} attachments`);
+        
+        for (let i = 0; i < data.attachments.length; i++) {
+          const att = data.attachments[i];
+          const isBuffer = att.data instanceof Buffer;
+          
+          console.log(`📎 [lib/mailgun] Attachment ${i + 1}: ${att.filename}, isBuffer: ${isBuffer}, size: ${att.data?.length || 0}`);
+          
+          if (isBuffer && att.data.length > 0) {
+            // Convert Buffer to Blob for FormData
+            const blob = new Blob([att.data], { type: 'application/octet-stream' });
+            formData.append('attachment', blob, att.filename);
+            console.log(`✅ [lib/mailgun] Appended ${att.filename} (${blob.size} bytes)`);
+          } else {
+            console.error(`❌ [lib/mailgun] Invalid attachment: ${att.filename}`);
+          }
+        }
       }
 
       // Send via Mailgun API

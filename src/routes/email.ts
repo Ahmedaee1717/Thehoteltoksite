@@ -25,6 +25,17 @@ type Bindings = {
 
 const emailRoutes = new Hono<{ Bindings: Bindings }>()
 
+// DEBUG: Store last request for debugging
+let lastDebugInfo: any = null;
+
+// DEBUG ENDPOINT: Get last send request info
+emailRoutes.get('/debug/last-send', (c) => {
+  return c.json({
+    lastRequest: lastDebugInfo || 'No requests yet',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // ============================================
 // 🔗 Link Tracking Helper Function
 // Wraps all links in HTML with tracking redirects
@@ -422,9 +433,30 @@ emailRoutes.post('/send', async (c) => {
         hasId: !!a.id,
         id: a.id
       })), null, 2));
+      
+      // Store debug info
+      lastDebugInfo = {
+        timestamp: new Date().toISOString(),
+        to,
+        subject,
+        attachmentsCount: attachments.length,
+        attachments: attachments.map((a: any) => ({
+          filename: a.filename,
+          isLocalFile: a.isLocalFile,
+          hasData: !!a.data,
+          dataLength: a.data?.length || 0
+        }))
+      };
     } else {
       console.log('❌ NO ATTACHMENTS ARRAY OR EMPTY!');
       console.log('❌ Raw attachments value:', attachments);
+      lastDebugInfo = {
+        timestamp: new Date().toISOString(),
+        to,
+        subject,
+        error: 'No attachments received',
+        attachmentsValue: attachments
+      };
     }
     
     // 🔒 CRITICAL: Force from to be authenticated user's email - NEVER trust client
@@ -574,12 +606,16 @@ emailRoutes.post('/send', async (c) => {
               if (att.isLocalFile && att.data) {
                 // Computer upload: data is base64 string
                 console.log(`📎 Processing computer upload: ${att.filename} (${att.data?.length} chars of base64)`);
+                console.log(`📎 Base64 preview (first 100 chars): ${att.data.substring(0, 100)}`);
+                
                 const buffer = Buffer.from(att.data, 'base64');
+                console.log(`📎 Buffer created: ${buffer.length} bytes, isBuffer: ${buffer instanceof Buffer}`);
+                
                 mailgunAttachments.push({
                   filename: att.filename,
                   data: buffer
                 });
-                console.log(`✅ Added computer upload: ${att.filename} (${buffer.length} bytes)`);
+                console.log(`✅ Added computer upload to mailgunAttachments: ${att.filename} (${buffer.length} bytes)`);
               } else {
                 // FileBank file: Load from database
                 console.log(`📎 Looking up FileBank file ID: ${att.id}`);
@@ -644,8 +680,17 @@ emailRoutes.post('/send', async (c) => {
           textLength: textBodyWithTracking?.length,
           htmlLength: htmlBody?.length,
           attachmentCount: mailgunAttachments.length,
-          hasAttachments: mailgunAttachments.length > 0
+          hasAttachments: mailgunAttachments.length > 0,
+          attachmentDetails: mailgunAttachments.map(a => ({
+            filename: a.filename,
+            size: a.data.length,
+            isBuffer: a.data instanceof Buffer
+          }))
         });
+        
+        console.log('🚨 FINAL CHECK BEFORE MAILGUN:');
+        console.log('  - mailgunAttachments.length:', mailgunAttachments.length);
+        console.log('  - Passing to sendEmail():', mailgunAttachments.length > 0 ? 'WITH ATTACHMENTS' : 'NO ATTACHMENTS');
         
         const result = await mailgunService.sendEmail({
           to,
