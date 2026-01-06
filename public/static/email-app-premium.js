@@ -269,17 +269,25 @@ window.addEventListener('DOMContentLoaded', function() {
       
       // Handle adding attachment (called from global FilePicker)
       const handleAddAttachment = (file) => {
+        // Determine if this is a FileBank file or a computer upload
+        // FileBank files have: id (number), file_url, file_size (from DB)
+        // Computer uploads have: file (File object), isLocalFile: true
+        const isFileBank = file.file_url || (file.id && !file.isLocalFile);
+        
         const normalizedFile = {
           id: file.id,
-          name: file.filename,
-          filename: file.filename,
-          size: file.size,
-          content_type: file.content_type,
-          url: file.url,
-          preview: file.preview || null
+          name: file.filename || file.name,
+          filename: file.filename || file.name,
+          size: file.size || file.file_size,
+          content_type: file.content_type || file.file_type,
+          url: file.url || file.file_url,
+          preview: file.preview || null,
+          isLocalFile: !isFileBank, // Set based on detection
+          file: file.file || null // Keep File object for computer uploads
         };
+        
         setComposeAttachments(prev => [...prev, normalizedFile]);
-        console.log('📎 Added attachment:', file.filename);
+        console.log('📎 Added attachment:', file.filename || file.name, 'isLocalFile:', !isFileBank, 'hasFileObject:', !!file.file);
         setShowFilePicker(false);
       };
       
