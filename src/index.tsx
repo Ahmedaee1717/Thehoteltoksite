@@ -17,6 +17,7 @@ import meetings from './routes/meetings'
 import organization from './routes/organization'
 import blockchain from './routes/blockchain'
 import voice from './routes/voice'
+import sharedMailboxRoutes from './routes/shared-mailbox'
 import { homePage } from './pages/home'
 import { answerQuestion } from './services/ai-optimizer'
 
@@ -87,6 +88,7 @@ app.route('/api/meetings', meetings)
 app.route('/api/organization', organization)
 app.route('/api/blockchain', blockchain)
 app.route('/api/voice', voice)
+app.route('/api/shared-mailboxes', sharedMailboxRoutes)
 
 // AI Q&A Endpoint - semantic search and question answering
 app.post('/api/ai-answer', async (c) => {
