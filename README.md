@@ -7,11 +7,30 @@
 - Security features (auth, password hashing) still active  
 - See `ENCRYPTION_ROLLBACK_SUCCESS.md` for full details
 
+## 🚀 LATEST UPDATE: R2 Storage Implemented!
+**FileBank attachments now work with Cloudflare R2!**
+- ✅ Real file storage (not just URLs)
+- ✅ 10 GB free tier on Cloudflare R2
+- ✅ Upload files to FileBank → stored in R2
+- ✅ Attach from FileBank → fetched from R2
+- ✅ Email attachments arrive in Gmail!
+
+**How to Use:**
+1. Go to "📁 File Bank" view
+2. Click "⬆️ Upload File" and select a file
+3. File is stored in R2 and appears in FileBank
+4. Compose email → "📁 From FileBank" → Select uploaded file
+5. Send → Attachment arrives at Gmail! 🎉
+
+**Computer Upload also works:**
+- Click "💻 From Computer" → Attach file → Send
+- File sent as base64 directly (no FileBank needed)
+
 ## Project Overview
 - **Name**: Investay Signal
 - **Type**: Full-featured email management platform with AI-powered features
 - **Purpose**: Professional email solution with spam detection, collaboration, and CRM
-- **Tech Stack**: Hono + Cloudflare Pages + D1 Database + TypeScript
+- **Tech Stack**: Hono + Cloudflare Pages + D1 Database + Cloudflare R2 + TypeScript
 
 ## 🌐 URLs
 - **Production**: https://www.investaycapital.com/mail
