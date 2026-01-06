@@ -134,6 +134,9 @@ window.addEventListener('DOMContentLoaded', function() {
       const [newMemberRole, setNewMemberRole] = useState('member');
       const [mailboxActivity, setMailboxActivity] = useState([]);
       
+      // Read Receipts state (for shared mailboxes)
+      const [readReceipts, setReadReceipts] = useState({}); // { emailId: [readers] }
+      
       // World Clock state
       const [currentTime, setCurrentTime] = useState(new Date());
       
@@ -213,6 +216,12 @@ window.addEventListener('DOMContentLoaded', function() {
             if (view === 'sent' && fetchedEmails.length > 0) {
               const emailIds = fetchedEmails.map(e => e.id);
               loadReadStatuses(emailIds);
+            }
+            
+            // Load read receipts for shared mailbox
+            if (currentMailbox && fetchedEmails.length > 0) {
+              const emailIds = fetchedEmails.map(e => e.id);
+              loadReadReceipts(currentMailbox.id, emailIds);
             }
           }
           
@@ -815,6 +824,42 @@ window.addEventListener('DOMContentLoaded', function() {
           setReadStatuses(statuses);
         } catch (error) {
           console.error('Load read statuses error:', error);
+        }
+      };
+      
+      // Load read receipts for shared mailbox emails
+      const loadReadReceipts = async (mailboxId, emailIds) => {
+        try {
+          console.log('📊 Loading read receipts for', emailIds.length, 'emails');
+          const response = await fetch(`/api/shared-mailboxes/${mailboxId}/emails/read-receipts?emailIds=${emailIds.join(',')}`);
+          const data = await response.json();
+          if (data.success) {
+            setReadReceipts(data.receipts || {});
+            console.log('📊 Loaded read receipts:', Object.keys(data.receipts || {}).length, 'emails have readers');
+          }
+        } catch (error) {
+          console.error('Load read receipts error:', error);
+        }
+      };
+      
+      // Mark email as read in shared mailbox
+      const markEmailAsRead = async (mailboxId, emailId) => {
+        try {
+          await fetch(`/api/shared-mailboxes/${mailboxId}/emails/${emailId}/read`, {
+            method: 'POST'
+          });
+          console.log('✓ Marked email', emailId, 'as read');
+          // Reload read receipts for this email
+          const response = await fetch(`/api/shared-mailboxes/${mailboxId}/emails/${emailId}/readers`);
+          const data = await response.json();
+          if (data.success) {
+            setReadReceipts(prev => ({
+              ...prev,
+              [emailId]: data.readers
+            }));
+          }
+        } catch (error) {
+          console.error('Mark as read error:', error);
         }
       };
       
@@ -3446,6 +3491,11 @@ window.addEventListener('DOMContentLoaded', function() {
                       }).catch(err => console.error('❌ Mark as read failed:', err));
                     }
                     
+                    // Mark as read in shared mailbox
+                    if (currentMailbox) {
+                      markEmailAsRead(currentMailbox.id, email.id);
+                    }
+                    
                     setSelectedEmail(email);
                     setShowCollabPanel(true);
                     loadCollabData(email.id);
@@ -3618,6 +3668,80 @@ window.addEventListener('DOMContentLoaded', function() {
                         email.expiry_type === 'keep' ? '∞' : '⏳',
                         ' ',
                         email.expiry_type === 'keep' ? 'Keep' : getTimeRemaining(email.expires_at)
+                      ),
+                      
+                      // 👁️ READ RECEIPTS (Shared Mailbox Only)
+                      currentMailbox && readReceipts[email.id] && readReceipts[email.id].length > 0 && h('div', {
+                        title: readReceipts[email.id].map(r => `${r.display_name || r.user_email} - ${new Date(r.read_at).toLocaleString()}`).join('\n'),
+                        style: {
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '6px 10px',
+                          borderRadius: '20px',
+                          background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.15))',
+                          border: '1px solid rgba(34, 197, 94, 0.4)',
+                          cursor: 'help'
+                        }
+                      },
+                        h('span', {
+                          style: {
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            color: '#22c55e'
+                          }
+                        }, '👁️'),
+                        // Show avatars
+                        h('div', {
+                          style: {
+                            display: 'flex',
+                            alignItems: 'center',
+                            marginLeft: '2px'
+                          }
+                        },
+                          readReceipts[email.id].slice(0, 3).map((reader, idx) =>
+                            h('div', {
+                              key: reader.user_email,
+                              title: `${reader.display_name || reader.user_email}\n${new Date(reader.read_at).toLocaleString()}`,
+                              style: {
+                                width: '20px',
+                                height: '20px',
+                                borderRadius: '50%',
+                                background: `linear-gradient(135deg, ${['#3b82f6', '#10b981', '#f59e0b', '#ef4444'][idx % 4]} 0%, ${['#2563eb', '#059669', '#d97706', '#dc2626'][idx % 4]} 100%)`,
+                                border: '2px solid rgba(26, 31, 58, 0.95)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '9px',
+                                fontWeight: '700',
+                                color: '#fff',
+                                marginLeft: idx > 0 ? '-8px' : '0',
+                                zIndex: 10 - idx,
+                                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+                                cursor: 'help'
+                              }
+                            }, (reader.display_name || reader.user_email)[0]?.toUpperCase() || '?')
+                          ),
+                          readReceipts[email.id].length > 3 && h('div', {
+                            title: readReceipts[email.id].slice(3).map(r => `${r.display_name || r.user_email} - ${new Date(r.read_at).toLocaleString()}`).join('\n'),
+                            style: {
+                              width: '20px',
+                              height: '20px',
+                              borderRadius: '50%',
+                              background: 'linear-gradient(135deg, rgba(100, 116, 139, 0.4) 0%, rgba(71, 85, 105, 0.3) 100%)',
+                              border: '2px solid rgba(26, 31, 58, 0.95)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '9px',
+                              fontWeight: '700',
+                              color: '#94a3b8',
+                              marginLeft: '-8px',
+                              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+                              cursor: 'help'
+                            }
+                          }, `+${readReceipts[email.id].length - 3}`)
+                        )
                       )
                     )
                   ),
