@@ -1999,237 +1999,371 @@ window.addEventListener('DOMContentLoaded', function() {
             }
           }),
           
-          // Premium Top Bar
+          // 🌟 PREMIUM EXECUTIVE HEADER - Ultra Impressive Design
           h('div', {
             style: {
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '24px 32px',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-              background: 'rgba(15, 20, 41, 0.8)',
-              backdropFilter: 'blur(20px)',
+              background: 'linear-gradient(180deg, rgba(15, 20, 41, 0.95) 0%, rgba(10, 15, 35, 0.85) 100%)',
+              borderBottom: '2px solid rgba(201, 169, 98, 0.15)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
               position: 'relative',
-              zIndex: 10
+              zIndex: 10,
+              overflow: 'hidden'
             }
           },
-            h('div', null,
-              h('h1', { 
-                style: { 
-                  fontSize: '28px', 
-                  fontWeight: '700',
-                  margin: '0 0 4px 0',
-                  background: 'linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.7) 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  letterSpacing: '-0.5px'
-                } 
-              },
-                view === 'inbox' ? '📧 Inbox' :
-                view === 'sent' ? '📤 Sent Mail' :
-                view === 'drafts' ? '📝 Drafts' :
-                view === 'spam' ? '🚫 Spam' :
-                view === 'trash' ? '🗑️ Trash' :
-                view === 'archived' ? '📦 Archive' :
-                view === 'forwarding' ? '⚡ Email Forwarding' :
-                'InvestMail'
-              ),
-              h('p', {
-                style: {
-                  margin: 0,
-                  fontSize: '13px',
-                  color: 'rgba(255, 255, 255, 0.4)',
-                  fontWeight: '500'
-                }
-              }, showSearchResults ? `${searchResults.length} result${searchResults.length === 1 ? '' : 's'}` : `${emails.length} ${emails.length === 1 ? 'email' : 'emails'}`)
-            ),
-            
-            // 🌍 WORLD CLOCK - Premium Design
+            // Animated Background Pattern
             h('div', {
               style: {
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'radial-gradient(circle at 20% 50%, rgba(201, 169, 98, 0.03) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(102, 126, 234, 0.03) 0%, transparent 50%)',
+                pointerEvents: 'none'
+              }
+            }),
+            
+            // Main Header Content
+            h('div', {
+              style: {
+                padding: '28px 40px',
                 display: 'flex',
-                gap: '16px',
                 alignItems: 'center',
-                padding: '8px 16px',
-                background: 'linear-gradient(135deg, rgba(15, 20, 41, 0.6) 0%, rgba(26, 31, 58, 0.5) 100%)',
-                borderRadius: '12px',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                backdropFilter: 'blur(10px)',
-                boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.05)'
+                justifyContent: 'space-between',
+                position: 'relative',
+                zIndex: 1
               }
             },
-              // London
+              // Left Section - View Title & Stats
               h('div', {
                 style: {
                   display: 'flex',
-                  flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '2px',
-                  minWidth: '60px'
+                  gap: '24px'
                 }
               },
+                // Premium Icon Badge
                 h('div', {
                   style: {
-                    fontSize: '9px',
-                    fontWeight: '700',
-                    color: 'rgba(255, 255, 255, 0.35)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px'
-                  }
-                }, '🇬🇧 London'),
-                h('div', {
-                  style: {
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    color: 'rgba(255, 255, 255, 0.85)',
-                    fontVariantNumeric: 'tabular-nums'
-                  }
-                }, new Date(currentTime.toLocaleString('en-US', { timeZone: 'Europe/London' })).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }))
-              ),
-              
-              h('div', { style: { width: '1px', height: '24px', background: 'rgba(255, 255, 255, 0.1)' } }),
-              
-              // Cairo
-              h('div', {
-                style: {
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '2px',
-                  minWidth: '60px'
-                }
-              },
-                h('div', {
-                  style: {
-                    fontSize: '9px',
-                    fontWeight: '700',
-                    color: 'rgba(255, 255, 255, 0.35)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px'
-                  }
-                }, '🇪🇬 Cairo'),
-                h('div', {
-                  style: {
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    color: 'rgba(255, 255, 255, 0.85)',
-                    fontVariantNumeric: 'tabular-nums'
-                  }
-                }, new Date(currentTime.toLocaleString('en-US', { timeZone: 'Africa/Cairo' })).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }))
-              ),
-              
-              h('div', { style: { width: '1px', height: '24px', background: 'rgba(255, 255, 255, 0.1)' } }),
-              
-              // Dubai
-              h('div', {
-                style: {
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '2px',
-                  minWidth: '60px'
-                }
-              },
-                h('div', {
-                  style: {
-                    fontSize: '9px',
-                    fontWeight: '700',
-                    color: 'rgba(255, 255, 255, 0.35)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px'
-                  }
-                }, '🇦🇪 Dubai'),
-                h('div', {
-                  style: {
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    color: 'rgba(255, 255, 255, 0.85)',
-                    fontVariantNumeric: 'tabular-nums'
-                  }
-                }, new Date(currentTime.toLocaleString('en-US', { timeZone: 'Asia/Dubai' })).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }))
-              ),
-              
-              h('div', { style: { width: '1px', height: '24px', background: 'rgba(255, 255, 255, 0.1)' } }),
-              
-              // Local Time
-              h('div', {
-                style: {
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '2px',
-                  minWidth: '60px',
-                  position: 'relative'
-                }
-              },
-                h('div', {
-                  style: {
-                    fontSize: '9px',
-                    fontWeight: '700',
-                    color: '#C9A962',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: '16px',
+                    background: view === 'inbox' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' :
+                                view === 'sent' ? 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' :
+                                view === 'drafts' ? 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' :
+                                view === 'spam' ? 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' :
+                                view === 'trash' ? 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)' :
+                                'linear-gradient(135deg, #C9A962 0%, #8B7355 100%)',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '3px'
+                    justifyContent: 'center',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25), inset 0 -1px 3px rgba(0, 0, 0, 0.2)',
+                    fontSize: '26px',
+                    flexShrink: 0,
+                    border: '2px solid rgba(255, 255, 255, 0.15)'
+                  }
+                },
+                  view === 'inbox' ? '📧' :
+                  view === 'sent' ? '📤' :
+                  view === 'drafts' ? '📝' :
+                  view === 'spam' ? '🚫' :
+                  view === 'trash' ? '🗑️' :
+                  view === 'archived' ? '📦' :
+                  view === 'forwarding' ? '⚡' :
+                  '📬'
+                ),
+                
+                // Title & Subtitle
+                h('div', {
+                  style: {
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px'
+                  }
+                },
+                  // Main Title
+                  h('h1', { 
+                    style: { 
+                      fontSize: '36px', 
+                      fontWeight: '800',
+                      margin: 0,
+                      background: 'linear-gradient(135deg, #ffffff 0%, #C9A962 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      letterSpacing: '-1px',
+                      lineHeight: '1.1',
+                      textShadow: '0 2px 20px rgba(201, 169, 98, 0.2)'
+                    } 
+                  },
+                    view === 'inbox' ? 'Inbox' :
+                    view === 'sent' ? 'Sent Mail' :
+                    view === 'drafts' ? 'Drafts' :
+                    view === 'spam' ? 'Spam' :
+                    view === 'trash' ? 'Trash' :
+                    view === 'archived' ? 'Archive' :
+                    view === 'forwarding' ? 'Email Forwarding' :
+                    'InvestMail'
+                  ),
+                  
+                  // Subtitle with Stats
+                  h('div', {
+                    style: {
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px'
+                    }
+                  },
+                    // Email Count Badge
+                    h('div', {
+                      style: {
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 14px',
+                        background: 'linear-gradient(135deg, rgba(201, 169, 98, 0.15) 0%, rgba(201, 169, 98, 0.05) 100%)',
+                        border: '1.5px solid rgba(201, 169, 98, 0.3)',
+                        borderRadius: '20px',
+                        backdropFilter: 'blur(10px)',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+                      }
+                    },
+                      h('div', {
+                        style: {
+                          fontSize: '24px',
+                          fontWeight: '800',
+                          color: '#C9A962',
+                          lineHeight: '1',
+                          fontVariantNumeric: 'tabular-nums'
+                        }
+                      }, showSearchResults ? searchResults.length : emails.length),
+                      h('div', {
+                        style: {
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          color: 'rgba(201, 169, 98, 0.8)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
+                        }
+                      }, showSearchResults ? (searchResults.length === 1 ? 'Result' : 'Results') : (emails.length === 1 ? 'Email' : 'Emails'))
+                    ),
+                    
+                    // Shared Mailbox Indicator
+                    currentMailbox && h('div', {
+                      style: {
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 14px',
+                        background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%)',
+                        border: '1.5px solid rgba(34, 197, 94, 0.4)',
+                        borderRadius: '20px',
+                        boxShadow: '0 2px 8px rgba(34, 197, 94, 0.2)'
+                      }
+                    },
+                      h('div', {
+                        style: {
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          background: '#22c55e',
+                          boxShadow: '0 0 8px rgba(34, 197, 94, 0.8)',
+                          animation: 'pulse 2s infinite'
+                        }
+                      }),
+                      h('div', {
+                        style: {
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          color: '#22c55e',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
+                        }
+                      }, '👥 Shared')
+                    )
+                  )
+                )
+              ),
+              
+              // Right Section - World Clock
+              h('div', {
+                style: {
+                  display: 'flex',
+                  gap: '20px',
+                  alignItems: 'center',
+                  padding: '12px 20px',
+                  background: 'linear-gradient(135deg, rgba(15, 20, 41, 0.7) 0%, rgba(26, 31, 58, 0.6) 100%)',
+                  borderRadius: '16px',
+                  border: '2px solid rgba(201, 169, 98, 0.2)',
+                  backdropFilter: 'blur(20px)',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.05)',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }
+              },
+                // Clock Header Glow Effect
+                h('div', {
+                  style: {
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '1px',
+                    background: 'linear-gradient(90deg, transparent 0%, rgba(201, 169, 98, 0.5) 50%, transparent 100%)'
+                  }
+                }),
+                
+                // London
+                h('div', {
+                  style: {
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                    minWidth: '70px',
+                    position: 'relative'
                   }
                 },
                   h('div', {
                     style: {
-                      width: '5px',
-                      height: '5px',
-                      borderRadius: '50%',
-                      background: '#C9A962',
-                      boxShadow: '0 0 6px rgba(201, 169, 98, 0.6)',
-                      animation: 'pulse 2s infinite'
+                      fontSize: '10px',
+                      fontWeight: '700',
+                      color: 'rgba(255, 255, 255, 0.4)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '1px',
+                      marginBottom: '2px'
                     }
-                  }),
-                  '🏠 Local'
+                  }, '🇬🇧 London'),
+                  h('div', {
+                    style: {
+                      fontSize: '18px',
+                      fontWeight: '700',
+                      color: '#ffffff',
+                      fontVariantNumeric: 'tabular-nums',
+                      textShadow: '0 2px 8px rgba(255, 255, 255, 0.15)'
+                    }
+                  }, new Date(currentTime.toLocaleString('en-US', { timeZone: 'Europe/London' })).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }))
                 ),
+                
+                h('div', { style: { width: '2px', height: '36px', background: 'linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.15) 50%, transparent 100%)' } }),
+                
+                // Cairo
                 h('div', {
                   style: {
-                    fontSize: '13px',
-                    fontWeight: '700',
-                    color: '#ffffff',
-                    fontVariantNumeric: 'tabular-nums'
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                    minWidth: '70px'
                   }
-                }, currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }))
+                },
+                  h('div', {
+                    style: {
+                      fontSize: '10px',
+                      fontWeight: '700',
+                      color: 'rgba(255, 255, 255, 0.4)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '1px',
+                      marginBottom: '2px'
+                    }
+                  }, '🇪🇬 Cairo'),
+                  h('div', {
+                    style: {
+                      fontSize: '18px',
+                      fontWeight: '700',
+                      color: '#ffffff',
+                      fontVariantNumeric: 'tabular-nums',
+                      textShadow: '0 2px 8px rgba(255, 255, 255, 0.15)'
+                    }
+                  }, new Date(currentTime.toLocaleString('en-US', { timeZone: 'Africa/Cairo' })).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }))
+                ),
+                
+                h('div', { style: { width: '2px', height: '36px', background: 'linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.15) 50%, transparent 100%)' } }),
+                
+                // Dubai
+                h('div', {
+                  style: {
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                    minWidth: '70px'
+                  }
+                },
+                  h('div', {
+                    style: {
+                      fontSize: '10px',
+                      fontWeight: '700',
+                      color: 'rgba(255, 255, 255, 0.4)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '1px',
+                      marginBottom: '2px'
+                    }
+                  }, '🇦🇪 Dubai'),
+                  h('div', {
+                    style: {
+                      fontSize: '18px',
+                      fontWeight: '700',
+                      color: '#ffffff',
+                      fontVariantNumeric: 'tabular-nums',
+                      textShadow: '0 2px 8px rgba(255, 255, 255, 0.15)'
+                    }
+                  }, new Date(currentTime.toLocaleString('en-US', { timeZone: 'Asia/Dubai' })).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }))
+                ),
+                
+                h('div', { style: { width: '2px', height: '36px', background: 'linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.15) 50%, transparent 100%)' } }),
+                
+                // Local Time - Highlighted
+                h('div', {
+                  style: {
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                    minWidth: '70px',
+                    position: 'relative',
+                    padding: '8px 12px',
+                    background: 'linear-gradient(135deg, rgba(201, 169, 98, 0.15) 0%, rgba(201, 169, 98, 0.05) 100%)',
+                    borderRadius: '12px',
+                    border: '1.5px solid rgba(201, 169, 98, 0.4)',
+                    boxShadow: '0 0 20px rgba(201, 169, 98, 0.2)'
+                  }
+                },
+                  h('div', {
+                    style: {
+                      fontSize: '10px',
+                      fontWeight: '800',
+                      color: '#C9A962',
+                      textTransform: 'uppercase',
+                      letterSpacing: '1px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      marginBottom: '2px'
+                    }
+                  },
+                    h('div', {
+                      style: {
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        background: '#C9A962',
+                        boxShadow: '0 0 10px rgba(201, 169, 98, 0.8)',
+                        animation: 'pulse 2s infinite'
+                      }
+                    }),
+                    '🏠 Local'
+                  ),
+                  h('div', {
+                    style: {
+                      fontSize: '20px',
+                      fontWeight: '800',
+                      color: '#C9A962',
+                      fontVariantNumeric: 'tabular-nums',
+                      textShadow: '0 2px 12px rgba(201, 169, 98, 0.4)'
+                    }
+                  }, currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }))
+                )
               )
-            ),
-            
-            h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center' } },
-              h('button', {
-                onClick: () => {
-                  loadData();
-                  if (view === 'sent' && emails.length > 0) {
-                    const emailIds = emails.map(e => e.id);
-                    loadReadStatuses(emailIds);
-                  }
-                },
-                style: {
-                  padding: '10px 16px',
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '10px',
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  transition: 'all 0.2s',
-                  backdropFilter: 'blur(10px)'
-                },
-                onMouseEnter: (e) => {
-                  e.target.style.background = 'rgba(255, 255, 255, 0.08)';
-                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-                },
-                onMouseLeave: (e) => {
-                  e.target.style.background = 'rgba(255, 255, 255, 0.05)';
-                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                }
-              }, view === 'sent' ? '🔄 Check Read Status' : '🔄 Refresh')
             )
           ),
           
