@@ -389,10 +389,17 @@ emailRoutes.post('/send', async (c) => {
   }
   
   try {
+    // 🔍 CRITICAL: Log raw request size BEFORE parsing
+    const rawBodyText = await c.req.text();
+    console.log('📦 RAW REQUEST SIZE:', rawBodyText.length, 'bytes');
+    console.log('📦 Request preview (first 1000 chars):', rawBodyText.substring(0, 1000));
+    
+    // Parse JSON from raw text
+    const requestData = JSON.parse(rawBodyText);
     const { 
       to, cc, bcc, subject, body, 
       attachments, useAI, thread_id 
-    } = await c.req.json();
+    } = requestData;
     
     // CRITICAL DEBUG: Log what we received
     console.log('📧 SEND REQUEST RECEIVED:');
@@ -411,11 +418,13 @@ emailRoutes.post('/send', async (c) => {
         isLocalFile: a.isLocalFile,
         hasData: !!a.data,
         dataLength: a.data?.length || 0,
+        dataPreview: a.data ? a.data.substring(0, 50) + '...' : 'NO DATA',
         hasId: !!a.id,
         id: a.id
       })), null, 2));
     } else {
       console.log('❌ NO ATTACHMENTS ARRAY OR EMPTY!');
+      console.log('❌ Raw attachments value:', attachments);
     }
     
     // 🔒 CRITICAL: Force from to be authenticated user's email - NEVER trust client

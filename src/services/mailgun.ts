@@ -39,70 +39,73 @@ export class MailgunService {
    */
   async sendEmail(options: EmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
-      const mailgun = new Mailgun(formData);
-      const client = mailgun.client({
-        username: 'api',
-        key: this.config.apiKey,
-      });
-
-      // Prepare email data
-      const emailData: any = {
-        from: `${this.config.fromName} <${this.config.fromEmail}>`,
-        to: Array.isArray(options.to) ? options.to : [options.to],
-        subject: options.subject,
-      };
-
-      // Add optional fields
-      if (options.text) emailData.text = options.text;
-      if (options.html) emailData.html = options.html;
-      if (options.cc) emailData.cc = Array.isArray(options.cc) ? options.cc : [options.cc];
-      if (options.bcc) emailData.bcc = Array.isArray(options.bcc) ? options.bcc : [options.bcc];
-      if (options.replyTo) emailData['h:Reply-To'] = options.replyTo;
-
-      // Add attachments if provided
+      console.log('🚀 Using Mailgun REST API directly (bypassing mailgun.js)');
+      
+      // Build FormData
+      const form = new FormData();
+      form.append('from', `${this.config.fromName} <${this.config.fromEmail}>`);
+      form.append('to', Array.isArray(options.to) ? options.to.join(',') : options.to);
+      form.append('subject', options.subject);
+      
+      if (options.text) form.append('text', options.text);
+      if (options.html) form.append('html', options.html);
+      if (options.cc) form.append('cc', Array.isArray(options.cc) ? options.cc.join(',') : options.cc);
+      if (options.bcc) form.append('bcc', Array.isArray(options.bcc) ? options.bcc.join(',') : options.bcc);
+      if (options.replyTo) form.append('h:Reply-To', options.replyTo);
+      
+      // Add attachments
       if (options.attachments && options.attachments.length > 0) {
-        console.log(`📎 Mailgun: Adding ${options.attachments.length} attachments`);
-        // Mailgun.js expects attachments as an array of objects with filename and data
-        // The data can be a Buffer, and the library will handle it with form-data
-        emailData.attachment = options.attachments.map((att, idx) => {
+        console.log(`📎 Adding ${options.attachments.length} attachments to FormData`);
+        
+        for (let i = 0; i < options.attachments.length; i++) {
+          const att = options.attachments[i];
           const isBuffer = att.data instanceof Buffer;
-          const dataLength = isBuffer ? att.data.length : (typeof att.data === 'string' ? att.data.length : 0);
-          console.log(`📎 Mailgun attachment ${idx + 1}: ${att.filename} (${dataLength} bytes, isBuffer: ${isBuffer})`);
+          console.log(`📎 Attachment ${i + 1}: ${att.filename}, isBuffer: ${isBuffer}, size: ${att.data.length}`);
           
-          // Return attachment in format expected by mailgun.js
-          return {
-            filename: att.filename,
-            data: att.data  // Buffer or string
-          };
-        });
-        console.log(`📎 Mailgun: Prepared ${emailData.attachment.length} attachments for send`);
-      } else {
-        console.log('📎 Mailgun: No attachments to add');
+          if (isBuffer && att.data.length > 0) {
+            // Convert Buffer to Blob
+            const blob = new Blob([att.data], { type: 'application/octet-stream' });
+            form.append('attachment', blob, att.filename);
+            console.log(`✅ Appended ${att.filename} as Blob (${blob.size} bytes)`);
+          } else {
+            console.error(`❌ Invalid attachment: ${att.filename}`);
+          }
+        }
       }
-
-      // DEBUG: Log final emailData structure before sending
-      console.log('📬 Final emailData for Mailgun:', {
-        from: emailData.from,
-        to: emailData.to,
-        subject: emailData.subject,
-        hasText: !!emailData.text,
-        hasHtml: !!emailData.html,
-        attachmentCount: emailData.attachment?.length || 0,
-        attachmentNames: emailData.attachment?.map((a: any) => a.filename) || []
+      
+      // Send via Mailgun REST API
+      const url = `https://api.mailgun.net/v3/${this.config.domain}/messages`;
+      console.log('📬 POST to:', url);
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${btoa(`api:${this.config.apiKey}`)}`
+        },
+        body: form
       });
-
-      // Send email
-      const response = await client.messages.create(this.config.domain, emailData);
-
-      return {
-        success: true,
-        messageId: response.id,
-      };
+      
+      const result = await response.json() as any;
+      console.log('📬 Mailgun response:', response.status, JSON.stringify(result));
+      
+      if (response.ok) {
+        console.log('✅ Email sent successfully via REST API!');
+        return {
+          success: true,
+          messageId: result.id
+        };
+      } else {
+        console.error('❌ Mailgun API error:', result);
+        return {
+          success: false,
+          error: result.message || `HTTP ${response.status}`
+        };
+      }
     } catch (error: any) {
-      console.error('Mailgun send error:', error);
+      console.error('❌ Mailgun exception:', error);
       return {
         success: false,
-        error: error.message || 'Failed to send email',
+        error: error.message
       };
     }
   }
