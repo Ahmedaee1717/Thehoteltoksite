@@ -581,10 +581,20 @@ emailRoutes.post('/send', async (c) => {
                 if (fileRecord && fileRecord.file_url) {
                   console.log(`📎 Fetching FileBank file: ${att.filename} from ${fileRecord.file_url}`);
                   
+                  // Check if URL is absolute or relative
+                  let fetchUrl = fileRecord.file_url;
+                  if (!fetchUrl.startsWith('http')) {
+                    // Relative URL - construct full URL
+                    const baseUrl = `https://${c.req.header('host') || 'www.investaycapital.com'}`;
+                    fetchUrl = `${baseUrl}${fetchUrl.startsWith('/') ? '' : '/'}${fetchUrl}`;
+                    console.log(`📎 Constructed full URL: ${fetchUrl}`);
+                  }
+                  
                   // Fetch file content
-                  const fileResponse = await fetch(fileRecord.file_url);
+                  const fileResponse = await fetch(fetchUrl);
                   if (!fileResponse.ok) {
-                    console.error(`❌ Failed to fetch attachment ${att.filename}: ${fileResponse.statusText}`);
+                    console.error(`❌ Failed to fetch attachment ${att.filename}: HTTP ${fileResponse.status} ${fileResponse.statusText} from ${fetchUrl}`);
+                    console.error(`📎 This is likely a dummy URL from seed data. Upload real files or use computer upload!`);
                     continue;
                   }
                   
