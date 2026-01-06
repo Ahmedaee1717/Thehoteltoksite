@@ -15,5 +15,11 @@
       "database_name": "investay-email-production",
       "database_id": "ddae3970-8570-45ab-84f7-3e3b39a8309b"
     }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "R2_BUCKET",
+      "bucket_name": "investay-filebank"
+    }
   ]
 }

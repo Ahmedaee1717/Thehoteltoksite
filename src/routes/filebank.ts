@@ -198,7 +198,7 @@ fileBank.post('/files', async (c) => {
   }
 })
 
-// Upload file with form data (simulated for now)
+// Upload file with form data - NOW WITH R2 STORAGE!
 fileBank.post('/files/upload', async (c) => {
   try {
     const formData = await c.req.formData()
@@ -210,14 +210,28 @@ fileBank.post('/files/upload', async (c) => {
       return c.json({ error: 'file and userEmail are required' }, 400)
     }
     
+    console.log(`📤 Uploading file: ${file.name} (${file.size} bytes) for ${userEmail}`);
+    
     // Extract file info
     const filename = file.name
     const fileSize = file.size
     const fileType = file.type
     const fileExtension = filename.split('.').pop() || ''
     
-    // In production, upload to R2 here
-    const fileUrl = `/uploads/${Date.now()}-${filename}`
+    // 🚀 UPLOAD TO R2
+    const r2Key = `uploads/${Date.now()}-${filename}`;
+    const arrayBuffer = await file.arrayBuffer();
+    
+    console.log(`📦 Uploading to R2: ${r2Key}`);
+    await c.env.R2_BUCKET.put(r2Key, arrayBuffer, {
+      httpMetadata: {
+        contentType: fileType || 'application/octet-stream'
+      }
+    });
+    console.log(`✅ Uploaded to R2 successfully`);
+    
+    // R2 file URL (will be served via /r2/ endpoint)
+    const fileUrl = `/r2/${r2Key}`;
     
     // Determine file path
     let filePath = `/${filename}`
@@ -280,6 +294,35 @@ fileBank.post('/files/upload', async (c) => {
   } catch (error: any) {
     console.error('Error uploading file:', error)
     return c.json({ error: 'Failed to upload file', details: error.message }, 500)
+  }
+})
+
+// 🚀 SERVE FILES FROM R2
+fileBank.get('/r2/*', async (c) => {
+  try {
+    const path = c.req.path.replace('/api/filebank/r2/', '')
+    console.log(`📥 Fetching from R2: ${path}`)
+    
+    const object = await c.env.R2_BUCKET.get(path)
+    
+    if (!object) {
+      console.error(`❌ File not found in R2: ${path}`)
+      return c.notFound()
+    }
+    
+    const headers = new Headers()
+    object.writeHttpMetadata(headers)
+    headers.set('etag', object.httpEtag)
+    headers.set('Cache-Control', 'public, max-age=31536000')
+    
+    console.log(`✅ Serving from R2: ${path} (${object.size} bytes)`)
+    
+    return new Response(object.body, {
+      headers
+    })
+  } catch (error: any) {
+    console.error('❌ Error serving R2 file:', error)
+    return c.json({ error: 'Failed to fetch file', details: error.message }, 500)
   }
 })
 
