@@ -3001,4 +3001,170 @@ emailRoutes.delete('/shared-mailboxes/:id/members/:memberEmail', async (c) => {
   }
 });
 
+// PATCH /api/email/shared-mailboxes/:id/toggle - Toggle mailbox active status (admin)
+emailRoutes.patch('/shared-mailboxes/:id/toggle', async (c) => {
+  const { DB } = c.env;
+  const mailboxId = c.req.param('id');
+  
+  try {
+    // Get current status
+    const mailbox = await DB.prepare(`
+      SELECT active FROM shared_mailboxes WHERE id = ?
+    `).bind(mailboxId).first() as any;
+    
+    if (!mailbox) {
+      return c.json({ success: false, error: 'Mailbox not found' }, 404);
+    }
+    
+    const newStatus = mailbox.active === 1 ? 0 : 1;
+    
+    await DB.prepare(`
+      UPDATE shared_mailboxes SET active = ? WHERE id = ?
+    `).bind(newStatus, mailboxId).run();
+    
+    return c.json({ 
+      success: true,
+      active: newStatus,
+      message: `Shared mailbox ${newStatus === 1 ? 'activated' : 'deactivated'} successfully`
+    });
+  } catch (error: any) {
+    console.error('Toggle mailbox error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// POST /api/email/shared-mailboxes/:id/members - Add member (admin)
+emailRoutes.post('/shared-mailboxes/:id/members', async (c) => {
+  const { DB } = c.env;
+  const mailboxId = c.req.param('id');
+  const { user_email, role, permissions } = await c.req.json();
+  
+  try {
+    if (!user_email) {
+      return c.json({ success: false, error: 'User email is required' }, 400);
+    }
+    
+    const result = await DB.prepare(`
+      INSERT INTO shared_mailbox_members (shared_mailbox_id, user_email, role, permissions, added_by)
+      VALUES (?, ?, ?, ?, ?)
+    `).bind(
+      mailboxId,
+      user_email,
+      role || 'member',
+      permissions || 'read,send',
+      'admin@investaycapital.com'
+    ).run();
+    
+    return c.json({ 
+      success: true,
+      message: 'Member added successfully'
+    });
+  } catch (error: any) {
+    console.error('Add member error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// DELETE /api/email/shared-mailboxes/:id/members/:memberId - Remove member (admin)
+emailRoutes.delete('/shared-mailboxes/:id/members/:memberId', async (c) => {
+  const { DB } = c.env;
+  const mailboxId = c.req.param('id');
+  const memberId = c.req.param('memberId');
+  
+  try {
+    await DB.prepare(`
+      UPDATE shared_mailbox_members
+      SET is_active = 0
+      WHERE id = ? AND shared_mailbox_id = ?
+    `).bind(memberId, mailboxId).run();
+    
+    return c.json({ 
+      success: true,
+      message: 'Member removed successfully'
+    });
+  } catch (error: any) {
+    console.error('Remove member error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// PATCH /api/email/shared-mailboxes/:id/members/:memberId - Update member role (admin)
+emailRoutes.patch('/shared-mailboxes/:id/members/:memberId', async (c) => {
+  const { DB } = c.env;
+  const mailboxId = c.req.param('id');
+  const memberId = c.req.param('memberId');
+  const { role, permissions } = await c.req.json();
+  
+  try {
+    await DB.prepare(`
+      UPDATE shared_mailbox_members
+      SET role = ?, permissions = ?
+      WHERE id = ? AND shared_mailbox_id = ?
+    `).bind(role, permissions, memberId, mailboxId).run();
+    
+    return c.json({ 
+      success: true,
+      message: 'Member role updated successfully'
+    });
+  } catch (error: any) {
+    console.error('Update member error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// POST /api/email/shared-mailboxes/:id/members/add - Add member (admin) - Legacy endpoint
+emailRoutes.post('/shared-mailboxes/:id/members/add', async (c) => {
+  const { DB } = c.env;
+  const mailboxId = c.req.param('id');
+  const { user_email, role } = await c.req.json();
+  
+  try {
+    if (!user_email) {
+      return c.json({ success: false, error: 'User email is required' }, 400);
+    }
+    
+    const result = await DB.prepare(`
+      INSERT INTO shared_mailbox_members (shared_mailbox_id, user_email, role, permissions, added_by)
+      VALUES (?, ?, ?, ?, ?)
+    `).bind(
+      mailboxId,
+      user_email,
+      role || 'member',
+      'read,send',
+      'admin@investaycapital.com'
+    ).run();
+    
+    return c.json({ 
+      success: true,
+      message: 'Member added successfully'
+    });
+  } catch (error: any) {
+    console.error('Add member error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// DELETE /api/email/shared-mailboxes/:id/members/:memberEmail - Remove member (admin) - Legacy endpoint
+emailRoutes.delete('/shared-mailboxes/:id/members/:memberEmail', async (c) => {
+  const { DB } = c.env;
+  const mailboxId = c.req.param('id');
+  const memberEmail = c.req.param('memberEmail');
+  
+  try {
+    await DB.prepare(`
+      UPDATE shared_mailbox_members
+      SET is_active = 0
+      WHERE shared_mailbox_id = ? AND user_email = ?
+    `).bind(mailboxId, memberEmail).run();
+    
+    return c.json({ 
+      success: true,
+      message: 'Member removed successfully'
+    });
+  } catch (error: any) {
+    console.error('Remove member error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
 export { emailRoutes }
