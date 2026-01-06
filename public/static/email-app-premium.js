@@ -285,12 +285,15 @@ window.addEventListener('DOMContentLoaded', function() {
       // Load shared mailboxes user has access to
       const loadSharedMailboxes = async () => {
         try {
+          console.log('📬 Loading shared mailboxes...');
           const response = await fetch('/api/shared-mailboxes');
+          console.log('📬 Response status:', response.status);
           const data = await response.json();
+          console.log('📬 Response data:', data);
           setSharedMailboxes(data.mailboxes || []);
           console.log('📬 Loaded shared mailboxes:', data.mailboxes?.length || 0);
         } catch (error) {
-          console.error('Load shared mailboxes error:', error);
+          console.error('❌ Load shared mailboxes error:', error);
         }
       };
       
