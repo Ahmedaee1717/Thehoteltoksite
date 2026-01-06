@@ -64,6 +64,21 @@ export class MailgunService {
    */
   async sendEmail(data: EmailData): Promise<any> {
     try {
+      console.log('📧 [Mailgun] sendEmail called');
+      console.log('📧 [Mailgun] Received attachments:', data.attachments?.length || 0);
+      
+      if (data.attachments && data.attachments.length > 0) {
+        console.log('📧 [Mailgun] Attachment details:', data.attachments.map((a, i) => ({
+          index: i,
+          filename: a.filename,
+          dataType: typeof a.data,
+          isBuffer: a.data instanceof Buffer,
+          dataLength: a.data?.length || 0
+        })));
+      } else {
+        console.log('⚠️ [Mailgun] NO ATTACHMENTS received!');
+      }
+      
       const fromAddress = data.from || `${this.fromName} <${this.fromEmail}>`;
       
       // Create form data

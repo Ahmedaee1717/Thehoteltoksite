@@ -444,7 +444,9 @@ emailRoutes.post('/send', async (c) => {
           filename: a.filename,
           isLocalFile: a.isLocalFile,
           hasData: !!a.data,
-          dataLength: a.data?.length || 0
+          dataLength: a.data?.length || 0,
+          id: a.id,
+          url: a.url
         }))
       };
     } else {
@@ -619,11 +621,21 @@ emailRoutes.post('/send', async (c) => {
               } else {
                 // FileBank file: Load from database
                 console.log(`📎 Looking up FileBank file ID: ${att.id}`);
+                console.log(`📎 att object:`, JSON.stringify(att));
+                
                 const fileRecord = await DB.prepare(`
                   SELECT * FROM file_bank_files WHERE id = ?
                 `).bind(att.id).first();
                 
+                console.log(`📎 FileBank query result:`, fileRecord ? 'FOUND' : 'NOT FOUND');
+                
                 if (fileRecord && fileRecord.file_url) {
+                  console.log(`📎 FileBank record:`, JSON.stringify({
+                    id: fileRecord.id,
+                    filename: fileRecord.filename,
+                    file_url: fileRecord.file_url,
+                    file_size: fileRecord.file_size
+                  }));
                   console.log(`📎 Fetching FileBank file: ${att.filename} from ${fileRecord.file_url}`);
                   
                   // Check if URL is absolute or relative
@@ -636,7 +648,10 @@ emailRoutes.post('/send', async (c) => {
                   }
                   
                   // Fetch file content
+                  console.log(`📎 Fetching from: ${fetchUrl}`);
                   const fileResponse = await fetch(fetchUrl);
+                  console.log(`📎 Fetch response: ${fileResponse.status} ${fileResponse.statusText}`);
+                  
                   if (!fileResponse.ok) {
                     console.error(`❌ Failed to fetch attachment ${att.filename}: HTTP ${fileResponse.status} ${fileResponse.statusText} from ${fetchUrl}`);
                     console.error(`📎 This is likely a dummy URL from seed data. Upload real files or use computer upload!`);
@@ -646,6 +661,7 @@ emailRoutes.post('/send', async (c) => {
                   // Convert to Buffer
                   const arrayBuffer = await fileResponse.arrayBuffer();
                   const buffer = Buffer.from(arrayBuffer);
+                  console.log(`📎 Buffer created: ${buffer.length} bytes`);
                   
                   // Add to Mailgun attachments
                   mailgunAttachments.push({
@@ -656,6 +672,7 @@ emailRoutes.post('/send', async (c) => {
                   console.log(`✅ Added FileBank file: ${att.filename} (${buffer.length} bytes)`);
                 } else {
                   console.warn(`⚠️ FileBank record not found for attachment ID: ${att.id}`);
+                  console.warn(`⚠️ fileRecord:`, fileRecord);
                 }
               }
             } catch (attError: any) {
