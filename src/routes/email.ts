@@ -394,6 +394,30 @@ emailRoutes.post('/send', async (c) => {
       attachments, useAI, thread_id 
     } = await c.req.json();
     
+    // CRITICAL DEBUG: Log what we received
+    console.log('📧 SEND REQUEST RECEIVED:');
+    console.log('  - from:', authenticatedUserEmail);
+    console.log('  - to:', to);
+    console.log('  - subject:', subject);
+    console.log('  - bodyLength:', body?.length);
+    console.log('  - hasAttachments:', !!attachments);
+    console.log('  - attachments type:', typeof attachments);
+    console.log('  - attachments isArray:', Array.isArray(attachments));
+    console.log('  - attachments length:', attachments?.length || 0);
+    
+    if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+      console.log('📎 ATTACHMENTS DETAILS:', JSON.stringify(attachments.map((a: any) => ({
+        filename: a.filename,
+        isLocalFile: a.isLocalFile,
+        hasData: !!a.data,
+        dataLength: a.data?.length || 0,
+        hasId: !!a.id,
+        id: a.id
+      })), null, 2));
+    } else {
+      console.log('❌ NO ATTACHMENTS ARRAY OR EMPTY!');
+    }
+    
     // 🔒 CRITICAL: Force from to be authenticated user's email - NEVER trust client
     const from = authenticatedUserEmail;
     
