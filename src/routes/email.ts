@@ -643,6 +643,12 @@ emailRoutes.post('/send', async (c) => {
                   if (!fetchUrl.startsWith('http')) {
                     // Relative URL - construct full URL
                     const baseUrl = `https://${c.req.header('host') || 'www.investaycapital.com'}`;
+                    
+                    // Fix: R2 URLs need /api/filebank prefix
+                    if (fetchUrl.startsWith('/r2/')) {
+                      fetchUrl = `/api/filebank${fetchUrl}`;
+                    }
+                    
                     fetchUrl = `${baseUrl}${fetchUrl.startsWith('/') ? '' : '/'}${fetchUrl}`;
                     console.log(`📎 Constructed full URL: ${fetchUrl}`);
                   }
