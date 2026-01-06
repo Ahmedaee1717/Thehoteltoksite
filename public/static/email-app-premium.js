@@ -122,8 +122,21 @@ window.addEventListener('DOMContentLoaded', function() {
       const [contactDeals, setContactDeals] = useState([]);
       const [contactEmails, setContactEmails] = useState([]);
       
+      // Shared Mailbox state
+      const [sharedMailboxes, setSharedMailboxes] = useState([]);
+      const [currentMailbox, setCurrentMailbox] = useState(null); // null = personal, else shared mailbox
+      const [sharedMailboxMembers, setSharedMailboxMembers] = useState([]);
+      const [sharedDrafts, setSharedDrafts] = useState([]);
+      const [activeUsers, setActiveUsers] = useState([]);
+      const [showAdminPanel, setShowAdminPanel] = useState(false);
+      const [showAddMember, setShowAddMember] = useState(false);
+      const [newMemberEmail, setNewMemberEmail] = useState('');
+      const [newMemberRole, setNewMemberRole] = useState('member');
+      const [mailboxActivity, setMailboxActivity] = useState([]);
+      
       useEffect(() => {
         loadData();
+        loadSharedMailboxes(); // Load shared mailboxes on mount
       }, [view]);
       
       // Auto-refresh read statuses in Sent folder
@@ -264,6 +277,171 @@ window.addEventListener('DOMContentLoaded', function() {
         } catch (err) {
           console.error('❌ Failed to load FileBank files:', err);
           setFiles([]);
+        }
+      };
+      
+      // ===== SHARED MAILBOX FUNCTIONS =====
+      
+      // Load shared mailboxes user has access to
+      const loadSharedMailboxes = async () => {
+        try {
+          const response = await fetch('/api/shared-mailboxes');
+          const data = await response.json();
+          setSharedMailboxes(data.mailboxes || []);
+          console.log('📬 Loaded shared mailboxes:', data.mailboxes?.length || 0);
+        } catch (error) {
+          console.error('Load shared mailboxes error:', error);
+        }
+      };
+      
+      // Switch to a shared mailbox
+      const switchToMailbox = async (mailbox) => {
+        setCurrentMailbox(mailbox);
+        console.log('📬 Switched to mailbox:', mailbox ? mailbox.display_name : 'Personal');
+        
+        if (mailbox) {
+          // Load mailbox details
+          loadMailboxDetails(mailbox.id);
+          // Update presence
+          updatePresence(mailbox.id, 'viewing');
+          // Start presence polling
+          startPresencePolling(mailbox.id);
+        } else {
+          // Switched back to personal
+          stopPresencePolling();
+        }
+        
+        // Reload emails for this mailbox
+        loadData();
+      };
+      
+      // Load mailbox details (members, drafts, activity)
+      const loadMailboxDetails = async (mailboxId) => {
+        try {
+          const [detailsRes, membersRes, draftsRes, activityRes] = await Promise.all([
+            fetch(`/api/shared-mailboxes/${mailboxId}`),
+            fetch(`/api/shared-mailboxes/${mailboxId}/members`),
+            fetch(`/api/shared-mailboxes/${mailboxId}/drafts`),
+            fetch(`/api/shared-mailboxes/${mailboxId}/activity?limit=20`)
+          ]);
+          
+          const details = await detailsRes.json();
+          const members = await membersRes.json();
+          const drafts = await draftsRes.json();
+          const activity = await activityRes.json();
+          
+          setSharedMailboxMembers(members.members || []);
+          setSharedDrafts(drafts.drafts || []);
+          setMailboxActivity(activity.activities || []);
+          
+          console.log('📬 Loaded mailbox details:', {
+            members: members.members?.length || 0,
+            drafts: drafts.drafts?.length || 0,
+            activities: activity.activities?.length || 0
+          });
+        } catch (error) {
+          console.error('Load mailbox details error:', error);
+        }
+      };
+      
+      // Update user presence in shared mailbox
+      const updatePresence = async (mailboxId, status, draftId = null) => {
+        try {
+          const sessionId = localStorage.getItem('session_id') || generateSessionId();
+          await fetch(`/api/shared-mailboxes/${mailboxId}/presence`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              status,
+              current_draft_id: draftId,
+              session_id: sessionId
+            })
+          });
+        } catch (error) {
+          console.error('Update presence error:', error);
+        }
+      };
+      
+      // Generate session ID
+      const generateSessionId = () => {
+        const id = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem('session_id', id);
+        return id;
+      };
+      
+      // Poll for active users (real-time presence)
+      let presenceInterval = null;
+      const startPresencePolling = (mailboxId) => {
+        stopPresencePolling();
+        
+        const pollPresence = async () => {
+          try {
+            const response = await fetch(`/api/shared-mailboxes/${mailboxId}/presence`);
+            const data = await response.json();
+            setActiveUsers(data.activeUsers || []);
+          } catch (error) {
+            console.error('Presence poll error:', error);
+          }
+        };
+        
+        pollPresence(); // Initial load
+        presenceInterval = setInterval(pollPresence, 5000); // Poll every 5 seconds
+      };
+      
+      const stopPresencePolling = () => {
+        if (presenceInterval) {
+          clearInterval(presenceInterval);
+          presenceInterval = null;
+        }
+      };
+      
+      // Add member to shared mailbox
+      const addMemberToMailbox = async (mailboxId, memberEmail, role) => {
+        try {
+          const response = await fetch(`/api/shared-mailboxes/${mailboxId}/members`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_email: memberEmail,
+              role: role || 'member',
+              permissions: ['view', 'send']
+            })
+          });
+          
+          const data = await response.json();
+          if (data.success) {
+            alert('✅ Member added successfully!');
+            loadMailboxDetails(mailboxId);
+            setShowAddMember(false);
+            setNewMemberEmail('');
+          } else {
+            alert('❌ Failed to add member: ' + (data.error || 'Unknown error'));
+          }
+        } catch (error) {
+          console.error('Add member error:', error);
+          alert('❌ Failed to add member');
+        }
+      };
+      
+      // Remove member from shared mailbox
+      const removeMemberFromMailbox = async (mailboxId, memberEmail) => {
+        if (!confirm(`Remove ${memberEmail} from this shared mailbox?`)) return;
+        
+        try {
+          const response = await fetch(`/api/shared-mailboxes/${mailboxId}/members/${encodeURIComponent(memberEmail)}`, {
+            method: 'DELETE'
+          });
+          
+          const data = await response.json();
+          if (data.success) {
+            alert('✅ Member removed successfully!');
+            loadMailboxDetails(mailboxId);
+          } else {
+            alert('❌ Failed to remove member');
+          }
+        } catch (error) {
+          console.error('Remove member error:', error);
+          alert('❌ Failed to remove member');
         }
       };
       
@@ -1168,6 +1346,169 @@ window.addEventListener('DOMContentLoaded', function() {
                     } 
                   }, 'Internal Email System')
                 )
+              )
+            ),
+            
+            // 📬 SHARED MAILBOX SELECTOR - PREMIUM UI
+            sharedMailboxes && sharedMailboxes.length > 0 && h('div', {
+              style: {
+                padding: '16px',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                marginBottom: '16px'
+              }
+            },
+              h('div', {
+                style: {
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  marginBottom: '8px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px'
+                }
+              }, '📬 Mailbox'),
+              
+              // Current Mailbox Display + Dropdown
+              h('select', {
+                value: currentMailbox ? currentMailbox.id : 'personal',
+                onChange: (e) => {
+                  const mailboxId = e.target.value;
+                  if (mailboxId === 'personal') {
+                    switchToMailbox(null);
+                  } else {
+                    const mailbox = sharedMailboxes.find(m => m.id === parseInt(mailboxId));
+                    switchToMailbox(mailbox);
+                  }
+                },
+                style: {
+                  width: '100%',
+                  padding: '12px 16px',
+                  background: 'rgba(26, 31, 58, 0.6)',
+                  border: '1px solid rgba(201, 169, 98, 0.3)',
+                  borderRadius: '10px',
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  appearance: 'none',
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23C9A962' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 12px center'
+                }
+              },
+                h('option', { value: 'personal' }, `👤 Personal (${user})`),
+                sharedMailboxes.map(mailbox =>
+                  h('option', { 
+                    key: mailbox.id, 
+                    value: mailbox.id 
+                  }, `📬 ${mailbox.display_name}`)
+                )
+              ),
+              
+              // Active Users Indicator (if in shared mailbox)
+              currentMailbox && activeUsers.length > 0 && h('div', {
+                style: {
+                  marginTop: '12px',
+                  padding: '8px 12px',
+                  background: 'rgba(34, 197, 94, 0.1)',
+                  border: '1px solid rgba(34, 197, 94, 0.3)',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '12px',
+                  color: '#22c55e'
+                }
+              },
+                h('div', {
+                  style: {
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    background: '#22c55e',
+                    boxShadow: '0 0 8px rgba(34, 197, 94, 0.6)',
+                    animation: 'pulse 2s ease-in-out infinite'
+                  }
+                }),
+                h('span', { style: { fontWeight: '500' } }, 
+                  `${activeUsers.length} ${activeUsers.length === 1 ? 'user' : 'users'} online`
+                ),
+                // Show user avatars
+                h('div', {
+                  style: {
+                    display: 'flex',
+                    marginLeft: 'auto',
+                    gap: '4px'
+                  }
+                },
+                  activeUsers.slice(0, 3).map((user, idx) =>
+                    h('div', {
+                      key: user.user_email,
+                      title: user.display_name || user.user_email,
+                      style: {
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #C9A962 0%, #8B7355 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '10px',
+                        fontWeight: '600',
+                        color: 'white',
+                        border: '2px solid rgba(26, 31, 58, 1)',
+                        marginLeft: idx > 0 ? '-8px' : '0'
+                      }
+                    }, (user.display_name || user.user_email).substring(0, 1).toUpperCase())
+                  ),
+                  activeUsers.length > 3 && h('div', {
+                    style: {
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      background: 'rgba(201, 169, 98, 0.2)',
+                      border: '2px solid rgba(26, 31, 58, 1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '10px',
+                      fontWeight: '600',
+                      color: '#C9A962',
+                      marginLeft: '-8px'
+                    }
+                  }, `+${activeUsers.length - 3}`)
+                )
+              ),
+              
+              // Admin Button (if user is admin)
+              user && user.includes('admin') && h('button', {
+                onClick: () => setShowAdminPanel(true),
+                style: {
+                  width: '100%',
+                  marginTop: '8px',
+                  padding: '8px 12px',
+                  background: 'rgba(201, 169, 98, 0.1)',
+                  border: '1px solid rgba(201, 169, 98, 0.3)',
+                  borderRadius: '8px',
+                  color: '#C9A962',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px'
+                },
+                onMouseEnter: (e) => {
+                  e.target.style.background = 'rgba(201, 169, 98, 0.15)';
+                },
+                onMouseLeave: (e) => {
+                  e.target.style.background = 'rgba(201, 169, 98, 0.1)';
+                }
+              },
+                '⚙️ Manage Mailboxes'
               )
             ),
             
@@ -4069,6 +4410,454 @@ window.addEventListener('DOMContentLoaded', function() {
             setShowProfileModal(false);
           }
         }),
+        
+        // 🎯 SHARED MAILBOX ADMIN PANEL
+        showAdminPanel && h('div', {
+          style: {
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+            animation: 'fadeIn 0.2s ease-out'
+          },
+          onClick: () => setShowAdminPanel(false)
+        },
+          h('div', {
+            style: {
+              background: 'linear-gradient(180deg, #1a1f3a 0%, #0f1429 100%)',
+              borderRadius: '20px',
+              border: '1px solid rgba(201, 169, 98, 0.3)',
+              width: '90%',
+              maxWidth: '900px',
+              maxHeight: '90vh',
+              overflow: 'auto',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+              animation: 'modalSlideIn 0.3s ease-out'
+            },
+            onClick: (e) => e.stopPropagation()
+          },
+            // Header
+            h('div', {
+              style: {
+                padding: '24px',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }
+            },
+              h('div', {},
+                h('h2', {
+                  style: {
+                    margin: 0,
+                    color: '#C9A962',
+                    fontSize: '24px',
+                    fontWeight: '600',
+                    marginBottom: '8px'
+                  }
+                }, '⚙️ Shared Mailbox Management'),
+                h('p', {
+                  style: {
+                    margin: 0,
+                    color: 'rgba(255, 255, 255, 0.6)',
+                    fontSize: '14px'
+                  }
+                }, 'Manage shared mailboxes and team members')
+              ),
+              h('button', {
+                onClick: () => setShowAdminPanel(false),
+                style: {
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(255, 255, 255, 0.6)',
+                  fontSize: '28px',
+                  cursor: 'pointer',
+                  transition: 'color 0.2s'
+                },
+                onMouseEnter: (e) => e.target.style.color = '#C9A962',
+                onMouseLeave: (e) => e.target.style.color = 'rgba(255, 255, 255, 0.6)'
+              }, '×')
+            ),
+            
+            // Content
+            h('div', { style: { padding: '24px' } },
+              // Shared Mailboxes List
+              h('div', { style: { marginBottom: '32px' } },
+                h('h3', {
+                  style: {
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    fontSize: '18px',
+                    fontWeight: '600',
+                    marginBottom: '16px'
+                  }
+                }, '📬 Shared Mailboxes'),
+                
+                h('div', { style: { display: 'grid', gap: '16px' } },
+                  sharedMailboxes.map(mailbox =>
+                    h('div', {
+                      key: mailbox.id,
+                      style: {
+                        padding: '20px',
+                        background: 'rgba(26, 31, 58, 0.6)',
+                        border: '1px solid rgba(201, 169, 98, 0.2)',
+                        borderRadius: '12px',
+                        transition: 'all 0.2s'
+                      },
+                      onMouseEnter: (e) => {
+                        e.currentTarget.style.borderColor = 'rgba(201, 169, 98, 0.4)';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                      },
+                      onMouseLeave: (e) => {
+                        e.currentTarget.style.borderColor = 'rgba(201, 169, 98, 0.2)';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }
+                    },
+                      h('div', {
+                        style: {
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                          marginBottom: '12px'
+                        }
+                      },
+                        h('div', {},
+                          h('div', {
+                            style: {
+                              color: '#C9A962',
+                              fontSize: '16px',
+                              fontWeight: '600',
+                              marginBottom: '4px'
+                            }
+                          }, mailbox.display_name),
+                          h('div', {
+                            style: {
+                              color: 'rgba(255, 255, 255, 0.7)',
+                              fontSize: '13px',
+                              marginBottom: '4px'
+                            }
+                          }, mailbox.email_address),
+                          h('div', {
+                            style: {
+                              color: 'rgba(255, 255, 255, 0.5)',
+                              fontSize: '12px'
+                            }
+                          }, mailbox.description)
+                        ),
+                        h('div', {
+                          style: {
+                            padding: '4px 12px',
+                            background: 'rgba(201, 169, 98, 0.2)',
+                            border: '1px solid rgba(201, 169, 98, 0.3)',
+                            borderRadius: '20px',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            color: '#C9A962',
+                            textTransform: 'uppercase'
+                          }
+                        }, `${mailbox.member_count || 0} Members`)
+                      ),
+                      
+                      // Members Section (expandable)
+                      currentMailbox && currentMailbox.id === mailbox.id && h('div', {
+                        style: {
+                          marginTop: '16px',
+                          paddingTop: '16px',
+                          borderTop: '1px solid rgba(255, 255, 255, 0.1)'
+                        }
+                      },
+                        h('div', {
+                          style: {
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '12px'
+                          }
+                        },
+                          h('div', {
+                            style: {
+                              color: 'rgba(255, 255, 255, 0.8)',
+                              fontSize: '14px',
+                              fontWeight: '600'
+                            }
+                          }, '👥 Team Members'),
+                          h('button', {
+                            onClick: () => setShowAddMember(true),
+                            style: {
+                              padding: '6px 12px',
+                              background: 'rgba(34, 197, 94, 0.2)',
+                              border: '1px solid rgba(34, 197, 94, 0.4)',
+                              borderRadius: '6px',
+                              color: '#22c55e',
+                              fontSize: '12px',
+                              fontWeight: '500',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s'
+                            },
+                            onMouseEnter: (e) => e.target.style.background = 'rgba(34, 197, 94, 0.3)',
+                            onMouseLeave: (e) => e.target.style.background = 'rgba(34, 197, 94, 0.2)'
+                          }, '+ Add Member')
+                        ),
+                        
+                        // Members List
+                        h('div', { style: { display: 'grid', gap: '8px' } },
+                          sharedMailboxMembers.map(member =>
+                            h('div', {
+                              key: member.user_email,
+                              style: {
+                                padding: '12px',
+                                background: 'rgba(255, 255, 255, 0.03)',
+                                borderRadius: '8px',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center'
+                              }
+                            },
+                              h('div', {
+                                style: {
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '12px'
+                                }
+                              },
+                                h('div', {
+                                  style: {
+                                    width: '32px',
+                                    height: '32px',
+                                    borderRadius: '50%',
+                                    background: 'linear-gradient(135deg, #C9A962 0%, #8B7355 100%)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '14px',
+                                    fontWeight: '600',
+                                    color: 'white'
+                                  }
+                                }, (member.display_name || member.user_email).substring(0, 1).toUpperCase()),
+                                h('div', {},
+                                  h('div', {
+                                    style: {
+                                      color: 'rgba(255, 255, 255, 0.9)',
+                                      fontSize: '13px',
+                                      fontWeight: '500'
+                                    }
+                                  }, member.display_name || member.user_email),
+                                  h('div', {
+                                    style: {
+                                      color: 'rgba(255, 255, 255, 0.5)',
+                                      fontSize: '11px'
+                                    }
+                                  }, member.user_email)
+                                )
+                              ),
+                              h('div', {
+                                style: {
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '8px'
+                                }
+                              },
+                                h('span', {
+                                  style: {
+                                    padding: '4px 8px',
+                                    background: member.role === 'admin' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(201, 169, 98, 0.2)',
+                                    border: `1px solid ${member.role === 'admin' ? 'rgba(239, 68, 68, 0.4)' : 'rgba(201, 169, 98, 0.3)'}`,
+                                    borderRadius: '4px',
+                                    fontSize: '10px',
+                                    fontWeight: '600',
+                                    color: member.role === 'admin' ? '#ef4444' : '#C9A962',
+                                    textTransform: 'uppercase'
+                                  }
+                                }, member.role),
+                                h('button', {
+                                  onClick: () => removeMemberFromMailbox(mailbox.id, member.user_email),
+                                  style: {
+                                    padding: '4px 8px',
+                                    background: 'rgba(239, 68, 68, 0.2)',
+                                    border: '1px solid rgba(239, 68, 68, 0.4)',
+                                    borderRadius: '4px',
+                                    color: '#ef4444',
+                                    fontSize: '11px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                  },
+                                  onMouseEnter: (e) => e.target.style.background = 'rgba(239, 68, 68, 0.3)',
+                                  onMouseLeave: (e) => e.target.style.background = 'rgba(239, 68, 68, 0.2)'
+                                }, 'Remove')
+                              )
+                            )
+                          )
+                        )
+                      ),
+                      
+                      // Manage Button
+                      h('button', {
+                        onClick: () => {
+                          if (currentMailbox && currentMailbox.id === mailbox.id) {
+                            switchToMailbox(null);
+                          } else {
+                            switchToMailbox(mailbox);
+                            loadMailboxDetails(mailbox.id);
+                          }
+                        },
+                        style: {
+                          width: '100%',
+                          marginTop: '12px',
+                          padding: '10px',
+                          background: currentMailbox && currentMailbox.id === mailbox.id ? 'rgba(201, 169, 98, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                          border: `1px solid ${currentMailbox && currentMailbox.id === mailbox.id ? 'rgba(201, 169, 98, 0.4)' : 'rgba(255, 255, 255, 0.1)'}`,
+                          borderRadius: '8px',
+                          color: currentMailbox && currentMailbox.id === mailbox.id ? '#C9A962' : 'rgba(255, 255, 255, 0.7)',
+                          fontSize: '13px',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        },
+                        onMouseEnter: (e) => {
+                          e.target.style.background = 'rgba(201, 169, 98, 0.2)';
+                          e.target.style.color = '#C9A962';
+                        },
+                        onMouseLeave: (e) => {
+                          if (!currentMailbox || currentMailbox.id !== mailbox.id) {
+                            e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                            e.target.style.color = 'rgba(255, 255, 255, 0.7)';
+                          }
+                        }
+                      }, currentMailbox && currentMailbox.id === mailbox.id ? '✓ Viewing Members' : '👁️ View Members')
+                    )
+                  )
+                )
+              )
+            )
+          )
+        ),
+        
+        // Add Member Modal
+        showAddMember && currentMailbox && h('div', {
+          style: {
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.9)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2001,
+            animation: 'fadeIn 0.2s ease-out'
+          },
+          onClick: () => setShowAddMember(false)
+        },
+          h('div', {
+            style: {
+              background: 'linear-gradient(180deg, #1a1f3a 0%, #0f1429 100%)',
+              borderRadius: '16px',
+              border: '1px solid rgba(201, 169, 98, 0.3)',
+              width: '90%',
+              maxWidth: '500px',
+              padding: '24px',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)'
+            },
+            onClick: (e) => e.stopPropagation()
+          },
+            h('h3', {
+              style: {
+                margin: '0 0 20px 0',
+                color: '#C9A962',
+                fontSize: '20px',
+                fontWeight: '600'
+              }
+            }, '➕ Add Team Member'),
+            
+            h('input', {
+              type: 'email',
+              placeholder: 'user@investaycapital.com',
+              value: newMemberEmail,
+              onChange: (e) => setNewMemberEmail(e.target.value),
+              style: {
+                width: '100%',
+                padding: '12px',
+                background: 'rgba(26, 31, 58, 0.6)',
+                border: '1px solid rgba(201, 169, 98, 0.3)',
+                borderRadius: '8px',
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '14px',
+                marginBottom: '16px'
+              }
+            }),
+            
+            h('select', {
+              value: newMemberRole,
+              onChange: (e) => setNewMemberRole(e.target.value),
+              style: {
+                width: '100%',
+                padding: '12px',
+                background: 'rgba(26, 31, 58, 0.6)',
+                border: '1px solid rgba(201, 169, 98, 0.3)',
+                borderRadius: '8px',
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '14px',
+                marginBottom: '20px'
+              }
+            },
+              h('option', { value: 'member' }, '👤 Member (View & Send)'),
+              h('option', { value: 'admin' }, '👑 Admin (Full Access)')
+            ),
+            
+            h('div', {
+              style: {
+                display: 'flex',
+                gap: '12px'
+              }
+            },
+              h('button', {
+                onClick: () => setShowAddMember(false),
+                style: {
+                  flex: 1,
+                  padding: '12px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '8px',
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                },
+                onMouseEnter: (e) => e.target.style.background = 'rgba(255, 255, 255, 0.1)',
+                onMouseLeave: (e) => e.target.style.background = 'rgba(255, 255, 255, 0.05)'
+              }, 'Cancel'),
+              h('button', {
+                onClick: () => {
+                  if (newMemberEmail && currentMailbox) {
+                    addMemberToMailbox(currentMailbox.id, newMemberEmail, newMemberRole);
+                  }
+                },
+                style: {
+                  flex: 1,
+                  padding: '12px',
+                  background: 'linear-gradient(135deg, #C9A962 0%, #8B7355 100%)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(201, 169, 98, 0.3)',
+                  transition: 'all 0.2s'
+                },
+                onMouseEnter: (e) => e.target.style.transform = 'translateY(-1px)',
+                onMouseLeave: (e) => e.target.style.transform = 'translateY(0)'
+              }, '✓ Add Member')
+            )
+          )
+        ),
         
         // Email Viewer Modal - Shows when email is selected
         selectedEmail && h(EmailViewerModal, {
