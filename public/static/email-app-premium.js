@@ -5324,50 +5324,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     color: body.length > 0 ? 'rgba(201, 169, 98, 0.9)' : 'rgba(255, 255, 255, 0.4)',
                     border: '1px solid rgba(201, 169, 98, 0.2)'
                   }
-                }, `${body.length} chars`),
-                
-                // Attach button
-                h('label', {
-                  style: {
-                    padding: '8px 18px',
-                    background: 'linear-gradient(135deg, rgba(201, 169, 98, 0.25) 0%, rgba(139, 115, 85, 0.25) 100%)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(201, 169, 98, 0.6)',
-                    borderRadius: '24px',
-                    color: '#C9A962',
-                    fontSize: '13px',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    boxShadow: '0 4px 12px rgba(201, 169, 98, 0.2)',
-                    pointerEvents: 'all'
-                  },
-                  onMouseEnter: (e) => {
-                    e.target.style.background = 'linear-gradient(135deg, rgba(201, 169, 98, 0.35) 0%, rgba(139, 115, 85, 0.35) 100%)';
-                    e.target.style.transform = 'translateY(-2px)';
-                    e.target.style.boxShadow = '0 6px 16px rgba(201, 169, 98, 0.35)';
-                  },
-                  onMouseLeave: (e) => {
-                    e.target.style.background = 'linear-gradient(135deg, rgba(201, 169, 98, 0.25) 0%, rgba(139, 115, 85, 0.25) 100%)';
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = '0 4px 12px rgba(201, 169, 98, 0.2)';
-                  }
-                },
-                  '📎 Attach Files',
-                  h('input', {
-                    type: 'file',
-                    multiple: true,
-                    onChange: (e) => {
-                      if (e.target.files.length > 0) {
-                        alert(`✅ ${e.target.files.length} file(s) selected (upload coming soon!)`);
-                      }
-                    },
-                    style: { display: 'none' }
-                  })
-                )
+                }, `${body.length} chars`)
               )
             ),
             
@@ -5854,35 +5811,6 @@ window.addEventListener('DOMContentLoaded', function() {
               flexShrink: 0
             }
           },
-          
-          // Attach from File Bank Button
-          h('div', { style: { marginBottom: '12px' } },
-            h('button', {
-              onClick: () => setShowFilePicker(true),
-              style: {
-                padding: '12px 20px',
-                background: 'rgba(201, 169, 98, 0.1)',
-                border: '1px solid rgba(201, 169, 98, 0.3)',
-                borderRadius: '10px',
-                color: '#C9A962',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '600',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                transition: 'all 0.2s'
-              },
-              onMouseEnter: (e) => {
-                e.target.style.background = 'rgba(201, 169, 98, 0.15)';
-                e.target.style.borderColor = 'rgba(201, 169, 98, 0.5)';
-              },
-              onMouseLeave: (e) => {
-                e.target.style.background = 'rgba(201, 169, 98, 0.1)';
-                e.target.style.borderColor = 'rgba(201, 169, 98, 0.3)';
-              }
-            }, '📁 Attach from File Bank')
-          ),
           
           // 📎 ATTACHMENT BUTTONS - Add before Send/Cancel
           h('div', { 
