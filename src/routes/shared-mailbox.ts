@@ -592,4 +592,103 @@ sharedMailboxRoutes.get('/:id/emails', async (c) => {
   }
 })
 
+// POST /api/shared-mailboxes/:id/emails/:emailId/read - Mark email as read
+sharedMailboxRoutes.post('/:id/emails/:emailId/read', async (c) => {
+  try {
+    const { DB } = c.env
+    const userEmail = c.get('userEmail')
+    const mailboxId = c.req.param('id')
+    const emailId = c.req.param('emailId')
+    
+    // Insert or ignore (unique constraint handles duplicates)
+    await DB.prepare(`
+      INSERT OR IGNORE INTO shared_mailbox_read_receipts (email_id, shared_mailbox_id, user_email)
+      VALUES (?, ?, ?)
+    `).bind(emailId, mailboxId, userEmail).run()
+    
+    return c.json({ 
+      success: true,
+      message: 'Read receipt recorded'
+    })
+  } catch (error: any) {
+    console.error('Error recording read receipt:', error)
+    return c.json({ error: 'Failed to record read receipt', details: error.message }, 500)
+  }
+})
+
+// GET /api/shared-mailboxes/:id/emails/:emailId/readers - Get who read the email
+sharedMailboxRoutes.get('/:id/emails/:emailId/readers', async (c) => {
+  try {
+    const { DB } = c.env
+    const mailboxId = c.req.param('id')
+    const emailId = c.req.param('emailId')
+    
+    const readers = await DB.prepare(`
+      SELECT 
+        rr.user_email,
+        rr.read_at,
+        ea.display_name
+      FROM shared_mailbox_read_receipts rr
+      LEFT JOIN email_accounts ea ON rr.user_email = ea.email_address
+      WHERE rr.email_id = ? AND rr.shared_mailbox_id = ?
+      ORDER BY rr.read_at DESC
+    `).bind(emailId, mailboxId).all()
+    
+    return c.json({ 
+      success: true,
+      readers: readers.results || [],
+      count: readers.results?.length || 0
+    })
+  } catch (error: any) {
+    console.error('Error fetching readers:', error)
+    return c.json({ error: 'Failed to fetch readers', details: error.message }, 500)
+  }
+})
+
+// GET /api/shared-mailboxes/:id/emails/read-receipts - Get read receipts for multiple emails
+sharedMailboxRoutes.get('/:id/emails/read-receipts', async (c) => {
+  try {
+    const { DB } = c.env
+    const mailboxId = c.req.param('id')
+    const emailIds = c.req.query('emailIds') // Comma-separated list
+    
+    if (!emailIds) {
+      return c.json({ success: true, receipts: {} })
+    }
+    
+    const ids = emailIds.split(',').map(id => parseInt(id))
+    const placeholders = ids.map(() => '?').join(',')
+    
+    const receipts = await DB.prepare(`
+      SELECT 
+        rr.email_id,
+        rr.user_email,
+        rr.read_at,
+        ea.display_name
+      FROM shared_mailbox_read_receipts rr
+      LEFT JOIN email_accounts ea ON rr.user_email = ea.email_address
+      WHERE rr.email_id IN (${placeholders}) AND rr.shared_mailbox_id = ?
+      ORDER BY rr.read_at DESC
+    `).bind(...ids, mailboxId).all()
+    
+    // Group by email_id
+    const grouped: Record<number, any[]> = {}
+    for (const receipt of (receipts.results || [])) {
+      const emailId = (receipt as any).email_id
+      if (!grouped[emailId]) {
+        grouped[emailId] = []
+      }
+      grouped[emailId].push(receipt)
+    }
+    
+    return c.json({ 
+      success: true,
+      receipts: grouped
+    })
+  } catch (error: any) {
+    console.error('Error fetching read receipts:', error)
+    return c.json({ error: 'Failed to fetch read receipts', details: error.message }, 500)
+  }
+})
+
 export default sharedMailboxRoutes
