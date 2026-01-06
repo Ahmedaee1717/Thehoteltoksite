@@ -1,14 +1,44 @@
 // Shared Mailbox API Routes
 // Enterprise shared email management with real-time collaboration
 import { Hono } from 'hono'
+import { getCookie } from 'hono/cookie'
+import { verifyToken } from '../lib/auth'
 import type { CloudflareBindings } from '../types/cloudflare'
 
-const sharedMailboxRoutes = new Hono<{ Bindings: CloudflareBindings }>()
+type Variables = {
+  userEmail: string
+}
+
+const sharedMailboxRoutes = new Hono<{ Bindings: CloudflareBindings; Variables: Variables }>()
 
 // Helper: Generate ID
 function generateId(prefix: string = 'sm'): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 }
+
+// Auth middleware - Apply to all routes
+sharedMailboxRoutes.use('/*', async (c, next) => {
+  const { JWT_SECRET } = c.env
+  const authToken = getCookie(c, 'auth_token')
+  
+  if (!authToken || !JWT_SECRET) {
+    return c.json({ error: 'Authentication required' }, 401)
+  }
+  
+  try {
+    const payload = await verifyToken(authToken, JWT_SECRET)
+    if (!payload || !payload.email) {
+      return c.json({ error: 'Invalid token' }, 401)
+    }
+    
+    // Set userEmail in context for routes to use
+    c.set('userEmail', payload.email)
+    await next()
+  } catch (error) {
+    console.error('Auth error:', error)
+    return c.json({ error: 'Authentication failed' }, 401)
+  }
+})
 
 // ===== SHARED MAILBOX MANAGEMENT =====
 
