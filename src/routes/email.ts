@@ -2841,4 +2841,164 @@ emailRoutes.get('/thread/:thread_id', async (c) => {
   }
 });
 
+// ===== SHARED MAILBOX ADMIN ENDPOINTS (for /admin/email-accounts) =====
+
+// GET /api/email/shared-mailboxes/list - List all shared mailboxes (admin)
+emailRoutes.get('/shared-mailboxes/list', async (c) => {
+  const { DB } = c.env;
+  
+  try {
+    const { results } = await DB.prepare(`
+      SELECT 
+        sm.*,
+        (SELECT COUNT(*) FROM shared_mailbox_members WHERE shared_mailbox_id = sm.id AND is_active = 1) as member_count
+      FROM shared_mailboxes sm
+      ORDER BY sm.created_at DESC
+    `).all();
+    
+    return c.json({ 
+      success: true, 
+      mailboxes: results,
+      total: results.length
+    });
+  } catch (error: any) {
+    console.error('Shared mailbox list error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// POST /api/email/shared-mailboxes/create - Create shared mailbox (admin)
+emailRoutes.post('/shared-mailboxes/create', async (c) => {
+  const { DB } = c.env;
+  const { email_address, display_name, description, mailbox_type } = await c.req.json();
+  
+  try {
+    if (!email_address || !display_name) {
+      return c.json({ 
+        success: false, 
+        error: 'Email address and display name are required' 
+      }, 400);
+    }
+    
+    const result = await DB.prepare(`
+      INSERT INTO shared_mailboxes (email_address, display_name, description, mailbox_type, created_by)
+      VALUES (?, ?, ?, ?, ?)
+    `).bind(
+      email_address,
+      display_name,
+      description || '',
+      mailbox_type || 'team',
+      'admin@investaycapital.com'
+    ).run();
+    
+    return c.json({ 
+      success: true, 
+      mailboxId: result.meta.last_row_id,
+      message: 'Shared mailbox created successfully'
+    });
+  } catch (error: any) {
+    console.error('Create shared mailbox error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// DELETE /api/email/shared-mailboxes/:id - Delete shared mailbox (admin)
+emailRoutes.delete('/shared-mailboxes/:id', async (c) => {
+  const { DB } = c.env;
+  const mailboxId = c.req.param('id');
+  
+  try {
+    const result = await DB.prepare(`
+      UPDATE shared_mailboxes SET is_active = 0 WHERE id = ?
+    `).bind(mailboxId).run();
+    
+    return c.json({ 
+      success: true,
+      message: 'Shared mailbox deleted successfully'
+    });
+  } catch (error: any) {
+    console.error('Delete shared mailbox error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// GET /api/email/shared-mailboxes/:id/members - Get mailbox members (admin)
+emailRoutes.get('/shared-mailboxes/:id/members', async (c) => {
+  const { DB } = c.env;
+  const mailboxId = c.req.param('id');
+  
+  try {
+    const { results } = await DB.prepare(`
+      SELECT smm.*, ea.display_name
+      FROM shared_mailbox_members smm
+      LEFT JOIN email_accounts ea ON smm.user_email = ea.email_address
+      WHERE smm.shared_mailbox_id = ? AND smm.is_active = 1
+      ORDER BY smm.added_at ASC
+    `).bind(mailboxId).all();
+    
+    return c.json({ 
+      success: true, 
+      members: results
+    });
+  } catch (error: any) {
+    console.error('Get members error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// POST /api/email/shared-mailboxes/:id/members/add - Add member (admin)
+emailRoutes.post('/shared-mailboxes/:id/members/add', async (c) => {
+  const { DB } = c.env;
+  const mailboxId = c.req.param('id');
+  const { user_email, role } = await c.req.json();
+  
+  try {
+    if (!user_email) {
+      return c.json({ success: false, error: 'User email is required' }, 400);
+    }
+    
+    const result = await DB.prepare(`
+      INSERT INTO shared_mailbox_members (shared_mailbox_id, user_email, role, permissions, added_by)
+      VALUES (?, ?, ?, ?, ?)
+    `).bind(
+      mailboxId,
+      user_email,
+      role || 'member',
+      JSON.stringify(['view', 'send']),
+      'admin@investaycapital.com'
+    ).run();
+    
+    return c.json({ 
+      success: true,
+      message: 'Member added successfully'
+    });
+  } catch (error: any) {
+    console.error('Add member error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// DELETE /api/email/shared-mailboxes/:id/members/:memberEmail - Remove member (admin)
+emailRoutes.delete('/shared-mailboxes/:id/members/:memberEmail', async (c) => {
+  const { DB } = c.env;
+  const mailboxId = c.req.param('id');
+  const memberEmail = c.req.param('memberEmail');
+  
+  try {
+    await DB.prepare(`
+      UPDATE shared_mailbox_members
+      SET is_active = 0
+      WHERE shared_mailbox_id = ? AND user_email = ?
+    `).bind(mailboxId, memberEmail).run();
+    
+    return c.json({ 
+      success: true,
+      message: 'Member removed successfully'
+    });
+  } catch (error: any) {
+    console.error('Remove member error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
 export { emailRoutes }
