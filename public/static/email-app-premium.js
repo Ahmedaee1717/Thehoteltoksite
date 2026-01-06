@@ -134,6 +134,17 @@ window.addEventListener('DOMContentLoaded', function() {
       const [newMemberRole, setNewMemberRole] = useState('member');
       const [mailboxActivity, setMailboxActivity] = useState([]);
       
+      // World Clock state
+      const [currentTime, setCurrentTime] = useState(new Date());
+      
+      // Update clock every second
+      useEffect(() => {
+        const timer = setInterval(() => {
+          setCurrentTime(new Date());
+        }, 1000);
+        return () => clearInterval(timer);
+      }, []);
+      
       useEffect(() => {
         loadData();
       }, [view]);
@@ -1987,6 +1998,160 @@ window.addEventListener('DOMContentLoaded', function() {
                 }
               }, showSearchResults ? `${searchResults.length} result${searchResults.length === 1 ? '' : 's'}` : `${emails.length} ${emails.length === 1 ? 'email' : 'emails'}`)
             ),
+            
+            // 🌍 WORLD CLOCK - Premium Design
+            h('div', {
+              style: {
+                display: 'flex',
+                gap: '16px',
+                alignItems: 'center',
+                padding: '8px 16px',
+                background: 'linear-gradient(135deg, rgba(15, 20, 41, 0.6) 0%, rgba(26, 31, 58, 0.5) 100%)',
+                borderRadius: '12px',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                backdropFilter: 'blur(10px)',
+                boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.05)'
+              }
+            },
+              // London
+              h('div', {
+                style: {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '2px',
+                  minWidth: '60px'
+                }
+              },
+                h('div', {
+                  style: {
+                    fontSize: '9px',
+                    fontWeight: '700',
+                    color: 'rgba(255, 255, 255, 0.35)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }
+                }, '🇬🇧 London'),
+                h('div', {
+                  style: {
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: 'rgba(255, 255, 255, 0.85)',
+                    fontVariantNumeric: 'tabular-nums'
+                  }
+                }, new Date(currentTime.toLocaleString('en-US', { timeZone: 'Europe/London' })).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }))
+              ),
+              
+              h('div', { style: { width: '1px', height: '24px', background: 'rgba(255, 255, 255, 0.1)' } }),
+              
+              // Cairo
+              h('div', {
+                style: {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '2px',
+                  minWidth: '60px'
+                }
+              },
+                h('div', {
+                  style: {
+                    fontSize: '9px',
+                    fontWeight: '700',
+                    color: 'rgba(255, 255, 255, 0.35)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }
+                }, '🇪🇬 Cairo'),
+                h('div', {
+                  style: {
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: 'rgba(255, 255, 255, 0.85)',
+                    fontVariantNumeric: 'tabular-nums'
+                  }
+                }, new Date(currentTime.toLocaleString('en-US', { timeZone: 'Africa/Cairo' })).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }))
+              ),
+              
+              h('div', { style: { width: '1px', height: '24px', background: 'rgba(255, 255, 255, 0.1)' } }),
+              
+              // Dubai
+              h('div', {
+                style: {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '2px',
+                  minWidth: '60px'
+                }
+              },
+                h('div', {
+                  style: {
+                    fontSize: '9px',
+                    fontWeight: '700',
+                    color: 'rgba(255, 255, 255, 0.35)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }
+                }, '🇦🇪 Dubai'),
+                h('div', {
+                  style: {
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: 'rgba(255, 255, 255, 0.85)',
+                    fontVariantNumeric: 'tabular-nums'
+                  }
+                }, new Date(currentTime.toLocaleString('en-US', { timeZone: 'Asia/Dubai' })).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }))
+              ),
+              
+              h('div', { style: { width: '1px', height: '24px', background: 'rgba(255, 255, 255, 0.1)' } }),
+              
+              // Local Time
+              h('div', {
+                style: {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '2px',
+                  minWidth: '60px',
+                  position: 'relative'
+                }
+              },
+                h('div', {
+                  style: {
+                    fontSize: '9px',
+                    fontWeight: '700',
+                    color: '#C9A962',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '3px'
+                  }
+                },
+                  h('div', {
+                    style: {
+                      width: '5px',
+                      height: '5px',
+                      borderRadius: '50%',
+                      background: '#C9A962',
+                      boxShadow: '0 0 6px rgba(201, 169, 98, 0.6)',
+                      animation: 'pulse 2s infinite'
+                    }
+                  }),
+                  '🏠 Local'
+                ),
+                h('div', {
+                  style: {
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    color: '#ffffff',
+                    fontVariantNumeric: 'tabular-nums'
+                  }
+                }, currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }))
+              )
+            ),
+            
             h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center' } },
               h('button', {
                 onClick: () => {
