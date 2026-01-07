@@ -749,24 +749,41 @@ window.addEventListener('DOMContentLoaded', function() {
             hasId: !!a.id
           })), null, 2));
           
+          const requestPayload = { 
+            from: fromEmail, 
+            to, 
+            subject, 
+            body, 
+            useAI: true,
+            attachments: attachmentData
+          };
+          console.log('📤 REQUEST PAYLOAD:', JSON.stringify(requestPayload, null, 2));
+          
           const response = await fetch('/api/email/send', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              from: fromEmail, 
-              to, 
-              subject, 
-              body, 
-              useAI: true,
-              attachments: attachmentData // ✅ Include attachments!
-            })
+            body: JSON.stringify(requestPayload)
           });
           
-          console.log('📬 Response status:', response.status);
-          console.log('📬 Response ok:', response.ok);
+          console.log('📬 RESPONSE STATUS:', response.status);
+          console.log('📬 RESPONSE OK:', response.ok);
+          console.log('📬 RESPONSE STATUS TEXT:', response.statusText);
+          console.log('📬 RESPONSE HEADERS:', [...response.headers.entries()]);
           
-          const result = await response.json();
-          console.log('📬 Response JSON:', JSON.stringify(result, null, 2));
+          // Get raw response text first
+          const responseText = await response.text();
+          console.log('📬 RAW RESPONSE TEXT:', responseText);
+          
+          // Try to parse as JSON
+          let result;
+          try {
+            result = JSON.parse(responseText);
+            console.log('📬 PARSED JSON:', JSON.stringify(result, null, 2));
+          } catch (parseError) {
+            console.error('❌ JSON PARSE ERROR:', parseError);
+            console.error('❌ Failed to parse response text:', responseText);
+            throw new Error(`JSON parse failed: ${parseError.message}. Raw response: ${responseText.substring(0, 500)}`);
+          }
           
           if (result.success && result.emailSent) {
             // Success animation

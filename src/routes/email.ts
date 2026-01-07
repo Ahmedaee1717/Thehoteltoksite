@@ -395,14 +395,24 @@ emailRoutes.get('/archived', async (c) => {
 // 🔒 SECURITY: Users can ONLY send emails from their own address
 // ============================================
 emailRoutes.post('/send', async (c) => {
-  const { DB, OPENAI_API_KEY, MAILGUN_API_KEY, MAILGUN_DOMAIN, MAILGUN_REGION, MAILGUN_FROM_EMAIL, MAILGUN_FROM_NAME } = c.env;
+  console.log('🚀🚀🚀 === EMAIL SEND ROUTE HIT === 🚀🚀🚀');
+  console.log('⏰ Timestamp:', new Date().toISOString());
   
-  // 🔒 Get authenticated user email
-  const authenticatedUserEmail = c.get('userEmail');
-  
-  if (!authenticatedUserEmail) {
-    return c.json({ success: false, error: 'Authentication required' }, 401);
-  }
+  try {
+    const { DB, OPENAI_API_KEY, MAILGUN_API_KEY, MAILGUN_DOMAIN, MAILGUN_REGION, MAILGUN_FROM_EMAIL, MAILGUN_FROM_NAME } = c.env;
+    console.log('🔧 Environment variables check:');
+    console.log('  - MAILGUN_API_KEY:', MAILGUN_API_KEY ? '✅ Present' : '❌ Missing');
+    console.log('  - MAILGUN_DOMAIN:', MAILGUN_DOMAIN || '❌ Missing');
+    console.log('  - MAILGUN_REGION:', MAILGUN_REGION || 'US (default)');
+    
+    // 🔒 Get authenticated user email
+    const authenticatedUserEmail = c.get('userEmail');
+    console.log('👤 Authenticated user:', authenticatedUserEmail || '❌ NOT AUTHENTICATED');
+    
+    if (!authenticatedUserEmail) {
+      console.error('❌ NO AUTHENTICATION - Returning 401');
+      return c.json({ success: false, error: 'Authentication required' }, 401);
+    }
   
   try {
     // 🔍 CRITICAL: Log raw request size BEFORE parsing
@@ -925,7 +935,7 @@ emailRoutes.post('/send', async (c) => {
       message: '✅ Email sent successfully via Mailgun'
     });
   } catch (error: any) {
-    console.error('❌❌❌ SEND EMAIL ERROR ❌❌❌');
+    console.error('❌❌❌ SEND EMAIL ERROR (INNER CATCH) ❌❌❌');
     console.error('Error name:', error.name);
     console.error('Error message:', error.message);
     console.error('Error stack:', error.stack);
@@ -934,7 +944,22 @@ emailRoutes.post('/send', async (c) => {
       success: false, 
       error: error.message || 'Internal server error',
       errorName: error.name,
-      errorStack: error.stack?.split('\n').slice(0, 3).join('\n')
+      errorStack: error.stack?.split('\n').slice(0, 3).join('\n'),
+      errorDetails: error.toString()
+    }, 500);
+  }
+  } catch (outerError: any) {
+    console.error('💥💥💥 CATASTROPHIC ERROR (OUTER CATCH) 💥💥💥');
+    console.error('This should NEVER happen - error before environment setup');
+    console.error('Outer error name:', outerError.name);
+    console.error('Outer error message:', outerError.message);
+    console.error('Outer error stack:', outerError.stack);
+    return c.json({ 
+      success: false, 
+      error: 'Server initialization error: ' + outerError.message,
+      errorName: outerError.name,
+      errorStack: outerError.stack,
+      note: 'This is a catastrophic error that occurred before request processing'
     }, 500);
   }
 });
