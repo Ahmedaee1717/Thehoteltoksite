@@ -81,11 +81,11 @@ export class MailgunService {
       
       const fromAddress = data.from || `${this.fromName} <${this.fromEmail}>`;
       
-      // Create form data
-      const formData = new FormData();
-      formData.append('from', fromAddress);
-      formData.append('to', data.to);
-      formData.append('subject', data.subject);
+      // Create form data  
+      const form = new FormData();
+      form.append('from', fromAddress);
+      form.append('to', data.to);
+      form.append('subject', data.subject);
       
       // Add unsubscribe link automatically (CAN-SPAM compliance)
       let htmlContent = data.html;
@@ -110,7 +110,7 @@ export class MailgunService {
             </div>
           `;
         }
-        formData.append('html', htmlContent);
+        form.append('html', htmlContent);
       }
       
       if (textContent) {
@@ -121,60 +121,60 @@ export class MailgunService {
           textContent += `Contact: support@investaycapital.com\n`;
           textContent += `InvestMail LLC, 123 Business St, San Francisco, CA 94105\n`;
         }
-        formData.append('text', textContent);
+        form.append('text', textContent);
       }
 
       if (data.replyTo) {
-        formData.append('h:Reply-To', data.replyTo);
+        form.append('h:Reply-To', data.replyTo);
       }
 
       if (data.cc) {
-        formData.append('cc', data.cc);
+        form.append('cc', data.cc);
       }
 
       if (data.bcc) {
-        formData.append('bcc', data.bcc);
+        form.append('bcc', data.bcc);
       }
 
       // Add anti-spam headers
-      formData.append('h:X-Mailer', 'InvestMail v1.0');
-      formData.append('h:List-Unsubscribe', `<${unsubscribeLink}>`);
-      formData.append('h:Precedence', 'bulk');
+      form.append('h:X-Mailer', 'InvestMail v1.0');
+      form.append('h:List-Unsubscribe', `<${unsubscribeLink}>`);
+      form.append('h:Precedence', 'bulk');
       
       // Enable DKIM signing (Mailgun handles this automatically)
-      formData.append('o:dkim', 'yes');
+      form.append('o:dkim', 'yes');
       
       // Enable tracking
       if (data.trackOpens !== false) {
-        formData.append('o:tracking-opens', 'yes');
+        form.append('o:tracking-opens', 'yes');
       }
       
       if (data.trackClicks !== false) {
-        formData.append('o:tracking-clicks', 'yes');
+        form.append('o:tracking-clicks', 'yes');
       }
       
       // Require TLS (encrypted transport)
       if (data.requireTLS !== false) {
-        formData.append('o:require-tls', 'true');
+        form.append('o:require-tls', 'true');
       }
       
       // Add tags for tracking
       if (data.tags && data.tags.length > 0) {
-        data.tags.forEach(tag => formData.append('o:tag', tag));
+        data.tags.forEach(tag => form.append('o:tag', tag));
       } else {
-        formData.append('o:tag', 'investmail-system');
+        form.append('o:tag', 'investmail-system');
       }
       
       // Add custom variables
       if (data.customVariables) {
         Object.entries(data.customVariables).forEach(([key, value]) => {
-          formData.append(`v:${key}`, value);
+          form.append(`v:${key}`, value);
         });
       }
       
       // Test mode (sandbox mode - emails won't be delivered)
       if (data.testMode) {
-        formData.append('o:testmode', 'yes');
+        form.append('o:testmode', 'yes');
       }
       
       // 📎 ADD ATTACHMENTS SUPPORT
@@ -190,7 +190,7 @@ export class MailgunService {
           if (isBuffer && att.data.length > 0) {
             // Convert Buffer to Blob for FormData
             const blob = new Blob([att.data], { type: 'application/octet-stream' });
-            formData.append('attachment', blob, att.filename);
+            form.append('attachment', blob, att.filename);
             console.log(`✅ [lib/mailgun] Appended ${att.filename} (${blob.size} bytes)`);
           } else {
             console.error(`❌ [lib/mailgun] Invalid attachment: ${att.filename}`);
@@ -204,7 +204,7 @@ export class MailgunService {
         headers: {
           'Authorization': 'Basic ' + btoa(`api:${this.apiKey}`)
         },
-        body: formData
+        body: form
       });
 
       // Handle response - might not always be JSON
