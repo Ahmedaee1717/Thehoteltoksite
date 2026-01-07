@@ -584,10 +584,9 @@ emailRoutes.post('/send', async (c) => {
           apiKey: MAILGUN_API_KEY,
           domain: MAILGUN_DOMAIN,
           region: MAILGUN_REGION as 'US' | 'EU' || 'US',
-          // Use postmaster for actual sending (Mailgun requirement)
-          // But set display name to show user's name
-          fromEmail: `postmaster@${MAILGUN_DOMAIN}`,
-          fromName: `${displayName} (via Investay Signal)`
+          // Use the actual from address (shared mailbox or personal)
+          fromEmail: from,
+          fromName: displayName
         });
         
         // Create HTML version of email with LINK TRACKING + tracking pixel
