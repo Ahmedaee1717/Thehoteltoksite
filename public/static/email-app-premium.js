@@ -683,6 +683,10 @@ window.addEventListener('DOMContentLoaded', function() {
           return;
         }
         
+        // Use shared mailbox email if in shared mailbox, otherwise use personal email
+        const fromEmail = currentMailbox ? currentMailbox.email_address : user;
+        console.log('📧 Sending from:', fromEmail, currentMailbox ? '(Shared Mailbox)' : '(Personal)');
+        
         setSendingEmail(true);
         setSendStatus('sending');
         
@@ -744,10 +748,6 @@ window.addEventListener('DOMContentLoaded', function() {
             dataLength: a.data?.length,
             hasId: !!a.id
           })), null, 2));
-          
-          // Use shared mailbox email if in shared mailbox, otherwise use personal email
-          const fromEmail = currentMailbox ? currentMailbox.email_address : user;
-          console.log('📧 Sending from:', fromEmail, currentMailbox ? '(Shared Mailbox)' : '(Personal)');
           
           const response = await fetch('/api/email/send', {
             method: 'POST',
