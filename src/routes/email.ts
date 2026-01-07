@@ -753,14 +753,21 @@ emailRoutes.post('/send', async (c) => {
         console.log('  - mailgunAttachments.length:', mailgunAttachments.length);
         console.log('  - Passing to sendEmail():', mailgunAttachments.length > 0 ? 'WITH ATTACHMENTS' : 'NO ATTACHMENTS');
         
+        // Prepare display name for from address
+        const displayName = from.split('@')[0]; // e.g., "info" from info@investaycapital.com
+        const fromAddress = `${displayName} <${from}>`;
+        
+        console.log('📧 Mailgun From Address:', fromAddress);
+        
         const result = await mailgunService.sendEmail({
+          from: fromAddress,  // ✅ Pass the actual from address!
           to,
           subject,
           text: textBodyWithTracking,  // Use tracked plain text version
           html: htmlBody,
           cc,
           bcc,
-          replyTo: from,  // Set reply-to as the actual user's email
+          replyTo: from,  // Set reply-to as the sender's email
           attachments: mailgunAttachments.length > 0 ? mailgunAttachments : undefined // ✅ Add attachments!
         });
         
