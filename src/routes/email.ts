@@ -567,19 +567,29 @@ emailRoutes.post('/send', async (c) => {
     }
     
     // Get user's display name from email accounts table (needed for both Mailgun and DB)
+    console.log('🔍 Looking up display name for:', from);
     const userAccount = await DB.prepare(`
       SELECT display_name FROM email_accounts WHERE email_address = ?
     `).bind(from).first();
     
     const displayName = userAccount?.display_name || from.split('@')[0];
+    console.log('📝 Display name:', displayName);
     
     // Send email via Mailgun
     let mailgunSuccess = false;
     let mailgunError = null;
     let mailgunMessageId = null;
     
+    console.log('🔐 Mailgun config check:', {
+      hasApiKey: !!MAILGUN_API_KEY,
+      hasDomain: !!MAILGUN_DOMAIN,
+      domain: MAILGUN_DOMAIN,
+      region: MAILGUN_REGION
+    });
+    
     if (MAILGUN_API_KEY && MAILGUN_DOMAIN) {
       try {
+        console.log('📬 Creating Mailgun service with:', { from, displayName });
         const mailgunService = createMailgunService({
           apiKey: MAILGUN_API_KEY,
           domain: MAILGUN_DOMAIN,
@@ -588,6 +598,7 @@ emailRoutes.post('/send', async (c) => {
           fromEmail: from,
           fromName: displayName
         });
+        console.log('✅ Mailgun service created successfully');
         
         // Create HTML version of email with LINK TRACKING + tracking pixel
         // Link tracking is MORE RELIABLE than pixels (works even if images blocked)
@@ -766,6 +777,7 @@ emailRoutes.post('/send', async (c) => {
         const fromAddress = `${displayName} <${from}>`;
         
         console.log('📧 Mailgun From Address:', fromAddress);
+        console.log('📨 Calling mailgunService.sendEmail()...');
         
         const result = await mailgunService.sendEmail({
           from: fromAddress,  // ✅ Pass the actual from address!
@@ -779,6 +791,8 @@ emailRoutes.post('/send', async (c) => {
           attachments: mailgunAttachments.length > 0 ? mailgunAttachments : undefined // ✅ Add attachments!
         });
         
+        console.log('📬 Mailgun sendEmail() returned:', JSON.stringify(result, null, 2));
+        
         if (result.success) {
           mailgunSuccess = true;
           mailgunMessageId = result.messageId;
@@ -790,6 +804,9 @@ emailRoutes.post('/send', async (c) => {
       } catch (mailgunException: any) {
         mailgunError = mailgunException.message;
         console.error('❌ Mailgun exception:', mailgunException);
+        console.error('❌ Mailgun error name:', mailgunException.name);
+        console.error('❌ Mailgun error message:', mailgunException.message);
+        console.error('❌ Mailgun error stack:', mailgunException.stack);
       }
     } else {
       mailgunError = 'Mailgun not configured';

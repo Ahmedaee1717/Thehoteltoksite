@@ -761,7 +761,12 @@ window.addEventListener('DOMContentLoaded', function() {
               attachments: attachmentData // ✅ Include attachments!
             })
           });
+          
+          console.log('📬 Response status:', response.status);
+          console.log('📬 Response ok:', response.ok);
+          
           const result = await response.json();
+          console.log('📬 Response JSON:', JSON.stringify(result, null, 2));
           
           if (result.success && result.emailSent) {
             // Success animation
@@ -779,6 +784,7 @@ window.addEventListener('DOMContentLoaded', function() {
           } else if (result.success && !result.emailSent) {
             // Partial success
             setSendStatus('warning');
+            console.warn('⚠️ Email saved but not sent:', result);
             setTimeout(() => {
               alert('⚠️ Email saved but not sent:\n\n' + (result.mailgunError || 'Check Mailgun configuration'));
               setSendingEmail(false);
@@ -787,6 +793,10 @@ window.addEventListener('DOMContentLoaded', function() {
           } else {
             // Error
             setSendStatus('error');
+            console.error('❌ Send failed with error:', result);
+            console.error('❌ Error message:', result.error);
+            console.error('❌ Error name:', result.errorName);
+            console.error('❌ Error stack:', result.errorStack);
             setTimeout(() => {
               alert('❌ Failed to send:\n\n' + (result.error || 'Unknown error'));
               setSendingEmail(false);
@@ -795,6 +805,10 @@ window.addEventListener('DOMContentLoaded', function() {
           }
         } catch (error) {
           setSendStatus('error');
+          console.error('❌ Network/Parse error:', error);
+          console.error('❌ Error name:', error.name);
+          console.error('❌ Error message:', error.message);
+          console.error('❌ Error stack:', error.stack);
           setTimeout(() => {
             alert('❌ Network error: ' + error.message);
             setSendingEmail(false);
