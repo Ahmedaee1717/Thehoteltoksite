@@ -352,7 +352,9 @@ window.addEventListener('DOMContentLoaded', function() {
           stopPresencePolling();
         }
         
-        // Reload emails for this mailbox
+        // Reset to inbox view and reload emails
+        setView('inbox');
+        setShowSearchResults(false);
         loadData();
       };
       
@@ -743,11 +745,18 @@ window.addEventListener('DOMContentLoaded', function() {
             hasId: !!a.id
           })), null, 2));
           
+          // Use shared mailbox email if in shared mailbox, otherwise use personal email
+          const fromEmail = currentMailbox ? currentMailbox.email_address : user;
+          console.log('📧 Sending from:', fromEmail, currentMailbox ? '(Shared Mailbox)' : '(Personal)');
+          
           const response = await fetch('/api/email/send', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-              from: user, to, subject, body, 
+              from: fromEmail, 
+              to, 
+              subject, 
+              body, 
               useAI: true,
               attachments: attachmentData // ✅ Include attachments!
             })
@@ -8555,10 +8564,15 @@ window.addEventListener('DOMContentLoaded', function() {
                   }
                   setSending(true);
                   try {
+                    // Use shared mailbox email if in shared mailbox, otherwise use personal email
+                    const fromEmail = currentMailbox ? currentMailbox.email_address : user;
+                    console.log('📧 Replying from:', fromEmail, currentMailbox ? '(Shared Mailbox)' : '(Personal)');
+                    
                     const response = await fetch('/api/email/send', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
+                        from: fromEmail,
                         to: email.from_email,
                         subject: 'Re: ' + (email.subject || 'No Subject'),
                         body: replyBody,
@@ -8679,10 +8693,15 @@ window.addEventListener('DOMContentLoaded', function() {
                   }
                   setSending(true);
                   try {
+                    // Use shared mailbox email if in shared mailbox, otherwise use personal email
+                    const fromEmail = currentMailbox ? currentMailbox.email_address : user;
+                    console.log('📧 Forwarding from:', fromEmail, currentMailbox ? '(Shared Mailbox)' : '(Personal)');
+                    
                     const response = await fetch('/api/email/send', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
+                        from: fromEmail,
                         to: forwardTo,
                         subject: 'Fwd: ' + (email.subject || 'No Subject'),
                         body: forwardBody
