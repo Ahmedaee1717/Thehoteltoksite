@@ -413,13 +413,48 @@ emailRoutes.post('/send', async (c) => {
     // Parse JSON from raw text
     const requestData = JSON.parse(rawBodyText);
     const { 
+      from: requestedFrom,
       to, cc, bcc, subject, body, 
       attachments, useAI, thread_id 
     } = requestData;
     
+    // 🔒 VALIDATE FROM ADDRESS
+    // Allow user's own email OR shared mailbox email (if they're a member)
+    let from = authenticatedUserEmail; // Default to user's email
+    
+    if (requestedFrom && requestedFrom !== authenticatedUserEmail) {
+      // User wants to send from a different address - check if it's a valid shared mailbox
+      console.log('📬 Checking shared mailbox access:', requestedFrom);
+      
+      // Query to check if user is a member of this shared mailbox
+      const memberCheck = await DB.prepare(`
+        SELECT sm.id, sm.email_address, sm.display_name, smm.role
+        FROM shared_mailboxes sm
+        JOIN shared_mailbox_members smm ON sm.id = smm.shared_mailbox_id
+        WHERE sm.email_address = ? 
+          AND smm.user_email = ? 
+          AND sm.is_active = 1 
+          AND smm.is_active = 1
+      `).bind(requestedFrom, authenticatedUserEmail).first();
+      
+      if (memberCheck) {
+        // User is a valid member of this shared mailbox
+        from = requestedFrom;
+        console.log('✅ Shared mailbox send authorized:', from, '(Role:', memberCheck.role, ')');
+      } else {
+        console.log('❌ Unauthorized shared mailbox send attempt:', requestedFrom);
+        return c.json({ 
+          success: false, 
+          error: 'You are not authorized to send from this mailbox' 
+        }, 403);
+      }
+    }
+    
     // CRITICAL DEBUG: Log what we received
     console.log('📧 SEND REQUEST RECEIVED:');
-    console.log('  - from:', authenticatedUserEmail);
+    console.log('  - requestedFrom:', requestedFrom);
+    console.log('  - actualFrom:', from);
+    console.log('  - authenticatedUser:', authenticatedUserEmail);
     console.log('  - to:', to);
     console.log('  - subject:', subject);
     console.log('  - bodyLength:', body?.length);
@@ -466,8 +501,6 @@ emailRoutes.post('/send', async (c) => {
       };
     }
     
-    // 🔒 CRITICAL: Force from to be authenticated user's email - NEVER trust client
-    const from = authenticatedUserEmail;
     
     if (!to || !subject || !body) {
       return c.json({ 
