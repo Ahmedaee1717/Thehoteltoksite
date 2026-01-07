@@ -426,27 +426,36 @@ emailRoutes.post('/send', async (c) => {
       // User wants to send from a different address - check if it's a valid shared mailbox
       console.log('📬 Checking shared mailbox access:', requestedFrom);
       
-      // Query to check if user is a member of this shared mailbox
-      const memberCheck = await DB.prepare(`
-        SELECT sm.id, sm.email_address, sm.display_name, smm.role
-        FROM shared_mailboxes sm
-        JOIN shared_mailbox_members smm ON sm.id = smm.shared_mailbox_id
-        WHERE sm.email_address = ? 
-          AND smm.user_email = ? 
-          AND sm.is_active = 1 
-          AND smm.is_active = 1
-      `).bind(requestedFrom, authenticatedUserEmail).first();
-      
-      if (memberCheck) {
-        // User is a valid member of this shared mailbox
-        from = requestedFrom;
-        console.log('✅ Shared mailbox send authorized:', from, '(Role:', memberCheck.role, ')');
-      } else {
-        console.log('❌ Unauthorized shared mailbox send attempt:', requestedFrom);
+      try {
+        // Query to check if user is a member of this shared mailbox
+        const memberCheck = await DB.prepare(`
+          SELECT sm.id, sm.email_address, sm.display_name, smm.role
+          FROM shared_mailboxes sm
+          JOIN shared_mailbox_members smm ON sm.id = smm.shared_mailbox_id
+          WHERE sm.email_address = ? 
+            AND smm.user_email = ? 
+            AND sm.is_active = 1 
+            AND smm.is_active = 1
+        `).bind(requestedFrom, authenticatedUserEmail).first();
+        
+        if (memberCheck) {
+          // User is a valid member of this shared mailbox
+          from = requestedFrom;
+          console.log('✅ Shared mailbox send authorized:', from, '(Role:', memberCheck.role, ')');
+        } else {
+          console.log('❌ Unauthorized shared mailbox send attempt:', requestedFrom);
+          console.log('   User:', authenticatedUserEmail, 'is not a member of:', requestedFrom);
+          return c.json({ 
+            success: false, 
+            error: 'You are not authorized to send from this mailbox. Please ask an admin to add you as a member.' 
+          }, 403);
+        }
+      } catch (dbError: any) {
+        console.error('❌ Database error checking shared mailbox access:', dbError);
         return c.json({ 
           success: false, 
-          error: 'You are not authorized to send from this mailbox' 
-        }, 403);
+          error: 'Database error: ' + dbError.message 
+        }, 500);
       }
     }
     
