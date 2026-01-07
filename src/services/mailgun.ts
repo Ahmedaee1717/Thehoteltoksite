@@ -55,7 +55,7 @@ export class MailgunService {
       }
       
       // Build FormData
-      const form = new FormData();
+      const form = new formData();
       form.append('from', `${this.config.fromName} <${this.config.fromEmail}>`);
       form.append('to', Array.isArray(options.to) ? options.to.join(',') : options.to);
       form.append('subject', options.subject);
