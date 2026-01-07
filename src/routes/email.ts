@@ -909,8 +909,17 @@ emailRoutes.post('/send', async (c) => {
       message: '✅ Email sent successfully via Mailgun'
     });
   } catch (error: any) {
-    console.error('Send email error:', error);
-    return c.json({ success: false, error: error.message }, 500);
+    console.error('❌❌❌ SEND EMAIL ERROR ❌❌❌');
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('Full error:', JSON.stringify(error, null, 2));
+    return c.json({ 
+      success: false, 
+      error: error.message || 'Internal server error',
+      errorName: error.name,
+      errorStack: error.stack?.split('\n').slice(0, 3).join('\n')
+    }, 500);
   }
 });
 
