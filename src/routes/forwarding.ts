@@ -237,10 +237,10 @@ forwardingRoutes.post('/forward-email/:email_id', async (c) => {
       return c.json({ success: false, error: 'Mailgun not configured' }, 500);
     }
     
-    const formData = new FormData();
-    formData.append('from', `${userEmail}`);
-    formData.append('to', forward_to);
-    formData.append('subject', `Fwd: ${email.subject}`);
+    const forwardForm = new FormData();
+    forwardForm.append('from', `${userEmail}`);
+    forwardForm.append('to', forward_to);
+    forwardForm.append('subject', `Fwd: ${email.subject}`);
     
     let forwardBody = `---------- Forwarded message ---------\nFrom: ${email.from_email}\nDate: ${email.sent_at || email.created_at}\nSubject: ${email.subject}\nTo: ${email.to_email}\n\n${email.body_text}`;
     
@@ -248,7 +248,7 @@ forwardingRoutes.post('/forward-email/:email_id', async (c) => {
       forwardBody = `${add_note}\n\n${forwardBody}`;
     }
     
-    formData.append('text', forwardBody);
+    forwardForm.append('text', forwardBody);
     
     const mailgunUrl = MAILGUN_REGION === 'EU' 
       ? `https://api.eu.mailgun.net/v3/${MAILGUN_DOMAIN}/messages`
@@ -259,7 +259,7 @@ forwardingRoutes.post('/forward-email/:email_id', async (c) => {
       headers: {
         'Authorization': `Basic ${btoa(`api:${MAILGUN_API_KEY}`)}`
       },
-      body: formData
+      body: forwardForm
     });
     
     if (!response.ok) {

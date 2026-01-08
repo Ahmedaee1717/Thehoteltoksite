@@ -124,12 +124,12 @@ emailRoutes.get('/test-mailgun-send', async (c) => {
 
   try {
     // Send test email via Mailgun API
-    const formData = new FormData();
-    formData.append('from', `API Test <test@${MAILGUN_DOMAIN}>`);
-    formData.append('to', 'test1@investaycapital.com');
-    formData.append('subject', `Mailgun API Direct Test ${Date.now()}`);
-    formData.append('text', 'SUCCESS! This email was sent directly via Mailgun API, bypassing Gmail entirely. If you see this, the entire email flow is working perfectly.');
-    formData.append('html', '<h2>✅ SUCCESS!</h2><p>This email was sent directly via <strong>Mailgun API</strong>, bypassing Gmail entirely.</p><p><strong>This proves everything is working!</strong></p>');
+    const testForm = new FormData();
+    testForm.append('from', `API Test <test@${MAILGUN_DOMAIN}>`);
+    testForm.append('to', 'test1@investaycapital.com');
+    testForm.append('subject', `Mailgun API Direct Test ${Date.now()}`);
+    testForm.append('text', 'SUCCESS! This email was sent directly via Mailgun API, bypassing Gmail entirely. If you see this, the entire email flow is working perfectly.');
+    testForm.append('html', '<h2>✅ SUCCESS!</h2><p>This email was sent directly via <strong>Mailgun API</strong>, bypassing Gmail entirely.</p><p><strong>This proves everything is working!</strong></p>');
 
     const region = MAILGUN_REGION === 'EU' ? 'api.eu.mailgun.net' : 'api.mailgun.net';
     const url = `https://${region}/v3/${MAILGUN_DOMAIN}/messages`;
@@ -139,7 +139,7 @@ emailRoutes.get('/test-mailgun-send', async (c) => {
       headers: {
         'Authorization': 'Basic ' + btoa(`api:${MAILGUN_API_KEY}`)
       },
-      body: formData
+      body: testForm
     });
 
     const resultText = await response.text();
@@ -2730,11 +2730,11 @@ emailRoutes.post('/receive', async (c) => {
                 
                 const forwardBody = `---------- Forwarded message ---------\nFrom: ${senderEmail}\nDate: ${new Date().toISOString()}\nSubject: ${subject}\nTo: ${to}\n\n${bodyText}`;
                 
-                const fwdFormData = new FormData();
-                fwdFormData.append('from', to);
-                fwdFormData.append('to', rule.forward_to);
-                fwdFormData.append('subject', forwardSubject);
-                fwdFormData.append('text', forwardBody);
+                const fwdForm = new FormData();
+                fwdForm.append('from', to);
+                fwdForm.append('to', rule.forward_to);
+                fwdForm.append('subject', forwardSubject);
+                fwdForm.append('text', forwardBody);
                 
                 const mailgunUrl = MAILGUN_REGION === 'EU' 
                   ? `https://api.eu.mailgun.net/v3/${MAILGUN_DOMAIN}/messages`
@@ -2745,7 +2745,7 @@ emailRoutes.post('/receive', async (c) => {
                   headers: {
                     'Authorization': `Basic ${btoa(`api:${MAILGUN_API_KEY}`)}`
                   },
-                  body: fwdFormData
+                  body: fwdForm
                 });
                 
                 if (fwdResponse.ok) {
