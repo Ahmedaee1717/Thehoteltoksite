@@ -595,19 +595,28 @@ emailRoutes.post('/send', async (c) => {
       region: MAILGUN_REGION
     });
     
+    console.log('🔍 DEBUG CHECKPOINT 1: Before Mailgun if block');
+    
     if (MAILGUN_API_KEY && MAILGUN_DOMAIN) {
+      console.log('🔍 DEBUG CHECKPOINT 2: Inside Mailgun if block');
       try {
+        console.log('🔍 DEBUG CHECKPOINT 3: Inside Mailgun try block');
         console.log('📬 Sending via Mailgun with from:', from, 'displayName:', displayName);
         
+        console.log('🔍 BEFORE baseUrl creation');
         // Create HTML version of email with LINK TRACKING + tracking pixel
         // Link tracking is MORE RELIABLE than pixels (works even if images blocked)
         const baseUrl = `https://${c.req.header('host') || 'www.investaycapital.com'}`;
+        console.log('🔍 AFTER baseUrl, BEFORE trackingPixelUrl');
         const trackingPixelUrl = `${baseUrl}/api/email/track/${emailId}`;
         
+        console.log('🔍 BEFORE emailBodyHtml replace');
         // Convert line breaks to HTML and wrap links with tracking
         let emailBodyHtml = body.replace(/\n/g, '<br>');
+        console.log('🔍 AFTER replace, BEFORE wrapLinksWithTracking');
         emailBodyHtml = wrapLinksWithTracking(emailBodyHtml, emailId, baseUrl);
         
+        console.log('🔍 BEFORE creating h variable');
         const h = `
           <html>
             <head>
@@ -642,8 +651,10 @@ emailRoutes.post('/send', async (c) => {
           </html>
         `;
         
+        console.log('🔍 AFTER creating h, BEFORE wrapPlainTextLinks');
         // Also wrap links in plain text version
         const t = wrapPlainTextLinks(body, emailId, baseUrl);
+        console.log('🔍 AFTER creating t');
         
         // 📎 HANDLE ATTACHMENTS (FileBank files + Computer uploads)
         const attachArr: Array<{ filename: string; data: Buffer | string }> = [];
@@ -756,8 +767,8 @@ emailRoutes.post('/send', async (c) => {
         console.log('📬 Calling Mailgun with:', {
           to,
           subject,
-          textLength: textBodyWithTracking?.length,
-          htmlLength: htmlBody?.length,
+          textLength: t?.length,
+          htmlLength: h?.length,
           attachmentCount: attachArr.length,
           hasAttachments: attachArr.length > 0,
           attachmentDetails: attachArr.map(a => ({
@@ -965,8 +976,9 @@ emailRoutes.post('/send', async (c) => {
       success: false, 
       error: error.message || 'Internal server error',
       errorName: error.name,
-      errorStack: error.stack?.split('\n').slice(0, 3).join('\n'),
-      errorDetails: error.toString()
+      errorStack: error.stack,  // Include FULL stack trace in response
+      errorDetails: error.toString(),
+      errorConstructor: error.constructor.name
     }, 500);
   }
   } catch (outerError: any) {

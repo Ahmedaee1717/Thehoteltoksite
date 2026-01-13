@@ -12,6 +12,7 @@ export default defineConfig({
     })
   ],
   build: {
-    minify: false  // Disable minification to debug TDZ error
+    minify: false,  // Keep minification off
+    sourcemap: true  // Enable sourcemaps to track error location
   }
 })
