@@ -661,19 +661,19 @@ emailRoutes.post('/send', async (c) => {
           
           for (const att of attachments) {
             try {
-              if (att.isLocalFile && attItem.data) {
+              if (att.isLocalFile && att.data) {
                 // Computer upload: data is base64 string
-                console.log(`📎 Processing computer upload: ${attItem.filename} (${attItem.data?.length} chars of base64)`);
-                console.log(`📎 Base64 preview (first 100 chars): ${attItem.data.substring(0, 100)}`);
+                console.log(`📎 Processing computer upload: ${att.filename} (${att.data?.length} chars of base64)`);
+                console.log(`📎 Base64 preview (first 100 chars): ${att.data.substring(0, 100)}`);
                 
-                const buffer = Buffer.from(attItem.data, 'base64');
+                const buffer = Buffer.from(att.data, 'base64');
                 console.log(`📎 Buffer created: ${buffer.length} bytes, isBuffer: ${buffer instanceof Buffer}`);
                 
                 attachArr.push({
-                  filename: attItem.filename,
+                  filename: att.filename,
                   data: buffer
                 });
-                console.log(`✅ Added computer upload to attachArr: ${attItem.filename} (${buffer.length} bytes)`);
+                console.log(`✅ Added computer upload to attachArr: ${att.filename} (${buffer.length} bytes)`);
               } else {
                 // FileBank file: Load from database
                 console.log(`📎 Looking up FileBank file ID: ${att.id}`);
