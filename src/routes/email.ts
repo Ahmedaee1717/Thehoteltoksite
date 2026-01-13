@@ -608,7 +608,7 @@ emailRoutes.post('/send', async (c) => {
         let emailBodyHtml = body.replace(/\n/g, '<br>');
         emailBodyHtml = wrapLinksWithTracking(emailBodyHtml, emailId, baseUrl);
         
-        const htmlBody = `
+        const h = `
           <html>
             <head>
               <style>
@@ -643,7 +643,7 @@ emailRoutes.post('/send', async (c) => {
         `;
         
         // Also wrap links in plain text version
-        const textBodyWithTracking = wrapPlainTextLinks(body, emailId, baseUrl);
+        const t = wrapPlainTextLinks(body, emailId, baseUrl);
         
         // 📎 HANDLE ATTACHMENTS (FileBank files + Computer uploads)
         const attachArr: Array<{ filename: string; data: Buffer | string }> = [];
@@ -773,56 +773,56 @@ emailRoutes.post('/send', async (c) => {
         
         // Prepare display name for from address
         const displayName = from.split('@')[0]; // e.g., "info" from info@investaycapital.com
-        const fromAddress = `${displayName} <${from}>`;
+        const f = `${displayName} <${from}>`;
         
-        console.log('📧 Mailgun From Address:', fromAddress);
+        console.log('📧 Mailgun From Address:', f);
         console.log('📨 Sending via Mailgun REST API directly...');
         
         // Build FormData for Mailgun API
-        const mailgunForm = new FormData();
-        mailgunForm.append('from', fromAddress);
-        mailgunForm.append('to', to);
-        mailgunForm.append('subject', subject);
-        mailgunForm.append('text', textBodyWithTracking);
-        mailgunForm.append('html', htmlBody);
+        const mgForm = new FormData();
+        mgForm.append('from', f);
+        mgForm.append('to', to);
+        mgForm.append('subject', subject);
+        mgForm.append('text', t);
+        mgForm.append('html', h);
         
-        if (cc) mailgunForm.append('cc', cc);
-        if (bcc) mailgunForm.append('bcc', bcc);
-        if (from) mailgunForm.append('h:Reply-To', from);
+        if (cc) mgForm.append('cc', cc);
+        if (bcc) mgForm.append('bcc', bcc);
+        if (from) mgForm.append('h:Reply-To', from);
         
         // Add attachments
         if (attachArr.length > 0) {
           console.log(`📎 Adding ${attachArr.length} attachments to FormData`);
           for (const attItem of attachArr) {
             const blob = new Blob([attItem.data], { type: 'application/octet-stream' });
-            mailgunForm.append('attachment', blob, attItem.filename);
+            mgForm.append('attachment', blob, attItem.filename);
             console.log(`✅ Added attachment: ${attItem.filename} (${blob.size} bytes)`);
           }
         }
         
         // Send via Mailgun API
-        const apiRegion = MAILGUN_REGION === 'EU' ? 'api.eu.mailgun.net' : 'api.mailgun.net';
-        const apiUrl = `https://${apiRegion}/v3/${MAILGUN_DOMAIN}/messages`;
+        const r = MAILGUN_REGION === 'EU' ? 'api.eu.mailgun.net' : 'api.mailgun.net';
+        const u = `https://${r}/v3/${MAILGUN_DOMAIN}/messages`;
         
-        console.log('📬 POST to Mailgun:', apiUrl);
+        console.log('📬 POST to Mailgun:', u);
         
-        const httpResponse = await fetch(apiUrl, {
+        const res = await fetch(u, {
           method: 'POST',
           headers: {
             'Authorization': 'Basic ' + btoa(`api:${MAILGUN_API_KEY}`)
           },
-          body: mailgunForm
+          body: mgForm
         });
         
-        const responseData = await httpResponse.json();
+        const responseData = await res.json();
         console.log('📬 Mailgun response:', JSON.stringify(responseData, null, 2));
         
-        if (httpResponse.ok) {
+        if (res.ok) {
           mailgunSuccess = true;
           mailgunMessageId = responseData.id;
           console.log('✅ Email sent via Mailgun:', responseData.id);
         } else {
-          mailgunError = responseData.message || `HTTP ${httpResponse.status}`;
+          mailgunError = responseData.message || `HTTP ${res.status}`;
           console.error('❌ Mailgun send failed:', mailgunError);
         }
       } catch (mailgunException: any) {
