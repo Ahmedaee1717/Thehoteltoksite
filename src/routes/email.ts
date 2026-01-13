@@ -794,9 +794,10 @@ emailRoutes.post('/send', async (c) => {
         if (attachArr.length > 0) {
           console.log(`📎 Adding ${attachArr.length} attachments to FormData`);
           for (const attItem of attachArr) {
-            const blob = new Blob([attItem.data], { type: 'application/octet-stream' });
-            mgForm.append('attachment', blob, attItem.filename);
-            console.log(`✅ Added attachment: ${attItem.filename} (${blob.size} bytes)`);
+            // Use File constructor instead of Blob for Cloudflare Workers compatibility
+            const file = new File([attItem.data], attItem.filename, { type: 'application/octet-stream' });
+            mgForm.append('attachment', file);
+            console.log(`✅ Added attachment: ${attItem.filename} (${file.size} bytes)`);
           }
         }
         
