@@ -1417,3 +1417,4 @@ Sitemap: https://investaycapital.com/sitemap.xml`;
 });
 
 export default app
+// FORCE CACHE BUST: 1768339539673108300
