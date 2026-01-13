@@ -22,6 +22,9 @@ import testFormDataRoutes from './routes/test-formdata'
 import { homePage } from './pages/home'
 import { answerQuestion } from './services/ai-optimizer'
 
+// Force production cache refresh - v2.1.0
+const APP_VERSION = '2.1.0';
+
 type Bindings = {
   DB: D1Database;
   OPENAI_API_KEY?: string;
