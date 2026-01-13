@@ -646,7 +646,7 @@ emailRoutes.post('/send', async (c) => {
         const textBodyWithTracking = wrapPlainTextLinks(body, emailId, baseUrl);
         
         // 📎 HANDLE ATTACHMENTS (FileBank files + Computer uploads)
-        const mailgunAttachments: Array<{ filename: string; data: Buffer | string }> = [];
+        const attachArr: Array<{ filename: string; data: Buffer | string }> = [];
         
         console.log('📎 DEBUG: Raw attachments received:', JSON.stringify(attachments?.map(a => ({
           filename: a.filename,
@@ -661,19 +661,19 @@ emailRoutes.post('/send', async (c) => {
           
           for (const att of attachments) {
             try {
-              if (att.isLocalFile && att.data) {
+              if (att.isLocalFile && attItem.data) {
                 // Computer upload: data is base64 string
-                console.log(`📎 Processing computer upload: ${att.filename} (${att.data?.length} chars of base64)`);
-                console.log(`📎 Base64 preview (first 100 chars): ${att.data.substring(0, 100)}`);
+                console.log(`📎 Processing computer upload: ${attItem.filename} (${attItem.data?.length} chars of base64)`);
+                console.log(`📎 Base64 preview (first 100 chars): ${attItem.data.substring(0, 100)}`);
                 
-                const buffer = Buffer.from(att.data, 'base64');
+                const buffer = Buffer.from(attItem.data, 'base64');
                 console.log(`📎 Buffer created: ${buffer.length} bytes, isBuffer: ${buffer instanceof Buffer}`);
                 
-                mailgunAttachments.push({
-                  filename: att.filename,
+                attachArr.push({
+                  filename: attItem.filename,
                   data: buffer
                 });
-                console.log(`✅ Added computer upload to mailgunAttachments: ${att.filename} (${buffer.length} bytes)`);
+                console.log(`✅ Added computer upload to attachArr: ${attItem.filename} (${buffer.length} bytes)`);
               } else {
                 // FileBank file: Load from database
                 console.log(`📎 Looking up FileBank file ID: ${att.id}`);
@@ -692,7 +692,7 @@ emailRoutes.post('/send', async (c) => {
                     file_url: fileRecord.file_url,
                     file_size: fileRecord.file_size
                   }));
-                  console.log(`📎 Fetching FileBank file: ${att.filename} from ${fileRecord.file_url}`);
+                  console.log(`📎 Fetching FileBank file: ${attItem.filename} from ${fileRecord.file_url}`);
                   
                   // Check if URL is absolute or relative
                   let fetchUrl = fileRecord.file_url;
@@ -715,7 +715,7 @@ emailRoutes.post('/send', async (c) => {
                   console.log(`📎 Fetch response: ${fileResponse.status} ${fileResponse.statusText}`);
                   
                   if (!fileResponse.ok) {
-                    console.error(`❌ Failed to fetch attachment ${att.filename}: HTTP ${fileResponse.status} ${fileResponse.statusText} from ${fetchUrl}`);
+                    console.error(`❌ Failed to fetch attachment ${attItem.filename}: HTTP ${fileResponse.status} ${fileResponse.statusText} from ${fetchUrl}`);
                     console.error(`📎 This is likely a dummy URL from seed data. Upload real files or use computer upload!`);
                     continue;
                   }
@@ -726,25 +726,25 @@ emailRoutes.post('/send', async (c) => {
                   console.log(`📎 Buffer created: ${buffer.length} bytes`);
                   
                   // Add to Mailgun attachments
-                  mailgunAttachments.push({
-                    filename: att.filename,
+                  attachArr.push({
+                    filename: attItem.filename,
                     data: buffer
                   });
                   
-                  console.log(`✅ Added FileBank file: ${att.filename} (${buffer.length} bytes)`);
+                  console.log(`✅ Added FileBank file: ${attItem.filename} (${buffer.length} bytes)`);
                 } else {
                   console.warn(`⚠️ FileBank record not found for attachment ID: ${att.id}`);
                   console.warn(`⚠️ fileRecord:`, fileRecord);
                 }
               }
             } catch (attError: any) {
-              console.error(`❌ Error processing attachment ${att.filename}:`, attError.message);
+              console.error(`❌ Error processing attachment ${attItem.filename}:`, attError.message);
               // Continue with other attachments even if one fails
             }
           }
           
-          console.log(`✅ Prepared ${mailgunAttachments.length} attachments for Mailgun`);
-          console.log('📎 DEBUG: Mailgun attachments:', mailgunAttachments.map(a => ({
+          console.log(`✅ Prepared ${attachArr.length} attachments for Mailgun`);
+          console.log('📎 DEBUG: Mailgun attachments:', attachArr.map(a => ({
             filename: a.filename,
             dataType: typeof a.data,
             dataLength: a.data instanceof Buffer ? a.data.length : a.data?.length
@@ -758,9 +758,9 @@ emailRoutes.post('/send', async (c) => {
           subject,
           textLength: textBodyWithTracking?.length,
           htmlLength: htmlBody?.length,
-          attachmentCount: mailgunAttachments.length,
-          hasAttachments: mailgunAttachments.length > 0,
-          attachmentDetails: mailgunAttachments.map(a => ({
+          attachmentCount: attachArr.length,
+          hasAttachments: attachArr.length > 0,
+          attachmentDetails: attachArr.map(a => ({
             filename: a.filename,
             size: a.data.length,
             isBuffer: a.data instanceof Buffer
@@ -768,8 +768,8 @@ emailRoutes.post('/send', async (c) => {
         });
         
         console.log('🚨 FINAL CHECK BEFORE MAILGUN:');
-        console.log('  - mailgunAttachments.length:', mailgunAttachments.length);
-        console.log('  - Passing to sendEmail():', mailgunAttachments.length > 0 ? 'WITH ATTACHMENTS' : 'NO ATTACHMENTS');
+        console.log('  - attachArr.length:', attachArr.length);
+        console.log('  - Passing to sendEmail():', attachArr.length > 0 ? 'WITH ATTACHMENTS' : 'NO ATTACHMENTS');
         
         // Prepare display name for from address
         const displayName = from.split('@')[0]; // e.g., "info" from info@investaycapital.com
@@ -791,22 +791,22 @@ emailRoutes.post('/send', async (c) => {
         if (from) mailgunForm.append('h:Reply-To', from);
         
         // Add attachments
-        if (mailgunAttachments.length > 0) {
-          console.log(`📎 Adding ${mailgunAttachments.length} attachments to FormData`);
-          for (const att of mailgunAttachments) {
-            const blob = new Blob([att.data], { type: 'application/octet-stream' });
-            mailgunForm.append('attachment', blob, att.filename);
-            console.log(`✅ Added attachment: ${att.filename} (${blob.size} bytes)`);
+        if (attachArr.length > 0) {
+          console.log(`📎 Adding ${attachArr.length} attachments to FormData`);
+          for (const attItem of attachArr) {
+            const blob = new Blob([attItem.data], { type: 'application/octet-stream' });
+            mailgunForm.append('attachment', blob, attItem.filename);
+            console.log(`✅ Added attachment: ${attItem.filename} (${blob.size} bytes)`);
           }
         }
         
         // Send via Mailgun API
-        const mailgunRegion = MAILGUN_REGION === 'EU' ? 'api.eu.mailgun.net' : 'api.mailgun.net';
-        const mailgunUrl = `https://${mailgunRegion}/v3/${MAILGUN_DOMAIN}/messages`;
+        const apiRegion = MAILGUN_REGION === 'EU' ? 'api.eu.mailgun.net' : 'api.mailgun.net';
+        const apiUrl = `https://${apiRegion}/v3/${MAILGUN_DOMAIN}/messages`;
         
-        console.log('📬 POST to Mailgun:', mailgunUrl);
+        console.log('📬 POST to Mailgun:', apiUrl);
         
-        const mailgunResponse = await fetch(mailgunUrl, {
+        const httpResponse = await fetch(apiUrl, {
           method: 'POST',
           headers: {
             'Authorization': 'Basic ' + btoa(`api:${MAILGUN_API_KEY}`)
@@ -814,15 +814,15 @@ emailRoutes.post('/send', async (c) => {
           body: mailgunForm
         });
         
-        const mailgunResult = await mailgunResponse.json();
-        console.log('📬 Mailgun response:', JSON.stringify(mailgunResult, null, 2));
+        const responseData = await httpResponse.json();
+        console.log('📬 Mailgun response:', JSON.stringify(responseData, null, 2));
         
-        if (mailgunResponse.ok) {
+        if (httpResponse.ok) {
           mailgunSuccess = true;
-          mailgunMessageId = mailgunResult.id;
-          console.log('✅ Email sent via Mailgun:', mailgunResult.id);
+          mailgunMessageId = responseData.id;
+          console.log('✅ Email sent via Mailgun:', responseData.id);
         } else {
-          mailgunError = mailgunResult.message || `HTTP ${mailgunResponse.status}`;
+          mailgunError = responseData.message || `HTTP ${httpResponse.status}`;
           console.error('❌ Mailgun send failed:', mailgunError);
         }
       } catch (mailgunException: any) {
@@ -885,16 +885,16 @@ emailRoutes.post('/send', async (c) => {
           let r2Url = null;
           let r2Key = null;
           
-          if (att.isLocalFile && att.data) {
+          if (att.isLocalFile && attItem.data) {
             // Computer upload: store as data URI (for now)
-            r2Url = `data:${att.content_type || 'application/octet-stream'};base64,${att.data.substring(0, 100)}...`;
+            r2Url = `data:${att.content_type || 'application/octet-stream'};base64,${attItem.data.substring(0, 100)}...`;
             r2Key = `computer-upload-${Date.now()}-${i}`;
-            console.log(`📎 Storing computer upload: ${att.filename}`);
+            console.log(`📎 Storing computer upload: ${attItem.filename}`);
           } else if (att.id) {
             // FileBank file: store reference
             r2Key = `filebank-${att.id}`;
             r2Url = att.url || null;
-            console.log(`📎 Storing FileBank reference: ${att.filename} (ID: ${att.id})`);
+            console.log(`📎 Storing FileBank reference: ${attItem.filename} (ID: ${att.id})`);
           }
           
           await DB.prepare(`
@@ -905,16 +905,16 @@ emailRoutes.post('/send', async (c) => {
           `).bind(
             attachmentId,
             emailId,
-            att.filename,
+            attItem.filename,
             att.content_type || 'application/octet-stream',
             att.size || 0,
             r2Key,
             r2Url
           ).run();
           
-          console.log(`✅ Saved attachment ${i + 1}/${attachments.length}: ${att.filename}`);
+          console.log(`✅ Saved attachment ${i + 1}/${attachments.length}: ${attItem.filename}`);
         } catch (attSaveError: any) {
-          console.error(`❌ Failed to save attachment ${att.filename}:`, attSaveError.message);
+          console.error(`❌ Failed to save attachment ${attItem.filename}:`, attSaveError.message);
           // Continue with other attachments
         }
       }
