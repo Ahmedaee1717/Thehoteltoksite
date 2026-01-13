@@ -779,11 +779,17 @@ emailRoutes.post('/send', async (c) => {
         console.log('📨 Sending via Mailgun REST API directly...');
         
         // Build FormData for Mailgun API
+        console.log('🔍 STEP 1: Creating FormData');
         const mgForm = new FormData();
+        console.log('🔍 STEP 2: Appending from:', typeof f, f);
         mgForm.append('from', f);
+        console.log('🔍 STEP 3: Appending to:', typeof to, to);
         mgForm.append('to', to);
+        console.log('🔍 STEP 4: Appending subject:', typeof subject, subject);
         mgForm.append('subject', subject);
+        console.log('🔍 STEP 5: Appending text:', typeof t, t?.substring(0, 50));
         mgForm.append('text', t);
+        console.log('🔍 STEP 6: Appending html:', typeof h, h?.substring(0, 50));
         mgForm.append('html', h);
         
         if (cc) mgForm.append('cc', cc);
