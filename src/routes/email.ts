@@ -692,7 +692,7 @@ emailRoutes.post('/send', async (c) => {
                     file_url: fileRecord.file_url,
                     file_size: fileRecord.file_size
                   }));
-                  console.log(`📎 Fetching FileBank file: ${attItem.filename} from ${fileRecord.file_url}`);
+                  console.log(`📎 Fetching FileBank file: ${att.filename} from ${fileRecord.file_url}`);
                   
                   // Check if URL is absolute or relative
                   let fetchUrl = fileRecord.file_url;
@@ -715,7 +715,7 @@ emailRoutes.post('/send', async (c) => {
                   console.log(`📎 Fetch response: ${fileResponse.status} ${fileResponse.statusText}`);
                   
                   if (!fileResponse.ok) {
-                    console.error(`❌ Failed to fetch attachment ${attItem.filename}: HTTP ${fileResponse.status} ${fileResponse.statusText} from ${fetchUrl}`);
+                    console.error(`❌ Failed to fetch attachment ${att.filename}: HTTP ${fileResponse.status} ${fileResponse.statusText} from ${fetchUrl}`);
                     console.error(`📎 This is likely a dummy URL from seed data. Upload real files or use computer upload!`);
                     continue;
                   }
@@ -727,18 +727,18 @@ emailRoutes.post('/send', async (c) => {
                   
                   // Add to Mailgun attachments
                   attachArr.push({
-                    filename: attItem.filename,
+                    filename: att.filename,
                     data: buffer
                   });
                   
-                  console.log(`✅ Added FileBank file: ${attItem.filename} (${buffer.length} bytes)`);
+                  console.log(`✅ Added FileBank file: ${att.filename} (${buffer.length} bytes)`);
                 } else {
                   console.warn(`⚠️ FileBank record not found for attachment ID: ${att.id}`);
                   console.warn(`⚠️ fileRecord:`, fileRecord);
                 }
               }
             } catch (attError: any) {
-              console.error(`❌ Error processing attachment ${attItem.filename}:`, attError.message);
+              console.error(`❌ Error processing attachment ${att.filename}:`, attError.message);
               // Continue with other attachments even if one fails
             }
           }
@@ -795,9 +795,9 @@ emailRoutes.post('/send', async (c) => {
           console.log(`📎 Adding ${attachArr.length} attachments to FormData`);
           for (const attItem of attachArr) {
             // Use File constructor instead of Blob for Cloudflare Workers compatibility
-            const file = new File([attItem.data], attItem.filename, { type: 'application/octet-stream' });
+            const file = new File([att.data], att.filename, { type: 'application/octet-stream' });
             mgForm.append('attachment', file);
-            console.log(`✅ Added attachment: ${attItem.filename} (${file.size} bytes)`);
+            console.log(`✅ Added attachment: ${att.filename} (${file.size} bytes)`);
           }
         }
         
@@ -886,16 +886,16 @@ emailRoutes.post('/send', async (c) => {
           let r2Url = null;
           let r2Key = null;
           
-          if (att.isLocalFile && attItem.data) {
+          if (att.isLocalFile && att.data) {
             // Computer upload: store as data URI (for now)
-            r2Url = `data:${att.content_type || 'application/octet-stream'};base64,${attItem.data.substring(0, 100)}...`;
+            r2Url = `data:${att.content_type || 'application/octet-stream'};base64,${att.data.substring(0, 100)}...`;
             r2Key = `computer-upload-${Date.now()}-${i}`;
-            console.log(`📎 Storing computer upload: ${attItem.filename}`);
+            console.log(`📎 Storing computer upload: ${att.filename}`);
           } else if (att.id) {
             // FileBank file: store reference
             r2Key = `filebank-${att.id}`;
             r2Url = att.url || null;
-            console.log(`📎 Storing FileBank reference: ${attItem.filename} (ID: ${att.id})`);
+            console.log(`📎 Storing FileBank reference: ${att.filename} (ID: ${att.id})`);
           }
           
           await DB.prepare(`
@@ -906,16 +906,16 @@ emailRoutes.post('/send', async (c) => {
           `).bind(
             attachmentId,
             emailId,
-            attItem.filename,
+            att.filename,
             att.content_type || 'application/octet-stream',
             att.size || 0,
             r2Key,
             r2Url
           ).run();
           
-          console.log(`✅ Saved attachment ${i + 1}/${attachments.length}: ${attItem.filename}`);
+          console.log(`✅ Saved attachment ${i + 1}/${attachments.length}: ${att.filename}`);
         } catch (attSaveError: any) {
-          console.error(`❌ Failed to save attachment ${attItem.filename}:`, attSaveError.message);
+          console.error(`❌ Failed to save attachment ${att.filename}:`, attSaveError.message);
           // Continue with other attachments
         }
       }
