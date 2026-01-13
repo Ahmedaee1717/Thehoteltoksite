@@ -1,11 +1,9 @@
-// Email API Routes
 import { Hono } from 'hono'
 import { getCookie } from 'hono/cookie'
 import { verifyToken } from '../lib/auth'
 import { hashPassword } from '../lib/auth'
 import { generateId } from '../utils/id'
 import { generateEmbedding, categorizeEmail, summarizeEmail, extractActionItems } from '../services/ai-email'
-import { createMailgunService } from '../lib/mailgun'
 import { checkSpamScore, getSpamScoreSummary } from '../lib/spam-checker'
 // Encryption temporarily disabled for debugging
 // import { safeEncrypt, safeDecrypt, isEncrypted } from '../lib/encryption'
@@ -599,16 +597,7 @@ emailRoutes.post('/send', async (c) => {
     
     if (MAILGUN_API_KEY && MAILGUN_DOMAIN) {
       try {
-        console.log('📬 Creating Mailgun service with:', { from, displayName });
-        const mailgunService = createMailgunService({
-          apiKey: MAILGUN_API_KEY,
-          domain: MAILGUN_DOMAIN,
-          region: MAILGUN_REGION as 'US' | 'EU' || 'US',
-          // Use the actual from address (shared mailbox or personal)
-          fromEmail: from,
-          fromName: displayName
-        });
-        console.log('✅ Mailgun service created successfully');
+        console.log('📬 Sending via Mailgun with from:', from, 'displayName:', displayName);
         
         // Create HTML version of email with LINK TRACKING + tracking pixel
         // Link tracking is MORE RELIABLE than pixels (works even if images blocked)
@@ -787,29 +776,54 @@ emailRoutes.post('/send', async (c) => {
         const fromAddress = `${displayName} <${from}>`;
         
         console.log('📧 Mailgun From Address:', fromAddress);
-        console.log('📨 Calling mailgunService.sendEmail()...');
+        console.log('📨 Sending via Mailgun REST API directly...');
         
-        const result = await mailgunService.sendEmail({
-          from: fromAddress,  // ✅ Pass the actual from address!
-          to,
-          subject,
-          text: textBodyWithTracking,  // Use tracked plain text version
-          html: htmlBody,
-          cc,
-          bcc,
-          replyTo: from,  // Set reply-to as the sender's email
-          attachments: mailgunAttachments.length > 0 ? mailgunAttachments : undefined // ✅ Add attachments!
+        // Build FormData for Mailgun API
+        const mailgunForm = new FormData();
+        mailgunForm.append('from', fromAddress);
+        mailgunForm.append('to', to);
+        mailgunForm.append('subject', subject);
+        mailgunForm.append('text', textBodyWithTracking);
+        mailgunForm.append('html', htmlBody);
+        
+        if (cc) mailgunForm.append('cc', cc);
+        if (bcc) mailgunForm.append('bcc', bcc);
+        if (from) mailgunForm.append('h:Reply-To', from);
+        
+        // Add attachments
+        if (mailgunAttachments.length > 0) {
+          console.log(`📎 Adding ${mailgunAttachments.length} attachments to FormData`);
+          for (const att of mailgunAttachments) {
+            const blob = new Blob([att.data], { type: 'application/octet-stream' });
+            mailgunForm.append('attachment', blob, att.filename);
+            console.log(`✅ Added attachment: ${att.filename} (${blob.size} bytes)`);
+          }
+        }
+        
+        // Send via Mailgun API
+        const mailgunRegion = MAILGUN_REGION === 'EU' ? 'api.eu.mailgun.net' : 'api.mailgun.net';
+        const mailgunUrl = `https://${mailgunRegion}/v3/${MAILGUN_DOMAIN}/messages`;
+        
+        console.log('📬 POST to Mailgun:', mailgunUrl);
+        
+        const mailgunResponse = await fetch(mailgunUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Basic ' + btoa(`api:${MAILGUN_API_KEY}`)
+          },
+          body: mailgunForm
         });
         
-        console.log('📬 Mailgun sendEmail() returned:', JSON.stringify(result, null, 2));
+        const mailgunResult = await mailgunResponse.json();
+        console.log('📬 Mailgun response:', JSON.stringify(mailgunResult, null, 2));
         
-        if (result.success) {
+        if (mailgunResponse.ok) {
           mailgunSuccess = true;
-          mailgunMessageId = result.messageId;
-          console.log('✅ Email sent via Mailgun:', result.messageId);
+          mailgunMessageId = mailgunResult.id;
+          console.log('✅ Email sent via Mailgun:', mailgunResult.id);
         } else {
-          mailgunError = result.error;
-          console.error('❌ Mailgun send failed:', result.error);
+          mailgunError = mailgunResult.message || `HTTP ${mailgunResponse.status}`;
+          console.error('❌ Mailgun send failed:', mailgunError);
         }
       } catch (mailgunException: any) {
         mailgunError = mailgunException.message;

@@ -10,5 +10,8 @@ export default defineConfig({
       adapter,
       entry: 'src/index.tsx'
     })
-  ]
+  ],
+  build: {
+    minify: false  // Disable minification to debug TDZ error
+  }
 })
