@@ -148,6 +148,17 @@ window.addEventListener('DOMContentLoaded', function() {
       const [uploadProgress, setUploadProgress] = useState(0);
       const [selectedFile, setSelectedFile] = useState(null);
       const [showFilePreview, setShowFilePreview] = useState(false);
+      
+      // Toast notification state
+      const [toastMessage, setToastMessage] = useState(null);
+      const [toastType, setToastType] = useState('info'); // 'info', 'success', 'warning', 'error'
+      
+      // Toast helper function
+      const showToast = (message, type = 'info') => {
+        setToastMessage(message);
+        setToastType(type);
+        setTimeout(() => setToastMessage(null), 5000); // Auto-hide after 5 seconds
+      };
       const [showFilePicker, setShowFilePicker] = useState(false);
       const [composeAttachments, setComposeAttachments] = useState([]); // Attachments for compose modal
       const [isDragging, setIsDragging] = useState(false);
@@ -222,6 +233,26 @@ window.addEventListener('DOMContentLoaded', function() {
         loadSharedMailboxes();
       }, []);
       
+      // Auto-archive expired emails every 60 seconds
+      useEffect(() => {
+        const archiveInterval = setInterval(() => {
+          if (view === 'inbox' && emails.length > 0) {
+            const now = new Date();
+            const expiredEmails = emails.filter(e => 
+              e.expires_at && new Date(e.expires_at) < now
+            );
+            
+            if (expiredEmails.length > 0) {
+              console.log(`⏰ Auto-check: Found ${expiredEmails.length} expired email(s)`);
+              // Reload inbox to trigger auto-archive logic
+              loadData();
+            }
+          }
+        }, 60000); // Check every 60 seconds
+        
+        return () => clearInterval(archiveInterval);
+      }, [view, emails]);
+      
       // Auto-refresh read statuses in Sent folder
       useEffect(() => {
         let refreshInterval;
@@ -268,7 +299,39 @@ window.addEventListener('DOMContentLoaded', function() {
             console.log('📬 Loading emails from:', url);
             const response = await fetch(url);
             const data = await response.json();
-            const fetchedEmails = data.emails || data.drafts || [];
+            let fetchedEmails = data.emails || data.drafts || [];
+            
+            // Auto-archive expired emails from inbox
+            if (view === 'inbox') {
+              const now = new Date();
+              const expiredEmails = fetchedEmails.filter(e => 
+                e.expires_at && new Date(e.expires_at) < now
+              );
+              
+              // Archive expired emails in background
+              if (expiredEmails.length > 0) {
+                console.log(`⏰ Found ${expiredEmails.length} expired email(s) - auto-archiving...`);
+                showToast(`🗂️ Auto-archiving ${expiredEmails.length} expired email${expiredEmails.length > 1 ? 's' : ''}...`, 'info');
+                
+                expiredEmails.forEach(async (email) => {
+                  try {
+                    await fetch(`/api/email/${email.id}/archive`, {
+                      method: 'PATCH'
+                    });
+                    console.log(`✅ Auto-archived expired email: ${email.id}`);
+                  } catch (err) {
+                    console.error(`❌ Failed to archive ${email.id}:`, err);
+                  }
+                });
+                
+                // Filter out expired emails from display
+                fetchedEmails = fetchedEmails.filter(e => 
+                  !e.expires_at || new Date(e.expires_at) >= now
+                );
+                console.log(`🗂️ Filtered ${expiredEmails.length} expired email(s) from inbox`);
+              }
+            }
+            
             setEmails(fetchedEmails);
             console.log(`📬 Loaded ${fetchedEmails.length} emails`);
             
@@ -5549,6 +5612,46 @@ window.addEventListener('DOMContentLoaded', function() {
           showCollabPanel: showCollabPanel
         }),
         
+        // Toast Notification
+        toastMessage && h('div', {
+          style: {
+            position: 'fixed',
+            top: '24px',
+            right: '24px',
+            padding: '16px 24px',
+            borderRadius: '12px',
+            background: toastType === 'error' ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' :
+                        toastType === 'success' ? 'linear-gradient(135deg, #22c55e 0%, #10b981 100%)' :
+                        'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+            color: 'white',
+            fontSize: '14px',
+            fontWeight: '600',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+            zIndex: 10000,
+            animation: 'slideInDown 0.3s ease-out',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          }
+        },
+          h('span', {}, toastMessage),
+          h('button', {
+            onClick: () => setToastMessage(null),
+            style: {
+              background: 'rgba(255, 255, 255, 0.2)',
+              border: 'none',
+              borderRadius: '6px',
+              color: 'white',
+              cursor: 'pointer',
+              padding: '4px 8px',
+              fontSize: '12px',
+              fontWeight: '600'
+            }
+          }, '✕')
+        ),
+        
         // Team Collaboration Panel - Slides in from right
         showCollabPanel && selectedEmail && h('div', {
           style: {
@@ -8997,6 +9100,16 @@ window.addEventListener('DOMContentLoaded', function() {
         to { 
           opacity: 1;
           transform: translateX(0);
+        }
+      }
+      @keyframes slideInDown {
+        from { 
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to { 
+          opacity: 1;
+          transform: translateY(0);
         }
       }
       @keyframes pulse {
