@@ -782,8 +782,7 @@ emailRoutes.post('/send', async (c) => {
         console.log('  - attachArr.length:', attachArr.length);
         console.log('  - Passing to sendEmail():', attachArr.length > 0 ? 'WITH ATTACHMENTS' : 'NO ATTACHMENTS');
         
-        // Prepare display name for from address
-        const displayName = from.split('@')[0]; // e.g., "info" from info@investaycapital.com
+        // Use displayName from line 583 (already declared)
         const f = `${displayName} <${from}>`;
         
         console.log('📧 Mailgun From Address:', f);
