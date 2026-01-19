@@ -7415,7 +7415,8 @@ window.addEventListener('DOMContentLoaded', function() {
         
         // Common quote patterns that indicate start of quoted/forwarded content
         const quotePatterns = [
-          /^On .+wrote:$/m,                           // "On Mon, 5 Jan 2026 at 14:10, <email> wrote:"
+          /^On .+[\r\n]+wrote:$/m,                     // Gmail: "On Mon, 5 Jan 2026...\nwrote:"
+          /^On .+wrote:$/m,                           // Single line: "On Mon, 5 Jan 2026 at 14:10, <email> wrote:"
           /^-+\s*Original Message\s*-+$/mi,           // "--- Original Message ---"
           /^_{10,}$/m,                                 // "________________________________"
           /^From:.+\nSent:.+\nTo:.+\nSubject:/mi,    // Outlook-style header
@@ -7457,7 +7458,9 @@ window.addEventListener('DOMContentLoaded', function() {
           cleanBody = nonQuotedLines.join('\n').trim();
         }
         
-        return cleanBody || body; // Fallback to original if stripping removed everything
+        const result = cleanBody || body;
+        console.log('🔪 stripQuotedReply OUTPUT:', result.substring(0, 200));
+        return result;
       };
       
       return h('div', {
