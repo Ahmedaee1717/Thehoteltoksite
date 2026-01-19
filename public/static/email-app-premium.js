@@ -6,6 +6,71 @@
 window.addEventListener('DOMContentLoaded', function() {
   console.log('🚀 Initializing Investay Signal...');
   
+  // Add keyframe animations for smooth transitions
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes mailboxFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+        filter: blur(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+      }
+    }
+    
+    @keyframes emailSlideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    @keyframes sharedMailboxPulse {
+      0%, 100% {
+        box-shadow: 0 8px 32px rgba(6, 182, 212, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      }
+      50% {
+        box-shadow: 0 8px 32px rgba(6, 182, 212, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      }
+    }
+    
+    @keyframes sharedGlowRotate {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0px);
+      }
+      50% {
+        transform: translateY(-6px);
+      }
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.7;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+  
   function initApp() {
     if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
       setTimeout(initApp, 100);
@@ -3499,11 +3564,114 @@ window.addEventListener('DOMContentLoaded', function() {
                 showSearchResults ? 'No emails found matching your search. Try different keywords.' : 'This folder is empty.'
               )
             ) : h('div', { 
+              key: currentMailbox ? currentMailbox.id : 'personal',
               style: { 
                 display: 'grid', 
-                gap: '16px'
+                gap: '16px',
+                animation: 'mailboxFadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+                transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
               } 
             },
+              // Shared Mailbox Header Banner
+              currentMailbox && h('div', {
+                style: {
+                  padding: '24px',
+                  background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(8, 145, 178, 0.1) 100%)',
+                  border: '1px solid rgba(6, 182, 212, 0.3)',
+                  borderRadius: '16px',
+                  marginBottom: '16px',
+                  boxShadow: '0 8px 32px rgba(6, 182, 212, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  animation: 'sharedMailboxPulse 3s ease-in-out infinite'
+                }
+              },
+                // Animated background glow
+                h('div', {
+                  style: {
+                    position: 'absolute',
+                    top: '-50%',
+                    left: '-50%',
+                    width: '200%',
+                    height: '200%',
+                    background: 'radial-gradient(circle, rgba(6, 182, 212, 0.1) 0%, transparent 70%)',
+                    animation: 'sharedGlowRotate 8s linear infinite',
+                    pointerEvents: 'none'
+                  }
+                }),
+                h('div', {
+                  style: {
+                    position: 'relative',
+                    zIndex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px'
+                  }
+                },
+                  h('div', {
+                    style: {
+                      width: '56px',
+                      height: '56px',
+                      borderRadius: '16px',
+                      background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '28px',
+                      boxShadow: '0 8px 24px rgba(6, 182, 212, 0.4)',
+                      animation: 'float 3s ease-in-out infinite'
+                    }
+                  }, '👥'),
+                  h('div', {
+                    style: {
+                      flex: 1
+                    }
+                  },
+                    h('div', {
+                      style: {
+                        fontSize: '20px',
+                        fontWeight: '700',
+                        color: '#06b6d4',
+                        marginBottom: '4px',
+                        textShadow: '0 0 20px rgba(6, 182, 212, 0.3)'
+                      }
+                    }, `📬 ${currentMailbox.display_name}`),
+                    h('div', {
+                      style: {
+                        fontSize: '13px',
+                        color: 'rgba(6, 182, 212, 0.7)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px'
+                      }
+                    },
+                      h('span', {}, `✉️ ${currentMailbox.email}`),
+                      h('span', {
+                        style: {
+                          padding: '4px 12px',
+                          background: 'rgba(6, 182, 212, 0.2)',
+                          borderRadius: '12px',
+                          fontSize: '11px',
+                          fontWeight: '600',
+                          color: '#06b6d4'
+                        }
+                      }, '🔗 SHARED WORKSPACE')
+                    )
+                  ),
+                  h('div', {
+                    style: {
+                      padding: '12px 20px',
+                      background: 'rgba(6, 182, 212, 0.15)',
+                      borderRadius: '12px',
+                      border: '1px solid rgba(6, 182, 212, 0.3)',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      color: '#06b6d4',
+                      animation: 'pulse 2s ease-in-out infinite'
+                    }
+                  }, '⚡ TEAM MODE')
+                )
+              ),
               // Show search results header if searching
               showSearchResults && h('div', {
                 style: {
@@ -3558,13 +3726,25 @@ window.addEventListener('DOMContentLoaded', function() {
                     padding: '24px',
                     // INBOX: Read emails dimmed (lights off), Unread emails bright
                     // SENT: Always same brightness (recipient read status shown separately)
-                    background: view === 'inbox' && email.is_read 
-                      ? 'linear-gradient(135deg, rgba(15, 20, 35, 0.4) 0%, rgba(10, 13, 25, 0.4) 100%)'
-                      : 'linear-gradient(135deg, rgba(26, 31, 58, 0.8) 0%, rgba(15, 20, 41, 0.8) 100%)',
+                    // SHARED MAILBOX: Cyan/teal theme instead of gold
+                    background: currentMailbox
+                      ? (view === 'inbox' && email.is_read
+                        ? 'linear-gradient(135deg, rgba(8, 47, 73, 0.4) 0%, rgba(7, 89, 133, 0.3) 100%)'
+                        : 'linear-gradient(135deg, rgba(8, 145, 178, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%)')
+                      : (view === 'inbox' && email.is_read 
+                        ? 'linear-gradient(135deg, rgba(15, 20, 35, 0.4) 0%, rgba(10, 13, 25, 0.4) 100%)'
+                        : 'linear-gradient(135deg, rgba(26, 31, 58, 0.8) 0%, rgba(15, 20, 41, 0.8) 100%)'),
+                    animation: 'emailSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                    animationDelay: `${i * 0.05}s`,
+                    animationFillMode: 'backwards',
                     backdropFilter: 'blur(20px)',
-                    border: view === 'inbox' && email.is_read 
-                      ? '1px solid rgba(255, 255, 255, 0.03)'
-                      : '1px solid rgba(201, 169, 98, 0.2)',
+                    border: currentMailbox
+                      ? (view === 'inbox' && email.is_read
+                        ? '1px solid rgba(6, 182, 212, 0.1)'
+                        : '1px solid rgba(6, 182, 212, 0.3)')
+                      : (view === 'inbox' && email.is_read 
+                        ? '1px solid rgba(255, 255, 255, 0.03)'
+                        : '1px solid rgba(201, 169, 98, 0.2)'),
                     borderRadius: '16px',
                     cursor: 'pointer',
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -5203,24 +5383,27 @@ window.addEventListener('DOMContentLoaded', function() {
                           width: '100%',
                           marginTop: '12px',
                           padding: '10px',
-                          background: currentMailbox && currentMailbox.id === mailbox.id ? 'rgba(201, 169, 98, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                          border: `1px solid ${currentMailbox && currentMailbox.id === mailbox.id ? 'rgba(201, 169, 98, 0.4)' : 'rgba(255, 255, 255, 0.1)'}`,
+                          background: currentMailbox && currentMailbox.id === mailbox.id ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(8, 145, 178, 0.15) 100%)' : 'rgba(255, 255, 255, 0.05)',
+                          border: `1px solid ${currentMailbox && currentMailbox.id === mailbox.id ? 'rgba(6, 182, 212, 0.4)' : 'rgba(255, 255, 255, 0.1)'}`,
                           borderRadius: '8px',
-                          color: currentMailbox && currentMailbox.id === mailbox.id ? '#C9A962' : 'rgba(255, 255, 255, 0.7)',
+                          color: currentMailbox && currentMailbox.id === mailbox.id ? '#06b6d4' : 'rgba(255, 255, 255, 0.7)',
                           fontSize: '13px',
                           fontWeight: '500',
                           cursor: 'pointer',
-                          transition: 'all 0.2s'
+                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                          boxShadow: currentMailbox && currentMailbox.id === mailbox.id ? '0 4px 16px rgba(6, 182, 212, 0.2)' : 'none'
                         },
                         onMouseEnter: (e) => {
-                          e.target.style.background = 'rgba(201, 169, 98, 0.2)';
-                          e.target.style.color = '#C9A962';
+                          e.target.style.background = 'linear-gradient(135deg, rgba(6, 182, 212, 0.25) 0%, rgba(8, 145, 178, 0.2) 100%)';
+                          e.target.style.color = '#06b6d4';
+                          e.target.style.transform = 'translateY(-2px)';
                         },
                         onMouseLeave: (e) => {
                           if (!currentMailbox || currentMailbox.id !== mailbox.id) {
                             e.target.style.background = 'rgba(255, 255, 255, 0.05)';
                             e.target.style.color = 'rgba(255, 255, 255, 0.7)';
                           }
+                          e.target.style.transform = 'translateY(0)';
                         }
                       }, currentMailbox && currentMailbox.id === mailbox.id ? '✓ Viewing Members' : '👁️ View Members')
                     )
