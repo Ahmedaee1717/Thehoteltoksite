@@ -7302,7 +7302,7 @@ window.addEventListener('DOMContentLoaded', function() {
         try {
           const response = await fetch(`/api/email/thread/${email.thread_id}`);
           const data = await response.json();
-          if (data.success && data.emails) {
+          if (data.success && data.emails && data.emails.length > 0) {
             // CRITICAL: Sort by timestamp DESC (newest first) on client-side too!
             const sortedEmails = [...data.emails].sort((a, b) => {
               const timeA = new Date(a.sent_at || a.received_at || a.created_at).getTime();
@@ -7311,6 +7311,10 @@ window.addEventListener('DOMContentLoaded', function() {
             });
             setThreadEmails(sortedEmails);
             console.log('🧵 Thread loaded and sorted:', sortedEmails.length, 'messages (newest first)');
+          } else {
+            // Thread API returned empty or failed - keep showing current email
+            console.log('🧵 Thread empty or unavailable - keeping current email');
+            // Don't call setThreadEmails - leave it as [email] from initial state
           }
         } catch (err) {
           console.error('❌ Failed to load thread:', err);
