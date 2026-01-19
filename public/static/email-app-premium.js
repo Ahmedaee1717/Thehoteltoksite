@@ -7414,7 +7414,7 @@ window.addEventListener('DOMContentLoaded', function() {
       
       // Strip quoted replies from email body to avoid showing history in threads
       const stripQuotedReply = (body) => {
-        if (!body) return body;
+        if (!body) return ''; // Return empty string instead of undefined
         console.log('🔪 stripQuotedReply INPUT:', body.substring(0, 200));
         
         // Common quote patterns that indicate start of quoted/forwarded content
