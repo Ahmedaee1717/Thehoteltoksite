@@ -150,7 +150,7 @@ window.addEventListener('DOMContentLoaded', function() {
       
       useEffect(() => {
         loadData();
-      }, [view]);
+      }, [view, currentMailbox]);
       
       // Load shared mailboxes once on mount
       useEffect(() => {
