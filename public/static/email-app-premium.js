@@ -3533,9 +3533,14 @@ window.addEventListener('DOMContentLoaded', function() {
                         method: 'PATCH'
                       }).then(res => {
                         if (res.ok) {
-                          console.log('✅ Marked as read - refreshing inbox...');
-                          // Reload data to show updated read status
-                          loadData();
+                          console.log('✅ Marked as read');
+                          // Update the email object locally without reloading
+                          email.is_read = true;
+                          // Update unread count
+                          if (view === 'inbox') {
+                            const newUnread = Math.max(0, unreadCount - 1);
+                            setUnreadCount(newUnread);
+                          }
                         }
                       }).catch(err => console.error('❌ Mark as read failed:', err));
                     }
@@ -5354,8 +5359,7 @@ window.addEventListener('DOMContentLoaded', function() {
           onClose: () => {
             setSelectedEmail(null);
             setShowCollabPanel(false);
-            // Reload email list to show updated read status
-            loadData();
+            // No need to reload - we updated read status inline
           },
           onShowCollab: () => setShowCollabPanel(true),
           view: view,
