@@ -7238,6 +7238,9 @@ window.addEventListener('DOMContentLoaded', function() {
     // Email Viewer Modal Component
     function EmailViewerModal({ email, onClose, onShowCollab, view, showCollabPanel }) {
       console.log('📧 EmailViewerModal rendering with email:', email);
+      console.log('🔍 Email body_text:', email.body_text);
+      console.log('🔍 Email body_html:', email.body_html);
+      console.log('🔍 Email snippet:', email.snippet);
       
       // Safety check
       if (!email) {
