@@ -175,19 +175,20 @@ window.addEventListener('DOMContentLoaded', function() {
         };
       }, [view, emails.length]);
       
-      const loadData = async () => {
+      const loadData = async (explicitMailbox = undefined) => {
         setLoading(true);
         try {
           let url = '';
           
           // If in shared mailbox mode, load shared mailbox emails
-          if (currentMailbox) {
-            if (view === 'inbox') url = `/api/shared-mailboxes/${currentMailbox.id}/emails?folder=inbox`;
-            else if (view === 'sent') url = `/api/shared-mailboxes/${currentMailbox.id}/emails?folder=sent`;
-            else if (view === 'spam') url = `/api/shared-mailboxes/${currentMailbox.id}/emails?folder=spam`;
-            else if (view === 'trash') url = `/api/shared-mailboxes/${currentMailbox.id}/emails?folder=trash`;
-            else if (view === 'drafts') url = `/api/shared-mailboxes/${currentMailbox.id}/drafts`;
-            else if (view === 'archived') url = `/api/shared-mailboxes/${currentMailbox.id}/emails?folder=archived`;
+          const activeMailbox = explicitMailbox !== undefined ? explicitMailbox : currentMailbox;
+          if (activeMailbox) {
+            if (view === 'inbox') url = `/api/shared-mailboxes/${activeMailbox.id}/emails?folder=inbox`;
+            else if (view === 'sent') url = `/api/shared-mailboxes/${activeMailbox.id}/emails?folder=sent`;
+            else if (view === 'spam') url = `/api/shared-mailboxes/${activeMailbox.id}/emails?folder=spam`;
+            else if (view === 'trash') url = `/api/shared-mailboxes/${activeMailbox.id}/emails?folder=trash`;
+            else if (view === 'drafts') url = `/api/shared-mailboxes/${activeMailbox.id}/drafts`;
+            else if (view === 'archived') url = `/api/shared-mailboxes/${activeMailbox.id}/emails?folder=archived`;
           } else {
             // Personal mailbox
             if (view === 'inbox') url = `/api/email/inbox`;
@@ -219,9 +220,9 @@ window.addEventListener('DOMContentLoaded', function() {
             }
             
             // Load read receipts for shared mailbox
-            if (currentMailbox && fetchedEmails.length > 0) {
+            if (activeMailbox && fetchedEmails.length > 0) {
               const emailIds = fetchedEmails.map(e => e.id);
-              loadReadReceipts(currentMailbox.id, emailIds);
+              loadReadReceipts(activeMailbox.id, emailIds);
             }
           }
           
@@ -355,7 +356,8 @@ window.addEventListener('DOMContentLoaded', function() {
         // Reset to inbox view and reload emails
         setView('inbox');
         setShowSearchResults(false);
-        loadData();
+        // Pass mailbox explicitly to avoid race condition with state update
+        loadData(mailbox);
       };
       
       // Load mailbox details (members, drafts, activity)
