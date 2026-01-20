@@ -656,8 +656,11 @@ sharedMailboxRoutes.get('/:id/emails/read-receipts', async (c) => {
       return c.json({ success: true, receipts: {} })
     }
     
-    const ids = emailIds.split(',').map(id => parseInt(id))
+    // email_id is TEXT (e.g., 'eml_xxx'), not INTEGER - don't parse as int!
+    const ids = emailIds.split(',').map(id => id.trim())
     const placeholders = ids.map(() => '?').join(',')
+    
+    console.log(`📊 Loading read receipts for ${ids.length} emails in mailbox ${mailboxId}`);
     
     const receipts = await DB.prepare(`
       SELECT 
@@ -671,8 +674,10 @@ sharedMailboxRoutes.get('/:id/emails/read-receipts', async (c) => {
       ORDER BY rr.read_at DESC
     `).bind(...ids, mailboxId).all()
     
+    console.log(`📬 Found ${receipts.results?.length || 0} read receipt records`);
+    
     // Group by email_id
-    const grouped: Record<number, any[]> = {}
+    const grouped: Record<string, any[]> = {}
     for (const receipt of (receipts.results || [])) {
       const emailId = (receipt as any).email_id
       if (!grouped[emailId]) {
@@ -681,12 +686,14 @@ sharedMailboxRoutes.get('/:id/emails/read-receipts', async (c) => {
       grouped[emailId].push(receipt)
     }
     
+    console.log(`✅ Grouped into ${Object.keys(grouped).length} emails with readers`);
+    
     return c.json({ 
       success: true,
       receipts: grouped
     })
   } catch (error: any) {
-    console.error('Error fetching read receipts:', error)
+    console.error('❌ Error fetching read receipts:', error)
     return c.json({ error: 'Failed to fetch read receipts', details: error.message }, 500)
   }
 })
