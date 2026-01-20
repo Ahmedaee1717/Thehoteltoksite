@@ -641,10 +641,13 @@ app.get('/blog', async (c) => {
           <section class="blog-hero">
               <div class="container">
                   <div class="blog-hero-content">
-                      <h1 class="blog-hero-title">Insights</h1>
+                      <div class="hero-badge">INSIGHTS</div>
+                      <h1 class="blog-hero-title">
+                          <span class="title-gradient">Institutional Intelligence</span>
+                      </h1>
                       <p class="blog-hero-subtitle">
-                          Perspectives on institutional infrastructure, digital frameworks, 
-                          and the evolution of hospitality asset markets.
+                          Perspectives on digital infrastructure, hospitality asset markets,
+                          <br>and the evolution of institutional frameworks.
                       </p>
                   </div>
               </div>
@@ -690,9 +693,9 @@ app.get('/blog', async (c) => {
           <section class="article-grid-section">
               <div class="container">
                   <div class="section-header">
-                      <h2 class="section-title">Our most popular articles</h2>
+                      <h2 class="section-title">Latest Publications</h2>
                       <p class="section-subtitle">
-                          The latest news, tips and advice to help you run your business with less fuss
+                          Research and analysis on institutional infrastructure and digital asset frameworks
                       </p>
                   </div>
 
@@ -731,49 +734,6 @@ app.get('/blog', async (c) => {
                       <button class="btn btn-secondary-outline">Read All Articles</button>
                   </div>
                   ` : ''}
-              </div>
-          </section>
-
-          <!-- Useful Tips Section -->
-          <section class="useful-tips-section">
-              <div class="container">
-                  <div class="tips-card">
-                      <h2 class="tips-title">Useful tips for your <span class="tips-highlight">business</span></h2>
-                      <div class="tips-grid">
-                          <div class="tip-item">
-                              <div class="tip-icon">
-                                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                                      <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="2"/>
-                                      <path d="M24 14v10l6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                  </svg>
-                              </div>
-                              <h3 class="tip-heading">Freelancers</h3>
-                              <p class="tip-description">Tips on self-employed? We've got the answers for freelancers.</p>
-                              <a href="#" class="tip-link">
-                                  <span>Discover</span>
-                                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                      <path d="M3 8h10M8 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                  </svg>
-                              </a>
-                          </div>
-                          <div class="tip-item">
-                              <div class="tip-icon">
-                                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                                      <path d="M8 18L24 6l16 12v18a4 4 0 01-4 4H12a4 4 0 01-4-4V18z" stroke="currentColor" stroke-width="2"/>
-                                      <path d="M18 42V24h12v18" stroke="currentColor" stroke-width="2"/>
-                                  </svg>
-                              </div>
-                              <h3 class="tip-heading">Trends and News</h3>
-                              <p class="tip-description">What's happening in the world of entrepreneurship.</p>
-                              <a href="#" class="tip-link">
-                                  <span>Discover</span>
-                                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                      <path d="M3 8h10M8 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                  </svg>
-                              </a>
-                          </div>
-                      </div>
-                  </div>
               </div>
           </section>
 
