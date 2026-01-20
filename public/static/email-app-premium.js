@@ -5682,7 +5682,9 @@ window.addEventListener('DOMContentLoaded', function() {
           },
           onShowCollab: () => setShowCollabPanel(true),
           view: view,
-          showCollabPanel: showCollabPanel
+          showCollabPanel: showCollabPanel,
+          currentMailbox: currentMailbox,
+          user: user
         }),
         
         // Toast Notification
@@ -7599,7 +7601,7 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     // Email Viewer Modal Component
-    function EmailViewerModal({ email, onClose, onShowCollab, view, showCollabPanel }) {
+    function EmailViewerModal({ email, onClose, onShowCollab, view, showCollabPanel, currentMailbox, user }) {
       console.log('📧 EmailViewerModal rendering with email:', email);
       console.log('🔍 Email body_text:', email.body_text);
       console.log('🔍 Email body_html:', email.body_html);
