@@ -791,6 +791,17 @@ app.get('/blog/:slug', async (c) => {
     const ogImage = post.og_image || post.featured_image || 'https://investaycapital.com/static/og-default.jpg';
     const publishedDate = new Date(post.published_at || post.created_at).toISOString();
 
+    // Process content: Convert line breaks to paragraphs if not already HTML
+    let processedContent = post.content;
+    if (post.content && !post.content.trim().startsWith('<')) {
+      // Content is plain text, convert to HTML paragraphs
+      processedContent = post.content
+        .split('\n\n')  // Split on double line breaks
+        .filter(para => para.trim())  // Remove empty paragraphs
+        .map(para => `<p>${para.trim().replace(/\n/g, '<br>')}</p>`)  // Convert to <p> tags
+        .join('\n');
+    }
+
     return c.html(`
       <!DOCTYPE html>
       <html lang="en">
@@ -932,7 +943,7 @@ app.get('/blog/:slug', async (c) => {
                       <!-- Main Content -->
                       <div class="article-main-content">
                           <div class="article-body prose">
-                              ${post.content}
+                              ${processedContent}
                           </div>
 
                           <!-- AI FAQ Section (if available) -->
