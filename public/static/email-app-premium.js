@@ -3860,36 +3860,39 @@ window.addEventListener('DOMContentLoaded', function() {
                   },
                   style: {
                     padding: '24px',
-                    // INBOX: Read emails dimmed (lights off), Unread emails bright
-                    // SENT: Always same brightness (recipient read status shown separately)
-                    // SHARED MAILBOX: Cyan/teal theme instead of gold
+                    // CRITICAL: Read emails MUST look dramatically different
+                    // UNREAD: Bright, glowing, prominent
+                    // READ: Dark, dim, clearly "done"
                     background: currentMailbox
                       ? (view === 'inbox' && email.is_read
-                        ? 'linear-gradient(135deg, rgba(8, 47, 73, 0.4) 0%, rgba(7, 89, 133, 0.3) 100%)'
-                        : 'linear-gradient(135deg, rgba(8, 145, 178, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%)')
+                        ? 'linear-gradient(135deg, rgba(5, 25, 40, 0.6) 0%, rgba(3, 15, 25, 0.5) 100%)'  // VERY DARK for read
+                        : 'linear-gradient(135deg, rgba(8, 145, 178, 0.25) 0%, rgba(6, 182, 212, 0.2) 100%)')  // BRIGHT for unread
                       : (view === 'inbox' && email.is_read 
-                        ? 'linear-gradient(135deg, rgba(15, 20, 35, 0.4) 0%, rgba(10, 13, 25, 0.4) 100%)'
-                        : 'linear-gradient(135deg, rgba(26, 31, 58, 0.8) 0%, rgba(15, 20, 41, 0.8) 100%)'),
+                        ? 'linear-gradient(135deg, rgba(5, 8, 15, 0.6) 0%, rgba(3, 5, 10, 0.5) 100%)'  // VERY DARK for read
+                        : 'linear-gradient(135deg, rgba(26, 31, 58, 0.9) 0%, rgba(15, 20, 41, 0.9) 100%)'),  // BRIGHT for unread
                     animation: 'emailSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                     animationDelay: `${i * 0.05}s`,
                     animationFillMode: 'backwards',
                     backdropFilter: 'blur(20px)',
                     border: currentMailbox
                       ? (view === 'inbox' && email.is_read
-                        ? '1px solid rgba(6, 182, 212, 0.1)'
-                        : '1px solid rgba(6, 182, 212, 0.3)')
+                        ? '1px solid rgba(6, 182, 212, 0.05)'  // BARELY visible border for read
+                        : '1px solid rgba(6, 182, 212, 0.4)')  // BRIGHT border for unread
                       : (view === 'inbox' && email.is_read 
-                        ? '1px solid rgba(255, 255, 255, 0.03)'
-                        : '1px solid rgba(201, 169, 98, 0.2)'),
+                        ? '1px solid rgba(255, 255, 255, 0.02)'  // BARELY visible border for read
+                        : '1px solid rgba(201, 169, 98, 0.3)'),  // BRIGHT border for unread
                     borderRadius: '16px',
                     cursor: 'pointer',
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     position: 'relative',
                     overflow: 'hidden',
-                    boxShadow: email.is_read
-                      ? '0 2px 12px rgba(0, 0, 0, 0.3)'
-                      : '0 4px 24px rgba(201, 169, 98, 0.15)',
-                    opacity: (view === 'inbox' && email.is_read) ? 0.7 : 1
+                    boxShadow: (view === 'inbox' && email.is_read)
+                      ? 'inset 0 2px 8px rgba(0, 0, 0, 0.5)'  // INSET shadow for read (sunken look)
+                      : (currentMailbox 
+                        ? '0 4px 24px rgba(6, 182, 212, 0.2), 0 0 40px rgba(6, 182, 212, 0.1)'  // CYAN GLOW for unread shared
+                        : '0 4px 24px rgba(201, 169, 98, 0.2), 0 0 40px rgba(201, 169, 98, 0.1)'),  // GOLD GLOW for unread personal
+                    opacity: (view === 'inbox' && email.is_read) ? 0.5 : 1,  // MUCH more dimmed for read
+                    filter: (view === 'inbox' && email.is_read) ? 'grayscale(0.3)' : 'none'  // Slight grayscale for read
                   },
                   onMouseEnter: (e) => {
                     e.currentTarget.style.transform = 'translateY(-4px) scale(1.01)';
@@ -4040,27 +4043,38 @@ window.addEventListener('DOMContentLoaded', function() {
                         email.expiry_type === 'keep' ? 'Keep' : getTimeRemaining(email.expires_at)
                       ),
                       
-                      // 👁️ READ RECEIPTS (Shared Mailbox Only)
+                      // 👁️ READ RECEIPTS (Shared Mailbox Only) - PROMINENT DISPLAY
                       currentMailbox && readReceipts[email.id] && readReceipts[email.id].length > 0 && h('div', {
                         title: readReceipts[email.id].map(r => `${r.display_name || r.user_email} - ${new Date(r.read_at).toLocaleString()}`).join('\n'),
                         style: {
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '4px',
-                          padding: '6px 10px',
-                          borderRadius: '20px',
-                          background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.15))',
-                          border: '1px solid rgba(34, 197, 94, 0.4)',
-                          cursor: 'help'
+                          gap: '6px',
+                          padding: '8px 12px',
+                          borderRadius: '24px',
+                          background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(16, 185, 129, 0.25))',
+                          border: '1.5px solid rgba(34, 197, 94, 0.5)',
+                          cursor: 'help',
+                          boxShadow: '0 2px 12px rgba(34, 197, 94, 0.2), 0 0 20px rgba(34, 197, 94, 0.1)',
+                          animation: 'pulse 2s ease-in-out infinite'
                         }
                       },
                         h('span', {
                           style: {
-                            fontSize: '11px',
-                            fontWeight: '600',
+                            fontSize: '13px',
+                            fontWeight: '700',
                             color: '#22c55e'
                           }
-                        }, '👁️'),
+                        }, '✓'),
+                        h('span', {
+                          style: {
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            color: '#22c55e',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px'
+                          }
+                        }, 'Read by'),
                         // Show avatars
                         h('div', {
                           style: {
@@ -4111,7 +4125,21 @@ window.addEventListener('DOMContentLoaded', function() {
                               cursor: 'help'
                             }
                           }, `+${readReceipts[email.id].length - 3}`)
-                        )
+                        ),
+                        // Show names of readers
+                        h('span', {
+                          style: {
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            color: '#22c55e',
+                            marginLeft: '6px',
+                            maxWidth: '200px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }
+                        }, readReceipts[email.id].slice(0, 2).map(r => (r.display_name || r.user_email).split('@')[0]).join(', ') + 
+                           (readReceipts[email.id].length > 2 ? ` +${readReceipts[email.id].length - 2}` : ''))
                       )
                     )
                   ),
