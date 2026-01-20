@@ -253,6 +253,43 @@ window.addEventListener('DOMContentLoaded', function() {
         return () => clearInterval(archiveInterval);
       }, [view, emails]);
       
+      // Auto-delete archived emails older than 90 days
+      useEffect(() => {
+        const deleteInterval = setInterval(() => {
+          if (view === 'archived' && emails.length > 0) {
+            const now = new Date();
+            const ninetyDaysAgo = new Date(now.getTime() - (90 * 24 * 60 * 60 * 1000));
+            
+            const oldEmails = emails.filter(e => {
+              // Check archived_at or created_at timestamp
+              const emailDate = new Date(e.archived_at || e.created_at || e.received_at);
+              return emailDate < ninetyDaysAgo;
+            });
+            
+            if (oldEmails.length > 0) {
+              console.log(`🗑️ Auto-delete: Found ${oldEmails.length} archived email(s) older than 90 days`);
+              showToast(`🗑️ Deleting ${oldEmails.length} old archived email${oldEmails.length > 1 ? 's' : ''}...`, 'info');
+              
+              oldEmails.forEach(async (email) => {
+                try {
+                  await fetch(`/api/email/${email.id}`, {
+                    method: 'DELETE'
+                  });
+                  console.log(`✅ Auto-deleted old archived email: ${email.id}`);
+                } catch (err) {
+                  console.error(`❌ Failed to delete ${email.id}:`, err);
+                }
+              });
+              
+              // Reload archived folder to show updated list
+              setTimeout(() => loadData(), 1000);
+            }
+          }
+        }, 60000); // Check every 60 seconds
+        
+        return () => clearInterval(deleteInterval);
+      }, [view, emails]);
+      
       // Auto-refresh read statuses in Sent folder
       useEffect(() => {
         let refreshInterval;
@@ -329,6 +366,42 @@ window.addEventListener('DOMContentLoaded', function() {
                   !e.expires_at || new Date(e.expires_at) >= now
                 );
                 console.log(`🗂️ Filtered ${expiredEmails.length} expired email(s) from inbox`);
+              }
+            }
+            
+            // Auto-delete archived emails older than 90 days
+            if (view === 'archived') {
+              const now = new Date();
+              const ninetyDaysAgo = new Date(now.getTime() - (90 * 24 * 60 * 60 * 1000));
+              
+              const oldEmails = fetchedEmails.filter(e => {
+                // Check archived_at or created_at or received_at timestamp
+                const emailDate = new Date(e.archived_at || e.created_at || e.received_at);
+                return emailDate < ninetyDaysAgo;
+              });
+              
+              // Delete old archived emails in background
+              if (oldEmails.length > 0) {
+                console.log(`🗑️ Found ${oldEmails.length} archived email(s) older than 90 days - auto-deleting...`);
+                showToast(`🗑️ Deleting ${oldEmails.length} old archived email${oldEmails.length > 1 ? 's' : ''}...`, 'info');
+                
+                oldEmails.forEach(async (email) => {
+                  try {
+                    await fetch(`/api/email/${email.id}`, {
+                      method: 'DELETE'
+                    });
+                    console.log(`✅ Auto-deleted old archived email: ${email.id}`);
+                  } catch (err) {
+                    console.error(`❌ Failed to delete ${email.id}:`, err);
+                  }
+                });
+                
+                // Filter out old emails from display
+                fetchedEmails = fetchedEmails.filter(e => {
+                  const emailDate = new Date(e.archived_at || e.created_at || e.received_at);
+                  return emailDate >= ninetyDaysAgo;
+                });
+                console.log(`🗑️ Filtered ${oldEmails.length} old archived email(s)`);
               }
             }
             
