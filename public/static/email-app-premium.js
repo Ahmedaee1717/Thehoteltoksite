@@ -7984,32 +7984,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 gap: '8px'
               }
             },
-              h('button', {
-                onClick: () => {
-                  onClose();
-                  onShowCollab();
-                },
-                style: {
-                  padding: '10px 16px',
-                  borderRadius: '10px',
-                  background: 'rgba(201, 169, 98, 0.15)',
-                  border: '1px solid rgba(201, 169, 98, 0.3)',
-                  color: '#C9A962',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.2s'
-                },
-                onMouseEnter: (e) => {
-                  e.target.style.background = 'rgba(201, 169, 98, 0.25)';
-                },
-                onMouseLeave: (e) => {
-                  e.target.style.background = 'rgba(201, 169, 98, 0.15)';
-                }
-              }, '👥 Team Collab'),
+              // Team Collab button removed - using read receipts badges instead
               h('button', {
                 onClick: onClose,
                 style: {
