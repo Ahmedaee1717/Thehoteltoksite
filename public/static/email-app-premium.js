@@ -420,8 +420,9 @@ window.addEventListener('DOMContentLoaded', function() {
               loadReadStatuses(emailIds);
             }
             
-            // Load read receipts for shared mailbox
+            // Load read receipts for shared mailbox AND mark emails as read for current user
             if (activeMailbox && fetchedEmails.length > 0) {
+              console.log('📊 Loading read receipts for shared mailbox emails...');
               const emailIds = fetchedEmails.map(e => e.id);
               loadReadReceipts(activeMailbox.id, emailIds);
             }
@@ -1078,7 +1079,20 @@ window.addEventListener('DOMContentLoaded', function() {
           const data = await response.json();
           if (data.success) {
             setReadReceipts(data.receipts || {});
-            console.log('📊 Loaded read receipts:', Object.keys(data.receipts || {}).length, 'emails have readers');
+            console.log('📬 Loaded read receipts:', Object.keys(data.receipts || {}).length, 'emails have readers');
+            
+            // Update is_read field for emails that the current user has read
+            setEmails(prevEmails => {
+              return prevEmails.map(email => {
+                const readers = (data.receipts || {})[email.id] || [];
+                const currentUserHasRead = readers.some(r => r.user_email === user);
+                if (currentUserHasRead && !email.is_read) {
+                  console.log(`✅ Marking email ${email.id} as read (user has read receipt)`);
+                  return { ...email, is_read: true };
+                }
+                return email;
+              });
+            });
           }
         } catch (error) {
           console.error('Load read receipts error:', error);

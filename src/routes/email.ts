@@ -2921,21 +2921,72 @@ emailRoutes.patch('/:id/mark-read', async (c) => {
   }
   
   try {
-    console.log(`🔄 PATCH /mark-read: Attempting to mark email ${emailId} as READ for user ${userEmail}`);
+    // Get shared_mailbox_id from query params (if present)
+    const sharedMailboxId = c.req.query('shared_mailbox_id');
     
-    // Mark as read only if user is the recipient
-    const updateResult = await DB.prepare(`
-      UPDATE emails 
-      SET is_read = 1, opened_at = CURRENT_TIMESTAMP
-      WHERE id = ? AND to_email = ?
-    `).bind(emailId, userEmail).run();
+    console.log(`🔄 PATCH /mark-read: emailId=${emailId}, userEmail=${userEmail}, sharedMailboxId=${sharedMailboxId}`);
     
-    console.log(`📊 PATCH UPDATE result:`, JSON.stringify(updateResult));
-    console.log(`✅ PATCH mark-read completed for email ${emailId}`);
+    // Check if this email belongs to a shared mailbox
+    const email = await DB.prepare(`
+      SELECT e.*, sm.id as shared_mailbox_id
+      FROM emails e
+      LEFT JOIN shared_mailboxes sm ON e.to_email = sm.email_address
+      WHERE e.id = ?
+    `).bind(emailId).first();
     
-    return c.json({ success: true });
+    if (!email) {
+      console.log(`❌ Email ${emailId} not found`);
+      return c.json({ success: false, error: 'Email not found' }, 404);
+    }
+    
+    console.log(`📧 Email details: to_email=${email.to_email}, shared_mailbox_id=${email.shared_mailbox_id}`);
+    
+    // If email belongs to a shared mailbox
+    if (email.shared_mailbox_id) {
+      console.log(`📬 Shared mailbox email detected - creating read receipt`);
+      
+      // Verify user has access to this shared mailbox
+      const access = await DB.prepare(`
+        SELECT * FROM shared_mailbox_members
+        WHERE shared_mailbox_id = ? AND user_email = ?
+      `).bind(email.shared_mailbox_id, userEmail).first();
+      
+      if (!access) {
+        console.log(`❌ User ${userEmail} does not have access to shared mailbox ${email.shared_mailbox_id}`);
+        return c.json({ success: false, error: 'Access denied' }, 403);
+      }
+      
+      // Create or update read receipt
+      await DB.prepare(`
+        INSERT INTO shared_mailbox_read_receipts (email_id, shared_mailbox_id, user_email, read_at)
+        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(email_id, shared_mailbox_id, user_email) DO UPDATE SET read_at = CURRENT_TIMESTAMP
+      `).bind(emailId, email.shared_mailbox_id, userEmail).run();
+      
+      console.log(`✅ Read receipt created for user ${userEmail} on email ${emailId}`);
+      return c.json({ success: true, type: 'shared_mailbox_receipt' });
+    } else {
+      // Personal email - update is_read field
+      console.log(`📧 Personal email detected - updating is_read field`);
+      
+      const updateResult = await DB.prepare(`
+        UPDATE emails 
+        SET is_read = 1, opened_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND to_email = ?
+      `).bind(emailId, userEmail).run();
+      
+      console.log(`📊 UPDATE result: ${updateResult.meta.changes} rows affected`);
+      
+      if (updateResult.meta.changes === 0) {
+        console.log(`❌ No rows updated - user ${userEmail} is not the recipient`);
+        return c.json({ success: false, error: 'Not authorized to mark this email as read' }, 403);
+      }
+      
+      console.log(`✅ Personal email marked as read`);
+      return c.json({ success: true, type: 'personal_email' });
+    }
   } catch (error: any) {
-    console.error('Mark as read error:', error);
+    console.error('❌ Mark as read error:', error);
     return c.json({ success: false, error: error.message }, 500);
   }
 });
