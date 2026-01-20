@@ -8974,6 +8974,9 @@ window.addEventListener('DOMContentLoaded', function() {
                     // Use shared mailbox email if in shared mailbox, otherwise use personal email
                     const fromEmail = currentMailbox ? currentMailbox.email_address : user;
                     console.log('📧 Replying from:', fromEmail, currentMailbox ? '(Shared Mailbox)' : '(Personal)');
+                    console.log('📧 Email object:', email);
+                    console.log('📧 Current mailbox:', currentMailbox);
+                    console.log('📧 User:', user);
                     
                     const response = await fetch('/api/email/send', {
                       method: 'POST',
@@ -8986,6 +8989,11 @@ window.addEventListener('DOMContentLoaded', function() {
                         thread_id: email.thread_id
                       })
                     });
+                    
+                    console.log('📧 Response status:', response.status);
+                    const responseData = await response.json();
+                    console.log('📧 Response data:', responseData);
+                    
                     if (response.ok) {
                       alert('✅ Reply sent successfully!');
                       setShowReply(false);
@@ -8993,11 +9001,12 @@ window.addEventListener('DOMContentLoaded', function() {
                       onClose();
                       window.location.reload();
                     } else {
-                      alert('❌ Failed to send reply');
+                      alert('❌ Failed to send reply: ' + (responseData.error || 'Unknown error'));
                     }
                   } catch (err) {
                     console.error('Reply error:', err);
-                    alert('❌ Error sending reply');
+                    console.error('Reply error stack:', err.stack);
+                    alert('❌ Error sending reply: ' + err.message);
                   } finally {
                     setSending(false);
                   }
