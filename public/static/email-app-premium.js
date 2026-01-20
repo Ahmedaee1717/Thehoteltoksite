@@ -3838,8 +3838,10 @@ window.addEventListener('DOMContentLoaded', function() {
                       }).then(res => {
                         if (res.ok) {
                           console.log('✅ Marked as read');
-                          // Update the email object locally without reloading
-                          email.is_read = true;
+                          // Update the emails array to trigger re-render
+                          setEmails(prevEmails => prevEmails.map(e => 
+                            e.id === email.id ? { ...e, is_read: true } : e
+                          ));
                           // Update unread count
                           if (view === 'inbox') {
                             const newUnread = Math.max(0, unreadCount - 1);
