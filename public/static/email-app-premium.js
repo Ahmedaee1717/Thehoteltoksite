@@ -3833,26 +3833,36 @@ window.addEventListener('DOMContentLoaded', function() {
                     
                     // Mark as read when opening
                     if (!email.is_read) {
+                      console.log('📧 Marking email as read:', email.id);
                       fetch(`/api/email/${email.id}/mark-read`, {
                         method: 'PATCH'
                       }).then(res => {
+                        console.log('📧 Mark as read response status:', res.status);
                         if (res.ok) {
-                          console.log('✅ Marked as read');
+                          console.log('✅ Marked as read - updating state');
                           // Update the emails array to trigger re-render
-                          setEmails(prevEmails => prevEmails.map(e => 
-                            e.id === email.id ? { ...e, is_read: true } : e
-                          ));
+                          setEmails(prevEmails => {
+                            const updated = prevEmails.map(e => 
+                              e.id === email.id ? { ...e, is_read: true } : e
+                            );
+                            console.log('📧 Updated emails array:', updated.find(e => e.id === email.id));
+                            return updated;
+                          });
                           // Update unread count
                           if (view === 'inbox') {
                             const newUnread = Math.max(0, unreadCount - 1);
                             setUnreadCount(newUnread);
+                            console.log('📧 Updated unread count:', newUnread);
                           }
                         }
                       }).catch(err => console.error('❌ Mark as read failed:', err));
+                    } else {
+                      console.log('📧 Email already marked as read');
                     }
                     
                     // Mark as read in shared mailbox
                     if (currentMailbox) {
+                      console.log('📧 Marking as read in shared mailbox:', currentMailbox.id, email.id);
                       markEmailAsRead(currentMailbox.id, email.id);
                     }
                     
