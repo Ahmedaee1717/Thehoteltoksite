@@ -146,14 +146,14 @@ adminRoutes.put('/posts/:id', async (c) => {
   
   try {
     // Check if post exists
-    const existingPost = await DB.prepare('SELECT status FROM blog_posts WHERE id = ?').bind(id).first();
+    const existingPost = await DB.prepare('SELECT status, published_at FROM blog_posts WHERE id = ?').bind(id).first();
     
     if (!existingPost) {
       return c.json({ success: false, error: 'Post not found' }, 404);
     }
 
     // Update published_at if status changes to published
-    let publishedAt = data.published_at;
+    let publishedAt = data.published_at || existingPost.published_at;
     if (data.status === 'published' && existingPost.status !== 'published' && !publishedAt) {
       publishedAt = new Date().toISOString();
     }
