@@ -252,6 +252,8 @@ function setupForms() {
         let content = document.getElementById('post-content').value;
         if (quillEditor) {
             content = quillEditor.root.innerHTML;
+            console.log('Quill content length:', content.length);
+            console.log('Quill content preview:', content.substring(0, 200));
         }
         
         const formData = {
@@ -267,6 +269,9 @@ function setupForms() {
             og_image: document.getElementById('post-og-image').value,
             status: document.getElementById('post-status').value
         };
+        
+        console.log('Form data to submit:', formData);
+        console.log('Content length:', formData.content.length);
         
         try {
             let response;

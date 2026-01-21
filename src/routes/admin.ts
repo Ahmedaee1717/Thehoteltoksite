@@ -144,21 +144,35 @@ adminRoutes.put('/posts/:id', async (c) => {
   const id = c.req.param('id');
   const data = await c.req.json();
   
+  console.log('PUT /posts/:id - Received data:', JSON.stringify(data, null, 2));
+  
   try {
     // Check if post exists
     const existingPost = await DB.prepare('SELECT status, published_at FROM blog_posts WHERE id = ?').bind(id).first();
+    
+    console.log('Existing post:', existingPost);
     
     if (!existingPost) {
       return c.json({ success: false, error: 'Post not found' }, 404);
     }
 
     // Update published_at if status changes to published
-    let publishedAt = data.published_at || existingPost.published_at;
+    let publishedAt = data.published_at || existingPost.published_at || null;
     if (data.status === 'published' && existingPost.status !== 'published' && !publishedAt) {
       publishedAt = new Date().toISOString();
     }
+    
+    console.log('Final publishedAt:', publishedAt);
+    console.log('About to bind values:', {
+      title: data.title,
+      slug: data.slug,
+      excerpt: data.excerpt || null,
+      author: data.author,
+      status: data.status,
+      publishedAt: publishedAt
+    });
 
-    await DB.prepare(`
+    const result = await DB.prepare(`
       UPDATE blog_posts
       SET title = ?, slug = ?, excerpt = ?, content = ?, author = ?,
           featured_image = ?, meta_title = ?, meta_description = ?,
@@ -180,6 +194,8 @@ adminRoutes.put('/posts/:id', async (c) => {
       publishedAt,
       id
     ).run();
+    
+    console.log('Update result:', result);
 
     return c.json({ 
       success: true, 
