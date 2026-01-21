@@ -30,7 +30,8 @@ function initQuillEditor() {
         const editorContainer = document.createElement('div');
         editorContainer.id = 'quill-editor';
         editorContainer.style.height = '500px';
-        editorContainer.style.background = 'white';
+        editorContainer.style.background = '#ffffff';
+        editorContainer.style.color = '#1a1a1a';
         
         // Insert editor before textarea
         contentTextarea.parentNode.insertBefore(editorContainer, contentTextarea);
@@ -54,6 +55,15 @@ function initQuillEditor() {
             },
             placeholder: 'Write your article content here...'
         });
+        
+        // Force editor content to be dark text on white background
+        const editorElement = document.querySelector('#quill-editor .ql-editor');
+        if (editorElement) {
+            editorElement.style.color = '#1a1a1a';
+            editorElement.style.fontSize = '16px';
+            editorElement.style.lineHeight = '1.6';
+            editorElement.style.fontFamily = 'Inter, sans-serif';
+        }
         
         // Sync content to textarea on change
         quillEditor.on('text-change', function() {
