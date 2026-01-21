@@ -791,16 +791,8 @@ app.get('/blog/:slug', async (c) => {
     const ogImage = post.og_image || post.featured_image || 'https://investaycapital.com/static/og-default.jpg';
     const publishedDate = new Date(post.published_at || post.created_at).toISOString();
 
-    // Process content: Convert line breaks to paragraphs if not already HTML
-    let processedContent = post.content;
-    if (post.content && !post.content.trim().startsWith('<')) {
-      // Content is plain text, convert to HTML paragraphs
-      processedContent = post.content
-        .split('\n\n')  // Split on double line breaks
-        .filter(para => para.trim())  // Remove empty paragraphs
-        .map(para => `<p>${para.trim().replace(/\n/g, '<br>')}</p>`)  // Convert to <p> tags
-        .join('\n');
-    }
+    // Use content as-is (TinyMCE editor already provides proper HTML)
+    const processedContent = post.content;
 
     return c.html(`
       <!DOCTYPE html>
@@ -1195,9 +1187,9 @@ app.get('/admin/dashboard', (c) => {
                         <div class="form-section">
                             <h3>Content</h3>
                             <div class="form-group">
-                                <label for="post-content">Content * (HTML supported)</label>
-                                <textarea id="post-content" name="content" rows="15" required></textarea>
-                                <small>You can use HTML tags for formatting</small>
+                                <label for="post-content">Content *</label>
+                                <textarea id="post-content" name="content" rows="20" required></textarea>
+                                <small>Use the rich text editor for formatting, images, lists, and more</small>
                             </div>
                         </div>
                         
@@ -1312,6 +1304,8 @@ app.get('/admin/dashboard', (c) => {
             </main>
         </div>
         
+        <!-- TinyMCE Rich Text Editor -->
+        <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
         <script src="/static/admin-dashboard.js"></script>
     </body>
     </html>

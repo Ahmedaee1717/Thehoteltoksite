@@ -11,11 +11,55 @@ let allPosts = [];
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize TinyMCE Rich Text Editor
+    initTinyMCE();
+    
     loadPosts();
     setupNavigation();
     setupForms();
     setupLogout();
 });
+
+// Initialize TinyMCE Rich Text Editor
+function initTinyMCE() {
+    if (typeof tinymce !== 'undefined') {
+        tinymce.init({
+            selector: '#post-content',
+            height: 600,
+            menubar: true,
+            plugins: [
+                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                'insertdatetime', 'media', 'table', 'help', 'wordcount'
+            ],
+            toolbar: 'undo redo | blocks | ' +
+                'bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter ' +
+                'alignright alignjustify | bullist numlist outdent indent | ' +
+                'link image media | removeformat | code | help',
+            content_style: 'body { font-family: Inter, sans-serif; font-size: 16px; color: #1a1a1a; line-height: 1.6; }',
+            branding: false,
+            promotion: false,
+            // Image upload settings
+            images_upload_handler: function (blobInfo, success, failure) {
+                // For now, convert to base64 data URL
+                const reader = new FileReader();
+                reader.onloadend = function() {
+                    success(reader.result);
+                };
+                reader.onerror = function() {
+                    failure('Image upload failed');
+                };
+                reader.readAsDataURL(blobInfo.blob());
+            },
+            // Auto-save content
+            setup: function(editor) {
+                editor.on('change', function() {
+                    editor.save(); // Save content back to textarea
+                });
+            }
+        });
+    }
+}
 
 // Navigation
 function setupNavigation() {
@@ -193,13 +237,19 @@ function setupForms() {
     postForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
+        // Get content from TinyMCE if initialized
+        let content = document.getElementById('post-content').value;
+        if (typeof tinymce !== 'undefined' && tinymce.get('post-content')) {
+            content = tinymce.get('post-content').getContent();
+        }
+        
         const formData = {
             title: document.getElementById('post-title').value,
             slug: document.getElementById('post-slug').value,
             author: document.getElementById('post-author').value,
             excerpt: document.getElementById('post-excerpt').value,
             featured_image: document.getElementById('post-featured-image').value,
-            content: document.getElementById('post-content').value,
+            content: content,
             meta_title: document.getElementById('post-meta-title').value,
             meta_description: document.getElementById('post-meta-description').value,
             meta_keywords: document.getElementById('post-meta-keywords').value,
@@ -265,7 +315,14 @@ function fillPostForm(post) {
     document.getElementById('post-author').value = post.author;
     document.getElementById('post-excerpt').value = post.excerpt || '';
     document.getElementById('post-featured-image').value = post.featured_image || '';
-    document.getElementById('post-content').value = post.content;
+    
+    // Set content in TinyMCE if initialized
+    if (typeof tinymce !== 'undefined' && tinymce.get('post-content')) {
+        tinymce.get('post-content').setContent(post.content);
+    } else {
+        document.getElementById('post-content').value = post.content;
+    }
+    
     document.getElementById('post-meta-title').value = post.meta_title || '';
     document.getElementById('post-meta-description').value = post.meta_description || '';
     document.getElementById('post-meta-keywords').value = post.meta_keywords || '';
@@ -279,6 +336,11 @@ function resetPostForm() {
     document.getElementById('post-form-title').textContent = 'Create New Post';
     document.getElementById('delete-post-btn').style.display = 'none';
     document.getElementById('post-author').value = 'Investay Capital';
+    
+    // Clear TinyMCE content
+    if (typeof tinymce !== 'undefined' && tinymce.get('post-content')) {
+        tinymce.get('post-content').setContent('');
+    }
     
     // Hide AI status box
     document.getElementById('ai-status-box').style.display = 'none';
