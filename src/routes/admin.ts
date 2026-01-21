@@ -187,7 +187,12 @@ adminRoutes.put('/posts/:id', async (c) => {
     });
   } catch (error) {
     console.error('Error updating post:', error);
-    return c.json({ success: false, error: 'Failed to update post' }, 500);
+    console.error('Error details:', error.message, error.stack);
+    return c.json({ 
+      success: false, 
+      error: 'Failed to update post', 
+      details: error.message 
+    }, 500);
   }
 });
 

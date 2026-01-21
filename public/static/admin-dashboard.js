@@ -301,11 +301,13 @@ function setupForms() {
                 switchView('posts');
                 loadPosts();
             } else {
-                alert('Error: ' + data.error);
+                console.error('Save error details:', data);
+                alert('Error: ' + data.error + (data.details ? '\n' + data.details : ''));
             }
         } catch (error) {
             console.error('Error saving post:', error);
-            alert('Failed to save post');
+            console.error('Error details:', error.message, error.stack);
+            alert('Failed to save post: ' + error.message);
         }
     });
     
