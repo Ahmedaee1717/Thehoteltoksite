@@ -1304,8 +1304,9 @@ app.get('/admin/dashboard', (c) => {
             </main>
         </div>
         
-        <!-- TinyMCE Rich Text Editor -->
-        <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+        <!-- Quill Rich Text Editor (Free, No API Key Required) -->
+        <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
         <script src="/static/admin-dashboard.js"></script>
     </body>
     </html>

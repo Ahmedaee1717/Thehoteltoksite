@@ -10,9 +10,11 @@ let currentPost = null;
 let allPosts = [];
 
 // Initialize dashboard
+let quillEditor = null;
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize TinyMCE Rich Text Editor
-    initTinyMCE();
+    // Initialize Quill Rich Text Editor
+    initQuillEditor();
     
     loadPosts();
     setupNavigation();
@@ -20,43 +22,42 @@ document.addEventListener('DOMContentLoaded', function() {
     setupLogout();
 });
 
-// Initialize TinyMCE Rich Text Editor
-function initTinyMCE() {
-    if (typeof tinymce !== 'undefined') {
-        tinymce.init({
-            selector: '#post-content',
-            height: 600,
-            menubar: true,
-            plugins: [
-                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                'insertdatetime', 'media', 'table', 'help', 'wordcount'
-            ],
-            toolbar: 'undo redo | blocks | ' +
-                'bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter ' +
-                'alignright alignjustify | bullist numlist outdent indent | ' +
-                'link image media | removeformat | code | help',
-            content_style: 'body { font-family: Inter, sans-serif; font-size: 16px; color: #1a1a1a; line-height: 1.6; }',
-            branding: false,
-            promotion: false,
-            // Image upload settings
-            images_upload_handler: function (blobInfo, success, failure) {
-                // For now, convert to base64 data URL
-                const reader = new FileReader();
-                reader.onloadend = function() {
-                    success(reader.result);
-                };
-                reader.onerror = function() {
-                    failure('Image upload failed');
-                };
-                reader.readAsDataURL(blobInfo.blob());
+// Initialize Quill Rich Text Editor
+function initQuillEditor() {
+    if (typeof Quill !== 'undefined') {
+        // Create a container for Quill
+        const contentTextarea = document.getElementById('post-content');
+        const editorContainer = document.createElement('div');
+        editorContainer.id = 'quill-editor';
+        editorContainer.style.height = '500px';
+        editorContainer.style.background = 'white';
+        
+        // Insert editor before textarea
+        contentTextarea.parentNode.insertBefore(editorContainer, contentTextarea);
+        contentTextarea.style.display = 'none';
+        
+        // Initialize Quill
+        quillEditor = new Quill('#quill-editor', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'color': [] }, { 'background': [] }],
+                    [{ 'align': [] }],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    [{ 'indent': '-1'}, { 'indent': '+1' }],
+                    ['blockquote', 'code-block'],
+                    ['link', 'image'],
+                    ['clean']
+                ]
             },
-            // Auto-save content
-            setup: function(editor) {
-                editor.on('change', function() {
-                    editor.save(); // Save content back to textarea
-                });
-            }
+            placeholder: 'Write your article content here...'
+        });
+        
+        // Sync content to textarea on change
+        quillEditor.on('text-change', function() {
+            contentTextarea.value = quillEditor.root.innerHTML;
         });
     }
 }
@@ -237,10 +238,10 @@ function setupForms() {
     postForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
-        // Get content from TinyMCE if initialized
+        // Get content from Quill if initialized
         let content = document.getElementById('post-content').value;
-        if (typeof tinymce !== 'undefined' && tinymce.get('post-content')) {
-            content = tinymce.get('post-content').getContent();
+        if (quillEditor) {
+            content = quillEditor.root.innerHTML;
         }
         
         const formData = {
@@ -316,9 +317,9 @@ function fillPostForm(post) {
     document.getElementById('post-excerpt').value = post.excerpt || '';
     document.getElementById('post-featured-image').value = post.featured_image || '';
     
-    // Set content in TinyMCE if initialized
-    if (typeof tinymce !== 'undefined' && tinymce.get('post-content')) {
-        tinymce.get('post-content').setContent(post.content);
+    // Set content in Quill if initialized
+    if (quillEditor) {
+        quillEditor.root.innerHTML = post.content;
     } else {
         document.getElementById('post-content').value = post.content;
     }
@@ -337,9 +338,9 @@ function resetPostForm() {
     document.getElementById('delete-post-btn').style.display = 'none';
     document.getElementById('post-author').value = 'Investay Capital';
     
-    // Clear TinyMCE content
-    if (typeof tinymce !== 'undefined' && tinymce.get('post-content')) {
-        tinymce.get('post-content').setContent('');
+    // Clear Quill content
+    if (quillEditor) {
+        quillEditor.setContents([]);
     }
     
     // Hide AI status box
