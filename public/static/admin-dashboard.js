@@ -10,65 +10,29 @@ let currentPost = null;
 let allPosts = [];
 
 // Initialize dashboard
-let quillEditor = null;
-
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Quill Rich Text Editor
-    initQuillEditor();
-    
+    setupLivePreview();
     loadPosts();
     setupNavigation();
     setupForms();
     setupLogout();
 });
 
-// Initialize Quill Rich Text Editor
-function initQuillEditor() {
-    if (typeof Quill !== 'undefined') {
-        // Create a container for Quill
-        const contentTextarea = document.getElementById('post-content');
-        const editorContainer = document.createElement('div');
-        editorContainer.id = 'quill-editor';
-        editorContainer.style.height = '500px';
-        editorContainer.style.background = '#ffffff';
-        editorContainer.style.color = '#1a1a1a';
-        
-        // Insert editor before textarea
-        contentTextarea.parentNode.insertBefore(editorContainer, contentTextarea);
-        contentTextarea.style.display = 'none';
-        
-        // Initialize Quill
-        quillEditor = new Quill('#quill-editor', {
-            theme: 'snow',
-            modules: {
-                toolbar: [
-                    [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                    ['bold', 'italic', 'underline', 'strike'],
-                    [{ 'color': [] }, { 'background': [] }],
-                    [{ 'align': [] }],
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                    [{ 'indent': '-1'}, { 'indent': '+1' }],
-                    ['blockquote', 'code-block'],
-                    ['link', 'image'],
-                    ['clean']
-                ]
-            },
-            placeholder: 'Write your article content here...'
+// Live Preview Setup
+function setupLivePreview() {
+    const contentTextarea = document.getElementById('post-content');
+    const previewDiv = document.getElementById('content-preview');
+    
+    if (contentTextarea && previewDiv) {
+        // Update preview on input
+        contentTextarea.addEventListener('input', function() {
+            previewDiv.innerHTML = this.value;
         });
         
-        // Force editor content to be dark text on white background
-        const editorElement = document.querySelector('#quill-editor .ql-editor');
-        if (editorElement) {
-            editorElement.style.color = '#1a1a1a';
-            editorElement.style.fontSize = '16px';
-            editorElement.style.lineHeight = '1.6';
-            editorElement.style.fontFamily = 'Inter, sans-serif';
+        // Initial preview if content exists
+        if (contentTextarea.value) {
+            previewDiv.innerHTML = contentTextarea.value;
         }
-        
-        // Sync content to textarea on change
-        quillEditor.on('text-change', function() {
-            contentTextarea.value = quillEditor.root.innerHTML;
-        });
     }
 }
 
@@ -248,13 +212,8 @@ function setupForms() {
     postForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
-        // Get content from Quill if initialized
-        let content = document.getElementById('post-content').value;
-        if (quillEditor) {
-            content = quillEditor.root.innerHTML;
-            console.log('Quill content length:', content.length);
-            console.log('Quill content preview:', content.substring(0, 200));
-        }
+        // Get content directly from textarea (no Quill)
+        const content = document.getElementById('post-content').value;
         
         const formData = {
             title: document.getElementById('post-title').value,
@@ -334,11 +293,13 @@ function fillPostForm(post) {
     document.getElementById('post-excerpt').value = post.excerpt || '';
     document.getElementById('post-featured-image').value = post.featured_image || '';
     
-    // Set content in Quill if initialized
-    if (quillEditor) {
-        quillEditor.root.innerHTML = post.content;
-    } else {
-        document.getElementById('post-content').value = post.content;
+    // Set content and update preview
+    const contentTextarea = document.getElementById('post-content');
+    const previewDiv = document.getElementById('content-preview');
+    
+    contentTextarea.value = post.content;
+    if (previewDiv) {
+        previewDiv.innerHTML = post.content;
     }
     
     document.getElementById('post-meta-title').value = post.meta_title || '';
@@ -355,9 +316,10 @@ function resetPostForm() {
     document.getElementById('delete-post-btn').style.display = 'none';
     document.getElementById('post-author').value = 'Investay Capital';
     
-    // Clear Quill content
-    if (quillEditor) {
-        quillEditor.setContents([]);
+    // Clear preview
+    const previewDiv = document.getElementById('content-preview');
+    if (previewDiv) {
+        previewDiv.innerHTML = '';
     }
     
     // Hide AI status box

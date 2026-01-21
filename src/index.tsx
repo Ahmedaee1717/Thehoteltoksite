@@ -1187,9 +1187,33 @@ app.get('/admin/dashboard', (c) => {
                         <div class="form-section">
                             <h3>Content</h3>
                             <div class="form-group">
-                                <label for="post-content">Content *</label>
-                                <textarea id="post-content" name="content" rows="20" required></textarea>
-                                <small>Use the rich text editor for formatting, images, lists, and more</small>
+                                <label for="post-content">Content * (HTML Editor)</label>
+                                <div class="editor-wrapper">
+                                    <div class="editor-half">
+                                        <div class="editor-label">HTML Editor:</div>
+                                        <textarea id="post-content" name="content" rows="25" required placeholder="Write your HTML here...
+
+Example:
+<p>First paragraph with some text.</p>
+<p>Second paragraph with more text.</p>
+
+<h2>Section Heading</h2>
+<p>Content under the heading.</p>
+
+<ul>
+  <li>Bullet point 1</li>
+  <li>Bullet point 2</li>
+  <li>Bullet point 3</li>
+</ul>
+
+<p>Final paragraph.</p>"></textarea>
+                                    </div>
+                                    <div class="editor-half">
+                                        <div class="editor-label">Live Preview:</div>
+                                        <div id="content-preview" class="content-preview"></div>
+                                    </div>
+                                </div>
+                                <small>Edit HTML on the left, see live preview on the right. Supports paragraphs, headings, lists, links, images, etc.</small>
                             </div>
                         </div>
                         
@@ -1304,9 +1328,7 @@ app.get('/admin/dashboard', (c) => {
             </main>
         </div>
         
-        <!-- Quill Rich Text Editor (Free, No API Key Required) -->
-        <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
-        <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
+        <!-- Admin Dashboard JS -->
         <script src="/static/admin-dashboard.js"></script>
     </body>
     </html>
