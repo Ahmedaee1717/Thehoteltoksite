@@ -1506,6 +1506,10 @@ app.get('/collaborate', (c) => {
                             <p id="permission-status">Checking permissions...</p>
                         </div>
                     </div>
+                    
+                    <!-- Trix Editor CSS/JS (loaded for Collab Center) -->
+                    <link rel="stylesheet" type="text/css" href="https://unpkg.com/trix@2.0.8/dist/trix.css">
+                    <script type="text/javascript" src="https://unpkg.com/trix@2.0.8/dist/trix.umd.min.js"></script>
 
                     <!-- TEAM VIEW -->
                     <div id="team-view" class="collab-view">

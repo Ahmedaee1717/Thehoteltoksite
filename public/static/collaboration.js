@@ -361,15 +361,8 @@ async function checkNewPostPermission() {
             
             <div class="ultra-form-group">
               <label for="collab-post-content">Post Content *</label>
-              <textarea id="collab-post-content" name="content" rows="16" required placeholder="Write your amazing content here...
-
-Supports:
-• Rich HTML formatting
-• Markdown syntax
-• Embedded media
-• Code blocks
-
-Start writing..."></textarea>
+              <input id="collab-post-content" type="hidden" name="content" required>
+              <trix-editor input="collab-post-content" class="ultra-trix-editor" placeholder="Write your amazing content here..."></trix-editor>
               <small>✨ Rich text editor with full formatting support</small>
             </div>
           </div>

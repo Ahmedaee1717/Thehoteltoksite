@@ -869,11 +869,11 @@
 
 /* Ultra Sections */
 .ultra-section {
-  background: linear-gradient(135deg, rgba(10, 11, 30, 0.95), rgba(15, 16, 40, 0.95));
-  border: 2px solid rgba(102, 126, 234, 0.3);
+  background: linear-gradient(135deg, rgba(8, 9, 22, 0.98), rgba(12, 13, 32, 0.98));
+  border: 2px solid rgba(102, 126, 234, 0.25);
   border-radius: 20px;
   padding: 32px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   position: relative;
   overflow: hidden;
 }
@@ -946,7 +946,7 @@
 }
 
 .ultra-section-desc {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.65);
   font-size: 14px;
   line-height: 1.6;
   margin-bottom: 24px;
@@ -961,15 +961,11 @@
 }
 
 .ultra-form-group label {
-  font-size: 15px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.95);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
   font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .ultra-form-group input[type="text"],
@@ -978,8 +974,8 @@
 .ultra-form-group select {
   padding: 16px 20px;
   border-radius: 12px;
-  background: rgba(5, 6, 20, 0.8);
-  border: 2px solid rgba(102, 126, 234, 0.4);
+  background: rgba(3, 4, 15, 0.9);
+  border: 2px solid rgba(102, 126, 234, 0.3);
   color: rgba(255, 255, 255, 0.95);
   font-size: 15px;
   font-family: inherit;
@@ -991,8 +987,8 @@
 .ultra-form-group textarea:focus,
 .ultra-form-group select:focus {
   border-color: #667eea;
-  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2), 0 8px 24px rgba(102, 126, 234, 0.3);
-  background: rgba(10, 11, 30, 0.95);
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15), 0 8px 24px rgba(102, 126, 234, 0.2);
+  background: rgba(8, 9, 22, 0.95);
 }
 
 .ultra-form-group textarea {
@@ -1003,22 +999,66 @@
 
 .ultra-form-group small {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.45);
   margin-top: -6px;
+}
+
+/* Trix Editor Styling */
+.ultra-trix-editor {
+  background: rgba(3, 4, 15, 0.9) !important;
+  border: 2px solid rgba(102, 126, 234, 0.3) !important;
+  border-radius: 12px !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  padding: 16px 20px !important;
+  min-height: 300px !important;
+  transition: all 0.3s ease !important;
+}
+
+.ultra-trix-editor:focus {
+  border-color: #667eea !important;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15), 0 8px 24px rgba(102, 126, 234, 0.2) !important;
+  background: rgba(8, 9, 22, 0.95) !important;
+}
+
+trix-toolbar {
+  background: rgba(8, 9, 22, 0.95) !important;
+  border: 2px solid rgba(102, 126, 234, 0.25) !important;
+  border-radius: 12px 12px 0 0 !important;
+  margin-bottom: -2px !important;
+}
+
+trix-toolbar .trix-button-group {
+  border-color: rgba(102, 126, 234, 0.2) !important;
+}
+
+trix-toolbar .trix-button {
+  background: transparent !important;
+  border: none !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+trix-toolbar .trix-button:hover {
+  background: rgba(102, 126, 234, 0.2) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+trix-toolbar .trix-button.trix-active {
+  background: rgba(102, 126, 234, 0.3) !important;
+  color: white !important;
 }
 
 /* AI Section Styling */
 .ultra-ai-section {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
-  border-color: rgba(102, 126, 234, 0.5);
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
+  border-color: rgba(102, 126, 234, 0.4);
 }
 
 .ultra-ai-advanced-section {
-  background: linear-gradient(135deg, rgba(79, 172, 254, 0.1), rgba(0, 242, 254, 0.1));
-  border-color: rgba(79, 172, 254, 0.5);
+  background: linear-gradient(135deg, rgba(79, 172, 254, 0.08), rgba(0, 242, 254, 0.08));
+  border-color: rgba(79, 172, 254, 0.4);
 }
 
-/* 🤖 AI MEGA BUTTON */
+/* 🤖 AI MEGA BUTTON - REDESIGNED DARK */
 .ultra-ai-mega-button-container {
   margin: 24px 0;
 }
@@ -1032,7 +1072,7 @@
   cursor: pointer;
   overflow: hidden;
   border-radius: 16px;
-  height: 100px;
+  height: 90px;
   transition: all 0.3s ease;
 }
 
@@ -1043,12 +1083,18 @@
   right: 0;
   bottom: 0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-  opacity: 0.9;
+  opacity: 1;
   transition: opacity 0.3s ease;
 }
 
 .ultra-ai-mega-button:hover .ultra-ai-mega-bg {
   opacity: 1;
+  animation: megaPulse 1.5s infinite;
+}
+
+@keyframes megaPulse {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.01); filter: brightness(1.1); }
 }
 
 .ultra-ai-mega-glow {
@@ -1057,19 +1103,13 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.3), transparent 70%);
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.2), transparent 70%);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
 .ultra-ai-mega-button:hover .ultra-ai-mega-glow {
   opacity: 1;
-  animation: megaPulse 1.5s infinite;
-}
-
-@keyframes megaPulse {
-  0%, 100% { transform: scale(1); opacity: 0.3; }
-  50% { transform: scale(1.1); opacity: 0.6; }
 }
 
 .ultra-ai-mega-particles {
@@ -1079,9 +1119,9 @@
   right: 0;
   bottom: 0;
   background-image: 
-    radial-gradient(circle, rgba(255, 255, 255, 0.8) 1px, transparent 1px);
+    radial-gradient(circle, rgba(255, 255, 255, 0.6) 1px, transparent 1px);
   background-size: 50px 50px;
-  opacity: 0.1;
+  opacity: 0.08;
   animation: particleFloat 20s linear infinite;
 }
 
@@ -1098,40 +1138,45 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  gap: 8px;
+  gap: 6px;
 }
 
 .ultra-ai-mega-icon {
-  font-size: 36px;
-  filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.8));
+  font-size: 32px;
+  filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.6));
   animation: iconFloat 3s ease-in-out infinite;
 }
 
 @keyframes iconFloat {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  50% { transform: translateY(-8px); }
 }
 
 .ultra-ai-mega-text {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 900;
   color: white;
-  letter-spacing: 2px;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  letter-spacing: 1.5px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .ultra-ai-mega-subtext {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.5px;
 }
 
 .ultra-ai-mega-button:active {
   transform: scale(0.98);
 }
 
-/* 🚀 QUANTUM AI BUTTON */
+.ultra-ai-mega-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 🚀 QUANTUM AI BUTTON - REDESIGNED DARK */
 .ultra-ai-quantum-action {
   margin: 24px 0;
 }
@@ -1145,7 +1190,7 @@
   cursor: pointer;
   overflow: hidden;
   border-radius: 16px;
-  height: 90px;
+  height: 85px;
   transition: all 0.3s ease;
 }
 
@@ -1156,17 +1201,16 @@
   right: 0;
   bottom: 0;
   background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  opacity: 0.9;
+  opacity: 1;
 }
 
 .ultra-ai-quantum-button:hover .ultra-ai-quantum-bg {
-  opacity: 1;
   animation: quantumPulse 1s infinite;
 }
 
 @keyframes quantumPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.02); }
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.15); }
 }
 
 .ultra-ai-quantum-glow {
@@ -1175,18 +1219,12 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.4), transparent 60%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.3), transparent 60%);
   opacity: 0;
 }
 
 .ultra-ai-quantum-button:hover .ultra-ai-quantum-glow {
   opacity: 1;
-  animation: quantumGlowPulse 1.5s infinite;
-}
-
-@keyframes quantumGlowPulse {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.7; }
 }
 
 .ultra-ai-quantum-content {
@@ -1197,48 +1235,48 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  gap: 6px;
+  gap: 5px;
 }
 
 .ultra-ai-quantum-icon {
-  font-size: 32px;
-  filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.7));
+  font-size: 30px;
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.5));
 }
 
 .ultra-ai-quantum-text {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 900;
   color: white;
-  letter-spacing: 1.5px;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  letter-spacing: 1.3px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .ultra-ai-quantum-subtext {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
-  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.8);
+  letter-spacing: 0.4px;
 }
 
-/* Individual AI Action Buttons */
+/* Individual AI Action Buttons - REDESIGNED */
 .ultra-ai-individual-actions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
   margin: 24px 0;
 }
 
 .ultra-ai-action-btn {
   position: relative;
-  padding: 18px 24px;
-  border: 2px solid rgba(102, 126, 234, 0.4);
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+  padding: 16px 20px;
+  border: 2px solid rgba(102, 126, 234, 0.3);
+  background: rgba(8, 9, 22, 0.8);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   justify-content: center;
   overflow: hidden;
 }
@@ -1250,7 +1288,7 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.2), transparent);
   transition: left 0.5s;
 }
 
@@ -1260,35 +1298,35 @@
 
 .ultra-ai-action-btn:hover {
   border-color: #667eea;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+  background: rgba(102, 126, 234, 0.15);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.25);
 }
 
 .ultra-ai-action-icon {
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .ultra-ai-action-text {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.95);
-  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.8px;
 }
 
-/* AI Status Box */
+/* AI Status Box - REDESIGNED */
 .ultra-ai-status-box {
-  background: rgba(5, 6, 20, 0.9);
-  border: 2px solid rgba(102, 126, 234, 0.3);
+  background: rgba(3, 4, 15, 0.95);
+  border: 2px solid rgba(102, 126, 234, 0.25);
   border-radius: 12px;
-  padding: 24px;
+  padding: 20px;
   margin: 24px 0;
 }
 
 .ultra-ai-status-item {
   display: flex;
   justify-content: space-between;
-  padding: 12px 0;
+  padding: 10px 0;
   border-bottom: 1px solid rgba(102, 126, 234, 0.1);
 }
 
@@ -1299,21 +1337,21 @@
 .ultra-ai-status-label {
   font-size: 13px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.65);
 }
 
 .ultra-ai-status-value {
   font-size: 13px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.45);
 }
 
 /* AI Result Box */
 .ultra-ai-result-box {
-  background: rgba(5, 6, 20, 0.9);
-  border: 2px solid rgba(67, 233, 123, 0.4);
+  background: rgba(3, 4, 15, 0.95);
+  border: 2px solid rgba(67, 233, 123, 0.3);
   border-radius: 12px;
-  padding: 24px;
+  padding: 20px;
   margin: 24px 0;
 }
 
@@ -1321,25 +1359,25 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .ultra-ai-result-icon {
-  font-size: 24px;
+  font-size: 22px;
 }
 
 .ultra-ai-result-box h4 {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: #43e97b;
   margin: 0;
 }
 
 .ultra-ai-result-box pre {
-  background: rgba(0, 0, 0, 0.5);
-  padding: 16px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 14px;
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.85);
   font-size: 12px;
   line-height: 1.6;
   overflow-x: auto;
@@ -1354,7 +1392,7 @@
 .ultra-checkbox-label {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
+  gap: 14px;
   cursor: pointer;
 }
 
@@ -1363,11 +1401,11 @@
 }
 
 .ultra-checkbox-custom {
-  width: 24px;
-  height: 24px;
-  border: 2px solid rgba(102, 126, 234, 0.5);
+  width: 22px;
+  height: 22px;
+  border: 2px solid rgba(102, 126, 234, 0.4);
   border-radius: 6px;
-  background: rgba(5, 6, 20, 0.8);
+  background: rgba(3, 4, 15, 0.9);
   position: relative;
   flex-shrink: 0;
   transition: all 0.3s ease;
@@ -1385,61 +1423,62 @@
   left: 50%;
   transform: translate(-50%, -50%);
   color: white;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 900;
 }
 
 .ultra-checkbox-text {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .ultra-checkbox-text strong {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .ultra-checkbox-text small {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.4;
 }
 
 /* Ultra Form Actions */
 .ultra-form-actions {
   display: flex;
-  gap: 20px;
+  gap: 16px;
   justify-content: flex-end;
-  padding-top: 32px;
-  border-top: 2px solid rgba(102, 126, 234, 0.2);
+  padding-top: 28px;
+  border-top: 2px solid rgba(102, 126, 234, 0.15);
 }
 
 .ultra-btn {
   position: relative;
-  padding: 18px 40px;
+  padding: 16px 36px;
   border: none;
   border-radius: 12px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   overflow: hidden;
 }
 
 .ultra-btn-cancel {
-  background: rgba(255, 255, 255, 0.1);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .ultra-btn-cancel:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.4);
   transform: translateY(-2px);
 }
 
@@ -1447,7 +1486,7 @@
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
   border: 2px solid transparent;
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.35);
 }
 
 .ultra-btn-glow {
@@ -1456,24 +1495,18 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.3), transparent 70%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.25), transparent 70%);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
 .ultra-btn-save:hover .ultra-btn-glow {
   opacity: 1;
-  animation: btnGlowPulse 1.5s infinite;
-}
-
-@keyframes btnGlowPulse {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.7; }
 }
 
 .ultra-btn-save:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.6);
+  box-shadow: 0 12px 28px rgba(102, 126, 234, 0.5);
 }
 
 .ultra-btn-save:active {
@@ -1481,7 +1514,7 @@
 }
 
 .ultra-btn-icon {
-  font-size: 18px;
+  font-size: 16px;
   position: relative;
   z-index: 1;
 }
