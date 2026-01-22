@@ -326,6 +326,7 @@ const FileBankRevolution = {
       // Double click to open
       card.addEventListener('dblclick', (e) => {
         e.preventDefault();
+        console.log('🖱️ Double-click detected on file:', fileId);
         this.openFile(fileId);
       });
 
@@ -510,8 +511,12 @@ const FileBankRevolution = {
 
   // Open file
   async openFile(fileId) {
+    console.log('📂 openFile called with fileId:', fileId);
     const file = this.state.files.find(f => f.id === fileId);
-    if (!file) return;
+    if (!file) {
+      console.error('❌ File not found:', fileId);
+      return;
+    }
 
     console.log('📂 Opening file:', file.original_filename);
 
@@ -562,30 +567,39 @@ const FileBankRevolution = {
   
   // Enhanced file preview
   async openFileEnhanced(fileId) {
+    console.log('🔍 openFileEnhanced called with fileId:', fileId);
     const file = this.state.files.find(f => f.id === fileId);
-    if (!file) return;
+    if (!file) {
+      console.error('❌ File not found in openFileEnhanced:', fileId);
+      return;
+    }
 
     const type = this.getFileType(file);
+    console.log('📁 File type detected:', type, 'for file:', file.original_filename);
     
     if (type === 'image') {
+      console.log('🖼️ Showing image preview');
       this.showEnhancedPreview(file, `
         <img src="/api/filebank${file.file_url}" 
              alt="${this.escapeHtml(file.original_filename)}" 
              style="max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 8px;">
       `);
     } else if (type === 'pdf') {
+      console.log('📕 Showing PDF preview');
       this.showEnhancedPreview(file, `
         <iframe src="/api/filebank${file.file_url}" 
                 style="width: 100%; height: 70vh; border: none; border-radius: 8px; background: white;">
         </iframe>
       `);
     } else if (type === 'video') {
+      console.log('🎬 Showing video preview');
       this.showEnhancedPreview(file, `
         <video controls style="max-width: 100%; max-height: 70vh; border-radius: 8px; background: black;">
           <source src="/api/filebank${file.file_url}" type="${file.file_type}">
         </video>
       `);
     } else if (type === 'audio') {
+      console.log('🎵 Showing audio preview');
       this.showEnhancedPreview(file, `
         <div style="text-align: center; padding: 40px;">
           <div style="font-size: 80px; margin-bottom: 20px;">🎵</div>
@@ -595,17 +609,26 @@ const FileBankRevolution = {
         </div>
       `);
     } else {
+      console.log('📄 Opening in new tab');
       window.open(`/api/filebank${file.file_url}`, '_blank');
     }
   },
   
   // Show enhanced preview modal
   showEnhancedPreview(file, previewHTML) {
+    console.log('🎭 showEnhancedPreview called for:', file.original_filename);
     const modal = document.getElementById('filebank-preview-modal');
-    if (!modal) return;
+    if (!modal) {
+      console.error('❌ Modal element not found! ID: filebank-preview-modal');
+      return;
+    }
+    console.log('✅ Modal element found:', modal);
 
     const content = modal.querySelector('.filebank-modal-body');
     const title = modal.querySelector('.filebank-modal-title');
+    
+    console.log('📦 Modal content element:', content);
+    console.log('📝 Modal title element:', title);
     
     if (title) title.textContent = file.original_filename;
     
@@ -633,9 +656,13 @@ const FileBankRevolution = {
           </div>
         </div>
       `;
+      console.log('✅ Modal content updated');
+    } else {
+      console.error('❌ Modal content element not found!');
     }
 
     modal.classList.add('active');
+    console.log('✅ Modal activated with class "active"');
   },
   
   // Close modal

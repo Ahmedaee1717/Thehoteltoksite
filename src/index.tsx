@@ -1867,7 +1867,7 @@ app.get('/files', (c) => {
                     <div class="filebank-modal-title">File Preview</div>
                     <button class="filebank-modal-close" onclick="document.getElementById('filebank-preview-modal').classList.remove('active')">✕</button>
                 </div>
-                <div style="text-align: center;">
+                <div class="filebank-modal-body" style="text-align: center;">
                     <img class="filebank-preview-image" style="max-width: 100%; max-height: 60vh; border-radius: 12px;">
                 </div>
             </div>
