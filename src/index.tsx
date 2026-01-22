@@ -1128,6 +1128,7 @@ app.get('/admin/dashboard', (c) => {
                     <a href="#" class="admin-nav-item active" data-view="posts">Blog Posts</a>
                     <a href="#" class="admin-nav-item" data-view="new-post">New Post</a>
                     <a href="/admin/email-accounts" class="admin-nav-item">📧 Email Management</a>
+                    <a href="#" class="admin-nav-item" data-view="email-settings">✉️ Email Settings</a>
                     <a href="#" class="admin-nav-item" data-view="settings">Settings</a>
                     <a href="/blog" class="admin-nav-item" target="_blank">View Blog</a>
                 </nav>
@@ -1336,6 +1337,100 @@ app.get('/admin/dashboard', (c) => {
                             <button type="button" id="delete-post-btn" class="btn btn-danger" style="display: none;">Delete Post</button>
                         </div>
                     </form>
+                </div>
+                
+                <!-- Email Settings View -->
+                <div id="email-settings-view" class="admin-view">
+                    <div class="admin-header">
+                        <h1>✉️ Email Signature Settings</h1>
+                        <p style="margin-top: 8px; color: rgba(255,255,255,0.7); font-size: 14px;">Create a futuristic email signature that will amaze your recipients</p>
+                    </div>
+                    
+                    <div class="signature-editor-container">
+                        <div class="signature-editor">
+                            <h2 class="section-title">🎨 Signature Builder</h2>
+                            
+                            <form id="signature-form" class="signature-form">
+                                <div class="form-group">
+                                    <label for="sig-company-name">Company Name *</label>
+                                    <input type="text" id="sig-company-name" name="company_name" placeholder="Investay Capital" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="sig-tagline">Company Tagline</label>
+                                    <input type="text" id="sig-tagline" name="tagline" placeholder="Investing in tomorrow's innovations">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="sig-logo-url">Logo URL *</label>
+                                    <input type="url" id="sig-logo-url" name="logo_url" placeholder="https://example.com/logo.png" required>
+                                    <small>⚡ Logo loads are tracked for read receipts (complementing email pixel tracking)</small>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="sig-website">Website URL</label>
+                                    <input type="url" id="sig-website" name="website" placeholder="https://www.investaycapital.com">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="sig-address">Company Address</label>
+                                    <textarea id="sig-address" name="address" rows="2" placeholder="123 Innovation Street, Tech City, TC 12345"></textarea>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="sig-phone">Phone Number</label>
+                                    <input type="tel" id="sig-phone" name="phone" placeholder="+1 (555) 123-4567">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="sig-email">Contact Email</label>
+                                    <input type="email" id="sig-email" name="email" placeholder="info@investaycapital.com">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Social Media Links</label>
+                                    <div class="social-inputs">
+                                        <input type="url" id="sig-linkedin" name="linkedin" placeholder="LinkedIn URL">
+                                        <input type="url" id="sig-twitter" name="twitter" placeholder="Twitter/X URL">
+                                        <input type="url" id="sig-facebook" name="facebook" placeholder="Facebook URL">
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>
+                                        <input type="checkbox" id="sig-enable-animation" name="enable_animation" checked>
+                                        <span>Enable futuristic animations (holographic effects, particle system)</span>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>
+                                        <input type="checkbox" id="sig-enable-tracking" name="enable_tracking" checked>
+                                        <span>Enable logo tracking for read receipts (complements email pixel)</span>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-actions">
+                                    <button type="button" id="preview-signature-btn" class="btn btn-secondary">👁️ Preview Signature</button>
+                                    <button type="submit" id="save-signature-btn" class="btn btn-primary">💾 Save Global Signature</button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <div class="signature-preview-panel">
+                            <h2 class="section-title">🔮 Live Preview</h2>
+                            <div id="signature-preview-container" class="signature-preview">
+                                <div class="preview-placeholder">
+                                    <p>Fill in the form to see your futuristic signature preview</p>
+                                </div>
+                            </div>
+                            
+                            <div class="preview-actions">
+                                <button type="button" id="copy-signature-btn" class="btn btn-secondary">📋 Copy HTML</button>
+                                <button type="button" id="test-signature-btn" class="btn btn-secondary">📧 Send Test Email</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Settings View -->

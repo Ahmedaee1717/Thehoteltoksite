@@ -229,3 +229,110 @@ adminRoutes.delete('/posts/:id', async (c) => {
     return c.json({ success: false, error: 'Failed to delete post' }, 500);
   }
 });
+
+// Get email signature
+adminRoutes.get('/email-signature', async (c) => {
+  const { DB } = c.env;
+  
+  try {
+    const signature = await DB.prepare(`
+      SELECT * FROM email_signatures 
+      WHERE is_global = 1 
+      ORDER BY updated_at DESC 
+      LIMIT 1
+    `).first();
+    
+    return c.json({ 
+      success: true, 
+      signature: signature ? {
+        company_name: signature.company_name,
+        tagline: signature.tagline,
+        logo_url: signature.logo_url,
+        website: signature.website,
+        address: signature.address,
+        phone: signature.phone,
+        email: signature.email,
+        linkedin: signature.linkedin,
+        twitter: signature.twitter,
+        facebook: signature.facebook,
+        enable_animation: signature.enable_animation === 1,
+        enable_tracking: signature.enable_tracking === 1
+      } : null
+    });
+  } catch (error) {
+    console.error('Error loading signature:', error);
+    return c.json({ success: false, error: 'Failed to load signature' }, 500);
+  }
+});
+
+// Save email signature
+adminRoutes.post('/email-signature', async (c) => {
+  const { DB } = c.env;
+  const data = await c.req.json();
+  
+  try {
+    const id = `sig_${Date.now()}`;
+    
+    await DB.prepare(`
+      INSERT INTO email_signatures (
+        id, company_name, tagline, logo_url, website, address, phone, email,
+        linkedin, twitter, facebook, enable_animation, enable_tracking, is_global, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, datetime('now'))
+    `).bind(
+      id,
+      data.company_name || '',
+      data.tagline || '',
+      data.logo_url || '',
+      data.website || '',
+      data.address || '',
+      data.phone || '',
+      data.email || '',
+      data.linkedin || '',
+      data.twitter || '',
+      data.facebook || '',
+      data.enable_animation ? 1 : 0,
+      data.enable_tracking ? 1 : 0
+    ).run();
+    
+    return c.json({ 
+      success: true, 
+      message: 'Email signature saved successfully',
+      id
+    });
+  } catch (error) {
+    console.error('Error saving signature:', error);
+    return c.json({ success: false, error: 'Failed to save signature' }, 500);
+  }
+});
+
+// Send test signature email
+adminRoutes.post('/test-signature-email', async (c) => {
+  const { DB } = c.env;
+  const { to } = await c.req.json();
+  
+  try {
+    // Load the current signature
+    const signature = await DB.prepare(`
+      SELECT * FROM email_signatures 
+      WHERE is_global = 1 
+      ORDER BY updated_at DESC 
+      LIMIT 1
+    `).first();
+    
+    if (!signature) {
+      return c.json({ success: false, error: 'No signature configured' }, 400);
+    }
+    
+    // Note: Actual email sending would be implemented here
+    // For now, just return success
+    
+    return c.json({ 
+      success: true, 
+      message: `Test email would be sent to ${to} with the signature`
+    });
+  } catch (error) {
+    console.error('Error sending test email:', error);
+    return c.json({ success: false, error: 'Failed to send test email' }, 500);
+  }
+});
+

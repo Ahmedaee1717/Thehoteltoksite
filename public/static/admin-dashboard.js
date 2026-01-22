@@ -106,6 +106,11 @@ function switchView(view) {
     if (view === 'settings') {
         loadSettingsUsers();
     }
+    
+    // Load email signature if switching to email-settings view
+    if (view === 'email-settings') {
+        loadEmailSignature();
+    }
 }
 
 // Logout
@@ -844,3 +849,266 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// ✉️ EMAIL SIGNATURE MANAGEMENT
+
+let currentSignature = null;
+
+async function loadEmailSignature() {
+    try {
+        const token = localStorage.getItem('admin_token');
+        const response = await fetch('/api/admin/email-signature', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.signature) {
+            currentSignature = data.signature;
+            populateSignatureForm(data.signature);
+            updateSignaturePreview();
+        }
+    } catch (error) {
+        console.error('Error loading email signature:', error);
+    }
+    
+    setupSignatureEditor();
+}
+
+function populateSignatureForm(signature) {
+    document.getElementById('sig-company-name').value = signature.company_name || '';
+    document.getElementById('sig-tagline').value = signature.tagline || '';
+    document.getElementById('sig-logo-url').value = signature.logo_url || '';
+    document.getElementById('sig-website').value = signature.website || '';
+    document.getElementById('sig-address').value = signature.address || '';
+    document.getElementById('sig-phone').value = signature.phone || '';
+    document.getElementById('sig-email').value = signature.email || '';
+    document.getElementById('sig-linkedin').value = signature.linkedin || '';
+    document.getElementById('sig-twitter').value = signature.twitter || '';
+    document.getElementById('sig-facebook').value = signature.facebook || '';
+    document.getElementById('sig-enable-animation').checked = signature.enable_animation !== false;
+    document.getElementById('sig-enable-tracking').checked = signature.enable_tracking !== false;
+}
+
+function setupSignatureEditor() {
+    // Auto-preview on input
+    const inputs = document.querySelectorAll('#signature-form input, #signature-form textarea');
+    inputs.forEach(input => {
+        input.addEventListener('input', updateSignaturePreview);
+    });
+    
+    // Preview button
+    document.getElementById('preview-signature-btn').addEventListener('click', updateSignaturePreview);
+    
+    // Save button
+    document.getElementById('signature-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await saveEmailSignature();
+    });
+    
+    // Copy HTML button
+    document.getElementById('copy-signature-btn').addEventListener('click', copySignatureHTML);
+    
+    // Test email button
+    document.getElementById('test-signature-btn').addEventListener('click', sendTestEmail);
+}
+
+function updateSignaturePreview() {
+    const formData = {
+        company_name: document.getElementById('sig-company-name').value,
+        tagline: document.getElementById('sig-tagline').value,
+        logo_url: document.getElementById('sig-logo-url').value,
+        website: document.getElementById('sig-website').value,
+        address: document.getElementById('sig-address').value,
+        phone: document.getElementById('sig-phone').value,
+        email: document.getElementById('sig-email').value,
+        linkedin: document.getElementById('sig-linkedin').value,
+        twitter: document.getElementById('sig-twitter').value,
+        facebook: document.getElementById('sig-facebook').value,
+        enable_animation: document.getElementById('sig-enable-animation').checked,
+        enable_tracking: document.getElementById('sig-enable-tracking').checked
+    };
+    
+    const previewHTML = generateSignatureHTML(formData);
+    document.getElementById('signature-preview-container').innerHTML = previewHTML;
+}
+
+function generateSignatureHTML(data, messageId = 'preview') {
+    const enableAnimation = data.enable_animation !== false;
+    const enableTracking = data.enable_tracking !== false;
+    
+    // Add tracking parameter to logo URL if tracking is enabled
+    const logoUrl = enableTracking && data.logo_url ? 
+        `${data.logo_url}${data.logo_url.includes('?') ? '&' : '?'}track=sig-${messageId}-${Date.now()}` : 
+        data.logo_url;
+    
+    const particles = enableAnimation ? `
+        <div class="sig-particles">
+            ${Array.from({length: 15}, (_, i) => `
+                <div class="sig-particle" style="
+                    left: ${Math.random() * 100}%;
+                    top: ${Math.random() * 100}%;
+                    animation-delay: ${Math.random() * 3}s;
+                "></div>
+            `).join('')}
+        </div>
+    ` : '';
+    
+    return `
+        <div class="email-signature-2070">
+            ${particles}
+            <div class="sig-header">
+                ${data.logo_url ? `
+                    <div class="sig-logo-container">
+                        ${enableAnimation ? '<div class="sig-logo-glow"></div>' : ''}
+                        <img src="${logoUrl}" alt="${escapeHtml(data.company_name)} Logo" class="sig-logo" />
+                    </div>
+                ` : ''}
+                <div class="sig-company-info">
+                    <h2 class="sig-company-name">${escapeHtml(data.company_name || 'Your Company')}</h2>
+                    ${data.tagline ? `<p class="sig-tagline">${escapeHtml(data.tagline)}</p>` : ''}
+                </div>
+            </div>
+            
+            <div class="sig-divider"></div>
+            
+            <div class="sig-contact-grid">
+                ${data.website ? `
+                    <div class="sig-contact-item">
+                        <span class="sig-contact-icon">🌐</span>
+                        <a href="${escapeHtml(data.website)}" class="sig-contact-link">${escapeHtml(data.website.replace(/^https?:\/\//, ''))}</a>
+                    </div>
+                ` : ''}
+                ${data.email ? `
+                    <div class="sig-contact-item">
+                        <span class="sig-contact-icon">📧</span>
+                        <a href="mailto:${escapeHtml(data.email)}" class="sig-contact-link">${escapeHtml(data.email)}</a>
+                    </div>
+                ` : ''}
+                ${data.phone ? `
+                    <div class="sig-contact-item">
+                        <span class="sig-contact-icon">📞</span>
+                        <a href="tel:${escapeHtml(data.phone.replace(/[^0-9+]/g, ''))}" class="sig-contact-link">${escapeHtml(data.phone)}</a>
+                    </div>
+                ` : ''}
+                ${data.address ? `
+                    <div class="sig-contact-item">
+                        <span class="sig-contact-icon">📍</span>
+                        <span class="sig-contact-link">${escapeHtml(data.address)}</span>
+                    </div>
+                ` : ''}
+            </div>
+            
+            ${(data.linkedin || data.twitter || data.facebook) ? `
+                <div class="sig-social-links">
+                    ${data.linkedin ? `<a href="${escapeHtml(data.linkedin)}" class="sig-social-btn" target="_blank">💼</a>` : ''}
+                    ${data.twitter ? `<a href="${escapeHtml(data.twitter)}" class="sig-social-btn" target="_blank">𝕏</a>` : ''}
+                    ${data.facebook ? `<a href="${escapeHtml(data.facebook)}" class="sig-social-btn" target="_blank">📘</a>` : ''}
+                </div>
+            ` : ''}
+            
+            <div class="sig-footer-text">
+                ⚡ Powered by 2070 Technology • ${enableTracking ? '📊 Read Tracking Enabled' : ''}
+            </div>
+        </div>
+    `;
+}
+
+async function saveEmailSignature() {
+    const formData = {
+        company_name: document.getElementById('sig-company-name').value,
+        tagline: document.getElementById('sig-tagline').value,
+        logo_url: document.getElementById('sig-logo-url').value,
+        website: document.getElementById('sig-website').value,
+        address: document.getElementById('sig-address').value,
+        phone: document.getElementById('sig-phone').value,
+        email: document.getElementById('sig-email').value,
+        linkedin: document.getElementById('sig-linkedin').value,
+        twitter: document.getElementById('sig-twitter').value,
+        facebook: document.getElementById('sig-facebook').value,
+        enable_animation: document.getElementById('sig-enable-animation').checked,
+        enable_tracking: document.getElementById('sig-enable-tracking').checked
+    };
+    
+    try {
+        const token = localStorage.getItem('admin_token');
+        const response = await fetch('/api/admin/email-signature', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            currentSignature = formData;
+            showNotification('✅ Email signature saved successfully! All users will now use this signature.', 'success');
+        } else {
+            showNotification('❌ Failed to save signature: ' + data.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error saving signature:', error);
+        showNotification('❌ Error saving signature', 'error');
+    }
+}
+
+function copySignatureHTML() {
+    const formData = {
+        company_name: document.getElementById('sig-company-name').value,
+        tagline: document.getElementById('sig-tagline').value,
+        logo_url: document.getElementById('sig-logo-url').value,
+        website: document.getElementById('sig-website').value,
+        address: document.getElementById('sig-address').value,
+        phone: document.getElementById('sig-phone').value,
+        email: document.getElementById('sig-email').value,
+        linkedin: document.getElementById('sig-linkedin').value,
+        twitter: document.getElementById('sig-twitter').value,
+        facebook: document.getElementById('sig-facebook').value,
+        enable_animation: document.getElementById('sig-enable-animation').checked,
+        enable_tracking: document.getElementById('sig-enable-tracking').checked
+    };
+    
+    const html = generateSignatureHTML(formData, 'manual-copy');
+    
+    navigator.clipboard.writeText(html).then(() => {
+        showNotification('📋 Signature HTML copied to clipboard!', 'success');
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        showNotification('❌ Failed to copy to clipboard', 'error');
+    });
+}
+
+async function sendTestEmail() {
+    const userEmail = prompt('Enter email address to send test signature:');
+    
+    if (!userEmail) return;
+    
+    try {
+        const token = localStorage.getItem('admin_token');
+        const response = await fetch('/api/admin/test-signature-email', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ to: userEmail })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification(`✅ Test email sent to ${userEmail}!`, 'success');
+        } else {
+            showNotification('❌ Failed to send test email: ' + data.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error sending test email:', error);
+        showNotification('❌ Error sending test email', 'error');
+    }
+}
+
