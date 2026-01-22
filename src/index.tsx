@@ -1430,6 +1430,10 @@ app.get('/collaborate', (c) => {
                             <span class="nav-icon">📊</span>
                             <span class="nav-label">Activity</span>
                         </button>
+                        <button class="collab-nav-item" data-view="settings" id="settings-nav-btn" style="display: none;">
+                            <span class="nav-icon">⚙️</span>
+                            <span class="nav-label">Settings</span>
+                        </button>
                     </nav>
                 </aside>
 
@@ -1498,6 +1502,48 @@ app.get('/collaborate', (c) => {
                             <div class="loading-quantum">
                                 <div class="loading-spinner"></div>
                                 <p>Loading activity...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SETTINGS VIEW (Admin Only) -->
+                    <div id="settings-view" class="collab-view">
+                        <div class="view-header">
+                            <h1 class="view-title">⚙️ Settings</h1>
+                            <p class="view-subtitle">Manage users and permissions</p>
+                        </div>
+                        
+                        <div class="settings-section">
+                            <h2 class="settings-section-title">User Permissions</h2>
+                            <p class="settings-section-desc">Grant or revoke access to the Collaboration Center and admin features</p>
+                            
+                            <div id="user-permissions-list" class="user-permissions-grid">
+                                <div class="loading-quantum">
+                                    <div class="loading-spinner"></div>
+                                    <p>Loading users...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-section">
+                            <h2 class="settings-section-title">Role Legend</h2>
+                            <div class="role-legend">
+                                <div class="role-legend-item">
+                                    <span class="role-badge admin">Admin</span>
+                                    <span class="role-desc">Full access - manage users, create/edit/delete all posts</span>
+                                </div>
+                                <div class="role-legend-item">
+                                    <span class="role-badge publisher">Publisher</span>
+                                    <span class="role-desc">Create and publish posts, edit own posts</span>
+                                </div>
+                                <div class="role-legend-item">
+                                    <span class="role-badge editor">Editor</span>
+                                    <span class="role-desc">Edit posts, cannot publish or delete</span>
+                                </div>
+                                <div class="role-legend-item">
+                                    <span class="role-badge viewer">Viewer</span>
+                                    <span class="role-desc">View-only access, no editing permissions</span>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -74,6 +74,11 @@ async function loadMyRole() {
     if (data.success) {
       userRole = data.role;
       console.log('✅ User role:', userRole);
+      
+      // Show Settings nav for admins only
+      if (userRole.role === 'admin') {
+        document.getElementById('settings-nav-btn').style.display = 'flex';
+      }
     } else {
       userRole = 'viewer'; // Default role
       console.log('⚠️ No role found, defaulting to viewer');
@@ -130,6 +135,9 @@ function switchView(view) {
       break;
     case 'activity':
       loadActivity();
+      break;
+    case 'settings':
+      loadSettings();
       break;
   }
 }
@@ -463,3 +471,187 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
+
+// ⚙️ LOAD SETTINGS (Admin Only)
+async function loadSettings() {
+  const container = document.getElementById('user-permissions-list');
+  
+  try {
+    const token = localStorage.getItem('auth_token');
+    
+    // Fetch all users with their roles
+    const response = await fetch(`${API_BASE}/users`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (!data.success) {
+      container.innerHTML = '<div class="error-message">Failed to load users</div>';
+      return;
+    }
+    
+    // Render user permission cards
+    container.innerHTML = data.users.map(user => `
+      <div class="user-permission-card">
+        <div class="user-permission-info">
+          <div class="user-permission-email">${escapeHtml(user.email)}</div>
+          <div class="user-permission-name">${escapeHtml(user.display_name || user.email)}</div>
+        </div>
+        <div class="user-permission-controls">
+          <select class="role-select" data-user="${escapeHtml(user.email)}" data-original-role="${user.role}">
+            <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
+            <option value="publisher" ${user.role === 'publisher' ? 'selected' : ''}>Publisher</option>
+            <option value="editor" ${user.role === 'editor' ? 'selected' : ''}>Editor</option>
+            <option value="viewer" ${user.role === 'viewer' ? 'selected' : ''}>Viewer</option>
+          </select>
+          <button class="save-role-btn" data-user="${escapeHtml(user.email)}" disabled>
+            Save
+          </button>
+        </div>
+      </div>
+    `).join('');
+    
+    // Add event listeners to role selects
+    document.querySelectorAll('.role-select').forEach(select => {
+      select.addEventListener('change', (e) => {
+        const userEmail = e.target.dataset.user;
+        const originalRole = e.target.dataset.originalRole;
+        const newRole = e.target.value;
+        const saveBtn = document.querySelector(`.save-role-btn[data-user="${userEmail}"]`);
+        
+        // Enable save button if role changed
+        if (newRole !== originalRole) {
+          saveBtn.disabled = false;
+          saveBtn.classList.add('changed');
+        } else {
+          saveBtn.disabled = true;
+          saveBtn.classList.remove('changed');
+        }
+      });
+    });
+    
+    // Add event listeners to save buttons
+    document.querySelectorAll('.save-role-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const userEmail = e.target.dataset.user;
+        const select = document.querySelector(`.role-select[data-user="${userEmail}"]`);
+        const newRole = select.value;
+        
+        await updateUserRole(userEmail, newRole);
+        
+        // Update original role
+        select.dataset.originalRole = newRole;
+        e.target.disabled = true;
+        e.target.classList.remove('changed');
+      });
+    });
+    
+  } catch (error) {
+    console.error('❌ Error loading settings:', error);
+    container.innerHTML = '<div class="error-message">Error loading users</div>';
+  }
+}
+
+// 💾 UPDATE USER ROLE
+async function updateUserRole(userEmail, newRole) {
+  try {
+    const token = localStorage.getItem('auth_token');
+    
+    const response = await fetch(`${API_BASE}/users/${encodeURIComponent(userEmail)}/role`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        role: newRole,
+        permissions: getRolePermissions(newRole)
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      showNotification(`✅ Role updated: ${userEmail} is now ${newRole}`, 'success');
+      
+      // Refresh team count
+      loadCounts();
+    } else {
+      showNotification(`❌ Failed to update role: ${data.error}`, 'error');
+    }
+  } catch (error) {
+    console.error('❌ Error updating role:', error);
+    showNotification('❌ Error updating role', 'error');
+  }
+}
+
+// 🔑 GET ROLE PERMISSIONS
+function getRolePermissions(role) {
+  const permissions = {
+    admin: ['create', 'edit', 'delete', 'publish', 'manage_users'],
+    publisher: ['create', 'edit', 'publish'],
+    editor: ['edit'],
+    viewer: []
+  };
+  
+  return JSON.stringify(permissions[role] || []);
+}
+
+// 🔔 SHOW NOTIFICATION
+function showNotification(message, type = 'info') {
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.className = `notification notification-${type}`;
+  notification.style.cssText = `
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    padding: 16px 24px;
+    border-radius: 12px;
+    background: ${type === 'success' ? 'linear-gradient(135deg, #43e97b, #38f9d7)' : 'linear-gradient(135deg, #f5576c, #f093fb)'};
+    color: ${type === 'success' ? '#1a1b36' : 'white'};
+    font-weight: 600;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    animation: slideIn 0.3s ease;
+  `;
+  notification.textContent = message;
+  
+  document.body.appendChild(notification);
+  
+  // Auto remove after 3 seconds
+  setTimeout(() => {
+    notification.style.animation = 'slideOut 0.3s ease';
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
+}
+
+// Add slide animations
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideIn {
+    from {
+      transform: translateX(400px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideOut {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(400px);
+      opacity: 0;
+    }
+  }
+`;
+document.head.appendChild(style);
