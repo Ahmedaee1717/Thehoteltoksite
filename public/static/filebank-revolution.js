@@ -249,31 +249,44 @@ const FileBankRevolution = {
         ${file.folder_is_shared ? '<div class="filebank-collab-badge">👥</div>' : ''}
         
         <div class="filebank-file-actions">
+          <button class="filebank-file-action-btn" 
+                  onclick="event.stopPropagation(); FileBankRevolution.downloadFile('${file.id}')"
+                  title="Download"
+                  style="background: rgba(102, 126, 234, 0.2); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;">
+            📥
+          </button>
           <button class="filebank-file-action-btn ${file.is_starred ? 'starred' : ''}" 
-                  onclick="FileBankRevolution.toggleStar('${file.id}')"
-                  title="Star">
+                  onclick="event.stopPropagation(); FileBankRevolution.toggleStar('${file.id}')"
+                  title="Star"
+                  style="border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;">
             ⭐
           </button>
           <button class="filebank-file-action-btn" 
-                  onclick="FileBankRevolution.showFileMenu(event, '${file.id}')"
-                  title="More">
+                  onclick="event.stopPropagation(); FileBankRevolution.showFileMenu(event, '${file.id}')"
+                  title="More"
+                  style="border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;">
             ⋯
           </button>
         </div>
 
-        <div class="filebank-file-preview">
+        <div class="filebank-file-preview" style="position: relative; width: 100%; height: 150px; display: flex; align-items: center; justify-content: center; background: rgba(102, 126, 234, 0.1); border-radius: 12px; overflow: hidden;">
           ${isImage && file.file_url ? 
-            `<img src="${file.file_url}" alt="${this.escapeHtml(file.original_filename)}" loading="lazy">` :
-            `<div class="filebank-file-icon">${fileIcon}</div>`
+            `<img src="/api/filebank${file.file_url}" 
+                  alt="${this.escapeHtml(file.original_filename)}" 
+                  loading="lazy"
+                  style="width: 100%; height: 100%; object-fit: cover;">` :
+            `<div class="filebank-file-icon" style="font-size: 64px;">${fileIcon}</div>`
           }
         </div>
 
         <div class="filebank-file-info">
-          <div class="filebank-file-name" title="${this.escapeHtml(file.original_filename)}">
+          <div class="filebank-file-name" 
+               title="${this.escapeHtml(file.original_filename)}"
+               style="color: white; font-size: 14px; font-weight: 600; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
             ${this.escapeHtml(file.original_filename)}
           </div>
           
-          <div class="filebank-file-meta">
+          <div class="filebank-file-meta" style="display: flex; gap: 12px; font-size: 12px; color: rgba(255, 255, 255, 0.6);">
             <span class="filebank-file-size">
               📊 ${fileSize}
             </span>
@@ -283,8 +296,8 @@ const FileBankRevolution = {
           </div>
 
           ${file.tags && file.tags.length > 0 ? `
-            <div class="filebank-file-tags">
-              ${file.tags.map(tag => `<span class="filebank-file-tag">${this.escapeHtml(tag)}</span>`).join('')}
+            <div class="filebank-file-tags" style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
+              ${file.tags.map(tag => `<span class="filebank-file-tag" style="background: rgba(102, 126, 234, 0.2); color: rgba(255, 255, 255, 0.8); padding: 4px 8px; border-radius: 4px; font-size: 11px;">${this.escapeHtml(tag)}</span>`).join('')}
             </div>
           ` : ''}
         </div>
@@ -502,17 +515,305 @@ const FileBankRevolution = {
 
     console.log('📂 Opening file:', file.original_filename);
 
-    // If it's an image, show in preview modal
-    if (this.isImageFile(file)) {
-      this.showImagePreview(file);
+    // Use enhanced preview that supports more file types
+    this.openFileEnhanced(fileId);
+  },
+  
+  // Get file type
+  getFileType(file) {
+    const ext = file.original_filename.split('.').pop().toLowerCase();
+    
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext)) return 'image';
+    if (['pdf'].includes(ext)) return 'pdf';
+    if (['txt', 'md', 'json', 'xml', 'html', 'css', 'js'].includes(ext)) return 'text';
+    if (['mp4', 'mov', 'avi', 'webm'].includes(ext)) return 'video';
+    if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) return 'audio';
+    
+    return 'file';
+  },
+  
+  // Download file
+  async downloadFile(fileId) {
+    const file = this.state.files.find(f => f.id === fileId);
+    if (!file) return;
+
+    console.log('📥 Downloading:', file.original_filename);
+
+    try {
+      const response = await fetch(`/api/filebank${file.file_url}`);
+      if (!response.ok) throw new Error('Download failed');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.original_filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      this.showNotification(`Downloaded ${file.original_filename}`, 'success');
+    } catch (error) {
+      console.error('Download error:', error);
+      this.showNotification('Download failed', 'error');
+    }
+  },
+  
+  // Enhanced file preview
+  async openFileEnhanced(fileId) {
+    const file = this.state.files.find(f => f.id === fileId);
+    if (!file) return;
+
+    const type = this.getFileType(file);
+    
+    if (type === 'image') {
+      this.showEnhancedPreview(file, `
+        <img src="/api/filebank${file.file_url}" 
+             alt="${this.escapeHtml(file.original_filename)}" 
+             style="max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 8px;">
+      `);
+    } else if (type === 'pdf') {
+      this.showEnhancedPreview(file, `
+        <iframe src="/api/filebank${file.file_url}" 
+                style="width: 100%; height: 70vh; border: none; border-radius: 8px; background: white;">
+        </iframe>
+      `);
+    } else if (type === 'video') {
+      this.showEnhancedPreview(file, `
+        <video controls style="max-width: 100%; max-height: 70vh; border-radius: 8px; background: black;">
+          <source src="/api/filebank${file.file_url}" type="${file.file_type}">
+        </video>
+      `);
+    } else if (type === 'audio') {
+      this.showEnhancedPreview(file, `
+        <div style="text-align: center; padding: 40px;">
+          <div style="font-size: 80px; margin-bottom: 20px;">🎵</div>
+          <audio controls style="width: 100%; max-width: 500px;">
+            <source src="/api/filebank${file.file_url}" type="${file.file_type}">
+          </audio>
+        </div>
+      `);
     } else {
-      // Download or open in new tab
-      if (file.file_url) {
-        window.open(file.file_url, '_blank');
+      window.open(`/api/filebank${file.file_url}`, '_blank');
+    }
+  },
+  
+  // Show enhanced preview modal
+  showEnhancedPreview(file, previewHTML) {
+    const modal = document.getElementById('filebank-preview-modal');
+    if (!modal) return;
+
+    const content = modal.querySelector('.filebank-modal-body');
+    const title = modal.querySelector('.filebank-modal-title');
+    
+    if (title) title.textContent = file.original_filename;
+    
+    if (content) {
+      content.innerHTML = `
+        <div class="filebank-preview-container">
+          ${previewHTML}
+          
+          <div class="filebank-preview-actions" style="margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+            <button onclick="FileBankRevolution.downloadFile('${file.id}')" 
+                    class="filebank-btn filebank-btn-primary" 
+                    style="padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">
+              📥 Download
+            </button>
+            <button onclick="FileBankRevolution.emailFile('${file.id}')" 
+                    class="filebank-btn filebank-btn-secondary"
+                    style="padding: 10px 20px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">
+              📧 Email
+            </button>
+            <button onclick="FileBankRevolution.closeModal()" 
+                    class="filebank-btn filebank-btn-secondary"
+                    style="padding: 10px 20px; background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; cursor: pointer; font-size: 14px;">
+              ❌ Close
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    modal.classList.add('active');
+  },
+  
+  // Close modal
+  closeModal() {
+    const modal = document.getElementById('filebank-preview-modal');
+    if (modal) modal.classList.remove('active');
+    
+    const emailModal = document.getElementById('filebank-email-modal');
+    if (emailModal) emailModal.classList.remove('active');
+  },
+  
+  // Email single file
+  emailFile(fileId) {
+    this.state.selectedFiles = [fileId];
+    this.emailSelectedFiles();
+  },
+  
+  // Email selected files
+  async emailSelectedFiles() {
+    if (this.state.selectedFiles.length === 0) {
+      this.showNotification('No files selected', 'error');
+      return;
+    }
+
+    const files = this.state.files.filter(f => this.state.selectedFiles.includes(f.id));
+    
+    // Close any open modals
+    this.closeModal();
+
+    // Create email modal HTML
+    const modalHTML = `
+      <div id="filebank-email-modal" class="filebank-modal active" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; align-items: center; justify-content: center; z-index: 10000;">
+        <div class="filebank-modal-content" style="background: linear-gradient(135deg, #1a1d3e 0%, #2d3561 100%); border-radius: 16px; padding: 30px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+          <div class="filebank-modal-header" style="margin-bottom: 20px;">
+            <h3 class="filebank-modal-title" style="color: white; margin: 0; font-size: 24px;">Send ${files.length} File(s) by Email</h3>
+          </div>
+          <div class="filebank-modal-body">
+            <div class="filebank-email-form">
+              <div class="filebank-form-group" style="margin-bottom: 16px;">
+                <label style="color: rgba(255, 255, 255, 0.8); display: block; margin-bottom: 8px; font-size: 14px;">To:</label>
+                <input type="email" 
+                       id="filebank-email-to" 
+                       placeholder="recipient@example.com" 
+                       style="width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white; font-size: 14px;"
+                       required>
+              </div>
+
+              <div class="filebank-form-group" style="margin-bottom: 16px;">
+                <label style="color: rgba(255, 255, 255, 0.8); display: block; margin-bottom: 8px; font-size: 14px;">Subject:</label>
+                <input type="text" 
+                       id="filebank-email-subject" 
+                       value="Files from FileBank" 
+                       style="width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white; font-size: 14px;"
+                       required>
+              </div>
+
+              <div class="filebank-form-group" style="margin-bottom: 16px;">
+                <label style="color: rgba(255, 255, 255, 0.8); display: block; margin-bottom: 8px; font-size: 14px;">Message:</label>
+                <textarea id="filebank-email-body" 
+                          style="width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white; font-size: 14px; resize: vertical; font-family: inherit;"
+                          rows="6"
+                          placeholder="Add a message...">Hi,
+
+I'm sharing ${files.length} file(s) with you.
+
+Files:
+${files.map(f => `- ${f.original_filename} (${this.formatFileSize(f.file_size)})`).join('\n')}
+
+Best regards</textarea>
+              </div>
+
+              <div class="filebank-form-group" style="margin-bottom: 20px;">
+                <label style="color: rgba(255, 255, 255, 0.8); display: block; margin-bottom: 8px; font-size: 14px;">Attachments:</label>
+                <div class="filebank-email-attachments" style="background: rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 12px;">
+                  ${files.map(f => `
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                      <span style="font-size: 20px;">${this.getFileIcon(f)}</span>
+                      <span style="color: white; flex: 1; font-size: 14px;">${this.escapeHtml(f.original_filename)}</span>
+                      <span style="color: rgba(255, 255, 255, 0.6); font-size: 12px;">${this.formatFileSize(f.file_size)}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button onclick="FileBankRevolution.sendEmailWithFiles()" 
+                        id="filebank-send-email-btn"
+                        style="padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                  📧 Send Email
+                </button>
+                <button onclick="FileBankRevolution.closeEmailModal()" 
+                        style="padding: 12px 24px; background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; cursor: pointer; font-size: 14px;">
+                  ❌ Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Remove existing email modal
+    const existing = document.getElementById('filebank-email-modal');
+    if (existing) existing.remove();
+    
+    // Add to DOM
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+  },
+  
+  // Send email with files
+  async sendEmailWithFiles() {
+    const to = document.getElementById('filebank-email-to')?.value;
+    const subject = document.getElementById('filebank-email-subject')?.value;
+    const body = document.getElementById('filebank-email-body')?.value;
+
+    if (!to || !subject) {
+      this.showNotification('Please fill in To and Subject', 'error');
+      return;
+    }
+
+    const files = this.state.files.filter(f => this.state.selectedFiles.includes(f.id));
+
+    const sendBtn = document.getElementById('filebank-send-email-btn');
+    if (sendBtn) {
+      sendBtn.disabled = true;
+      sendBtn.textContent = '📤 Sending...';
+    }
+
+    try {
+      const attachments = files.map(f => ({
+        id: f.id,
+        filename: f.original_filename,
+        size: f.file_size,
+        content_type: f.file_type,
+        url: f.file_url,
+        isLocalFile: false
+      }));
+
+      const response = await fetch('/api/email/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          from: localStorage.getItem('userEmail') || 'admin@investaycapital.com',
+          to,
+          subject,
+          body,
+          attachments,
+          useAI: false
+        })
+      });
+
+      if (response.ok) {
+        this.showNotification(`Email sent to ${to} with ${files.length} file(s)!`, 'success');
+        this.closeEmailModal();
+        this.state.selectedFiles = [];
+        this.render();
       } else {
-        this.showNotification('File URL not available', 'error');
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to send');
+      }
+    } catch (error) {
+      console.error('Email error:', error);
+      this.showNotification(`Failed: ${error.message}`, 'error');
+      
+      if (sendBtn) {
+        sendBtn.disabled = false;
+        sendBtn.textContent = '📧 Send Email';
       }
     }
+  },
+  
+  // Close email modal
+  closeEmailModal() {
+    const modal = document.getElementById('filebank-email-modal');
+    if (modal) modal.remove();
   },
 
   // Show image preview modal
