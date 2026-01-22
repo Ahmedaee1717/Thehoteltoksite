@@ -26,6 +26,277 @@ const emailRoutes = new Hono<{ Bindings: Bindings }>()
 // DEBUG: Store last request for debugging
 let lastDebugInfo: any = null;
 
+// ============================================
+// ✉️ EMAIL SIGNATURE HELPER
+// Generate futuristic signature HTML with tracking
+// ============================================
+async function getEmailSignatureHTML(DB: D1Database, messageId: string): Promise<string> {
+  try {
+    const signature = await DB.prepare(`
+      SELECT * FROM email_signatures 
+      WHERE is_global = 1 
+      ORDER BY updated_at DESC 
+      LIMIT 1
+    `).first();
+    
+    if (!signature) {
+      return ''; // No signature configured
+    }
+    
+    const enableAnimation = signature.enable_animation === 1;
+    const enableTracking = signature.enable_tracking === 1;
+    
+    // Add tracking parameter to logo URL if tracking is enabled
+    const logoUrl = enableTracking && signature.logo_url ? 
+      `${signature.logo_url}${signature.logo_url.includes('?') ? '&' : '?'}track=sig-${messageId}-${Date.now()}` : 
+      signature.logo_url;
+    
+    const escapeHtml = (text: string) => {
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+    
+    const particles = enableAnimation ? `
+      <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; opacity: 0.3;">
+        ${Array.from({length: 15}, (_, i) => `
+          <div style="
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            left: ${Math.random() * 100}%;
+            top: ${Math.random() * 100}%;
+            animation: sig-particle-float-${i} ${3 + Math.random() * 3}s ease-in-out infinite;
+          "></div>
+        `).join('')}
+      </div>
+    ` : '';
+    
+    const animationCSS = enableAnimation ? `
+      @keyframes sig-gradient { 0%, 100% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+      @keyframes sig-logo-pulse { 0%, 100% { transform: scale(1); box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4); } 50% { transform: scale(1.05); box-shadow: 0 6px 30px rgba(102, 126, 234, 0.6); } }
+      @keyframes sig-glow-rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      @keyframes sig-text-shimmer { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.3); } }
+      ${Array.from({length: 15}, (_, i) => `
+        @keyframes sig-particle-float-${i} {
+          0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
+          50% { transform: translateY(-30px) translateX(${-15 + Math.random() * 30}px); opacity: 0.8; }
+        }
+      `).join('')}
+    ` : '';
+    
+    return `
+      <style>
+        ${animationCSS}
+        .email-signature-2070 {
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+          max-width: 600px;
+          margin: 32px 0 0 0;
+          padding: 24px;
+          background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+          border-radius: 16px;
+          position: relative;
+          overflow: hidden;
+        }
+        .email-signature-2070::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 2px;
+          background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #667eea);
+          background-size: 200% 100%;
+          ${enableAnimation ? 'animation: sig-gradient 3s linear infinite;' : ''}
+        }
+        .sig-header {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          margin-bottom: 20px;
+          position: relative;
+        }
+        .sig-logo-container {
+          position: relative;
+          width: 80px;
+          height: 80px;
+        }
+        .sig-logo {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          border-radius: 12px;
+          border: 2px solid rgba(102, 126, 234, 0.5);
+          box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+          ${enableAnimation ? 'animation: sig-logo-pulse 3s ease-in-out infinite;' : ''}
+        }
+        ${enableAnimation ? `
+        .sig-logo-glow {
+          position: absolute;
+          inset: -10px;
+          background: radial-gradient(circle, rgba(102, 126, 234, 0.3), transparent 70%);
+          border-radius: 50%;
+          animation: sig-glow-rotate 4s linear infinite;
+          pointer-events: none;
+        }
+        ` : ''}
+        .sig-company-info {
+          flex: 1;
+        }
+        .sig-company-name {
+          font-size: 24px;
+          font-weight: 700;
+          background: linear-gradient(90deg, #667eea, #764ba2);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          margin: 0 0 6px 0;
+          ${enableAnimation ? 'animation: sig-text-shimmer 3s ease-in-out infinite;' : ''}
+        }
+        .sig-tagline {
+          font-size: 13px;
+          color: rgba(255, 255, 255, 0.7);
+          font-style: italic;
+          margin: 0;
+        }
+        .sig-divider {
+          height: 2px;
+          background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.5), transparent);
+          margin: 20px 0;
+        }
+        .sig-contact-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+        .sig-contact-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
+          color: rgba(255, 255, 255, 0.85);
+          padding: 8px 12px;
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 8px;
+          border: 1px solid rgba(102, 126, 234, 0.2);
+          transition: all 0.3s ease;
+        }
+        .sig-contact-item:hover {
+          background: rgba(102, 126, 234, 0.15);
+          border-color: rgba(102, 126, 234, 0.5);
+          transform: translateX(4px);
+        }
+        .sig-contact-icon {
+          font-size: 16px;
+          filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.6));
+        }
+        .sig-contact-link {
+          color: rgba(255, 255, 255, 0.85);
+          text-decoration: none;
+        }
+        .sig-social-links {
+          display: flex;
+          gap: 12px;
+          margin-top: 16px;
+        }
+        .sig-social-btn {
+          width: 40px;
+          height: 40px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(102, 126, 234, 0.2);
+          border: 2px solid rgba(102, 126, 234, 0.4);
+          border-radius: 50%;
+          color: white;
+          font-size: 18px;
+          text-decoration: none;
+          transition: all 0.3s ease;
+        }
+        .sig-social-btn:hover {
+          background: rgba(102, 126, 234, 0.4);
+          border-color: rgba(102, 126, 234, 0.8);
+          transform: translateY(-4px) scale(1.1);
+          box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        .sig-footer-text {
+          margin-top: 16px;
+          font-size: 11px;
+          color: rgba(255, 255, 255, 0.5);
+          text-align: center;
+          padding-top: 12px;
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+      </style>
+      <div class="email-signature-2070">
+        ${particles}
+        <div class="sig-header">
+          ${signature.logo_url ? `
+            <div class="sig-logo-container">
+              ${enableAnimation ? '<div class="sig-logo-glow"></div>' : ''}
+              <img src="${logoUrl}" alt="${escapeHtml(signature.company_name)} Logo" class="sig-logo" />
+            </div>
+          ` : ''}
+          <div class="sig-company-info">
+            <h2 class="sig-company-name">${escapeHtml(signature.company_name || 'Your Company')}</h2>
+            ${signature.tagline ? `<p class="sig-tagline">${escapeHtml(signature.tagline)}</p>` : ''}
+          </div>
+        </div>
+        
+        <div class="sig-divider"></div>
+        
+        <div class="sig-contact-grid">
+          ${signature.website ? `
+            <div class="sig-contact-item">
+              <span class="sig-contact-icon">🌐</span>
+              <a href="${escapeHtml(signature.website)}" class="sig-contact-link">${escapeHtml(signature.website.replace(/^https?:\/\//, ''))}</a>
+            </div>
+          ` : ''}
+          ${signature.email ? `
+            <div class="sig-contact-item">
+              <span class="sig-contact-icon">📧</span>
+              <a href="mailto:${escapeHtml(signature.email)}" class="sig-contact-link">${escapeHtml(signature.email)}</a>
+            </div>
+          ` : ''}
+          ${signature.phone ? `
+            <div class="sig-contact-item">
+              <span class="sig-contact-icon">📞</span>
+              <a href="tel:${escapeHtml(signature.phone.replace(/[^0-9+]/g, ''))}" class="sig-contact-link">${escapeHtml(signature.phone)}</a>
+            </div>
+          ` : ''}
+          ${signature.address ? `
+            <div class="sig-contact-item">
+              <span class="sig-contact-icon">📍</span>
+              <span class="sig-contact-link">${escapeHtml(signature.address)}</span>
+            </div>
+          ` : ''}
+        </div>
+        
+        ${(signature.linkedin || signature.twitter || signature.facebook) ? `
+          <div class="sig-social-links">
+            ${signature.linkedin ? `<a href="${escapeHtml(signature.linkedin)}" class="sig-social-btn" target="_blank">💼</a>` : ''}
+            ${signature.twitter ? `<a href="${escapeHtml(signature.twitter)}" class="sig-social-btn" target="_blank">𝕏</a>` : ''}
+            ${signature.facebook ? `<a href="${escapeHtml(signature.facebook)}" class="sig-social-btn" target="_blank">📘</a>` : ''}
+          </div>
+        ` : ''}
+        
+        <div class="sig-footer-text">
+          ⚡ Powered by 2070 Technology${enableTracking ? ' • 📊 Read Tracking Enabled' : ''}
+        </div>
+      </div>
+    `;
+  } catch (error) {
+    console.error('Error loading email signature:', error);
+    return ''; // Fail silently - don't break email sending
+  }
+}
+
 // DEBUG ENDPOINT: Get last send request info
 emailRoutes.get('/debug/last-send', (c) => {
   return c.json({
@@ -617,6 +888,11 @@ emailRoutes.post('/send', async (c) => {
         emailBodyHtml = wrapLinksWithTracking(emailBodyHtml, emailId, baseUrl);
         
         console.log('🔍 BEFORE creating h variable');
+        
+        // Load email signature
+        const signatureHTML = await getEmailSignatureHTML(DB, emailId);
+        console.log('✉️ Email signature loaded:', signatureHTML ? 'YES' : 'NO');
+        
         const h = `
           <html>
             <head>
@@ -638,6 +914,7 @@ emailRoutes.post('/send', async (c) => {
                 <div class="email-body">
                   ${emailBodyHtml}
                 </div>
+                ${signatureHTML}
                 <div class="email-footer">
                   <p>Sent via Investay Capital Internal Email System</p>
                 </div>
@@ -647,6 +924,7 @@ emailRoutes.post('/send', async (c) => {
               <img src="${trackingPixelUrl}" width="1" height="1" style="display:none;visibility:hidden;" alt="" border="0" />
               <!-- Method 2: Link tracking (works ~85-90% - see wrapped links above) -->
               <!-- Method 3: Reply detection (automatic via webhook) -->
+              <!-- Method 4: Logo tracking in signature (NEW - complementary system) -->
             </body>
           </html>
         `;
