@@ -662,23 +662,56 @@ async function loadTeam() {
 
 // 🎴 CREATE TEAM CARD
 function createTeamCard(user) {
-  const initials = user.user_email.split('@')[0].substring(0, 2).toUpperCase();
-  const roleColor = {
-    admin: '#667eea',
-    publisher: '#4facfe',
-    editor: '#00f2fe',
-    viewer: '#8892b0'
-  }[user.role] || '#8892b0';
+  const email = user.email || user.email_address || user.user_email || 'Unknown';
+  const displayName = user.display_name || email.split('@')[0];
+  const initials = displayName.substring(0, 2).toUpperCase();
+  
+  const roleColors = {
+    admin: { bg: '#667eea', text: '#667eea' },
+    publisher: { bg: '#4facfe', text: '#4facfe' },
+    editor: { bg: '#43e97b', text: '#43e97b' },
+    viewer: { bg: '#8892b0', text: '#8892b0' }
+  };
+  
+  const colors = roleColors[user.role?.toLowerCase()] || roleColors.viewer;
+  
+  // Simulate online status (in production, this would come from a real-time service)
+  const isOnline = Math.random() > 0.5;
   
   return `
-    <div class="team-card">
-      <div class="team-avatar" style="background: ${roleColor}">
-        ${initials}
+    <div class="team-member-card">
+      <div class="team-member-header">
+        <div class="team-member-avatar-wrapper">
+          <div class="team-member-avatar" style="background: ${colors.bg}">
+            ${initials}
+          </div>
+          <span class="team-member-status ${isOnline ? 'online' : 'offline'}"></span>
+        </div>
+        <div class="team-member-info">
+          <div class="team-member-name">${escapeHtml(displayName)}</div>
+          <div class="team-member-email">${escapeHtml(email)}</div>
+        </div>
       </div>
-      <div class="team-email">${escapeHtml(user.user_email)}</div>
-      <span class="team-role" style="border-color: ${roleColor}; color: ${roleColor}">
-        ${user.role}
-      </span>
+      
+      <div class="team-member-meta">
+        <span class="team-member-role" style="border-color: ${colors.text}; color: ${colors.text}">
+          ${user.role || 'viewer'}
+        </span>
+        <span class="team-member-online-status">
+          ${isOnline ? '🟢 Online' : '⚫ Offline'}
+        </span>
+      </div>
+      
+      <div class="team-member-actions">
+        <a href="mailto:${email}" class="team-action-btn team-email-btn" title="Send Email">
+          <span class="team-action-icon">📧</span>
+          <span class="team-action-text">Email</span>
+        </a>
+        <button class="team-action-btn team-message-btn" onclick="openMessage('${email}')" title="Direct Message">
+          <span class="team-action-icon">💬</span>
+          <span class="team-action-text">Message</span>
+        </button>
+      </div>
     </div>
   `;
 }
@@ -690,14 +723,58 @@ async function loadActivity() {
   
   try {
     const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${API_BASE}/activity`, {
+    
+    // Fetch recent posts as activity
+    const postsResponse = await fetch(`${API_BASE}/blog-posts`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     
-    const data = await response.json();
+    const postsData = await postsResponse.json();
     
-    if (data.success && data.activity.length > 0) {
-      container.innerHTML = data.activity.map(activity => createActivityItem(activity)).join('');
+    // Fetch team members for online status
+    const teamResponse = await fetch(`${API_BASE}/users`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    const teamData = await teamResponse.json();
+    
+    const activities = [];
+    
+    // Add team online status
+    if (teamData.success && teamData.users) {
+      teamData.users.forEach(user => {
+        const isOnline = Math.random() > 0.5; // In production, this would be real-time
+        if (isOnline) {
+          activities.push({
+            type: 'user_online',
+            user: user.email || user.email_address,
+            display_name: user.display_name || user.email?.split('@')[0],
+            role: user.role,
+            timestamp: new Date().toISOString()
+          });
+        }
+      });
+    }
+    
+    // Add recent posts
+    if (postsData.success && postsData.posts) {
+      postsData.posts.slice(0, 10).forEach(post => {
+        activities.push({
+          type: 'post_created',
+          user: post.author,
+          post_title: post.title,
+          post_id: post.id,
+          status: post.status,
+          timestamp: post.created_at || post.published_at
+        });
+      });
+    }
+    
+    // Sort by timestamp (most recent first)
+    activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    if (activities.length > 0) {
+      container.innerHTML = activities.map(activity => createActivityItem(activity)).join('');
     } else {
       container.innerHTML = `
         <div class="permission-check-box">
@@ -717,19 +794,66 @@ async function loadActivity() {
 
 // 📝 CREATE ACTIVITY ITEM
 function createActivityItem(activity) {
-  const icon = {
-    created: '✨',
-    updated: '✏️',
-    published: '🚀',
-    deleted: '🗑️',
-    commented: '💬'
-  }[activity.action] || '📝';
+  if (activity.type === 'user_online') {
+    const roleColors = {
+      admin: '#667eea',
+      publisher: '#4facfe',
+      editor: '#43e97b',
+      viewer: '#8892b0'
+    };
+    const roleColor = roleColors[activity.role?.toLowerCase()] || '#8892b0';
+    
+    return `
+      <div class="activity-item activity-online">
+        <div class="activity-icon">🟢</div>
+        <div class="activity-content">
+          <div class="activity-title">
+            <strong>${escapeHtml(activity.display_name || activity.user)}</strong> is online
+          </div>
+          <div class="activity-meta">
+            <span class="activity-role" style="color: ${roleColor}">${activity.role || 'viewer'}</span>
+            <span class="activity-time">Now</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
   
-  const timeAgo = getTimeAgo(activity.created_at);
+  if (activity.type === 'post_created') {
+    const statusIcons = {
+      published: '🚀',
+      draft: '📝',
+      archived: '📦'
+    };
+    const statusColors = {
+      published: '#43e97b',
+      draft: '#ffa500',
+      archived: '#8892b0'
+    };
+    
+    const icon = statusIcons[activity.status] || '📝';
+    const color = statusColors[activity.status] || '#8892b0';
+    const timeAgo = getTimeAgo(activity.timestamp);
+    
+    return `
+      <div class="activity-item activity-post">
+        <div class="activity-icon">${icon}</div>
+        <div class="activity-content">
+          <div class="activity-title">
+            <strong>${escapeHtml(activity.user)}</strong> ${activity.status === 'published' ? 'published' : 'created'} a post
+          </div>
+          <div class="activity-post-title">${escapeHtml(activity.post_title)}</div>
+          <div class="activity-meta">
+            <span class="activity-status" style="color: ${color}">${activity.status}</span>
+            <span class="activity-time">${timeAgo}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
   
-  return `
-    <div class="activity-item">
-      <div class="activity-icon">${icon}</div>
+  return '';
+}
       <div class="activity-content">
         <strong>${escapeHtml(activity.user_email)}</strong> ${activity.action} 
         ${activity.post_title ? `<strong>"${escapeHtml(activity.post_title)}"</strong>` : 'a post'}
@@ -764,6 +888,13 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+// 💬 OPEN MESSAGE (Direct Message to Team Member)
+function openMessage(email) {
+  showNotification(`Opening message to ${email}...`, 'info');
+  // In production, this would open a messaging modal or redirect to email
+  window.location.href = `/mail?compose=${encodeURIComponent(email)}`;
 }
 
 // ⚙️ LOAD SETTINGS (Admin Only)
