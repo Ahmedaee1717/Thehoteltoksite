@@ -299,7 +299,16 @@ async function checkNewPostPermission() {
   const container = document.getElementById('new-post-view').querySelector('.permission-check-box');
   container.innerHTML = '<p>Checking permissions...</p>';
   
-  const canCreate = userRole && (userRole.role === 'admin' || userRole.role === 'editor' || userRole.role === 'publisher');
+  console.log('🔍 Checking permissions for role:', userRole);
+  console.log('🔍 Role type:', typeof userRole);
+  console.log('🔍 Role object:', JSON.stringify(userRole));
+  
+  // Handle both object and string formats
+  const roleString = typeof userRole === 'object' ? userRole.role : userRole;
+  const canCreate = roleString && (roleString === 'admin' || roleString === 'editor' || roleString === 'publisher');
+  
+  console.log('🔍 Role string:', roleString);
+  console.log('🔍 Can create:', canCreate);
   
   if (canCreate) {
     // Show inline post editor instead of redirecting
@@ -365,7 +374,7 @@ async function checkNewPostPermission() {
           🔒 Permission Required
         </h3>
         <p style="margin-bottom: 30px; color: var(--quantum-text-dim);">
-          Your current role (<strong>${userRole?.role || 'viewer'}</strong>) does not allow creating posts.<br>
+          Your current role (<strong>${roleString || 'viewer'}</strong>) does not allow creating posts.<br>
           Please contact an administrator to request access.
         </p>
         <p style="color: var(--quantum-text-dim); font-size: 14px;">
