@@ -1360,6 +1360,156 @@ app.get('/admin/dashboard', (c) => {
   `);
 });
 
+// ✨ COLLABORATION CENTER - Year 2070 Design
+app.get('/collaborate', (c) => {
+  // Check if user is logged in
+  const authToken = getCookie(c, 'auth_token');
+  
+  if (!authToken) {
+    return c.redirect('/login');
+  }
+  
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Collaboration Center - Investay Capital</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="/static/styles.css">
+        <link rel="stylesheet" href="/static/admin.css">
+        <link rel="stylesheet" href="/static/collaboration.css">
+    </head>
+    <body class="collab-body">
+        <div class="collab-container">
+            <!-- 🌌 QUANTUM HEADER -->
+            <header class="collab-header">
+                <div class="collab-header-bg"></div>
+                <div class="collab-header-content">
+                    <div class="collab-logo">
+                        <span class="collab-logo-icon">◆</span>
+                        <span class="collab-logo-text">COLLABORATION CENTER</span>
+                    </div>
+                    <div class="collab-user-info">
+                        <span id="user-email" class="user-email">Loading...</span>
+                        <button id="back-to-mail-btn" class="quantum-btn quantum-btn-secondary">
+                            <span class="btn-icon">↩</span>
+                            <span class="btn-text">Back to Email</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 🚀 MAIN CONTENT -->
+            <main class="collab-main">
+                <!-- SIDEBAR NAVIGATION -->
+                <aside class="collab-sidebar">
+                    <nav class="collab-nav">
+                        <button class="collab-nav-item active" data-view="my-posts">
+                            <span class="nav-icon">📝</span>
+                            <span class="nav-label">My Posts</span>
+                            <span class="nav-count" id="my-posts-count">0</span>
+                        </button>
+                        <button class="collab-nav-item" data-view="all-posts">
+                            <span class="nav-icon">📚</span>
+                            <span class="nav-label">All Posts</span>
+                            <span class="nav-count" id="all-posts-count">0</span>
+                        </button>
+                        <button class="collab-nav-item" data-view="new-post">
+                            <span class="nav-icon">✨</span>
+                            <span class="nav-label">New Post</span>
+                        </button>
+                        <button class="collab-nav-item" data-view="team">
+                            <span class="nav-icon">👥</span>
+                            <span class="nav-label">Team</span>
+                            <span class="nav-count" id="team-count">0</span>
+                        </button>
+                        <button class="collab-nav-item" data-view="activity">
+                            <span class="nav-icon">📊</span>
+                            <span class="nav-label">Activity</span>
+                        </button>
+                    </nav>
+                </aside>
+
+                <!-- CONTENT AREA -->
+                <div class="collab-content">
+                    <!-- MY POSTS VIEW -->
+                    <div id="my-posts-view" class="collab-view active">
+                        <div class="view-header">
+                            <h1 class="view-title">My Posts</h1>
+                            <p class="view-subtitle">Your authored and collaborated posts</p>
+                        </div>
+                        <div id="my-posts-list" class="posts-grid">
+                            <div class="loading-quantum">
+                                <div class="loading-spinner"></div>
+                                <p>Loading posts...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ALL POSTS VIEW -->
+                    <div id="all-posts-view" class="collab-view">
+                        <div class="view-header">
+                            <h1 class="view-title">All Posts</h1>
+                            <p class="view-subtitle">Browse all blog posts</p>
+                        </div>
+                        <div id="all-posts-list" class="posts-grid">
+                            <div class="loading-quantum">
+                                <div class="loading-spinner"></div>
+                                <p>Loading posts...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- NEW POST VIEW -->
+                    <div id="new-post-view" class="collab-view">
+                        <div class="view-header">
+                            <h1 class="view-title">Create New Post</h1>
+                            <p class="view-subtitle">Write and publish content</p>
+                        </div>
+                        <div class="permission-check-box">
+                            <p id="permission-status">Checking permissions...</p>
+                        </div>
+                    </div>
+
+                    <!-- TEAM VIEW -->
+                    <div id="team-view" class="collab-view">
+                        <div class="view-header">
+                            <h1 class="view-title">Team Members</h1>
+                            <p class="view-subtitle">Manage collaboration roles</p>
+                        </div>
+                        <div id="team-list" class="team-grid">
+                            <div class="loading-quantum">
+                                <div class="loading-spinner"></div>
+                                <p>Loading team...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ACTIVITY VIEW -->
+                    <div id="activity-view" class="collab-view">
+                        <div class="view-header">
+                            <h1 class="view-title">Recent Activity</h1>
+                            <p class="view-subtitle">Track changes and updates</p>
+                        </div>
+                        <div id="activity-list" class="activity-timeline">
+                            <div class="loading-quantum">
+                                <div class="loading-spinner"></div>
+                                <p>Loading activity...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <script src="/static/collaboration.js"></script>
+    </body>
+    </html>
+  `);
+});
+
 // Sitemap for SEO
 app.get('/sitemap.xml', async (c) => {
   const { DB } = c.env;
