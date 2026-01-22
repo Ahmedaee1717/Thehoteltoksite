@@ -8,12 +8,33 @@ function generateId(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 }
 
+// Helper to extract user email from JWT token
+function getUserEmailFromToken(authHeader: string | undefined): string | null {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+  
+  try {
+    const token = authHeader.substring(7);
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.email || null;
+  } catch (error) {
+    console.error('Error extracting email from token:', error);
+    return null;
+  }
+}
+
 export const collaborationRoutes = new Hono<{ Bindings: Bindings }>()
 
 // Get user's role and permissions
 collaborationRoutes.get('/my-role', async (c) => {
   const { DB } = c.env;
-  const userEmail = c.get('userEmail');
+  const authHeader = c.req.header('Authorization');
+  const userEmail = getUserEmailFromToken(authHeader);
+  
+  if (!userEmail) {
+    return c.json({ success: false, error: 'Unauthorized' }, 401);
+  }
   
   try {
     const role = await DB.prepare(`
@@ -22,7 +43,7 @@ collaborationRoutes.get('/my-role', async (c) => {
     
     return c.json({
       success: true,
-      role: role || { role: 'viewer', permissions: '[]' }
+      role: role ? role.role : 'viewer'
     });
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500);
@@ -82,7 +103,12 @@ collaborationRoutes.put('/users/:email/role', async (c) => {
 // Get blog posts accessible to user
 collaborationRoutes.get('/blog-posts', async (c) => {
   const { DB } = c.env;
-  const userEmail = c.get('userEmail');
+  const authHeader = c.req.header('Authorization');
+  const userEmail = getUserEmailFromToken(authHeader);
+  
+  if (!userEmail) {
+    return c.json({ success: false, error: 'Unauthorized' }, 401);
+  }
   
   try {
     // Check user role

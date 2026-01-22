@@ -5,6 +5,14 @@ let currentView = 'my-posts';
 let currentUser = null;
 let userRole = null;
 
+// 🍪 GET COOKIE HELPER
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+}
+
 // 🚀 INITIALIZE
 document.addEventListener('DOMContentLoaded', async () => {
   await loadUser();
@@ -17,8 +25,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 // 👤 LOAD USER INFO
 async function loadUser() {
   try {
-    const token = localStorage.getItem('auth_token');
+    // Check for auth token in cookies (same as email interface)
+    const token = getCookie('auth_token');
     if (!token) {
+      console.log('No auth token found in cookies, redirecting to login');
       window.location.href = '/login';
       return;
     }
@@ -37,7 +47,12 @@ async function loadUser() {
 // 🎭 LOAD USER ROLE
 async function loadMyRole() {
   try {
-    const token = localStorage.getItem('auth_token');
+    const token = getCookie('auth_token');
+    if (!token) {
+      window.location.href = '/login';
+      return;
+    }
+    
     const response = await fetch(`${API_BASE}/my-role`, {
       headers: {
         'Authorization': `Bearer ${token}`
@@ -124,7 +139,7 @@ async function loadInitialData() {
 // 📈 LOAD COUNTS
 async function loadCounts() {
   try {
-    const token = localStorage.getItem('auth_token');
+    const token = getCookie('auth_token');
     
     // Load posts count
     const postsResponse = await fetch(`${API_BASE}/blog-posts`, {
@@ -158,7 +173,7 @@ async function loadMyPosts() {
   container.innerHTML = '<div class="loading-quantum"><div class="loading-spinner"></div><p>Loading posts...</p></div>';
   
   try {
-    const token = localStorage.getItem('auth_token');
+    const token = getCookie('auth_token');
     const response = await fetch(`${API_BASE}/blog-posts`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -202,7 +217,7 @@ async function loadAllPosts() {
   container.innerHTML = '<div class="loading-quantum"><div class="loading-spinner"></div><p>Loading posts...</p></div>';
   
   try {
-    const token = localStorage.getItem('auth_token');
+    const token = getCookie('auth_token');
     const response = await fetch(`${API_BASE}/blog-posts`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -306,7 +321,7 @@ async function loadTeam() {
   container.innerHTML = '<div class="loading-quantum"><div class="loading-spinner"></div><p>Loading team...</p></div>';
   
   try {
-    const token = localStorage.getItem('auth_token');
+    const token = getCookie('auth_token');
     const response = await fetch(`${API_BASE}/users`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -361,7 +376,7 @@ async function loadActivity() {
   container.innerHTML = '<div class="loading-quantum"><div class="loading-spinner"></div><p>Loading activity...</p></div>';
   
   try {
-    const token = localStorage.getItem('auth_token');
+    const token = getCookie('auth_token');
     const response = await fetch(`${API_BASE}/activity`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
