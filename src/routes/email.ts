@@ -1028,6 +1028,9 @@ emailRoutes.post('/send', async (c) => {
     const snippet = body.substring(0, 150);
     console.log('📝 Storing email as plaintext (encryption disabled)');
     
+    // Prepare HTML body with signature for database storage
+    const bodyHtmlToStore = h; // Use the full HTML with signature (already created above)
+    
     // Store email in database
     const insertResult = await DB.prepare(`
       INSERT INTO emails (
@@ -1046,7 +1049,7 @@ emailRoutes.post('/send', async (c) => {
       bcc ? JSON.stringify(bcc) : null,
       subject,
       bodyToStore, // Plaintext (encryption disabled)
-      bodyToStore, // Plaintext (encryption disabled)
+      bodyHtmlToStore, // Full HTML with signature
       snippet, // Plaintext snippet for preview
       category,
       aiSummary,
@@ -2692,29 +2695,7 @@ emailRoutes.post('/receive', async (c) => {
       return c.json({ success: false, error: 'Missing required fields' }, 400);
     }
     
-    // Check for duplicates (improved check for internal emails)
-    // For internal emails from our system, check by from_email, to, subject, and recent timestamp
-    try {
-      const fiveSecondsAgo = new Date(Date.now() - 5000).toISOString();
-      const existing = await DB.prepare(`
-        SELECT id FROM emails 
-        WHERE from_email = ? 
-          AND to_email = ? 
-          AND subject = ? 
-          AND created_at > ?
-        LIMIT 1
-      `).bind(from.includes('<') ? from.match(/<([^>]+)>/)?.[1] : from, to, subject, fiveSecondsAgo).first();
-      
-      if (existing) {
-        console.log(`🔄 DUPLICATE DETECTED: Email already exists (${existing.id}), skipping webhook insert`);
-        return c.json({ success: true, duplicate: true, emailId: existing.id });
-      }
-    } catch (e) {
-      console.error('Duplicate check error:', e);
-      // Continue if duplicate check fails
-    }
-    
-    // Parse sender
+    // Parse sender FIRST (before duplicate check)
     let senderEmail = from;
     let senderName = '';
     
@@ -2735,6 +2716,33 @@ emailRoutes.post('/receive', async (c) => {
     } catch (e) {
       senderEmail = from;
     }
+    
+    console.log('📧 Parsed webhook email:', { from, senderEmail, to, subject });
+    
+    // Check for duplicates (improved check for internal emails)
+    // CRITICAL: Check if this email was just sent by us (within last 10 seconds)
+    try {
+      const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
+      const existing = await DB.prepare(`
+        SELECT id, category FROM emails 
+        WHERE from_email = ? 
+          AND to_email = ? 
+          AND subject = ? 
+          AND created_at > ?
+        ORDER BY created_at DESC
+        LIMIT 1
+      `).bind(senderEmail, to, subject, tenSecondsAgo).first();
+      
+      if (existing && existing.category === 'sent') {
+        console.log(`🔄 DUPLICATE DETECTED: Email already exists as SENT (${existing.id}), skipping webhook insert`);
+        return c.json({ success: true, duplicate: true, emailId: existing.id });
+      }
+    } catch (e) {
+      console.error('❌ Duplicate check error:', e);
+      // Continue if duplicate check fails
+    }
+    
+    // Sender already parsed above (before duplicate check)
     
     // Generate IDs
     const emailId = `eml_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
