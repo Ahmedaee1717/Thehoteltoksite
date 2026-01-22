@@ -202,97 +202,112 @@ fileBank.post('/files', async (c) => {
 fileBank.post('/files/upload', async (c) => {
   try {
     const formData = await c.req.formData()
-    const file = formData.get('file') as File
     const userEmail = formData.get('userEmail') as string
-    const folderId = formData.get('folder_id') as string
+    const folderId = (formData.get('folderId') || formData.get('folder_id')) as string
     
-    if (!file || !userEmail) {
-      return c.json({ error: 'file and userEmail are required' }, 400)
+    // Support both 'file' (single) and 'files' (multiple)
+    const files = formData.getAll('files').length > 0 ? formData.getAll('files') : [formData.get('file')];
+    const validFiles = files.filter(f => f && f instanceof File) as File[];
+    
+    if (validFiles.length === 0 || !userEmail) {
+      console.error('❌ Upload validation failed:', { 
+        filesCount: validFiles.length, 
+        userEmail,
+        formDataKeys: Array.from(formData.keys())
+      });
+      return c.json({ error: 'At least one file and userEmail are required' }, 400)
     }
     
-    console.log(`📤 Uploading file: ${file.name} (${file.size} bytes) for ${userEmail}`);
+    console.log(`📤 Uploading ${validFiles.length} file(s) for ${userEmail}`);
     
-    // Extract file info
-    const filename = file.name
-    const fileSize = file.size
-    const fileType = file.type
-    const fileExtension = filename.split('.').pop() || ''
+    const uploadedFiles = [];
     
-    // 🚀 UPLOAD TO R2
-    const r2Key = `uploads/${Date.now()}-${filename}`;
-    const arrayBuffer = await file.arrayBuffer();
-    
-    console.log(`📦 Uploading to R2: ${r2Key}`);
-    await c.env.R2_BUCKET.put(r2Key, arrayBuffer, {
-      httpMetadata: {
-        contentType: fileType || 'application/octet-stream'
+    for (const file of validFiles) {
+      console.log(`📤 Processing: ${file.name} (${file.size} bytes)`);
+      
+      // Extract file info
+      const filename = file.name
+      const fileSize = file.size
+      const fileType = file.type
+      const fileExtension = filename.split('.').pop() || ''
+      
+      // 🚀 UPLOAD TO R2
+      const r2Key = `uploads/${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${filename}`;
+      const arrayBuffer = await file.arrayBuffer();
+      
+      console.log(`📦 Uploading to R2: ${r2Key}`);
+      await c.env.R2_BUCKET.put(r2Key, arrayBuffer, {
+        httpMetadata: {
+          contentType: fileType || 'application/octet-stream'
+        }
+      });
+      console.log(`✅ Uploaded to R2 successfully`);
+      
+      // R2 file URL (will be served via /r2/ endpoint)
+      const fileUrl = `/r2/${r2Key}`;
+      
+      // Determine file path
+      let filePath = `/${filename}`
+      if (folderId) {
+        const folder = await c.env.DB.prepare('SELECT folder_path FROM file_bank_folders WHERE id = ?').bind(folderId).first()
+        if (folder && folder.folder_path) {
+          filePath = `${folder.folder_path}/${filename}`
+        }
       }
-    });
-    console.log(`✅ Uploaded to R2 successfully`);
-    
-    // R2 file URL (will be served via /r2/ endpoint)
-    const fileUrl = `/r2/${r2Key}`;
-    
-    // Determine file path
-    let filePath = `/${filename}`
-    if (folderId) {
-      const folder = await c.env.DB.prepare('SELECT folder_path FROM file_bank_folders WHERE id = ?').bind(folderId).first()
-      if (folder && folder.folder_path) {
-        filePath = `${folder.folder_path}/${filename}`
-      }
-    }
-    
-    const result = await c.env.DB.prepare(`
-      INSERT INTO file_bank_files (
-        user_email, filename, original_filename, file_path, file_url,
-        file_type, file_size, file_extension, folder_id, tags, description
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(
-      userEmail,
-      filename,
-      filename,
-      filePath,
-      fileUrl,
-      fileType || 'application/octet-stream',
-      fileSize || 0,
-      fileExtension || '',
-      folderId || null,
-      '[]',
-      ''
-    ).run()
-    
-    // Log activity
-    await c.env.DB.prepare(`
-      INSERT INTO file_bank_activity (file_id, user_email, activity_type)
-      VALUES (?, ?, 'uploaded')
-    `).bind(result.meta.last_row_id, userEmail).run()
-    
-    // Update folder file count
-    if (folderId) {
+      
+      const result = await c.env.DB.prepare(`
+        INSERT INTO file_bank_files (
+          user_email, filename, original_filename, file_path, file_url,
+          file_type, file_size, file_extension, folder_id, tags, description
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        userEmail,
+        filename,
+        filename,
+        filePath,
+        fileUrl,
+        fileType || 'application/octet-stream',
+        fileSize || 0,
+        fileExtension || '',
+        folderId || null,
+        '[]',
+        ''
+      ).run()
+      
+      // Log activity
       await c.env.DB.prepare(`
-        UPDATE file_bank_folders
-        SET file_count = file_count + 1,
-            total_size = total_size + ?,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `).bind(fileSize || 0, folderId).run()
-    }
-    
-    return c.json({
-      success: true,
-      fileId: result.meta.last_row_id,
-      file: {
+        INSERT INTO file_bank_activity (file_id, user_email, activity_type)
+        VALUES (?, ?, 'uploaded')
+      `).bind(result.meta.last_row_id, userEmail).run()
+      
+      // Update folder file count
+      if (folderId) {
+        await c.env.DB.prepare(`
+          UPDATE file_bank_folders
+          SET file_count = file_count + 1,
+              total_size = total_size + ?,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `).bind(fileSize || 0, folderId).run()
+      }
+      
+      uploadedFiles.push({
         id: result.meta.last_row_id,
         filename,
         fileSize,
         fileType,
         fileExtension,
         fileUrl
-      },
-      message: 'File uploaded successfully'
+      });
+    }
+    
+    return c.json({
+      success: true,
+      files: uploadedFiles,
+      message: `${uploadedFiles.length} file(s) uploaded successfully`
     })
   } catch (error: any) {
-    console.error('Error uploading file:', error)
+    console.error('❌ Error uploading file:', error)
     return c.json({ error: 'Failed to upload file', details: error.message }, 500)
   }
 })
