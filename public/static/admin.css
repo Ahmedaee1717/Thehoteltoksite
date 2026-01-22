@@ -1082,3 +1082,127 @@ body:has(#blog-post) footer .disclaimer {
         flex-direction: column;
     }
 }
+
+/* Trix Editor Styling */
+trix-editor {
+    min-height: 500px;
+    max-height: 800px;
+    overflow-y: auto;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 20px;
+    background: #ffffff;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #1f2937;
+}
+
+trix-editor:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+trix-editor h1 {
+    font-size: 2em;
+    font-weight: 700;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+}
+
+trix-editor h2 {
+    font-size: 1.5em;
+    font-weight: 700;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+}
+
+trix-editor p {
+    margin-bottom: 1em;
+}
+
+trix-editor ul,
+trix-editor ol {
+    margin: 1em 0;
+    padding-left: 2em;
+}
+
+trix-editor li {
+    margin-bottom: 0.5em;
+}
+
+trix-editor a {
+    color: #3b82f6;
+    text-decoration: underline;
+}
+
+trix-editor blockquote {
+    border-left: 4px solid #e5e7eb;
+    padding-left: 1em;
+    margin: 1em 0;
+    color: #6b7280;
+    font-style: italic;
+}
+
+trix-editor pre {
+    background: #1f2937;
+    color: #f9fafb;
+    padding: 1em;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-family: monospace;
+}
+
+/* Trix toolbar styling */
+trix-toolbar {
+    background: #f9fafb;
+    border: 2px solid #e5e7eb;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    padding: 10px;
+    margin-bottom: -2px;
+}
+
+trix-toolbar .trix-button-group {
+    margin-right: 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #ffffff;
+}
+
+trix-toolbar .trix-button {
+    background: transparent;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+trix-toolbar .trix-button:hover {
+    background: #f3f4f6;
+}
+
+trix-toolbar .trix-button.trix-active {
+    background: #e0e7ff;
+    color: #3b82f6;
+}
+
+/* Image handling */
+trix-editor img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 1em 0;
+}
+
+figure {
+    margin: 1em 0;
+}
+
+figcaption {
+    font-size: 0.875em;
+    color: #6b7280;
+    text-align: center;
+    margin-top: 0.5em;
+}

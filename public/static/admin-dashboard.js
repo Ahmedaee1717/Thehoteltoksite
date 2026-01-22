@@ -11,29 +11,53 @@ let allPosts = [];
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
-    setupLivePreview();
+    setupTrixEditor();
     loadPosts();
     setupNavigation();
     setupForms();
     setupLogout();
 });
 
-// Live Preview Setup
-function setupLivePreview() {
-    const contentTextarea = document.getElementById('post-content');
-    const previewDiv = document.getElementById('content-preview');
+// Trix Editor Setup
+function setupTrixEditor() {
+    const trixEditor = document.querySelector('trix-editor');
     
-    if (contentTextarea && previewDiv) {
-        // Update preview on input
-        contentTextarea.addEventListener('input', function() {
-            previewDiv.innerHTML = this.value;
+    if (trixEditor) {
+        // Trix automatically syncs with the hidden input field
+        // No additional setup needed for basic functionality
+        
+        // Optional: Customize Trix behavior
+        trixEditor.addEventListener('trix-file-accept', function(e) {
+            // Accept image files for upload
+            const acceptedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            if (!acceptedTypes.includes(e.file.type)) {
+                e.preventDefault();
+                alert('Only image files (JPEG, PNG, GIF, WebP) are supported.');
+            }
         });
         
-        // Initial preview if content exists
-        if (contentTextarea.value) {
-            previewDiv.innerHTML = contentTextarea.value;
-        }
+        // Handle image attachments
+        trixEditor.addEventListener('trix-attachment-add', function(e) {
+            const attachment = e.attachment;
+            if (attachment.file) {
+                uploadImage(attachment.file, attachment);
+            }
+        });
     }
+}
+
+// Upload image and attach to Trix
+function uploadImage(file, attachment) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        // Convert to base64 data URL
+        const url = e.target.result;
+        attachment.setAttributes({
+            url: url,
+            href: url
+        });
+    };
+    reader.readAsDataURL(file);
 }
 
 // Navigation
@@ -293,13 +317,12 @@ function fillPostForm(post) {
     document.getElementById('post-excerpt').value = post.excerpt || '';
     document.getElementById('post-featured-image').value = post.featured_image || '';
     
-    // Set content and update preview
-    const contentTextarea = document.getElementById('post-content');
-    const previewDiv = document.getElementById('content-preview');
-    
-    contentTextarea.value = post.content;
-    if (previewDiv) {
-        previewDiv.innerHTML = post.content;
+    // Set content in Trix editor
+    const trixEditor = document.querySelector('trix-editor');
+    if (trixEditor) {
+        trixEditor.editor.loadHTML(post.content);
+    } else {
+        document.getElementById('post-content').value = post.content;
     }
     
     document.getElementById('post-meta-title').value = post.meta_title || '';
@@ -316,10 +339,10 @@ function resetPostForm() {
     document.getElementById('delete-post-btn').style.display = 'none';
     document.getElementById('post-author').value = 'Investay Capital';
     
-    // Clear preview
-    const previewDiv = document.getElementById('content-preview');
-    if (previewDiv) {
-        previewDiv.innerHTML = '';
+    // Clear Trix editor
+    const trixEditor = document.querySelector('trix-editor');
+    if (trixEditor) {
+        trixEditor.editor.loadHTML('');
     }
     
     // Hide AI status box

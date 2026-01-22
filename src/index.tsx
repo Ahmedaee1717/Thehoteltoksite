@@ -1187,33 +1187,10 @@ app.get('/admin/dashboard', (c) => {
                         <div class="form-section">
                             <h3>Content</h3>
                             <div class="form-group">
-                                <label for="post-content">Content * (HTML Editor)</label>
-                                <div class="editor-wrapper">
-                                    <div class="editor-half">
-                                        <div class="editor-label">HTML Editor:</div>
-                                        <textarea id="post-content" name="content" rows="25" required placeholder="Write your HTML here...
-
-Example:
-<p>First paragraph with some text.</p>
-<p>Second paragraph with more text.</p>
-
-<h2>Section Heading</h2>
-<p>Content under the heading.</p>
-
-<ul>
-  <li>Bullet point 1</li>
-  <li>Bullet point 2</li>
-  <li>Bullet point 3</li>
-</ul>
-
-<p>Final paragraph.</p>"></textarea>
-                                    </div>
-                                    <div class="editor-half">
-                                        <div class="editor-label">Live Preview:</div>
-                                        <div id="content-preview" class="content-preview"></div>
-                                    </div>
-                                </div>
-                                <small>Edit HTML on the left, see live preview on the right. Supports paragraphs, headings, lists, links, images, etc.</small>
+                                <label for="post-content">Content *</label>
+                                <input id="post-content" type="hidden" name="content" required>
+                                <trix-editor input="post-content" class="trix-content"></trix-editor>
+                                <small>Rich text editor with formatting, headings, lists, links, images, and more. Press Enter for new paragraph.</small>
                             </div>
                         </div>
                         
@@ -1327,6 +1304,10 @@ Example:
                 </div>
             </main>
         </div>
+        
+        <!-- Trix Rich Text Editor (Free, No API Key) -->
+        <link rel="stylesheet" type="text/css" href="https://unpkg.com/trix@2.0.8/dist/trix.css">
+        <script type="text/javascript" src="https://unpkg.com/trix@2.0.8/dist/trix.umd.min.js"></script>
         
         <!-- Admin Dashboard JS -->
         <script src="/static/admin-dashboard.js"></script>
