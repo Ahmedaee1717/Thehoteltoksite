@@ -377,14 +377,13 @@ async function checkNewPostPermission() {
             
             <div class="ultra-ai-mega-button-container">
               <button type="button" id="collab-ai-seo-optimize" class="ultra-ai-mega-button">
-                <span class="ultra-ai-mega-bg"></span>
-                <span class="ultra-ai-mega-glow"></span>
-                <span class="ultra-ai-mega-particles"></span>
-                <span class="ultra-ai-mega-content">
-                  <span class="ultra-ai-mega-icon">✨</span>
-                  <span class="ultra-ai-mega-text">AI AUTO-FILL ALL SEO FIELDS</span>
-                  <span class="ultra-ai-mega-subtext">Quantum Neural Analysis • Instant Optimization • 2070 Technology</span>
-                </span>
+                <div class="ai-btn-content">
+                  <div class="ai-btn-icon">⚡</div>
+                  <div class="ai-btn-text-group">
+                    <div class="ai-btn-title">AI Auto-Fill SEO</div>
+                    <div class="ai-btn-subtitle">Neural optimization • Instant results</div>
+                  </div>
+                </div>
               </button>
             </div>
             
@@ -449,33 +448,41 @@ async function checkNewPostPermission() {
             <!-- MEGA AI OPTIMIZATION BUTTON -->
             <div class="ultra-ai-quantum-action">
               <button type="button" id="collab-ai-optimize-all" class="ultra-ai-quantum-button">
-                <span class="ultra-ai-quantum-bg"></span>
-                <span class="ultra-ai-quantum-glow"></span>
-                <span class="ultra-ai-quantum-content">
-                  <span class="ultra-ai-quantum-icon">🤖</span>
-                  <span class="ultra-ai-quantum-text">ONE-CLICK QUANTUM AI OPTIMIZATION</span>
-                  <span class="ultra-ai-quantum-subtext">Generate Everything • Neural Networks • 10X Engagement</span>
-                </span>
+                <div class="ai-btn-content">
+                  <div class="ai-btn-icon">🚀</div>
+                  <div class="ai-btn-text-group">
+                    <div class="ai-btn-title">One-Click AI Optimization</div>
+                    <div class="ai-btn-subtitle">Generate everything • Neural networks</div>
+                  </div>
+                </div>
               </button>
             </div>
             
             <!-- INDIVIDUAL AI ACTIONS -->
             <div class="ultra-ai-individual-actions">
               <button type="button" id="collab-ai-generate-summary" class="ultra-ai-action-btn">
-                <span class="ultra-ai-action-icon">📝</span>
-                <span class="ultra-ai-action-text">AI SUMMARY</span>
+                <div class="ai-small-btn-content">
+                  <span class="ai-small-icon">📝</span>
+                  <span class="ai-small-text">AI Summary</span>
+                </div>
               </button>
               <button type="button" id="collab-ai-generate-faq" class="ultra-ai-action-btn">
-                <span class="ultra-ai-action-icon">❓</span>
-                <span class="ultra-ai-action-text">FAQ SCHEMA</span>
+                <div class="ai-small-btn-content">
+                  <span class="ai-small-icon">❓</span>
+                  <span class="ai-small-text">FAQ Schema</span>
+                </div>
               </button>
               <button type="button" id="collab-ai-generate-schema" class="ultra-ai-action-btn">
-                <span class="ultra-ai-action-icon">📋</span>
-                <span class="ultra-ai-action-text">STRUCTURED DATA</span>
+                <div class="ai-small-btn-content">
+                  <span class="ai-small-icon">📋</span>
+                  <span class="ai-small-text">Structured Data</span>
+                </div>
               </button>
               <button type="button" id="collab-ai-generate-embedding" class="ultra-ai-action-btn">
-                <span class="ultra-ai-action-icon">🧠</span>
-                <span class="ultra-ai-action-text">NEURAL EMBED</span>
+                <div class="ai-small-btn-content">
+                  <span class="ai-small-icon">🧠</span>
+                  <span class="ai-small-text">Neural Embed</span>
+                </div>
               </button>
             </div>
             

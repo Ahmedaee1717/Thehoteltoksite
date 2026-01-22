@@ -1058,7 +1058,7 @@ trix-toolbar .trix-button.trix-active {
   border-color: rgba(79, 172, 254, 0.4);
 }
 
-/* 🤖 AI MEGA BUTTON - REDESIGNED DARK */
+/* 🤖 AI MEGA BUTTON - 2070 DARK PROFESSIONAL */
 .ultra-ai-mega-button-container {
   margin: 24px 0;
 }
@@ -1067,116 +1067,93 @@ trix-toolbar .trix-button.trix-active {
   position: relative;
   width: 100%;
   padding: 0;
-  border: none;
-  background: transparent;
+  border: 2px solid rgba(102, 126, 234, 0.4);
+  background: linear-gradient(135deg, rgba(15, 20, 45, 0.95), rgba(25, 30, 60, 0.95));
   cursor: pointer;
   overflow: hidden;
   border-radius: 16px;
   height: 90px;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 4px 24px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-.ultra-ai-mega-bg {
+.ultra-ai-mega-button::before {
+  content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-  opacity: 1;
-  transition: opacity 0.3s ease;
-}
-
-.ultra-ai-mega-button:hover .ultra-ai-mega-bg {
-  opacity: 1;
-  animation: megaPulse 1.5s infinite;
-}
-
-@keyframes megaPulse {
-  0%, 100% { transform: scale(1); filter: brightness(1); }
-  50% { transform: scale(1.01); filter: brightness(1.1); }
-}
-
-.ultra-ai-mega-glow {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.2), transparent 70%);
+  inset: 0;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.4s ease;
 }
 
-.ultra-ai-mega-button:hover .ultra-ai-mega-glow {
+.ultra-ai-mega-button:hover {
+  border-color: rgba(102, 126, 234, 0.7);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 32px rgba(102, 126, 234, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.ultra-ai-mega-button:hover::before {
   opacity: 1;
-}
-
-.ultra-ai-mega-particles {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: 
-    radial-gradient(circle, rgba(255, 255, 255, 0.6) 1px, transparent 1px);
-  background-size: 50px 50px;
-  opacity: 0.08;
-  animation: particleFloat 20s linear infinite;
-}
-
-@keyframes particleFloat {
-  0% { transform: translateY(0) translateX(0); }
-  100% { transform: translateY(-100%) translateX(50%); }
-}
-
-.ultra-ai-mega-content {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  gap: 6px;
-}
-
-.ultra-ai-mega-icon {
-  font-size: 32px;
-  filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.6));
-  animation: iconFloat 3s ease-in-out infinite;
-}
-
-@keyframes iconFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-
-.ultra-ai-mega-text {
-  font-size: 18px;
-  font-weight: 900;
-  color: white;
-  letter-spacing: 1.5px;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-}
-
-.ultra-ai-mega-subtext {
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
-  letter-spacing: 0.5px;
 }
 
 .ultra-ai-mega-button:active {
-  transform: scale(0.98);
+  transform: translateY(0);
 }
 
 .ultra-ai-mega-button:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* 🚀 QUANTUM AI BUTTON - REDESIGNED DARK */
+.ai-btn-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  height: 100%;
+  padding: 0 32px;
+}
+
+.ai-btn-icon {
+  font-size: 38px;
+  filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.4));
+  animation: gentlePulse 3s ease-in-out infinite;
+}
+
+@keyframes gentlePulse {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.05); opacity: 1; }
+}
+
+.ai-btn-text-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.ai-btn-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.ai-btn-subtitle {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.65);
+  letter-spacing: 0.3px;
+}
+
+/* 🚀 QUANTUM AI BUTTON - 2070 DARK PROFESSIONAL */
 .ultra-ai-quantum-action {
   margin: 24px 0;
 }
@@ -1185,80 +1162,49 @@ trix-toolbar .trix-button.trix-active {
   position: relative;
   width: 100%;
   padding: 0;
-  border: none;
-  background: transparent;
+  border: 2px solid rgba(79, 172, 254, 0.4);
+  background: linear-gradient(135deg, rgba(15, 25, 50, 0.95), rgba(20, 35, 65, 0.95));
   cursor: pointer;
   overflow: hidden;
   border-radius: 16px;
   height: 85px;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 4px 24px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-.ultra-ai-quantum-bg {
+.ultra-ai-quantum-button::before {
+  content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  opacity: 1;
-}
-
-.ultra-ai-quantum-button:hover .ultra-ai-quantum-bg {
-  animation: quantumPulse 1s infinite;
-}
-
-@keyframes quantumPulse {
-  0%, 100% { filter: brightness(1); }
-  50% { filter: brightness(1.15); }
-}
-
-.ultra-ai-quantum-glow {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.3), transparent 60%);
+  inset: 0;
+  background: linear-gradient(135deg, rgba(79, 172, 254, 0.15), rgba(0, 242, 254, 0.15));
   opacity: 0;
+  transition: opacity 0.4s ease;
 }
 
-.ultra-ai-quantum-button:hover .ultra-ai-quantum-glow {
+.ultra-ai-quantum-button:hover {
+  border-color: rgba(79, 172, 254, 0.7);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 32px rgba(79, 172, 254, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.ultra-ai-quantum-button:hover::before {
   opacity: 1;
 }
 
-.ultra-ai-quantum-content {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  gap: 5px;
+.ultra-ai-quantum-button:active {
+  transform: translateY(0);
 }
 
-.ultra-ai-quantum-icon {
-  font-size: 30px;
-  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.5));
+.ultra-ai-quantum-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.ultra-ai-quantum-text {
-  font-size: 17px;
-  font-weight: 900;
-  color: white;
-  letter-spacing: 1.3px;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-}
-
-.ultra-ai-quantum-subtext {
-  font-size: 10px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
-  letter-spacing: 0.4px;
-}
-
-/* Individual AI Action Buttons - REDESIGNED */
+/* Individual AI Action Buttons - 2070 DARK PROFESSIONAL */
 .ultra-ai-individual-actions {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1268,17 +1214,20 @@ trix-toolbar .trix-button.trix-active {
 
 .ultra-ai-action-btn {
   position: relative;
-  padding: 16px 20px;
+  padding: 18px 20px;
   border: 2px solid rgba(102, 126, 234, 0.3);
-  background: rgba(8, 9, 22, 0.8);
+  background: linear-gradient(135deg, rgba(10, 12, 28, 0.9), rgba(18, 20, 40, 0.9));
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   gap: 10px;
   justify-content: center;
   overflow: hidden;
+  box-shadow: 
+    0 2px 12px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .ultra-ai-action-btn::before {
@@ -1297,21 +1246,35 @@ trix-toolbar .trix-button.trix-active {
 }
 
 .ultra-ai-action-btn:hover {
-  border-color: #667eea;
-  background: rgba(102, 126, 234, 0.15);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.25);
+  border-color: rgba(102, 126, 234, 0.7);
+  background: linear-gradient(135deg, rgba(15, 18, 40, 0.95), rgba(25, 30, 55, 0.95));
+  transform: translateY(-3px);
+  box-shadow: 
+    0 8px 24px rgba(102, 126, 234, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-.ultra-ai-action-icon {
-  font-size: 18px;
+.ultra-ai-action-btn:active {
+  transform: translateY(-1px);
 }
 
-.ultra-ai-action-text {
-  font-size: 11px;
-  font-weight: 700;
+.ai-small-btn-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ai-small-icon {
+  font-size: 22px;
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.3));
+}
+
+.ai-small-text {
+  font-size: 13px;
+  font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
-  letter-spacing: 0.8px;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
 
 /* AI Status Box - REDESIGNED */
