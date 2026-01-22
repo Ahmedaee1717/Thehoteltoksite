@@ -1745,3 +1745,250 @@ figcaption {
         font-size: 28px;
     }
 }
+
+/* ⚙️ SETTINGS VIEW - User Permissions */
+.settings-content {
+    padding: 24px;
+    max-width: 1200px;
+}
+
+.settings-section {
+    margin-bottom: 48px;
+    background: white;
+    border-radius: 12px;
+    padding: 32px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.settings-section-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.settings-section-desc {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 32px;
+    line-height: 1.6;
+}
+
+.user-permissions-grid {
+    display: grid;
+    gap: 16px;
+}
+
+.user-permission-card {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+}
+
+.user-permission-card:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+    transform: translateY(-2px);
+}
+
+.user-permission-info {
+    flex: 1;
+}
+
+.user-permission-email {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 6px;
+}
+
+.user-permission-name {
+    font-size: 14px;
+    color: #666;
+}
+
+.user-permission-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.role-select {
+    padding: 10px 16px;
+    border-radius: 8px;
+    background: white;
+    border: 2px solid #e9ecef;
+    color: #1a1a1a;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+    min-width: 140px;
+}
+
+.role-select:hover {
+    border-color: #667eea;
+}
+
+.role-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.save-role-btn {
+    padding: 10px 24px;
+    border-radius: 8px;
+    background: #667eea;
+    border: none;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.save-role-btn.changed {
+    opacity: 1;
+    pointer-events: auto;
+    animation: pulse 2s infinite;
+}
+
+.save-role-btn:hover:not(:disabled) {
+    background: #5568d3;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.save-role-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(102, 126, 234, 0);
+    }
+}
+
+.role-legend {
+    display: grid;
+    gap: 16px;
+}
+
+.role-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 16px 20px;
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+}
+
+.role-badge-admin,
+.role-badge-publisher,
+.role-badge-editor,
+.role-badge-viewer {
+    display: inline-block;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 120px;
+    text-align: center;
+}
+
+.role-badge-admin {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: white;
+}
+
+.role-badge-publisher {
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    color: white;
+}
+
+.role-badge-editor {
+    background: linear-gradient(135deg, #43e97b, #38f9d7);
+    color: #1a1a1a;
+}
+
+.role-badge-viewer {
+    background: #e9ecef;
+    color: #666;
+    border: 2px solid #dee2e6;
+}
+
+.role-desc {
+    flex: 1;
+    font-size: 14px;
+    color: #495057;
+    line-height: 1.6;
+}
+
+.loading {
+    text-align: center;
+    padding: 48px;
+    color: #666;
+    font-size: 14px;
+}
+
+/* Success notification */
+.notification {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    padding: 16px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    z-index: 10000;
+    animation: slideIn 0.3s ease;
+}
+
+.notification-success {
+    background: linear-gradient(135deg, #43e97b, #38f9d7);
+    color: #1a1a1a;
+}
+
+.notification-error {
+    background: linear-gradient(135deg, #f5576c, #f093fb);
+    color: white;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}

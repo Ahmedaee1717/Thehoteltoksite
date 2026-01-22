@@ -101,6 +101,11 @@ function switchView(view) {
     document.getElementById(`${view}-view`).classList.add('active');
     
     currentView = view;
+    
+    // Load settings if switching to settings view
+    if (view === 'settings') {
+        loadSettingsUsers();
+    }
 }
 
 // Logout
@@ -693,4 +698,149 @@ fillPostForm = function(post) {
         loadAIStatus(post.id);
         document.getElementById('ai-include-kb').checked = post.ai_include_in_knowledge_base === 1;
     }
+}
+
+// ⚙️ SETTINGS - USER PERMISSIONS MANAGEMENT
+
+async function loadSettingsUsers() {
+    const container = document.getElementById('user-permissions-list');
+    
+    try {
+        const token = localStorage.getItem('admin_token') || localStorage.getItem('auth_token');
+        
+        // Fetch all users with their roles
+        const response = await fetch('/api/collaboration/users', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            container.innerHTML = '<div class="loading">Failed to load users</div>';
+            return;
+        }
+        
+        // Render user permission cards
+        container.innerHTML = data.users.map(user => `
+            <div class="user-permission-card">
+                <div class="user-permission-info">
+                    <div class="user-permission-email">${escapeHtml(user.email)}</div>
+                    <div class="user-permission-name">${escapeHtml(user.display_name || user.email)}</div>
+                </div>
+                <div class="user-permission-controls">
+                    <select class="role-select" data-user="${escapeHtml(user.email)}" data-original-role="${user.role}">
+                        <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
+                        <option value="publisher" ${user.role === 'publisher' ? 'selected' : ''}>Publisher</option>
+                        <option value="editor" ${user.role === 'editor' ? 'selected' : ''}>Editor</option>
+                        <option value="viewer" ${user.role === 'viewer' ? 'selected' : ''}>Viewer</option>
+                    </select>
+                    <button class="save-role-btn" data-user="${escapeHtml(user.email)}" disabled>
+                        Save
+                    </button>
+                </div>
+            </div>
+        `).join('');
+        
+        // Add event listeners to role selects
+        document.querySelectorAll('.role-select').forEach(select => {
+            select.addEventListener('change', (e) => {
+                const userEmail = e.target.dataset.user;
+                const originalRole = e.target.dataset.originalRole;
+                const newRole = e.target.value;
+                const saveBtn = document.querySelector(`.save-role-btn[data-user="${userEmail}"]`);
+                
+                // Enable save button if role changed
+                if (newRole !== originalRole) {
+                    saveBtn.disabled = false;
+                    saveBtn.classList.add('changed');
+                } else {
+                    saveBtn.disabled = true;
+                    saveBtn.classList.remove('changed');
+                }
+            });
+        });
+        
+        // Add event listeners to save buttons
+        document.querySelectorAll('.save-role-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const userEmail = e.target.dataset.user;
+                const select = document.querySelector(`.role-select[data-user="${userEmail}"]`);
+                const newRole = select.value;
+                
+                await updateUserRole(userEmail, newRole);
+                
+                // Update original role
+                select.dataset.originalRole = newRole;
+                e.target.disabled = true;
+                e.target.classList.remove('changed');
+            });
+        });
+        
+    } catch (error) {
+        console.error('❌ Error loading settings:', error);
+        container.innerHTML = '<div class="loading">Error loading users</div>';
+    }
+}
+
+async function updateUserRole(userEmail, newRole) {
+    try {
+        const token = localStorage.getItem('admin_token') || localStorage.getItem('auth_token');
+        
+        const response = await fetch(`/api/collaboration/users/${encodeURIComponent(userEmail)}/role`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                role: newRole,
+                permissions: getRolePermissions(newRole)
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification(`✅ Role updated: ${userEmail} is now ${newRole}`, 'success');
+        } else {
+            showNotification(`❌ Failed to update role: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        console.error('❌ Error updating role:', error);
+        showNotification('❌ Error updating role', 'error');
+    }
+}
+
+function getRolePermissions(role) {
+    const permissions = {
+        admin: ['create', 'edit', 'delete', 'publish', 'manage_users'],
+        publisher: ['create', 'edit', 'publish'],
+        editor: ['edit'],
+        viewer: []
+    };
+    
+    return permissions[role] || [];
+}
+
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }

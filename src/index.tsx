@@ -1341,10 +1341,39 @@ app.get('/admin/dashboard', (c) => {
                 <!-- Settings View -->
                 <div id="settings-view" class="admin-view">
                     <div class="admin-header">
-                        <h1>Settings</h1>
+                        <h1>⚙️ Settings</h1>
                     </div>
                     <div class="settings-content">
-                        <p>Settings management coming soon.</p>
+                        <div class="settings-section">
+                            <h2 class="settings-section-title">User Permissions & Collaboration Access</h2>
+                            <p class="settings-section-desc">Manage user roles and grant access to the Collaboration Center and blog posting features</p>
+                            
+                            <div id="user-permissions-list" class="user-permissions-grid">
+                                <div class="loading">Loading users...</div>
+                            </div>
+                        </div>
+
+                        <div class="settings-section">
+                            <h2 class="settings-section-title">Role Legend</h2>
+                            <div class="role-legend">
+                                <div class="role-legend-item">
+                                    <span class="role-badge-admin">Admin</span>
+                                    <span class="role-desc">Full access - manage users, create/edit/delete all posts, access admin dashboard</span>
+                                </div>
+                                <div class="role-legend-item">
+                                    <span class="role-badge-publisher">Publisher</span>
+                                    <span class="role-desc">Create and publish posts, edit own posts, access collaboration center</span>
+                                </div>
+                                <div class="role-legend-item">
+                                    <span class="role-badge-editor">Editor</span>
+                                    <span class="role-desc">Edit posts, cannot publish or delete, view collaboration center</span>
+                                </div>
+                                <div class="role-legend-item">
+                                    <span class="role-badge-viewer">Viewer</span>
+                                    <span class="role-desc">View-only access, no editing permissions, limited collaboration access</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </main>
