@@ -1262,14 +1262,45 @@ app.get('/admin/dashboard', (c) => {
                             </div>
                             
                             <div class="ai-actions">
-                                <button type="button" id="ai-optimize-all-btn" class="btn btn-secondary" style="margin-bottom: 10px;">
-                                    🤖 One-Click AI Optimization
-                                </button>
+                                <div class="ai-primary-action">
+                                    <button type="button" id="ai-optimize-all-btn" class="ai-quantum-button ai-primary">
+                                        <span class="ai-quantum-bg"></span>
+                                        <span class="ai-quantum-glow"></span>
+                                        <span class="ai-quantum-content">
+                                            <span class="ai-quantum-icon">🤖</span>
+                                            <span class="ai-quantum-text">ONE-CLICK AI OPTIMIZATION</span>
+                                        </span>
+                                    </button>
+                                </div>
                                 <div class="ai-individual-actions">
-                                    <button type="button" id="ai-generate-summary-btn" class="btn btn-sm btn-secondary">Generate Summary</button>
-                                    <button type="button" id="ai-generate-faq-btn" class="btn btn-sm btn-secondary">Generate FAQ</button>
-                                    <button type="button" id="ai-generate-schema-btn" class="btn btn-sm btn-secondary">Generate Schema</button>
-                                    <button type="button" id="ai-generate-embedding-btn" class="btn btn-sm btn-secondary">Generate Embedding</button>
+                                    <button type="button" id="ai-generate-summary-btn" class="ai-quantum-button ai-secondary">
+                                        <span class="ai-quantum-bg"></span>
+                                        <span class="ai-quantum-glow"></span>
+                                        <span class="ai-quantum-content">
+                                            <span class="ai-quantum-text">GENERATE SUMMARY</span>
+                                        </span>
+                                    </button>
+                                    <button type="button" id="ai-generate-faq-btn" class="ai-quantum-button ai-secondary">
+                                        <span class="ai-quantum-bg"></span>
+                                        <span class="ai-quantum-glow"></span>
+                                        <span class="ai-quantum-content">
+                                            <span class="ai-quantum-text">GENERATE FAQ</span>
+                                        </span>
+                                    </button>
+                                    <button type="button" id="ai-generate-schema-btn" class="ai-quantum-button ai-secondary">
+                                        <span class="ai-quantum-bg"></span>
+                                        <span class="ai-quantum-glow"></span>
+                                        <span class="ai-quantum-content">
+                                            <span class="ai-quantum-text">GENERATE SCHEMA</span>
+                                        </span>
+                                    </button>
+                                    <button type="button" id="ai-generate-embedding-btn" class="ai-quantum-button ai-secondary">
+                                        <span class="ai-quantum-bg"></span>
+                                        <span class="ai-quantum-glow"></span>
+                                        <span class="ai-quantum-content">
+                                            <span class="ai-quantum-text">GENERATE EMBEDDING</span>
+                                        </span>
+                                    </button>
                                 </div>
                             </div>
                             

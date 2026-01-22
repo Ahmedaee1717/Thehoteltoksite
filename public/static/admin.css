@@ -1469,3 +1469,279 @@ figcaption {
         letter-spacing: 1px;
     }
 }
+
+/* ============================================
+   🌌 QUANTUM AI BUTTONS - HARMONIZED YEAR 2070
+   ============================================ */
+
+.ai-actions {
+    margin: 30px 0;
+}
+
+.ai-primary-action {
+    margin-bottom: 20px;
+}
+
+.ai-individual-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+/* Quantum Button Base */
+.ai-quantum-button {
+    position: relative;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    overflow: visible;
+    transform-style: preserve-3d;
+    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.ai-quantum-button.ai-primary {
+    min-height: 80px;
+    width: 100%;
+}
+
+.ai-quantum-button.ai-secondary {
+    min-height: 60px;
+}
+
+.ai-quantum-button:hover {
+    transform: translateY(-5px) scale(1.01);
+}
+
+.ai-quantum-button:active {
+    transform: translateY(-2px) scale(0.99);
+}
+
+/* Holographic Background */
+.ai-quantum-bg {
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    opacity: 0.85;
+    transition: all 0.5s ease;
+}
+
+.ai-quantum-button.ai-primary .ai-quantum-bg {
+    background: linear-gradient(
+        135deg,
+        #667eea 0%,
+        #764ba2 30%,
+        #f093fb 60%,
+        #4facfe 100%
+    );
+    background-size: 300% 300%;
+    animation: quantumFlow 6s ease infinite;
+    box-shadow: 
+        0 0 30px rgba(102, 126, 234, 0.5),
+        0 0 60px rgba(118, 75, 162, 0.3),
+        inset 0 0 15px rgba(255, 255, 255, 0.1);
+}
+
+.ai-quantum-button.ai-secondary .ai-quantum-bg {
+    background: linear-gradient(
+        135deg,
+        #434343 0%,
+        #667eea 50%,
+        #764ba2 100%
+    );
+    background-size: 200% 200%;
+    animation: quantumFlow 8s ease infinite;
+    box-shadow: 
+        0 0 20px rgba(102, 126, 234, 0.3),
+        inset 0 0 10px rgba(255, 255, 255, 0.05);
+}
+
+/* Glow Layer */
+.ai-quantum-glow {
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(
+        45deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 70%
+    );
+    border-radius: 18px;
+    opacity: 0;
+    filter: blur(15px);
+    animation: quantumSweep 4s linear infinite;
+    transition: opacity 0.3s ease;
+}
+
+/* Content Layer */
+.ai-quantum-content {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    z-index: 1;
+    color: white;
+    text-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
+}
+
+.ai-quantum-button.ai-primary .ai-quantum-content {
+    padding: 20px 30px;
+}
+
+.ai-quantum-button.ai-secondary .ai-quantum-content {
+    padding: 16px 24px;
+}
+
+.ai-quantum-icon {
+    font-size: 32px;
+    animation: quantumPulse 2s ease-in-out infinite;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
+}
+
+.ai-quantum-text {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: linear-gradient(
+        90deg,
+        #ffffff 0%,
+        #e0e7ff 50%,
+        #ffffff 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: quantumTextShift 2s linear infinite;
+}
+
+.ai-quantum-button.ai-primary .ai-quantum-text {
+    font-size: 16px;
+    letter-spacing: 3px;
+}
+
+/* Hover Effects */
+.ai-quantum-button:hover .ai-quantum-bg {
+    opacity: 1;
+    animation-duration: 3s;
+}
+
+.ai-quantum-button.ai-primary:hover .ai-quantum-bg {
+    box-shadow: 
+        0 0 50px rgba(102, 126, 234, 0.7),
+        0 0 100px rgba(118, 75, 162, 0.5),
+        inset 0 0 25px rgba(255, 255, 255, 0.15);
+}
+
+.ai-quantum-button.ai-secondary:hover .ai-quantum-bg {
+    box-shadow: 
+        0 0 30px rgba(102, 126, 234, 0.5),
+        0 0 60px rgba(118, 75, 162, 0.3),
+        inset 0 0 15px rgba(255, 255, 255, 0.1);
+}
+
+.ai-quantum-button:hover .ai-quantum-glow {
+    opacity: 0.8;
+}
+
+.ai-quantum-button:hover .ai-quantum-icon {
+    transform: scale(1.15) rotate(360deg);
+    animation-duration: 1s;
+}
+
+.ai-quantum-button:hover .ai-quantum-text {
+    animation-duration: 1s;
+}
+
+/* Loading State */
+.ai-quantum-button.loading .ai-quantum-bg {
+    animation-duration: 2s !important;
+}
+
+.ai-quantum-button.loading .ai-quantum-icon {
+    animation: quantumSpin 1s linear infinite;
+}
+
+.ai-quantum-button.loading .ai-quantum-text {
+    animation-duration: 1s;
+}
+
+/* Disabled State */
+.ai-quantum-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.ai-quantum-button:disabled .ai-quantum-bg {
+    animation: none;
+}
+
+/* Animations */
+@keyframes quantumFlow {
+    0%, 100% { 
+        background-position: 0% 50%; 
+        filter: hue-rotate(0deg) brightness(1);
+    }
+    50% { 
+        background-position: 100% 50%; 
+        filter: hue-rotate(15deg) brightness(1.1);
+    }
+}
+
+@keyframes quantumSweep {
+    0% { 
+        transform: translateX(-100%) rotate(-45deg); 
+        opacity: 0;
+    }
+    50% { opacity: 0.8; }
+    100% { 
+        transform: translateX(200%) rotate(-45deg); 
+        opacity: 0;
+    }
+}
+
+@keyframes quantumPulse {
+    0%, 100% { 
+        transform: scale(1); 
+        filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
+    }
+    50% { 
+        transform: scale(1.1); 
+        filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.9));
+    }
+}
+
+@keyframes quantumTextShift {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+}
+
+@keyframes quantumSpin {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.15); }
+    100% { transform: rotate(360deg) scale(1); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .ai-individual-actions {
+        grid-template-columns: 1fr;
+    }
+    
+    .ai-quantum-button.ai-primary .ai-quantum-content {
+        padding: 16px 20px;
+    }
+    
+    .ai-quantum-button.ai-primary .ai-quantum-text {
+        font-size: 14px;
+        letter-spacing: 2px;
+    }
+    
+    .ai-quantum-icon {
+        font-size: 28px;
+    }
+}
