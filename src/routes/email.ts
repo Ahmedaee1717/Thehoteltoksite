@@ -2022,33 +2022,19 @@ emailRoutes.get('/track/:tracking_id', async (c) => {
     console.log(`   📧 To: ${email.to_email}, From: ${email.from_email}`);
     console.log(`   🌐 User-Agent: ${userAgent}`);
     console.log(`   📍 IP: ${ipAddress}`);
-    console.log(`   🔗 Referer: ${referer || '(none)'}`);
+    console.log(`   🔗 Referer: ${referer || '(none)'}`); 
     
+    // 🚨 TRACK FIRST PIXEL LOAD ONLY
+    // Gmail and other email clients may load the pixel multiple times
+    // We only want to track the FIRST load as a "read"
+    const acceptHeader = c.req.header('accept') || '';
+    const hasReferer = referer && referer.length > 0;
     
-    // 🚨 CRITICAL: Detect Gmail Image Proxy prefetch
-    // Gmail prefetches images when email arrives (NOT a real open)
-    // We MUST ignore these requests to get accurate tracking
-    const isGmailProxy = userAgent.includes('GoogleImageProxy') ||
-                         userAgent.includes('Google-Image-Proxy') ||
-                         userAgent.includes('via googlemail.com') ||
-                         userAgent.includes('Googlebot-Image');
-    
-    console.log(`   🎯 IsGmailProxy: ${isGmailProxy}`);
-    
-    // IGNORE Gmail proxy requests - they're not real opens
-    if (isGmailProxy) {
-      console.log(`🚫 IGNORED: Gmail Image Proxy prefetch (not a real open)`);
-      return new Response(TRACKING_PIXEL, {
-        headers: {
-          'Content-Type': 'image/gif',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
-      });
-    }
-    
-    console.log(`✅ Processing real tracking (not proxy)...`);
+    console.log(`   📊 Headers:`);
+    console.log(`      - Referer: ${hasReferer ? 'YES' : 'NO'}`);
+    console.log(`      - Accept: ${acceptHeader}`);
+    console.log(`      - User-Agent: ${userAgent.substring(0, 80)}...`);
+    console.log(`✅ Processing tracking request...`);
     
     // Detect device type
     const deviceType = userAgent.toLowerCase().includes('mobile') ? 'mobile' :
