@@ -29,9 +29,6 @@ const FileBankRevolution = {
     // Get user email
     this.state.userEmail = localStorage.getItem('userEmail') || 'admin@investaycapital.com';
     
-    // Load saved file positions
-    this.loadFilePositions();
-    
     // Setup event listeners
     this.setupEventListeners();
     
@@ -234,9 +231,6 @@ const FileBankRevolution = {
 
     // Setup file card event listeners
     this.setupFileCardListeners();
-
-    // Apply saved positions in desktop mode
-    setTimeout(() => this.applyFilePositions(), 0);
   },
 
   // Create file card HTML
@@ -331,30 +325,21 @@ const FileBankRevolution = {
         this.showContextMenu(e, fileId);
       });
 
-      // Drag start - Desktop-style positioning
+      // Drag start - Desktop-style reordering
       card.addEventListener('dragstart', (e) => {
         this.state.draggedFile = fileId;
         card.classList.add('dragging');
-        
-        // Store initial mouse position relative to card
-        const rect = card.getBoundingClientRect();
-        this.state.dragStartX = e.clientX;
-        this.state.dragStartY = e.clientY;
-        this.state.dragOffsetX = e.clientX - rect.left;
-        this.state.dragOffsetY = e.clientY - rect.top;
-        
-        // Set drag image to the card itself
         e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setDragImage(card, this.state.dragOffsetX, this.state.dragOffsetY);
         
         // Visual feedback: We're dragging INTERNAL file, not uploading
-        document.getElementById('filebank-canvas').classList.add('dragging-internal');
+        document.getElementById('filebank-canvas')?.classList.add('dragging-internal');
       });
 
-      // Drag over - Show where file will be placed
+      // Drag over - Show insertion point
       card.addEventListener('dragover', (e) => {
         e.preventDefault();
         if (this.state.draggedFile && this.state.draggedFile !== fileId) {
+          // Visual feedback: can drop here
           card.style.opacity = '0.5';
         }
       });
@@ -363,56 +348,25 @@ const FileBankRevolution = {
         card.style.opacity = '';
       });
 
-      // Drop on another card - Swap positions
+      // Drop on another card - Reorder
       card.addEventListener('drop', (e) => {
         e.preventDefault();
         e.stopPropagation();
         card.style.opacity = '';
         
         if (this.state.draggedFile && this.state.draggedFile !== fileId) {
-          console.log('🔄 Swapping file positions:', this.state.draggedFile, '↔', fileId);
-          // TODO: Implement position swap logic
+          console.log('🔄 Reordering files:', this.state.draggedFile, '→', fileId);
+          this.reorderFiles(this.state.draggedFile, fileId);
         }
       });
 
-      // Drag end - Save new position
-      card.addEventListener('dragend', (e) => {
+      // Drag end
+      card.addEventListener('dragend', () => {
         card.classList.remove('dragging');
-        
-        // In desktop mode, save absolute position
-        if (this.state.currentView === 'grid') {
-          const canvas = document.getElementById('filebank-canvas');
-          const canvasRect = canvas.getBoundingClientRect();
-          
-          // Calculate position relative to canvas
-          const x = e.clientX - canvasRect.left - this.state.dragOffsetX;
-          const y = e.clientY - canvasRect.top - this.state.dragOffsetY;
-          
-          // Snap to grid (optional - 20px grid)
-          const snapSize = 20;
-          const snappedX = Math.round(x / snapSize) * snapSize;
-          const snappedY = Math.round(y / snapSize) * snapSize;
-          
-          // Save position
-          this.state.filePositions[fileId] = {
-            x: Math.max(0, snappedX),
-            y: Math.max(0, snappedY)
-          };
-          
-          // Apply position immediately
-          card.style.left = this.state.filePositions[fileId].x + 'px';
-          card.style.top = this.state.filePositions[fileId].y + 'px';
-          
-          console.log(`📍 File ${fileId} positioned at (${this.state.filePositions[fileId].x}, ${this.state.filePositions[fileId].y})`);
-          
-          // Save to localStorage for persistence
-          this.saveFilePositions();
-        }
-        
         this.state.draggedFile = null;
         
         // Remove internal drag feedback
-        document.getElementById('filebank-canvas').classList.remove('dragging-internal');
+        document.getElementById('filebank-canvas')?.classList.remove('dragging-internal');
       });
     });
   },
@@ -871,52 +825,23 @@ const FileBankRevolution = {
     return div.innerHTML;
   },
 
-  // Save file positions to localStorage
-  saveFilePositions() {
-    try {
-      const key = `filebank_positions_${this.state.userEmail}`;
-      localStorage.setItem(key, JSON.stringify(this.state.filePositions));
-      console.log('💾 File positions saved');
-    } catch (error) {
-      console.error('Error saving positions:', error);
-    }
-  },
-
-  // Load file positions from localStorage
-  loadFilePositions() {
-    try {
-      const key = `filebank_positions_${this.state.userEmail}`;
-      const saved = localStorage.getItem(key);
-      if (saved) {
-        this.state.filePositions = JSON.parse(saved);
-        console.log(`📍 Loaded ${Object.keys(this.state.filePositions).length} file positions`);
-      }
-    } catch (error) {
-      console.error('Error loading positions:', error);
-      this.state.filePositions = {};
-    }
-  },
-
-  // Apply saved positions to rendered cards
-  applyFilePositions() {
-    if (this.state.currentView !== 'grid') return;
-
-    Object.keys(this.state.filePositions).forEach(fileId => {
-      const card = document.querySelector(`[data-file-id="${fileId}"]`);
-      if (card) {
-        const pos = this.state.filePositions[fileId];
-        card.style.left = pos.x + 'px';
-        card.style.top = pos.y + 'px';
-      }
-    });
-  },
-
-  // Reset all positions (organize automatically)
-  resetFilePositions() {
-    this.state.filePositions = {};
-    this.saveFilePositions();
+  // Reorder files when dragging
+  reorderFiles(draggedId, targetId) {
+    const draggedIndex = this.state.files.findIndex(f => f.id === draggedId);
+    const targetIndex = this.state.files.findIndex(f => f.id === targetId);
+    
+    if (draggedIndex === -1 || targetIndex === -1) return;
+    
+    // Remove dragged file
+    const [draggedFile] = this.state.files.splice(draggedIndex, 1);
+    
+    // Insert at target position
+    this.state.files.splice(targetIndex, 0, draggedFile);
+    
+    // Re-render
     this.render();
-    this.showNotification('File positions reset', 'info');
+    
+    this.showNotification('Files reordered', 'success');
   }
 };
 
