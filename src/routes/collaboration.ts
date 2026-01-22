@@ -81,7 +81,15 @@ collaborationRoutes.get('/users', async (c) => {
 collaborationRoutes.put('/users/:email/role', async (c) => {
   const { DB } = c.env;
   const targetEmail = c.req.param('email');
-  const adminEmail = c.get('userEmail');
+  
+  // Extract admin email from Authorization header
+  const authHeader = c.req.header('Authorization');
+  const adminEmail = getUserEmailFromToken(authHeader);
+  
+  if (!adminEmail) {
+    return c.json({ success: false, error: 'Unauthorized - invalid token' }, 401);
+  }
+  
   const { role, permissions } = await c.req.json();
   
   try {
