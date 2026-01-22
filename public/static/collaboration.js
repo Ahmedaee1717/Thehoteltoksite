@@ -854,14 +854,6 @@ function createActivityItem(activity) {
   
   return '';
 }
-      <div class="activity-content">
-        <strong>${escapeHtml(activity.user_email)}</strong> ${activity.action} 
-        ${activity.post_title ? `<strong>"${escapeHtml(activity.post_title)}"</strong>` : 'a post'}
-      </div>
-      <div class="activity-time">${timeAgo}</div>
-    </div>
-  `;
-}
 
 // ⏰ GET TIME AGO
 function getTimeAgo(timestamp) {
