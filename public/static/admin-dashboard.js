@@ -584,7 +584,10 @@ async function toggleKnowledgeBase() {
 // AI Auto-Fill SEO Fields
 async function aiAutoFillSEO() {
     const btn = document.getElementById('ai-seo-optimize-btn');
-    const originalText = btn.textContent;
+    const btnText = btn.querySelector('.ai-seo-text');
+    const btnSubtext = btn.querySelector('.ai-seo-subtext');
+    const originalText = btnText.textContent;
+    const originalSubtext = btnSubtext.textContent;
     
     try {
         // Get current content
@@ -597,8 +600,11 @@ async function aiAutoFillSEO() {
             return;
         }
         
-        btn.textContent = '⏳ AI is analyzing...';
+        // Add loading state
+        btn.classList.add('loading');
         btn.disabled = true;
+        btnText.textContent = 'NEURAL PROCESSING';
+        btnSubtext.textContent = 'Quantum AI analyzing your content...';
         
         // Call AI endpoint to generate SEO fields
         const response = await fetch('/api/ai/seo-optimize', {
@@ -609,7 +615,7 @@ async function aiAutoFillSEO() {
             },
             body: JSON.stringify({
                 title: title,
-                content: content.substring(0, 5000) // Limit content to 5000 chars for AI
+                content: content.substring(0, 5000)
             })
         });
         
@@ -622,23 +628,44 @@ async function aiAutoFillSEO() {
             document.getElementById('post-meta-description').value = data.meta_description || '';
             document.getElementById('post-meta-keywords').value = data.meta_keywords || '';
             
-            btn.textContent = '✅ SEO Fields Filled!';
+            // Success animation
+            btnText.textContent = 'OPTIMIZATION COMPLETE';
+            btnSubtext.textContent = '✓ All SEO fields generated successfully';
+            
             setTimeout(() => {
-                btn.textContent = originalText;
+                btn.classList.remove('loading');
+                btnText.textContent = originalText;
+                btnSubtext.textContent = originalSubtext;
                 btn.disabled = false;
             }, 3000);
             
-            alert('✅ SEO fields have been auto-filled by AI!\\n\\nReview and edit as needed before publishing.');
+            alert('✅ SEO fields have been auto-filled by AI!\n\nReview and edit as needed before publishing.');
         } else {
+            btn.classList.remove('loading');
+            btnText.textContent = 'ERROR OCCURRED';
+            btnSubtext.textContent = data.error || 'Failed to optimize';
+            
+            setTimeout(() => {
+                btnText.textContent = originalText;
+                btnSubtext.textContent = originalSubtext;
+                btn.disabled = false;
+            }, 3000);
+            
             alert('Error: ' + data.error);
-            btn.textContent = originalText;
-            btn.disabled = false;
         }
     } catch (error) {
         console.error('SEO optimization error:', error);
+        btn.classList.remove('loading');
+        btnText.textContent = 'CONNECTION ERROR';
+        btnSubtext.textContent = 'Failed to reach AI server';
+        
+        setTimeout(() => {
+            btnText.textContent = originalText;
+            btnSubtext.textContent = originalSubtext;
+            btn.disabled = false;
+        }, 3000);
+        
         alert('Failed to optimize SEO fields: ' + error.message);
-        btn.textContent = originalText;
-        btn.disabled = false;
     }
 }
 

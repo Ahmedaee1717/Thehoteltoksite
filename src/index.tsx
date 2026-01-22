@@ -1196,13 +1196,17 @@ app.get('/admin/dashboard', (c) => {
                         
                         <div class="form-section">
                             <h3>SEO Optimization</h3>
-                            <div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px;">
-                                <button type="button" id="ai-seo-optimize-btn" class="btn" style="width: 100%; background: white; color: #667eea; font-weight: 600; padding: 12px; border: none; cursor: pointer;">
-                                    ✨ AI Auto-Fill SEO Fields
+                            <div class="ai-seo-button-container">
+                                <button type="button" id="ai-seo-optimize-btn" class="ai-seo-button">
+                                    <span class="ai-seo-button-bg"></span>
+                                    <span class="ai-seo-button-glow"></span>
+                                    <span class="ai-seo-button-particles"></span>
+                                    <span class="ai-seo-button-content">
+                                        <span class="ai-seo-icon">✨</span>
+                                        <span class="ai-seo-text">AI AUTO-FILL SEO FIELDS</span>
+                                        <span class="ai-seo-subtext">Neural analysis • Quantum optimization • Instant results</span>
+                                    </span>
                                 </button>
-                                <small style="display: block; margin-top: 8px; color: white; text-align: center;">
-                                    AI analyzes your content and auto-fills meta title, description, keywords & excerpt
-                                </small>
                             </div>
                             
                             <div class="form-group">
