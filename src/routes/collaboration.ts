@@ -16,8 +16,29 @@ function getUserEmailFromToken(authHeader: string | undefined): string | null {
   
   try {
     const token = authHeader.substring(7);
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.email || null;
+    
+    // Try JWT format first (for regular users)
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (payload.email) return payload.email;
+    } catch (e) {
+      // Not JWT, try simple base64 (for admin)
+    }
+    
+    // Try simple base64 format (for admin users)
+    try {
+      const payload = JSON.parse(atob(token));
+      // Admin token has username, need to fetch email from DB
+      // For now, if it has userId and username, it's an admin
+      if (payload.username && payload.userId) {
+        // Return a recognizable admin identifier
+        return 'admin@investaycapital.com';
+      }
+    } catch (e) {
+      // Not base64 either
+    }
+    
+    return null;
   } catch (error) {
     console.error('Error extracting email from token:', error);
     return null;
