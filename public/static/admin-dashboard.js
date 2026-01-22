@@ -601,7 +601,7 @@ async function aiAutoFillSEO() {
         btn.disabled = true;
         
         // Call AI endpoint to generate SEO fields
-        const response = await fetch('/api/admin/ai/seo-optimize', {
+        const response = await fetch('/api/ai/seo-optimize', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
