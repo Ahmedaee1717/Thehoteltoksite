@@ -2024,18 +2024,31 @@ emailRoutes.get('/track/:tracking_id', async (c) => {
     console.log(`   📍 IP: ${ipAddress}`);
     console.log(`   🔗 Referer: ${referer || '(none)'}`);
     
+    
     // 🚨 CRITICAL: Detect Gmail Image Proxy prefetch
-    // 🚨 Gmail Image Proxy Detection
     // Gmail prefetches images when email arrives (NOT a real open)
-    // BUT we track it anyway and mark as "proxy" to get baseline timestamp
+    // We MUST ignore these requests to get accurate tracking
     const isGmailProxy = userAgent.includes('GoogleImageProxy') ||
                          userAgent.includes('Google-Image-Proxy') ||
                          userAgent.includes('via googlemail.com') ||
                          userAgent.includes('Googlebot-Image');
     
-    const readMethod = isGmailProxy ? 'tracking_pixel_proxy' : 'tracking_pixel';
-    console.log(`   🎯 Method: ${readMethod} (isGmailProxy: ${isGmailProxy})`);
-    console.log(`✅ Processing tracking...`);
+    console.log(`   🎯 IsGmailProxy: ${isGmailProxy}`);
+    
+    // IGNORE Gmail proxy requests - they're not real opens
+    if (isGmailProxy) {
+      console.log(`🚫 IGNORED: Gmail Image Proxy prefetch (not a real open)`);
+      return new Response(TRACKING_PIXEL, {
+        headers: {
+          'Content-Type': 'image/gif',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+    }
+    
+    console.log(`✅ Processing real tracking (not proxy)...`);
     
     // Detect device type
     const deviceType = userAgent.toLowerCase().includes('mobile') ? 'mobile' :
@@ -2086,7 +2099,7 @@ emailRoutes.get('/track/:tracking_id', async (c) => {
         ) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?)
       `).bind(
         receiptId, emailId, email.to_email,
-        ipAddress, userAgent, deviceType, emailClient, readMethod
+        ipAddress, userAgent, deviceType, emailClient, 'tracking_pixel'
       ).run();
       
       // Track as activity
