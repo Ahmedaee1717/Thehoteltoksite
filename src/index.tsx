@@ -1319,7 +1319,7 @@ app.get('/admin/dashboard', (c) => {
         <script type="text/javascript" src="https://unpkg.com/trix@2.0.8/dist/trix.umd.min.js"></script>
         
         <!-- Admin Dashboard JS -->
-        <script src="/static/admin-dashboard.js"></script>
+        <script src="/static/admin-dashboard.js?v=${Date.now()}"></script>
     </body>
     </html>
   `);
