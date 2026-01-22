@@ -673,7 +673,7 @@
   color: var(--quantum-warning);
 }
 
-/* 📤 DRAG & DROP ZONE - The Ultimate UX */
+/* 📤 DRAG & DROP ZONE - Smart: Only for External Files */
 .filebank-dropzone {
   position: absolute;
   top: 50%;
@@ -692,6 +692,7 @@
   backdrop-filter: blur(40px);
   transition: all var(--transition-smooth);
   z-index: 50;
+  pointer-events: none; /* Allow drop events to pass through to canvas */
 }
 
 .filebank-dropzone.active {
@@ -700,6 +701,15 @@
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
   box-shadow: 0 20px 60px rgba(102, 126, 234, 0.4);
   animation: dropzonePulse 1.5s ease-in-out infinite;
+}
+
+/* INTERNAL DRAG: File rearrangement cursor */
+.filebank-canvas.dragging-internal {
+  cursor: move !important;
+}
+
+.filebank-canvas.dragging-internal .filebank-dropzone {
+  display: none !important;
 }
 
 @keyframes dropzonePulse {

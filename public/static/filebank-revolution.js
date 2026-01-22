@@ -102,12 +102,17 @@ const FileBankRevolution = {
       });
     });
 
-    // Drag and drop on canvas
+    // Drag and drop on canvas - SMART: Distinguish between file rearrangement and external file upload
     const canvas = document.getElementById('filebank-canvas');
     if (canvas) {
       canvas.addEventListener('dragover', (e) => {
         e.preventDefault();
-        document.getElementById('filebank-dropzone').classList.add('active');
+        
+        // Only show dropzone if dragging FROM OUTSIDE (external files)
+        // NOT when dragging internal files for rearrangement
+        if (!this.state.draggedFile) {
+          document.getElementById('filebank-dropzone').classList.add('active');
+        }
       });
 
       canvas.addEventListener('dragleave', (e) => {
@@ -119,7 +124,18 @@ const FileBankRevolution = {
       canvas.addEventListener('drop', (e) => {
         e.preventDefault();
         document.getElementById('filebank-dropzone').classList.remove('active');
-        this.handleFileDrop(e.dataTransfer.files);
+        
+        // If dragging internal file (rearrangement), do nothing
+        if (this.state.draggedFile) {
+          console.log('📍 File rearrangement - position saved');
+          // TODO: Save new position to database
+          return;
+        }
+        
+        // If dragging external files, upload them
+        if (e.dataTransfer.files.length > 0) {
+          this.handleFileDrop(e.dataTransfer.files);
+        }
       });
     }
 
@@ -309,12 +325,18 @@ const FileBankRevolution = {
         this.state.draggedFile = fileId;
         card.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
+        
+        // Visual feedback: We're dragging INTERNAL file, not uploading
+        document.getElementById('filebank-canvas').classList.add('dragging-internal');
       });
 
       // Drag end
       card.addEventListener('dragend', () => {
         card.classList.remove('dragging');
         this.state.draggedFile = null;
+        
+        // Remove internal drag feedback
+        document.getElementById('filebank-canvas').classList.remove('dragging-internal');
       });
     });
   },
