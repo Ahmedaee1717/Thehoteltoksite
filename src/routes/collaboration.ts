@@ -55,21 +55,24 @@ collaborationRoutes.get('/users', async (c) => {
   const { DB } = c.env;
   
   try {
-    const users = await DB.prepare(`
+    // Get all users from email_accounts with their roles
+    const emailUsers = await DB.prepare(`
       SELECT 
-        ea.email,
+        ea.email_address as email,
         ea.display_name,
         COALESCE(ur.role, 'viewer') as role,
         COALESCE(ur.permissions, '[]') as permissions,
         ur.assigned_at,
         ur.assigned_by
       FROM email_accounts ea
-      LEFT JOIN user_roles ur ON ea.email = ur.user_email
-      ORDER BY ea.display_name
+      LEFT JOIN user_roles ur ON ea.email_address = ur.user_email
+      WHERE ea.is_active = 1
+      ORDER BY ea.email_address
     `).all();
     
-    return c.json({ success: true, users: users.results });
+    return c.json({ success: true, users: emailUsers.results || [] });
   } catch (error: any) {
+    console.error('Error fetching users:', error);
     return c.json({ success: false, error: error.message }, 500);
   }
 });
