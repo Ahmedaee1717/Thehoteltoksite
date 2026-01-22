@@ -60,67 +60,96 @@ async function getEmailSignatureHTML(DB: D1Database, messageId: string): Promise
         .replace(/'/g, '&#039;');
     };
     
-    // Email-safe HTML using tables (compatible with ALL email clients)
-    // ULTRA DARK + WIDER + RESPONSIVE + NO BRANDING TEXT
+    // BLACK & GOLD SIGNATURE - Works in ALL email clients (light & dark mode)
+    // Uses high-contrast text that's visible everywhere
     return `
       <br><br>
-      <table cellpadding="0" cellspacing="0" border="0" style="font-family: 'Segoe UI', Arial, sans-serif; width: 100%; max-width: 800px; margin: 0; background: linear-gradient(135deg, #0f1123 0%, #1a1d3e 30%, #0d0f1f 100%); border-radius: 16px; border: 3px solid #667eea; box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4), 0 0 60px rgba(102, 126, 234, 0.2);">
-        <!-- Rainbow Top Border -->
-        <tr><td style="height: 4px; background: linear-gradient(90deg, #667eea 0%, #764ba2 33%, #f093fb 66%, #667eea 100%); border-radius: 16px 16px 0 0;"></td></tr>
+      <table cellpadding="0" cellspacing="0" border="0" style="font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; width: 100%; max-width: 700px; margin: 0; background: #000000; border-radius: 12px; border: 3px solid #d4af37; box-shadow: 0 8px 24px rgba(212, 175, 55, 0.25);">
         
-        <tr><td style="padding: 32px;">
+        <!-- Gold Top Border -->
+        <tr><td style="height: 4px; background: linear-gradient(90deg, #d4af37 0%, #f4d03f 25%, #ffdd57 50%, #f4d03f 75%, #d4af37 100%); border-radius: 12px 12px 0 0;"></td></tr>
+        
+        <tr><td style="padding: 28px 24px;">
           
           <!-- Logo + Company Name Row -->
           <table cellpadding="0" cellspacing="0" border="0" width="100%">
             <tr>
               ${signature.logo_url ? `
-                <td width="110" valign="top" style="padding-right: 24px;">
-                  <img src="${logoUrl}" alt="${escapeHtml(signature.company_name)}" width="100" height="100" style="display: block; width: 100px; height: 100px; border-radius: 16px; border: 3px solid rgba(102, 126, 234, 0.8); box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);" />
+                <td width="90" valign="top" style="padding-right: 20px;">
+                  <img src="${logoUrl}" alt="${escapeHtml(signature.company_name)}" width="80" height="80" style="display: block; width: 80px; height: 80px; border-radius: 12px; border: 2px solid #d4af37; box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);" />
                 </td>
               ` : ''}
               <td valign="center">
-                <div style="font-size: 28px; font-weight: 800; letter-spacing: 1px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color: #667eea; margin: 0 0 10px 0; text-transform: uppercase;">${escapeHtml(signature.company_name || 'Your Company')}</div>
-                ${signature.tagline ? `<div style="font-size: 15px; color: rgba(255, 255, 255, 0.8); font-style: italic; line-height: 1.5;">${escapeHtml(signature.tagline)}</div>` : ''}
+                <!-- Company Name - GOLD gradient with black fallback -->
+                <div style="font-size: 26px; font-weight: 800; letter-spacing: 1.5px; background: linear-gradient(135deg, #d4af37 0%, #f4d03f 50%, #ffdd57 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color: #d4af37; margin: 0 0 8px 0; text-transform: uppercase; line-height: 1.2;">${escapeHtml(signature.company_name || 'Your Company')}</div>
+                
+                <!-- Tagline - WHITE text for visibility -->
+                ${signature.tagline ? `<div style="font-size: 14px; color: #ffffff; font-style: italic; line-height: 1.4; font-weight: 400;">${escapeHtml(signature.tagline)}</div>` : ''}
               </td>
             </tr>
           </table>
           
           <!-- Divider -->
-          <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 24px 0;">
-            <tr><td style="height: 2px; background: linear-gradient(90deg, transparent 0%, rgba(102, 126, 234, 0.8) 10%, rgba(118, 75, 162, 0.8) 50%, rgba(102, 126, 234, 0.8) 90%, transparent 100%);"></td></tr>
+          <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 20px 0 18px 0;">
+            <tr><td style="height: 1px; background: linear-gradient(90deg, transparent 0%, #d4af37 20%, #f4d03f 50%, #d4af37 80%, transparent 100%);"></td></tr>
           </table>
           
-          <!-- Contact Info Grid -->
+          <!-- Contact Info Grid - WHITE text on dark backgrounds -->
           <table cellpadding="0" cellspacing="0" border="0" width="100%">
             <tr>
               ${signature.website ? `
-                <td width="48%" style="padding: 12px 16px; background: rgba(102, 126, 234, 0.08); border-radius: 10px; border: 2px solid rgba(102, 126, 234, 0.3); box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);">
-                  <span style="font-size: 18px;">🌐</span>
-                  <a href="${escapeHtml(signature.website)}" style="color: rgba(255, 255, 255, 0.95); text-decoration: none; font-size: 14px; font-weight: 600; margin-left: 10px;">${escapeHtml(signature.website.replace(/^https?:\/\//, ''))}</a>
+                <td width="48%" style="padding: 10px 14px; background: rgba(212, 175, 55, 0.12); border-radius: 8px; border: 1px solid rgba(212, 175, 55, 0.4);">
+                  <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                    <tr>
+                      <td width="24" style="font-size: 16px; color: #d4af37;">🌐</td>
+                      <td style="padding-left: 8px;">
+                        <a href="${escapeHtml(signature.website)}" style="color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 600; display: block;">${escapeHtml(signature.website.replace(/^https?:\/\//, ''))}</a>
+                      </td>
+                    </tr>
+                  </table>
                 </td>
                 <td width="4%"></td>
               ` : ''}
               ${signature.email ? `
-                <td width="48%" style="padding: 12px 16px; background: rgba(102, 126, 234, 0.08); border-radius: 10px; border: 2px solid rgba(102, 126, 234, 0.3); box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);">
-                  <span style="font-size: 18px;">📧</span>
-                  <a href="mailto:${escapeHtml(signature.email)}" style="color: rgba(255, 255, 255, 0.95); text-decoration: none; font-size: 14px; font-weight: 600; margin-left: 10px;">${escapeHtml(signature.email)}</a>
+                <td width="48%" style="padding: 10px 14px; background: rgba(212, 175, 55, 0.12); border-radius: 8px; border: 1px solid rgba(212, 175, 55, 0.4);">
+                  <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                    <tr>
+                      <td width="24" style="font-size: 16px; color: #d4af37;">📧</td>
+                      <td style="padding-left: 8px;">
+                        <a href="mailto:${escapeHtml(signature.email)}" style="color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 600; display: block;">${escapeHtml(signature.email)}</a>
+                      </td>
+                    </tr>
+                  </table>
                 </td>
               ` : ''}
             </tr>
+            
             ${(signature.phone || signature.address) ? `
-              <tr><td colspan="3" style="height: 16px;"></td></tr>
+              <tr><td colspan="3" style="height: 12px;"></td></tr>
               <tr>
                 ${signature.phone ? `
-                  <td width="48%" style="padding: 12px 16px; background: rgba(102, 126, 234, 0.08); border-radius: 10px; border: 2px solid rgba(102, 126, 234, 0.3); box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);">
-                    <span style="font-size: 18px;">📞</span>
-                    <a href="tel:${escapeHtml(signature.phone.replace(/[^0-9+]/g, ''))}" style="color: rgba(255, 255, 255, 0.95); text-decoration: none; font-size: 14px; font-weight: 600; margin-left: 10px;">${escapeHtml(signature.phone)}</a>
+                  <td width="48%" style="padding: 10px 14px; background: rgba(212, 175, 55, 0.12); border-radius: 8px; border: 1px solid rgba(212, 175, 55, 0.4);">
+                    <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                      <tr>
+                        <td width="24" style="font-size: 16px; color: #d4af37;">📞</td>
+                        <td style="padding-left: 8px;">
+                          <a href="tel:${escapeHtml(signature.phone.replace(/[^0-9+]/g, ''))}" style="color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 600; display: block;">${escapeHtml(signature.phone)}</a>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                   ${signature.address ? '<td width="4%"></td>' : ''}
                 ` : ''}
                 ${signature.address ? `
-                  <td width="48%" style="padding: 12px 16px; background: rgba(102, 126, 234, 0.08); border-radius: 10px; border: 2px solid rgba(102, 126, 234, 0.3); box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);">
-                    <span style="font-size: 18px;">📍</span>
-                    <span style="color: rgba(255, 255, 255, 0.95); font-size: 14px; font-weight: 600; margin-left: 10px;">${escapeHtml(signature.address)}</span>
+                  <td width="48%" style="padding: 10px 14px; background: rgba(212, 175, 55, 0.12); border-radius: 8px; border: 1px solid rgba(212, 175, 55, 0.4);">
+                    <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                      <tr>
+                        <td width="24" style="font-size: 16px; color: #d4af37; vertical-align: top;">📍</td>
+                        <td style="padding-left: 8px;">
+                          <span style="color: #ffffff; font-size: 13px; font-weight: 600; display: block; line-height: 1.4;">${escapeHtml(signature.address)}</span>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 ` : ''}
               </tr>
@@ -129,28 +158,26 @@ async function getEmailSignatureHTML(DB: D1Database, messageId: string): Promise
           
           <!-- Social Media Links -->
           ${(signature.linkedin || signature.twitter || signature.facebook) ? `
-            <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 24px;">
+            <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 20px;">
               <tr>
                 ${signature.linkedin ? `
-                  <td style="padding-right: 14px;">
-                    <a href="${escapeHtml(signature.linkedin)}" style="display: inline-block; width: 48px; height: 48px; line-height: 46px; text-align: center; background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3)); border: 2px solid rgba(102, 126, 234, 0.6); border-radius: 50%; color: white; font-size: 20px; text-decoration: none; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">💼</a>
+                  <td style="padding-right: 12px;">
+                    <a href="${escapeHtml(signature.linkedin)}" style="display: inline-block; width: 44px; height: 44px; line-height: 42px; text-align: center; background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(244, 208, 63, 0.2)); border: 2px solid rgba(212, 175, 55, 0.6); border-radius: 50%; color: #d4af37; font-size: 18px; text-decoration: none;">💼</a>
                   </td>
                 ` : ''}
                 ${signature.twitter ? `
-                  <td style="padding-right: 14px;">
-                    <a href="${escapeHtml(signature.twitter)}" style="display: inline-block; width: 48px; height: 48px; line-height: 46px; text-align: center; background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3)); border: 2px solid rgba(102, 126, 234, 0.6); border-radius: 50%; color: white; font-size: 20px; text-decoration: none; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">𝕏</a>
+                  <td style="padding-right: 12px;">
+                    <a href="${escapeHtml(signature.twitter)}" style="display: inline-block; width: 44px; height: 44px; line-height: 42px; text-align: center; background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(244, 208, 63, 0.2)); border: 2px solid rgba(212, 175, 55, 0.6); border-radius: 50%; color: #d4af37; font-size: 18px; text-decoration: none;">𝕏</a>
                   </td>
                 ` : ''}
                 ${signature.facebook ? `
                   <td>
-                    <a href="${escapeHtml(signature.facebook)}" style="display: inline-block; width: 48px; height: 48px; line-height: 46px; text-align: center; background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3)); border: 2px solid rgba(102, 126, 234, 0.6); border-radius: 50%; color: white; font-size: 20px; text-decoration: none; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">📘</a>
+                    <a href="${escapeHtml(signature.facebook)}" style="display: inline-block; width: 44px; height: 44px; line-height: 42px; text-align: center; background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(244, 208, 63, 0.2)); border: 2px solid rgba(212, 175, 55, 0.6); border-radius: 50%; color: #d4af37; font-size: 18px; text-decoration: none;">📘</a>
                   </td>
                 ` : ''}
               </tr>
             </table>
           ` : ''}
-          
-          <!-- NO BRANDING TEXT - REMOVED COMPLETELY -->
           
         </td></tr>
       </table>
