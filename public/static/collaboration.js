@@ -299,23 +299,65 @@ async function checkNewPostPermission() {
   const container = document.getElementById('new-post-view').querySelector('.permission-check-box');
   container.innerHTML = '<p>Checking permissions...</p>';
   
-  const canCreate = ['admin', 'editor', 'publisher'].includes(userRole);
+  const canCreate = userRole && (userRole.role === 'admin' || userRole.role === 'editor' || userRole.role === 'publisher');
   
   if (canCreate) {
+    // Show inline post editor instead of redirecting
     container.innerHTML = `
-      <div style="text-align: center;">
-        <h3 style="font-size: 24px; margin-bottom: 20px; color: var(--quantum-text);">
-          ✨ You have permission to create posts!
-        </h3>
-        <p style="margin-bottom: 30px; color: var(--quantum-text-dim);">
-          Your role: <strong style="color: var(--quantum-primary);">${userRole}</strong>
-        </p>
-        <button class="quantum-btn" onclick="window.location.href='/admin/dashboard'">
-          <span class="btn-icon">✏️</span>
-          <span class="btn-text">Go to Admin Dashboard</span>
-        </button>
+      <div class="post-editor-container">
+        <form id="collab-post-form" class="collab-post-form">
+          <div class="form-group">
+            <label for="collab-post-title">Title *</label>
+            <input type="text" id="collab-post-title" name="title" required placeholder="Enter post title...">
+          </div>
+          
+          <div class="form-group">
+            <label for="collab-post-slug">Slug *</label>
+            <input type="text" id="collab-post-slug" name="slug" required placeholder="url-friendly-slug">
+            <small>Auto-generated from title</small>
+          </div>
+          
+          <div class="form-group">
+            <label for="collab-post-excerpt">Excerpt</label>
+            <textarea id="collab-post-excerpt" name="excerpt" rows="3" placeholder="Short summary..."></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label for="collab-post-content">Content *</label>
+            <textarea id="collab-post-content" name="content" rows="12" required placeholder="Write your post content here..."></textarea>
+            <small>Use Markdown or HTML formatting</small>
+          </div>
+          
+          <div class="form-group">
+            <label for="collab-post-featured-image">Featured Image URL</label>
+            <input type="url" id="collab-post-featured-image" name="featured_image" placeholder="https://...">
+          </div>
+          
+          <div class="form-actions">
+            <button type="button" class="quantum-btn quantum-btn-secondary" onclick="switchView('my-posts')">
+              <span class="btn-icon">←</span>
+              <span class="btn-text">Cancel</span>
+            </button>
+            <button type="submit" class="quantum-btn quantum-btn-primary">
+              <span class="btn-icon">✨</span>
+              <span class="btn-text">Create Post</span>
+            </button>
+          </div>
+        </form>
       </div>
     `;
+    
+    // Setup form submission
+    document.getElementById('collab-post-form').addEventListener('submit', handlePostSubmit);
+    
+    // Auto-generate slug from title
+    document.getElementById('collab-post-title').addEventListener('input', (e) => {
+      const slug = e.target.value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      document.getElementById('collab-post-slug').value = slug;
+    });
   } else {
     container.innerHTML = `
       <div style="text-align: center;">
@@ -323,7 +365,7 @@ async function checkNewPostPermission() {
           🔒 Permission Required
         </h3>
         <p style="margin-bottom: 30px; color: var(--quantum-text-dim);">
-          Your current role (<strong>${userRole}</strong>) does not allow creating posts.<br>
+          Your current role (<strong>${userRole?.role || 'viewer'}</strong>) does not allow creating posts.<br>
           Please contact an administrator to request access.
         </p>
         <p style="color: var(--quantum-text-dim); font-size: 14px;">
@@ -331,6 +373,49 @@ async function checkNewPostPermission() {
         </p>
       </div>
     `;
+  }
+}
+
+// 📝 HANDLE POST SUBMISSION
+async function handlePostSubmit(e) {
+  e.preventDefault();
+  
+  const formData = {
+    title: document.getElementById('collab-post-title').value,
+    slug: document.getElementById('collab-post-slug').value,
+    excerpt: document.getElementById('collab-post-excerpt').value,
+    content: document.getElementById('collab-post-content').value,
+    featured_image: document.getElementById('collab-post-featured-image').value,
+    author: currentUser,
+    status: 'draft' // Publishers create drafts
+  };
+  
+  try {
+    const token = localStorage.getItem('auth_token');
+    
+    const response = await fetch('/api/admin/posts', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(formData)
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      showNotification('✅ Post created successfully!', 'success');
+      // Reset form
+      document.getElementById('collab-post-form').reset();
+      // Switch to my posts view
+      setTimeout(() => switchView('my-posts'), 1500);
+    } else {
+      showNotification(`❌ Failed to create post: ${data.error}`, 'error');
+    }
+  } catch (error) {
+    console.error('Error creating post:', error);
+    showNotification('❌ Error creating post', 'error');
   }
 }
 

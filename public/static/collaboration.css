@@ -765,3 +765,91 @@
   font-size: 14px;
   color: rgba(255, 255, 255, 0.7);
 }
+
+/* 📝 INLINE POST EDITOR */
+.post-editor-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.collab-post-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.collab-post-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.collab-post-form label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--quantum-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.collab-post-form input[type="text"],
+.collab-post-form input[type="url"],
+.collab-post-form textarea {
+  padding: 14px 18px;
+  border-radius: 10px;
+  background: rgba(26, 27, 54, 0.6);
+  border: 2px solid rgba(102, 126, 234, 0.3);
+  color: var(--quantum-text);
+  font-size: 15px;
+  font-family: inherit;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.collab-post-form input[type="text"]:focus,
+.collab-post-form input[type="url"]:focus,
+.collab-post-form textarea:focus {
+  border-color: var(--quantum-primary);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+  background: rgba(26, 27, 54, 0.8);
+}
+
+.collab-post-form textarea {
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.6;
+}
+
+.collab-post-form small {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: -4px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.quantum-btn-secondary {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 2px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.quantum-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.quantum-btn-primary {
+  background: linear-gradient(135deg, var(--quantum-primary), var(--quantum-secondary)) !important;
+}
+
+.quantum-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+}
