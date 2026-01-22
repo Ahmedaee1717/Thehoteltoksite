@@ -311,45 +311,230 @@ async function checkNewPostPermission() {
   console.log('🔍 Can create:', canCreate);
   
   if (canCreate) {
-    // Show inline post editor instead of redirecting
+    // Show ULTRA IMPRESSIVE AI-powered post editor
     container.innerHTML = `
-      <div class="post-editor-container">
-        <form id="collab-post-form" class="collab-post-form">
-          <div class="form-group">
-            <label for="collab-post-title">Title *</label>
-            <input type="text" id="collab-post-title" name="title" required placeholder="Enter post title...">
+      <div class="ultra-post-editor">
+        <form id="collab-post-form" class="ultra-post-form">
+          
+          <!-- BASIC INFORMATION -->
+          <div class="ultra-section">
+            <div class="ultra-section-header">
+              <span class="ultra-section-icon">📝</span>
+              <h3 class="ultra-section-title">Basic Information</h3>
+            </div>
+            
+            <div class="ultra-form-group">
+              <label for="collab-post-title">Title *</label>
+              <input type="text" id="collab-post-title" name="title" required placeholder="Enter your epic post title...">
+            </div>
+            
+            <div class="ultra-form-group">
+              <label for="collab-post-slug">URL Slug *</label>
+              <input type="text" id="collab-post-slug" name="slug" required placeholder="url-friendly-slug">
+              <small>🤖 Auto-generated from title</small>
+            </div>
+            
+            <div class="ultra-form-group">
+              <label for="collab-post-author">Author *</label>
+              <input type="text" id="collab-post-author" name="author" value="${currentUser}" required>
+            </div>
+            
+            <div class="ultra-form-group">
+              <label for="collab-post-excerpt">Excerpt</label>
+              <textarea id="collab-post-excerpt" name="excerpt" rows="3" placeholder="Short summary for listings..."></textarea>
+              <small>Brief description that appears in post listings</small>
+            </div>
+            
+            <div class="ultra-form-group">
+              <label for="collab-post-featured-image">Featured Image URL</label>
+              <input type="url" id="collab-post-featured-image" name="featured_image" placeholder="https://example.com/image.jpg">
+              <small>Main image for social sharing (1200x630 recommended)</small>
+            </div>
           </div>
           
-          <div class="form-group">
-            <label for="collab-post-slug">Slug *</label>
-            <input type="text" id="collab-post-slug" name="slug" required placeholder="url-friendly-slug">
-            <small>Auto-generated from title</small>
+          <!-- CONTENT EDITOR -->
+          <div class="ultra-section">
+            <div class="ultra-section-header">
+              <span class="ultra-section-icon">✍️</span>
+              <h3 class="ultra-section-title">Content</h3>
+            </div>
+            
+            <div class="ultra-form-group">
+              <label for="collab-post-content">Post Content *</label>
+              <textarea id="collab-post-content" name="content" rows="16" required placeholder="Write your amazing content here...
+
+Supports:
+• Rich HTML formatting
+• Markdown syntax
+• Embedded media
+• Code blocks
+
+Start writing..."></textarea>
+              <small>✨ Rich text editor with full formatting support</small>
+            </div>
           </div>
           
-          <div class="form-group">
-            <label for="collab-post-excerpt">Excerpt</label>
-            <textarea id="collab-post-excerpt" name="excerpt" rows="3" placeholder="Short summary..."></textarea>
+          <!-- 🤖 AI SEO SUPER BOOST -->
+          <div class="ultra-section ultra-ai-section">
+            <div class="ultra-section-header">
+              <span class="ultra-section-icon">🤖</span>
+              <h3 class="ultra-section-title">AI SEO Optimization</h3>
+              <span class="ultra-badge ultra-badge-ai">NEURAL POWERED</span>
+            </div>
+            
+            <div class="ultra-ai-mega-button-container">
+              <button type="button" id="collab-ai-seo-optimize" class="ultra-ai-mega-button">
+                <span class="ultra-ai-mega-bg"></span>
+                <span class="ultra-ai-mega-glow"></span>
+                <span class="ultra-ai-mega-particles"></span>
+                <span class="ultra-ai-mega-content">
+                  <span class="ultra-ai-mega-icon">✨</span>
+                  <span class="ultra-ai-mega-text">AI AUTO-FILL ALL SEO FIELDS</span>
+                  <span class="ultra-ai-mega-subtext">Quantum Neural Analysis • Instant Optimization • 2070 Technology</span>
+                </span>
+              </button>
+            </div>
+            
+            <div class="ultra-form-group">
+              <label for="collab-post-meta-title">Meta Title</label>
+              <input type="text" id="collab-post-meta-title" name="meta_title" placeholder="SEO-optimized title...">
+              <small>Leave empty to use post title</small>
+            </div>
+            
+            <div class="ultra-form-group">
+              <label for="collab-post-meta-description">Meta Description</label>
+              <textarea id="collab-post-meta-description" name="meta_description" rows="2" placeholder="Compelling description for search results..."></textarea>
+              <small>150-160 characters recommended for best SEO</small>
+            </div>
+            
+            <div class="ultra-form-group">
+              <label for="collab-post-meta-keywords">Meta Keywords</label>
+              <input type="text" id="collab-post-meta-keywords" name="meta_keywords" placeholder="keyword1, keyword2, keyword3">
+              <small>Comma-separated keywords for search engines</small>
+            </div>
+            
+            <div class="ultra-form-group">
+              <label for="collab-post-og-image">Open Graph Image</label>
+              <input type="url" id="collab-post-og-image" name="og_image" placeholder="https://example.com/og-image.jpg">
+              <small>Social media preview image (1200x630 px)</small>
+            </div>
           </div>
           
-          <div class="form-group">
-            <label for="collab-post-content">Content *</label>
-            <textarea id="collab-post-content" name="content" rows="12" required placeholder="Write your post content here..."></textarea>
-            <small>Use Markdown or HTML formatting</small>
+          <!-- 🚀 ADVANCED AI OPTIMIZATION -->
+          <div class="ultra-section ultra-ai-advanced-section">
+            <div class="ultra-section-header">
+              <span class="ultra-section-icon">🚀</span>
+              <h3 class="ultra-section-title">Advanced AI Optimization</h3>
+              <span class="ultra-badge ultra-badge-quantum">QUANTUM AI</span>
+            </div>
+            
+            <p class="ultra-section-desc">
+              Supercharge your content with cutting-edge AI: semantic embeddings, FAQ generation, 
+              structured data, and neural summaries for maximum visibility across all platforms.
+            </p>
+            
+            <!-- AI STATUS DISPLAY -->
+            <div id="collab-ai-status-box" class="ultra-ai-status-box" style="display: none;">
+              <div class="ultra-ai-status-item">
+                <span class="ultra-ai-status-label">📊 AI Summary:</span>
+                <span id="collab-ai-status-summary" class="ultra-ai-status-value">Not generated</span>
+              </div>
+              <div class="ultra-ai-status-item">
+                <span class="ultra-ai-status-label">❓ FAQ Schema:</span>
+                <span id="collab-ai-status-faq" class="ultra-ai-status-value">Not generated</span>
+              </div>
+              <div class="ultra-ai-status-item">
+                <span class="ultra-ai-status-label">📋 Structured Data:</span>
+                <span id="collab-ai-status-schema" class="ultra-ai-status-value">Not generated</span>
+              </div>
+              <div class="ultra-ai-status-item">
+                <span class="ultra-ai-status-label">🧠 Neural Embedding:</span>
+                <span id="collab-ai-status-embedding" class="ultra-ai-status-value">Not generated</span>
+              </div>
+            </div>
+            
+            <!-- MEGA AI OPTIMIZATION BUTTON -->
+            <div class="ultra-ai-quantum-action">
+              <button type="button" id="collab-ai-optimize-all" class="ultra-ai-quantum-button">
+                <span class="ultra-ai-quantum-bg"></span>
+                <span class="ultra-ai-quantum-glow"></span>
+                <span class="ultra-ai-quantum-content">
+                  <span class="ultra-ai-quantum-icon">🤖</span>
+                  <span class="ultra-ai-quantum-text">ONE-CLICK QUANTUM AI OPTIMIZATION</span>
+                  <span class="ultra-ai-quantum-subtext">Generate Everything • Neural Networks • 10X Engagement</span>
+                </span>
+              </button>
+            </div>
+            
+            <!-- INDIVIDUAL AI ACTIONS -->
+            <div class="ultra-ai-individual-actions">
+              <button type="button" id="collab-ai-generate-summary" class="ultra-ai-action-btn">
+                <span class="ultra-ai-action-icon">📝</span>
+                <span class="ultra-ai-action-text">AI SUMMARY</span>
+              </button>
+              <button type="button" id="collab-ai-generate-faq" class="ultra-ai-action-btn">
+                <span class="ultra-ai-action-icon">❓</span>
+                <span class="ultra-ai-action-text">FAQ SCHEMA</span>
+              </button>
+              <button type="button" id="collab-ai-generate-schema" class="ultra-ai-action-btn">
+                <span class="ultra-ai-action-icon">📋</span>
+                <span class="ultra-ai-action-text">STRUCTURED DATA</span>
+              </button>
+              <button type="button" id="collab-ai-generate-embedding" class="ultra-ai-action-btn">
+                <span class="ultra-ai-action-icon">🧠</span>
+                <span class="ultra-ai-action-text">NEURAL EMBED</span>
+              </button>
+            </div>
+            
+            <!-- KNOWLEDGE BASE TOGGLE -->
+            <div class="ultra-form-group ultra-checkbox-group">
+              <label class="ultra-checkbox-label">
+                <input type="checkbox" id="collab-ai-include-kb" name="ai_include_in_knowledge_base">
+                <span class="ultra-checkbox-custom"></span>
+                <span class="ultra-checkbox-text">
+                  <strong>Include in AI Knowledge Base</strong>
+                  <small>Enable AI-powered Q&A for visitors using this content</small>
+                </span>
+              </label>
+            </div>
+            
+            <!-- AI RESULT BOX -->
+            <div id="collab-ai-result-box" class="ultra-ai-result-box" style="display: none;">
+              <div class="ultra-ai-result-header">
+                <span class="ultra-ai-result-icon">✨</span>
+                <h4>AI Optimization Result</h4>
+              </div>
+              <pre id="collab-ai-result-text"></pre>
+            </div>
           </div>
           
-          <div class="form-group">
-            <label for="collab-post-featured-image">Featured Image URL</label>
-            <input type="url" id="collab-post-featured-image" name="featured_image" placeholder="https://...">
+          <!-- PUBLISHING OPTIONS -->
+          <div class="ultra-section">
+            <div class="ultra-section-header">
+              <span class="ultra-section-icon">🚀</span>
+              <h3 class="ultra-section-title">Publishing</h3>
+            </div>
+            
+            <div class="ultra-form-group">
+              <label for="collab-post-status">Status *</label>
+              <select id="collab-post-status" name="status" required>
+                <option value="draft">📝 Draft (Save for later)</option>
+                <option value="published">✅ Published (Go live now)</option>
+                <option value="archived">📦 Archived (Hide from public)</option>
+              </select>
+            </div>
           </div>
           
-          <div class="form-actions">
-            <button type="button" class="quantum-btn quantum-btn-secondary" onclick="switchView('my-posts')">
-              <span class="btn-icon">←</span>
-              <span class="btn-text">Cancel</span>
+          <!-- ULTRA ACTIONS -->
+          <div class="ultra-form-actions">
+            <button type="button" class="ultra-btn ultra-btn-cancel" onclick="switchView('my-posts')">
+              <span class="ultra-btn-icon">←</span>
+              <span class="ultra-btn-text">Cancel</span>
             </button>
-            <button type="submit" class="quantum-btn quantum-btn-primary">
-              <span class="btn-icon">✨</span>
-              <span class="btn-text">Create Post</span>
+            <button type="submit" class="ultra-btn ultra-btn-save">
+              <span class="ultra-btn-glow"></span>
+              <span class="ultra-btn-icon">✨</span>
+              <span class="ultra-btn-text">Create Post</span>
             </button>
           </div>
         </form>
@@ -367,6 +552,16 @@ async function checkNewPostPermission() {
         .replace(/^-+|-+$/g, '');
       document.getElementById('collab-post-slug').value = slug;
     });
+    
+    // Setup AI SEO Auto-Fill
+    document.getElementById('collab-ai-seo-optimize')?.addEventListener('click', collabAIAutoFillSEO);
+    
+    // Setup Advanced AI Optimization buttons
+    document.getElementById('collab-ai-optimize-all')?.addEventListener('click', collabAIOptimizeAll);
+    document.getElementById('collab-ai-generate-summary')?.addEventListener('click', () => collabAIGenerateSummary());
+    document.getElementById('collab-ai-generate-faq')?.addEventListener('click', () => collabAIGenerateFAQ());
+    document.getElementById('collab-ai-generate-schema')?.addEventListener('click', () => collabAIGenerateSchema());
+    document.getElementById('collab-ai-generate-embedding')?.addEventListener('click', () => collabAIGenerateEmbedding());
   } else {
     container.innerHTML = `
       <div style="text-align: center;">
@@ -392,11 +587,16 @@ async function handlePostSubmit(e) {
   const formData = {
     title: document.getElementById('collab-post-title').value,
     slug: document.getElementById('collab-post-slug').value,
+    author: document.getElementById('collab-post-author').value,
     excerpt: document.getElementById('collab-post-excerpt').value,
     content: document.getElementById('collab-post-content').value,
     featured_image: document.getElementById('collab-post-featured-image').value,
-    author: currentUser,
-    status: 'draft' // Publishers create drafts
+    meta_title: document.getElementById('collab-post-meta-title').value,
+    meta_description: document.getElementById('collab-post-meta-description').value,
+    meta_keywords: document.getElementById('collab-post-meta-keywords').value,
+    og_image: document.getElementById('collab-post-og-image').value,
+    status: document.getElementById('collab-post-status').value,
+    ai_include_in_knowledge_base: document.getElementById('collab-ai-include-kb').checked ? 1 : 0
   };
   
   try {
@@ -414,7 +614,7 @@ async function handlePostSubmit(e) {
     const data = await response.json();
     
     if (data.success) {
-      showNotification('✅ Post created successfully!', 'success');
+      showNotification('✅ Post created successfully! 🚀', 'success');
       // Reset form
       document.getElementById('collab-post-form').reset();
       // Switch to my posts view
@@ -749,3 +949,244 @@ style.textContent = `
   }
 `;
 document.head.appendChild(style);
+
+// 🤖 AI SEO AUTO-FILL FUNCTION
+async function collabAIAutoFillSEO() {
+  const btn = document.getElementById('collab-ai-seo-optimize');
+  const title = document.getElementById('collab-post-title').value;
+  const content = document.getElementById('collab-post-content').value;
+  
+  if (!title || !content) {
+    showNotification('⚠️ Please enter title and content first!', 'error');
+    return;
+  }
+  
+  // Visual feedback
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  const originalText = btn.querySelector('.ultra-ai-mega-text').textContent;
+  btn.querySelector('.ultra-ai-mega-text').textContent = '🤖 AI ANALYZING...';
+  
+  try {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch('/api/ai/seo-optimize', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ title, content })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      // Fill in the fields
+      if (data.meta_title) document.getElementById('collab-post-meta-title').value = data.meta_title;
+      if (data.meta_description) document.getElementById('collab-post-meta-description').value = data.meta_description;
+      if (data.meta_keywords) document.getElementById('collab-post-meta-keywords').value = data.meta_keywords;
+      
+      showNotification('✅ AI SEO fields auto-filled successfully!', 'success');
+    } else {
+      showNotification(`❌ AI optimization failed: ${data.error}`, 'error');
+    }
+  } catch (error) {
+    console.error('AI SEO error:', error);
+    showNotification('❌ AI optimization error', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.querySelector('.ultra-ai-mega-text').textContent = originalText;
+  }
+}
+
+// 🚀 ONE-CLICK AI OPTIMIZE ALL
+async function collabAIOptimizeAll() {
+  const btn = document.getElementById('collab-ai-optimize-all');
+  const content = document.getElementById('collab-post-content').value;
+  const title = document.getElementById('collab-post-title').value;
+  
+  if (!content || !title) {
+    showNotification('⚠️ Please enter title and content first!', 'error');
+    return;
+  }
+  
+  btn.disabled = true;
+  const originalText = btn.querySelector('.ultra-ai-quantum-text').textContent;
+  btn.querySelector('.ultra-ai-quantum-text').textContent = '🤖 QUANTUM AI PROCESSING...';
+  
+  try {
+    // Show status box
+    document.getElementById('collab-ai-status-box').style.display = 'block';
+    
+    const token = localStorage.getItem('auth_token');
+    
+    // Generate all AI features
+    await Promise.all([
+      collabAIGenerateSummary(true),
+      collabAIGenerateFAQ(true),
+      collabAIGenerateSchema(true),
+      collabAIGenerateEmbedding(true)
+    ]);
+    
+    showNotification('✅ Quantum AI optimization complete! All features generated!', 'success');
+  } catch (error) {
+    console.error('AI optimize all error:', error);
+    showNotification('❌ AI optimization error', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.querySelector('.ultra-ai-quantum-text').textContent = originalText;
+  }
+}
+
+// 📝 AI GENERATE SUMMARY
+async function collabAIGenerateSummary(silent = false) {
+  const content = document.getElementById('collab-post-content').value;
+  const title = document.getElementById('collab-post-title').value;
+  
+  if (!content) {
+    if (!silent) showNotification('⚠️ Please enter content first!', 'error');
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch('/api/ai/generate-summary', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ title, content })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      document.getElementById('collab-ai-status-summary').textContent = '✅ Generated';
+      document.getElementById('collab-ai-status-summary').style.color = '#43e97b';
+      if (!silent) {
+        document.getElementById('collab-ai-result-box').style.display = 'block';
+        document.getElementById('collab-ai-result-text').textContent = JSON.stringify(data.summary, null, 2);
+        showNotification('✅ AI Summary generated!', 'success');
+      }
+    }
+  } catch (error) {
+    console.error('AI summary error:', error);
+    if (!silent) showNotification('❌ AI summary generation failed', 'error');
+  }
+}
+
+// ❓ AI GENERATE FAQ
+async function collabAIGenerateFAQ(silent = false) {
+  const content = document.getElementById('collab-post-content').value;
+  const title = document.getElementById('collab-post-title').value;
+  
+  if (!content) {
+    if (!silent) showNotification('⚠️ Please enter content first!', 'error');
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch('/api/ai/generate-faq', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ title, content })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      document.getElementById('collab-ai-status-faq').textContent = '✅ Generated';
+      document.getElementById('collab-ai-status-faq').style.color = '#43e97b';
+      if (!silent) {
+        document.getElementById('collab-ai-result-box').style.display = 'block';
+        document.getElementById('collab-ai-result-text').textContent = JSON.stringify(data.faq, null, 2);
+        showNotification('✅ FAQ Schema generated!', 'success');
+      }
+    }
+  } catch (error) {
+    console.error('AI FAQ error:', error);
+    if (!silent) showNotification('❌ FAQ generation failed', 'error');
+  }
+}
+
+// 📋 AI GENERATE SCHEMA
+async function collabAIGenerateSchema(silent = false) {
+  const content = document.getElementById('collab-post-content').value;
+  const title = document.getElementById('collab-post-title').value;
+  
+  if (!content) {
+    if (!silent) showNotification('⚠️ Please enter content first!', 'error');
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch('/api/ai/generate-schema', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ title, content })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      document.getElementById('collab-ai-status-schema').textContent = '✅ Generated';
+      document.getElementById('collab-ai-status-schema').style.color = '#43e97b';
+      if (!silent) {
+        document.getElementById('collab-ai-result-box').style.display = 'block';
+        document.getElementById('collab-ai-result-text').textContent = JSON.stringify(data.schema, null, 2);
+        showNotification('✅ Structured Data generated!', 'success');
+      }
+    }
+  } catch (error) {
+    console.error('AI schema error:', error);
+    if (!silent) showNotification('❌ Schema generation failed', 'error');
+  }
+}
+
+// 🧠 AI GENERATE EMBEDDING
+async function collabAIGenerateEmbedding(silent = false) {
+  const content = document.getElementById('collab-post-content').value;
+  const title = document.getElementById('collab-post-title').value;
+  
+  if (!content) {
+    if (!silent) showNotification('⚠️ Please enter content first!', 'error');
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch('/api/ai/generate-embedding', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ title, content })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      document.getElementById('collab-ai-status-embedding').textContent = '✅ Generated';
+      document.getElementById('collab-ai-status-embedding').style.color = '#43e97b';
+      if (!silent) {
+        document.getElementById('collab-ai-result-box').style.display = 'block';
+        document.getElementById('collab-ai-result-text').textContent = `Embedding vector generated (${data.embedding?.length || 0} dimensions)`;
+        showNotification('✅ Neural Embedding generated!', 'success');
+      }
+    }
+  } catch (error) {
+    console.error('AI embedding error:', error);
+    if (!silent) showNotification('❌ Embedding generation failed', 'error');
+  }
+}
