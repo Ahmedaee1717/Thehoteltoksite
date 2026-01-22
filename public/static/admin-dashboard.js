@@ -581,6 +581,67 @@ async function toggleKnowledgeBase() {
     }
 }
 
+// AI Auto-Fill SEO Fields
+async function aiAutoFillSEO() {
+    const btn = document.getElementById('ai-seo-optimize-btn');
+    const originalText = btn.textContent;
+    
+    try {
+        // Get current content
+        const title = document.getElementById('post-title').value;
+        const trixEditor = document.querySelector('trix-editor');
+        const content = trixEditor ? trixEditor.editor.getDocument().toString() : '';
+        
+        if (!title || !content || content.length < 50) {
+            alert('Please write a title and content first (at least 50 characters)');
+            return;
+        }
+        
+        btn.textContent = '⏳ AI is analyzing...';
+        btn.disabled = true;
+        
+        // Call AI endpoint to generate SEO fields
+        const response = await fetch('/api/admin/ai/seo-optimize', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                title: title,
+                content: content.substring(0, 5000) // Limit content to 5000 chars for AI
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Auto-fill all SEO fields
+            document.getElementById('post-excerpt').value = data.excerpt || '';
+            document.getElementById('post-meta-title').value = data.meta_title || '';
+            document.getElementById('post-meta-description').value = data.meta_description || '';
+            document.getElementById('post-meta-keywords').value = data.meta_keywords || '';
+            
+            btn.textContent = '✅ SEO Fields Filled!';
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }, 3000);
+            
+            alert('✅ SEO fields have been auto-filled by AI!\\n\\nReview and edit as needed before publishing.');
+        } else {
+            alert('Error: ' + data.error);
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+    } catch (error) {
+        console.error('SEO optimization error:', error);
+        alert('Failed to optimize SEO fields: ' + error.message);
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
+}
+
 // Setup AI optimization buttons
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('ai-optimize-all-btn').addEventListener('click', aiOptimizeAll);
@@ -589,6 +650,12 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('ai-generate-schema-btn').addEventListener('click', aiGenerateSchema);
     document.getElementById('ai-generate-embedding-btn').addEventListener('click', aiGenerateEmbedding);
     document.getElementById('ai-include-kb').addEventListener('change', toggleKnowledgeBase);
+    
+    // SEO Auto-Fill button
+    const seoBtn = document.getElementById('ai-seo-optimize-btn');
+    if (seoBtn) {
+        seoBtn.addEventListener('click', aiAutoFillSEO);
+    }
 });
 
 // Modified fillPostForm to load AI status

@@ -291,3 +291,72 @@ aiAdminRoutes.get('/posts/:id/ai-status', async (c) => {
     }, 500);
   }
 });
+
+// AI SEO Auto-Fill
+aiAdminRoutes.post('/seo-optimize', async (c) => {
+  const { OPENAI_API_KEY } = c.env;
+  const { title, content } = await c.req.json();
+  
+  try {
+    if (!title || !content) {
+      return c.json({ success: false, error: 'Title and content are required' }, 400);
+    }
+
+    // Strip HTML tags from content for analysis
+    const plainContent = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    
+    // Call OpenAI to generate SEO fields
+    const prompt = `Analyze this blog post and generate SEO-optimized fields:
+
+Title: ${title}
+Content: ${plainContent.substring(0, 3000)}
+
+Generate:
+1. meta_title: SEO-optimized title (50-60 characters, include primary keyword)
+2. meta_description: Compelling description for search results (150-160 characters)
+3. meta_keywords: 5-7 relevant keywords (comma-separated)
+4. excerpt: Brief summary for blog listings (120-150 characters)
+
+Return as JSON with keys: meta_title, meta_description, meta_keywords, excerpt`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'You are an SEO expert. Always respond with valid JSON only, no markdown or extra text.' },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 500
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const aiResponse = data.choices[0].message.content.trim();
+    
+    // Parse JSON response (remove markdown code blocks if present)
+    const jsonMatch = aiResponse.match(/```json\s*([\s\S]*?)```/) || aiResponse.match(/\{[\s\S]*\}/);
+    const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : aiResponse;
+    const seoFields = JSON.parse(jsonStr);
+
+    return c.json({
+      success: true,
+      ...seoFields
+    });
+  } catch (error: any) {
+    console.error('SEO optimization error:', error);
+    return c.json({
+      success: false,
+      error: error.message || 'Failed to generate SEO fields'
+    }, 500);
+  }
+});
