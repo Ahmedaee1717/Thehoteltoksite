@@ -2692,16 +2692,26 @@ emailRoutes.post('/receive', async (c) => {
       return c.json({ success: false, error: 'Missing required fields' }, 400);
     }
     
-    // Check for duplicates (quick check, don't fail if error)
-    if (messageId) {
-      try {
-        const existing = await DB.prepare(`SELECT id FROM emails WHERE snippet LIKE ? LIMIT 1`).bind(`%${messageId}%`).first();
-        if (existing) {
-          return c.json({ success: true, duplicate: true, emailId: existing.id });
-        }
-      } catch (e) {
-        // Ignore duplicate check errors
+    // Check for duplicates (improved check for internal emails)
+    // For internal emails from our system, check by from_email, to, subject, and recent timestamp
+    try {
+      const fiveSecondsAgo = new Date(Date.now() - 5000).toISOString();
+      const existing = await DB.prepare(`
+        SELECT id FROM emails 
+        WHERE from_email = ? 
+          AND to_email = ? 
+          AND subject = ? 
+          AND created_at > ?
+        LIMIT 1
+      `).bind(from.includes('<') ? from.match(/<([^>]+)>/)?.[1] : from, to, subject, fiveSecondsAgo).first();
+      
+      if (existing) {
+        console.log(`🔄 DUPLICATE DETECTED: Email already exists (${existing.id}), skipping webhook insert`);
+        return c.json({ success: true, duplicate: true, emailId: existing.id });
       }
+    } catch (e) {
+      console.error('Duplicate check error:', e);
+      // Continue if duplicate check fails
     }
     
     // Parse sender
@@ -2787,6 +2797,19 @@ emailRoutes.post('/receive', async (c) => {
       }
     }
     
+    // Load email signature for incoming emails
+    const signatureHTML = await getEmailSignatureHTML(DB, emailId);
+    console.log('✉️ Email signature for incoming email:', signatureHTML ? 'YES' : 'NO');
+    
+    // Add signature to body HTML if it exists
+    let finalBodyHtml = bodyHtml || '';
+    if (signatureHTML && finalBodyHtml) {
+      finalBodyHtml = finalBodyHtml + signatureHTML;
+    } else if (signatureHTML && !finalBodyHtml && bodyText) {
+      // Convert text to HTML and add signature
+      finalBodyHtml = `<html><body><div style="white-space: pre-wrap;">${bodyText.replace(/\n/g, '<br>')}</div>${signatureHTML}</body></html>`;
+    }
+    
     // Insert email (this MUST succeed)
     await DB.prepare(`
       INSERT INTO emails (
@@ -2797,7 +2820,7 @@ emailRoutes.post('/receive', async (c) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'inbox', ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'timer', datetime('now', '+30 days'), 0)
     `).bind(
       emailId, threadId, senderEmail, senderName, to,
-      subject, bodyText || '[No body]', bodyHtml || '',
+      subject, bodyText || '[No body]', finalBodyHtml || '',
       (bodyText || subject).substring(0, 150),
       aiSummary
     ).run();
