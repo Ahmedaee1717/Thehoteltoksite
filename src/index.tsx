@@ -1511,6 +1511,200 @@ app.get('/collaborate', (c) => {
   `);
 });
 
+// 🚀 REVOLUTIONARY FILE BANK - Year 2070 Design
+app.get('/files', (c) => {
+  // Check if user is logged in
+  const authToken = getCookie(c, 'auth_token');
+  
+  if (!authToken) {
+    return c.redirect('/login');
+  }
+  
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>File Bank - Investay Capital</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="/static/filebank-revolution.css">
+    </head>
+    <body class="filebank-revolution">
+        <!-- 🌌 TOP BAR -->
+        <div class="filebank-container">
+            <div class="filebank-topbar">
+                <div class="filebank-logo">
+                    <span class="filebank-logo-icon">📁</span>
+                    <span>FILE BANK</span>
+                </div>
+
+                <div class="filebank-search-container">
+                    <span class="filebank-search-icon">🔍</span>
+                    <input 
+                        type="text" 
+                        id="filebank-search" 
+                        class="filebank-search" 
+                        placeholder="Search files by name, tags, or content..."
+                    >
+                    <button id="filebank-search-clear" class="filebank-search-clear">✕</button>
+                </div>
+
+                <div class="filebank-actions">
+                    <div class="filebank-view-toggle">
+                        <button class="filebank-view-btn active" data-view="grid" title="Grid View">⊞</button>
+                        <button class="filebank-view-btn" data-view="list" title="List View">☰</button>
+                        <button class="filebank-view-btn" data-view="columns" title="Columns View">▦</button>
+                    </div>
+
+                    <button id="filebank-collab-btn" class="filebank-action-btn">
+                        <span>✨</span>
+                        <span>Collaborate</span>
+                    </button>
+
+                    <button id="filebank-new-folder-btn" class="filebank-action-btn">
+                        <span>📁</span>
+                        <span>New Folder</span>
+                    </button>
+
+                    <button id="filebank-upload-btn" class="filebank-action-btn primary">
+                        <span>📤</span>
+                        <span>Upload</span>
+                    </button>
+
+                    <button id="filebank-back-btn" class="filebank-action-btn">
+                        <span>↩</span>
+                        <span>Email</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 🎨 WORKSPACE -->
+            <div class="filebank-workspace">
+                <!-- 🗂️ SIDEBAR -->
+                <div class="filebank-sidebar">
+                    <div class="filebank-sidebar-section">
+                        <div class="filebank-sidebar-title">Quick Access</div>
+                        
+                        <div class="filebank-sidebar-item active" data-filter="all">
+                            <span class="filebank-sidebar-icon">🏠</span>
+                            <span class="filebank-sidebar-label">All Files</span>
+                            <span class="filebank-sidebar-count">0</span>
+                        </div>
+
+                        <div class="filebank-sidebar-item" data-filter="recent">
+                            <span class="filebank-sidebar-icon">🕒</span>
+                            <span class="filebank-sidebar-label">Recent</span>
+                            <span class="filebank-sidebar-count">0</span>
+                        </div>
+
+                        <div class="filebank-sidebar-item" data-filter="starred">
+                            <span class="filebank-sidebar-icon">⭐</span>
+                            <span class="filebank-sidebar-label">Starred</span>
+                            <span class="filebank-sidebar-count">0</span>
+                        </div>
+
+                        <div class="filebank-sidebar-item" data-filter="shared">
+                            <span class="filebank-sidebar-icon">👥</span>
+                            <span class="filebank-sidebar-label">Shared</span>
+                            <span class="filebank-sidebar-count">0</span>
+                        </div>
+                    </div>
+
+                    <div class="filebank-sidebar-section">
+                        <div class="filebank-sidebar-title">File Types</div>
+                        
+                        <div class="filebank-sidebar-item" data-filter="images">
+                            <span class="filebank-sidebar-icon">🖼️</span>
+                            <span class="filebank-sidebar-label">Images</span>
+                        </div>
+
+                        <div class="filebank-sidebar-item" data-filter="documents">
+                            <span class="filebank-sidebar-icon">📄</span>
+                            <span class="filebank-sidebar-label">Documents</span>
+                        </div>
+                    </div>
+
+                    <div class="filebank-sidebar-section">
+                        <div class="filebank-sidebar-title">Folders</div>
+                        <div id="filebank-folders-list" class="filebank-folders-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 🏖️ MAIN CANVAS -->
+                <div id="filebank-canvas" class="filebank-canvas">
+                    <!-- Breadcrumb -->
+                    <div id="filebank-breadcrumb" class="filebank-breadcrumb">
+                        <div class="filebank-breadcrumb-item">
+                            🏠 All Files
+                        </div>
+                    </div>
+
+                    <!-- File Grid -->
+                    <div id="filebank-grid" class="filebank-grid">
+                        <div class="filebank-loading">
+                            <div class="filebank-loading-spinner"></div>
+                            <div class="filebank-loading-text">Loading your files...</div>
+                        </div>
+                    </div>
+
+                    <!-- Drag & Drop Zone -->
+                    <div id="filebank-dropzone" class="filebank-dropzone">
+                        <div class="filebank-dropzone-icon">📤</div>
+                        <div class="filebank-dropzone-text">Drop files here</div>
+                        <div class="filebank-dropzone-subtext">or click upload button</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Context Menu -->
+        <div id="filebank-context-menu" class="filebank-context-menu">
+            <div class="filebank-context-item" onclick="FileBankRevolution.openFile(this.closest('.filebank-context-menu').dataset.fileId)">
+                <span>📂</span>
+                <span>Open</span>
+            </div>
+            <div class="filebank-context-item" onclick="FileBankRevolution.toggleStar(this.closest('.filebank-context-menu').dataset.fileId)">
+                <span>⭐</span>
+                <span>Star</span>
+            </div>
+            <div class="filebank-context-divider"></div>
+            <div class="filebank-context-item">
+                <span>📋</span>
+                <span>Copy Link</span>
+            </div>
+            <div class="filebank-context-item">
+                <span>📤</span>
+                <span>Share</span>
+            </div>
+            <div class="filebank-context-divider"></div>
+            <div class="filebank-context-item danger" onclick="FileBankRevolution.deleteSelectedFiles()">
+                <span>🗑️</span>
+                <span>Delete</span>
+            </div>
+        </div>
+
+        <!-- Preview Modal -->
+        <div id="filebank-preview-modal" class="filebank-modal-overlay">
+            <div class="filebank-modal">
+                <div class="filebank-modal-header">
+                    <div class="filebank-modal-title">File Preview</div>
+                    <button class="filebank-modal-close" onclick="document.getElementById('filebank-preview-modal').classList.remove('active')">✕</button>
+                </div>
+                <div style="text-align: center;">
+                    <img class="filebank-preview-image" style="max-width: 100%; max-height: 60vh; border-radius: 12px;">
+                </div>
+            </div>
+        </div>
+
+        <script src="/static/filebank-revolution.js"></script>
+    </body>
+    </html>
+  `);
+});
+
 // Sitemap for SEO
 app.get('/sitemap.xml', async (c) => {
   const { DB } = c.env;

@@ -1568,8 +1568,8 @@ window.addEventListener('DOMContentLoaded', function() {
         { id: 'forwarding', icon: '⚡', label: 'Forwarding', gradient: 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)' },
         { id: 'tasks', icon: '✓', label: 'Tasks', gradient: 'linear-gradient(135deg, #D1AE6E 0%, #9E825A 100%)' },
         { id: 'crm', icon: '👥', label: 'CRM', gradient: 'linear-gradient(135deg, #E8B86D 0%, #B89968 100%)' },
-        { id: 'filebank', icon: '📁', label: 'Files', gradient: 'linear-gradient(135deg, #DDB76A 0%, #AA9265 100%)' },
-        { id: 'collaborate', icon: '✨', label: 'Collaborate', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', external: true }
+        { id: 'filebank', icon: '📁', label: 'Files', gradient: 'linear-gradient(135deg, #DDB76A 0%, #AA9265 100%)', external: true, url: '/files' },
+        { id: 'collaborate', icon: '✨', label: 'Collaborate', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', external: true, url: '/collaborate' }
       ];
       
       return h('div', { 
@@ -2027,7 +2027,7 @@ window.addEventListener('DOMContentLoaded', function() {
             navItems.map(item =>
               h('button', {
                 key: item.id,
-                onClick: () => item.external ? window.location.href = '/collaborate' : setView(item.id),
+                onClick: () => item.external ? window.location.href = (item.url || `/${item.id}`) : setView(item.id),
                 onMouseEnter: () => setHoveredNav(item.id),
                 onMouseLeave: () => setHoveredNav(null),
                 style: {
