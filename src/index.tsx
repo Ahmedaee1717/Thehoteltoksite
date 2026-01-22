@@ -379,8 +379,9 @@ app.get('/login', (c) => {
             const result = await response.json();
             
             if (result.success) {
-              // Store user email in localStorage
+              // Store user email and auth token in localStorage
               localStorage.setItem('userEmail', result.user.email);
+              localStorage.setItem('auth_token', result.token);
               
               // Login successful - redirect to mail
               window.location.href = '/mail';
