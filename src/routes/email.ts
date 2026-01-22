@@ -1029,7 +1029,38 @@ emailRoutes.post('/send', async (c) => {
     console.log('📝 Storing email as plaintext (encryption disabled)');
     
     // Prepare HTML body with signature for database storage
-    const bodyHtmlToStore = h; // Use the full HTML with signature (already created above)
+    // If h was created in Mailgun block, use it; otherwise create it now
+    let bodyHtmlToStore = body; // Fallback to plain text
+    
+    try {
+      if (typeof h !== 'undefined') {
+        // h was created in Mailgun block with full HTML and signature
+        bodyHtmlToStore = h;
+      } else {
+        // Mailgun not configured - create HTML with signature manually
+        const signatureHTML = await getEmailSignatureHTML(DB, emailId);
+        console.log('✉️ Email signature (no Mailgun):', signatureHTML ? 'YES' : 'NO');
+        
+        const emailBodyHtml = body.replace(/\n/g, '<br>');
+        bodyHtmlToStore = `
+          <html>
+            <head>
+              <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .email-body { white-space: pre-wrap; }
+              </style>
+            </head>
+            <body>
+              <div class="email-body">${emailBodyHtml}</div>
+              ${signatureHTML}
+            </body>
+          </html>
+        `;
+      }
+    } catch (e) {
+      console.error('❌ Error preparing HTML body:', e);
+      bodyHtmlToStore = body; // Fallback to plain text
+    }
     
     // Store email in database
     const insertResult = await DB.prepare(`
