@@ -597,7 +597,7 @@ function getRolePermissions(role) {
     viewer: []
   };
   
-  return JSON.stringify(permissions[role] || []);
+  return permissions[role] || [];
 }
 
 // 🔔 SHOW NOTIFICATION
