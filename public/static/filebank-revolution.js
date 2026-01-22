@@ -511,17 +511,22 @@ const FileBankRevolution = {
 
   // Open file
   async openFile(fileId) {
-    console.log('📂 openFile called with fileId:', fileId);
-    const file = this.state.files.find(f => f.id === fileId);
+    console.log('📂 openFile called with fileId:', fileId, 'Type:', typeof fileId);
+    
+    // Convert to string if it's a number (file IDs can be either)
+    const fileIdStr = String(fileId);
+    
+    const file = this.state.files.find(f => String(f.id) === fileIdStr);
     if (!file) {
       console.error('❌ File not found:', fileId);
+      console.log('Available file IDs:', this.state.files.map(f => ({ id: f.id, type: typeof f.id, name: f.original_filename })));
       return;
     }
 
     console.log('📂 Opening file:', file.original_filename);
 
     // Use enhanced preview that supports more file types
-    this.openFileEnhanced(fileId);
+    this.openFileEnhanced(fileIdStr);
   },
   
   // Get file type
@@ -539,7 +544,7 @@ const FileBankRevolution = {
   
   // Download file
   async downloadFile(fileId) {
-    const file = this.state.files.find(f => f.id === fileId);
+    const file = this.state.files.find(f => String(f.id) === String(fileId));
     if (!file) return;
 
     console.log('📥 Downloading:', file.original_filename);
@@ -568,7 +573,7 @@ const FileBankRevolution = {
   // Enhanced file preview
   async openFileEnhanced(fileId) {
     console.log('🔍 openFileEnhanced called with fileId:', fileId);
-    const file = this.state.files.find(f => f.id === fileId);
+    const file = this.state.files.find(f => String(f.id) === String(fileId));
     if (!file) {
       console.error('❌ File not found in openFileEnhanced:', fileId);
       return;
@@ -676,7 +681,7 @@ const FileBankRevolution = {
   
   // Email single file
   emailFile(fileId) {
-    this.state.selectedFiles = [fileId];
+    this.state.selectedFiles = [String(fileId)];
     this.emailSelectedFiles();
   },
   
@@ -687,7 +692,7 @@ const FileBankRevolution = {
       return;
     }
 
-    const files = this.state.files.filter(f => this.state.selectedFiles.includes(f.id));
+    const files = this.state.files.filter(f => this.state.selectedFiles.includes(String(f.id)));
     
     // Close any open modals
     this.closeModal();
@@ -783,7 +788,7 @@ Best regards</textarea>
       return;
     }
 
-    const files = this.state.files.filter(f => this.state.selectedFiles.includes(f.id));
+    const files = this.state.files.filter(f => this.state.selectedFiles.includes(String(f.id)));
 
     const sendBtn = document.getElementById('filebank-send-email-btn');
     if (sendBtn) {
@@ -859,7 +864,7 @@ Best regards</textarea>
 
   // Toggle star
   async toggleStar(fileId) {
-    const file = this.state.files.find(f => f.id === fileId);
+    const file = this.state.files.find(f => String(f.id) === String(fileId));
     if (!file) return;
 
     try {
