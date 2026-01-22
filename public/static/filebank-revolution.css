@@ -420,12 +420,34 @@
   font-size: 16px;
 }
 
-/* 🏖️ MAIN CANVAS - Drag-Anywhere Workspace */
+/* 🏖️ MAIN CANVAS - Desktop Workspace */
 .filebank-canvas {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 32px;
   position: relative;
+}
+
+/* Desktop grid overlay - subtle guide for positioning */
+.filebank-canvas::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(102, 126, 234, 0.03) 19px, rgba(102, 126, 234, 0.03) 20px),
+    repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(102, 126, 234, 0.03) 19px, rgba(102, 126, 234, 0.03) 20px);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* Show grid when dragging */
+.filebank-canvas.dragging-internal::after {
+  opacity: 1;
 }
 
 /* Custom Scrollbar */
@@ -477,25 +499,32 @@
   font-size: 12px;
 }
 
-/* 🎴 FILE GRID - Revolutionary Layout System */
+/* 🎴 FILE GRID - Revolutionary Desktop-Like Layout System */
 .filebank-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
+  position: relative;
+  min-height: calc(100vh - 250px);
   padding: 8px;
 }
 
+/* GRID VIEW: Free-form positioning like macOS/Windows Desktop */
+.filebank-grid:not(.list-view):not(.columns-view) {
+  /* Remove CSS Grid - use absolute positioning for true desktop experience */
+  display: block;
+}
+
 .filebank-grid.list-view {
+  display: grid;
   grid-template-columns: 1fr;
   gap: 8px;
 }
 
 .filebank-grid.columns-view {
+  display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
 
-/* 📄 FILE CARD - The Magic Happens Here */
+/* 📄 FILE CARD - Desktop Icon Style */
 .filebank-file-card {
   background: var(--glass-bg);
   backdrop-filter: blur(20px);
@@ -507,6 +536,49 @@
   position: relative;
   overflow: hidden;
   user-select: none;
+  width: 200px;
+  
+  /* Desktop mode: Absolute positioning for free-form layout */
+  position: absolute !important;
+}
+
+/* Grid view: Default auto-layout with wrapping */
+.filebank-grid:not(.list-view):not(.columns-view) .filebank-file-card {
+  margin: 0;
+  display: inline-block;
+  position: relative !important;
+  vertical-align: top;
+  margin-right: 20px;
+  margin-bottom: 20px;
+}
+
+/* List view: Full width */
+.filebank-grid.list-view .filebank-file-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  position: relative !important;
+}
+
+.filebank-grid.list-view .filebank-file-preview {
+  width: 60px;
+  height: 60px;
+  margin-right: 16px;
+  margin-bottom: 0;
+}
+
+.filebank-grid.list-view .filebank-file-info {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Columns view: Fixed width in 3 columns */
+.filebank-grid.columns-view .filebank-file-card {
+  width: 100%;
+  position: relative !important;
 }
 
 .filebank-file-card::before {
