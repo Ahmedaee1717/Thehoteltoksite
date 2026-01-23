@@ -821,7 +821,12 @@ const FileBankRevolution = {
     // Apply filter
     switch (this.state.currentFilter) {
       case 'recent':
-        files = files.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 20);
+        // Show files from the last 5 days
+        const fiveDaysAgo = new Date();
+        fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+        files = files
+          .filter(f => new Date(f.created_at) >= fiveDaysAgo)
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         break;
       case 'starred':
         files = files.filter(f => f.is_starred === 1);
@@ -844,8 +849,8 @@ const FileBankRevolution = {
       files = files.filter(f => f.folder_id === this.state.currentFolder);
     } else {
       // At root level: show only files NOT in any folder (folder_id is null)
-      // EXCEPTION: 'shared', 'images', 'documents', 'starred' filters should show ALL files regardless of folder
-      if (!['shared', 'images', 'documents', 'starred'].includes(this.state.currentFilter)) {
+      // EXCEPTION: 'shared', 'images', 'documents', 'starred', 'recent' filters should show ALL files regardless of folder
+      if (!['shared', 'images', 'documents', 'starred', 'recent'].includes(this.state.currentFilter)) {
         files = files.filter(f => !f.folder_id || f.folder_id === null);
       }
     }

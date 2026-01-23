@@ -37,6 +37,11 @@ window.FileBankComplete = {
           return false;
         }
         
+        // HIDE FOLDERS when filtering by recent or starred (folders can't be starred)
+        if (this.state.currentFilter === 'recent' || this.state.currentFilter === 'starred') {
+          return false;
+        }
+        
         // SHARED TAB: Only show shared folders (is_team_shared === 1)
         if (this.state.currentFilter === 'shared') {
           return f.is_team_shared === 1;
