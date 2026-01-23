@@ -63,6 +63,9 @@ window.FileBankComplete = {
       window.FileBankComplete.setupRightClickMenu();
     };
     
+    // Force re-render to show folders immediately
+    FBR.render();
+    
     console.log('✅ Complete File Bank Ready!');
   },
   
