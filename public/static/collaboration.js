@@ -312,30 +312,46 @@ function attachPostCardListeners() {
   console.log('📌 Attaching event listeners to post cards...');
   
   // Add click listeners to post card content
-  document.querySelectorAll('.post-card-content').forEach(element => {
-    element.addEventListener('click', function() {
-      console.log('Card clicked!');
+  const cardContents = document.querySelectorAll('.post-card-content');
+  console.log('📌 Found .post-card-content elements:', cardContents.length);
+  
+  cardContents.forEach((element, index) => {
+    console.log(`📌 Attaching listener to card ${index}:`, element);
+    element.addEventListener('click', function(e) {
+      console.log('🎯 Card content clicked!', e.target);
       const postData = this.getAttribute('data-post');
+      console.log('🎯 Post data:', postData);
       if (postData) {
         const encodedData = encodeURIComponent(postData);
+        console.log('🎯 Calling openPost with:', encodedData);
         window.openPost(encodedData);
+      } else {
+        console.error('❌ No post data found on element');
       }
     });
   });
   
   // Add click listeners to edit buttons
-  document.querySelectorAll('.post-edit-btn').forEach(button => {
+  const editButtons = document.querySelectorAll('.post-edit-btn');
+  console.log('📌 Found .post-edit-btn elements:', editButtons.length);
+  
+  editButtons.forEach((button, index) => {
+    console.log(`📌 Attaching listener to button ${index}:`, button);
     button.addEventListener('click', function(e) {
       e.stopPropagation(); // Prevent card click
-      console.log('Edit button clicked!');
+      console.log('🎯 Edit button clicked!', e.target);
       const slug = this.getAttribute('data-slug');
+      console.log('🎯 Slug:', slug);
       if (slug) {
+        console.log('🎯 Calling editPost with:', slug);
         window.editPost(slug);
+      } else {
+        console.error('❌ No slug found on button');
       }
     });
   });
   
-  console.log(`📌 Attached listeners to ${document.querySelectorAll('.post-card-content').length} post cards`);
+  console.log(`📌 Attached listeners to ${cardContents.length} post cards and ${editButtons.length} edit buttons`);
 }
 
 // ✏️ EDIT POST - Load into Collaboration Editor
