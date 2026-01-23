@@ -489,8 +489,9 @@
 .filebank-grid:not(.list-view):not(.columns-view) {
   display: flex;
   flex-wrap: wrap;
-  gap: 20px;
+  gap: 24px;
   align-content: flex-start;
+  align-items: flex-start;
 }
 
 .filebank-grid.list-view {
@@ -501,8 +502,8 @@
 
 .filebank-grid.columns-view {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
   align-items: start;
 }
 
@@ -512,17 +513,19 @@
   backdrop-filter: blur(20px);
   border: 1px solid var(--glass-border);
   border-radius: 16px;
-  padding: 16px;
+  padding: 20px;
   cursor: pointer;
   transition: all var(--transition-smooth);
   position: relative;
   overflow: visible;
   user-select: none;
-  width: 200px;
+  width: 220px;
   height: auto;
+  min-height: 280px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  gap: 12px;
 }
 
 /* List view: Full width */
@@ -548,11 +551,13 @@
   align-items: center;
 }
 
-/* Columns view: Fixed width in 3 columns */
+/* Columns view: Fixed width in 2 columns for more space */
 .filebank-grid.columns-view .filebank-file-card {
   width: 100%;
   height: auto;
-  min-height: auto;
+  min-height: 450px;
+  max-width: 100%;
+  overflow: visible;
 }
 
 .filebank-file-card::before {
@@ -568,7 +573,7 @@
 }
 
 .filebank-file-card:hover {
-  transform: translateY(-8px) scale(1.02);
+  transform: translateY(-4px);
   border-color: var(--quantum-primary);
   box-shadow: var(--glow-primary);
 }
@@ -631,6 +636,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  gap: 8px;
   min-height: 0;
 }
 
