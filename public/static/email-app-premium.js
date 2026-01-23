@@ -8646,8 +8646,35 @@ window.addEventListener('DOMContentLoaded', function() {
                     }, formatDate(msg.sent_at || msg.received_at || msg.created_at))
                   ),
                   
-                  // Message body - strip quoted replies to avoid showing history
-                  h('div', { 
+                  // Message body - render HTML if available, otherwise plain text
+                  msg.body_html ? h('div', { 
+                    style: { 
+                      fontSize: isLatest ? '15px' : '14px', 
+                      lineHeight: '1.7', 
+                      color: isLatest ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.85)', 
+                      marginBottom: '16px'
+                    },
+                    dangerouslySetInnerHTML: { __html: `<style>
+                      .email-body-content img { 
+                        max-width: 100%; 
+                        height: auto; 
+                        border-radius: 8px; 
+                        margin: 8px 0;
+                      }
+                      .email-body-content a {
+                        color: #C9A962;
+                        text-decoration: underline;
+                      }
+                      .email-body-content table {
+                        max-width: 100%;
+                        border-collapse: collapse;
+                      }
+                      .email-body-content p {
+                        margin: 8px 0;
+                      }
+                    </style>
+                    <div class="email-body-content">${stripQuotedReply(msg.body_html)}</div>` }
+                  }) : h('div', { 
                     style: { 
                       fontSize: isLatest ? '15px' : '14px', 
                       lineHeight: '1.7', 
