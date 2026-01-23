@@ -1143,3 +1143,13 @@
     z-index: 50;
   }
 }
+
+/* Gold Rotating Square Animation - Matching Main Site */
+@keyframes rotate-diamond {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(90deg);
+  }
+}

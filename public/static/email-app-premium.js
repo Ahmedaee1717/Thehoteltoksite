@@ -1682,63 +1682,34 @@ window.addEventListener('DOMContentLoaded', function() {
                 marginBottom: '24px'
               }
             },
-              // Premium Logo - Clean and Simple
+              // Premium Logo - Gold Rotating Square Dot (matching main site)
               h('div', {
                 style: {
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #C9A962 0%, #A88B4E 100%)',
+                  width: '20px',
+                  height: '20px',
+                  background: '#C9A962',
+                  borderRadius: '2px',
+                  flexShrink: 0,
+                  animation: 'rotate-diamond 3s linear infinite'
+                }
+              }),
+              h('div', {
+                style: {
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-                  flexShrink: 0
+                  gap: '0.75rem'
                 }
               },
-                // Simple "I" lettermark
-                h('div', {
-                  style: {
-                    fontSize: '28px',
-                    fontWeight: '700',
-                    color: 'white',
-                    fontFamily: 'Georgia, serif'
-                  }
-                }, 'I')
-              ),
-              h('div', null,
-                h('div', {
-                  style: {
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px'
-                  }
-                },
-                  // Main brand name
-                  h('div', { 
-                    style: { 
-                      fontSize: '19px', 
-                      fontWeight: '800',
-                      color: '#FFFFFF',
-                      letterSpacing: '2px',
-                      textTransform: 'uppercase',
-                      lineHeight: '1.2'
-                    } 
-                  }, 'INVESTAYCAPITAL'),
-                  // Tagline
-                  h('div', { 
-                    style: { 
-                      fontSize: '10px', 
-                      color: 'rgba(201, 169, 98, 0.85)',
-                      fontWeight: '600',
-                      letterSpacing: '1.5px',
-                      textTransform: 'uppercase',
-                      borderTop: '1px solid rgba(201, 169, 98, 0.3)',
-                      paddingTop: '6px',
-                      marginTop: '2px'
-                    } 
-                  }, 'Internal Email System')
-                )
+                // Main brand name
+                h('div', { 
+                  style: { 
+                    fontSize: '1rem', 
+                    fontWeight: '600',
+                    color: '#FFFFFF',
+                    letterSpacing: '2px',
+                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                  } 
+                }, 'iNVESTAY CAPITAL')
               )
             ),
             
