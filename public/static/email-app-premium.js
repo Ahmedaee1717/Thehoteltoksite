@@ -382,18 +382,35 @@ window.addEventListener('DOMContentLoaded', function() {
               // Archive expired emails in background
               if (expiredEmails.length > 0) {
                 console.log(`⏰ Found ${expiredEmails.length} expired email(s) - auto-archiving...`);
-                showToast(`🗂️ Auto-archiving ${expiredEmails.length} expired email${expiredEmails.length > 1 ? 's' : ''}...`, 'info');
                 
-                expiredEmails.forEach(async (email) => {
+                // Archive emails one by one and track success
+                let successCount = 0;
+                const archivePromises = expiredEmails.map(async (email) => {
                   try {
-                    await fetch(`/api/email/${email.id}/archive`, {
-                      method: 'PATCH'
+                    const response = await fetch(`/api/email/${email.id}/archive`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ archived: true })
                     });
-                    console.log(`✅ Auto-archived expired email: ${email.id}`);
+                    
+                    if (response.ok) {
+                      successCount++;
+                      console.log(`✅ Auto-archived expired email: ${email.id}`);
+                    } else {
+                      console.error(`❌ Failed to archive ${email.id}: ${response.status}`);
+                    }
                   } catch (err) {
                     console.error(`❌ Failed to archive ${email.id}:`, err);
                   }
                 });
+                
+                // Wait for all archive operations to complete
+                await Promise.all(archivePromises);
+                
+                // Only show toast if at least one email was successfully archived
+                if (successCount > 0) {
+                  showToast(`🗂️ Auto-archived ${successCount} expired email${successCount > 1 ? 's' : ''}`, 'success');
+                }
                 
                 // Filter out expired emails from display
                 fetchedEmails = fetchedEmails.filter(e => 
