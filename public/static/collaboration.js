@@ -937,10 +937,10 @@ function createTeamCard(user) {
       </div>
       
       <div class="team-member-actions">
-        <a href="mailto:${email}" class="team-action-btn team-email-btn" title="Send Email">
+        <button class="team-action-btn team-email-btn" onclick="window.openComposeEmailModal('${email}', '${escapeHtml(displayName)}')" title="Send Email">
           <span class="team-action-icon">📧</span>
           <span class="team-action-text">Email</span>
-        </a>
+        </button>
         <button class="team-action-btn team-message-btn" onclick="openMessage('${email}')" title="Direct Message">
           <span class="team-action-icon">💬</span>
           <span class="team-action-text">Message</span>
@@ -1547,3 +1547,105 @@ async function collabAIGenerateEmbedding(silent = false) {
     if (!silent) showNotification('❌ Embedding generation failed', 'error');
   }
 }
+
+// 📧 COMPOSE EMAIL MODAL
+window.openComposeEmailModal = function(toEmail, toName) {
+  console.log('📧 Opening compose email modal for:', toEmail);
+  
+  // Create modal HTML
+  const modalHtml = `
+    <div id="compose-email-modal" class="collab-email-modal" onclick="if(event.target === this) closeComposeEmailModal()">
+      <div class="collab-email-modal-content">
+        <div class="collab-email-modal-header">
+          <h3>📧 Compose Email</h3>
+          <button class="collab-email-modal-close" onclick="closeComposeEmailModal()">×</button>
+        </div>
+        
+        <div class="collab-email-modal-body">
+          <div class="collab-email-form-group">
+            <label>To:</label>
+            <input type="email" id="email-to" value="${toEmail}" readonly>
+            <small>${toName}</small>
+          </div>
+          
+          <div class="collab-email-form-group">
+            <label>Subject:</label>
+            <input type="text" id="email-subject" placeholder="Enter email subject..." autofocus>
+          </div>
+          
+          <div class="collab-email-form-group">
+            <label>Message:</label>
+            <textarea id="email-body" rows="10" placeholder="Write your message..."></textarea>
+          </div>
+        </div>
+        
+        <div class="collab-email-modal-footer">
+          <button class="collab-email-btn-cancel" onclick="closeComposeEmailModal()">Cancel</button>
+          <button class="collab-email-btn-send" onclick="sendTeamEmail()">
+            <span class="email-btn-icon">📤</span>
+            Send Email
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Add to body
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  
+  // Focus subject field
+  setTimeout(() => {
+    document.getElementById('email-subject').focus();
+  }, 100);
+};
+
+window.closeComposeEmailModal = function() {
+  const modal = document.getElementById('compose-email-modal');
+  if (modal) {
+    modal.remove();
+  }
+};
+
+window.sendTeamEmail = async function() {
+  const to = document.getElementById('email-to').value;
+  const subject = document.getElementById('email-subject').value.trim();
+  const body = document.getElementById('email-body').value.trim();
+  
+  if (!subject) {
+    showNotification('❌ Please enter a subject', 'error');
+    return;
+  }
+  
+  if (!body) {
+    showNotification('❌ Please enter a message', 'error');
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE}/send-email`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        to,
+        subject,
+        body
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      showNotification('✅ Email sent successfully!', 'success');
+      closeComposeEmailModal();
+    } else {
+      showNotification(`❌ ${data.error || 'Failed to send email'}`, 'error');
+    }
+  } catch (error) {
+    console.error('Send email error:', error);
+    showNotification('❌ Error sending email', 'error');
+  }
+};
