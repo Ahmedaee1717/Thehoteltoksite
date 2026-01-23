@@ -130,39 +130,42 @@ window.FileBankComplete = {
                   background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%); 
                   border: 2px solid rgba(102, 126, 234, 0.4);
                   transition: all 0.3s ease;
-                  cursor: pointer;">
+                  cursor: pointer;
+                  display: flex;
+                  flex-direction: column;">
         
+        <!-- Status Badge at Top -->
         ${isShared ? `
-          <div style="position: absolute; top: 12px; right: 12px; 
-                      background: linear-gradient(135deg, rgba(16, 185, 129, 0.95) 0%, rgba(5, 150, 105, 0.95) 100%);
-                      backdrop-filter: blur(10px);
-                      padding: 8px 14px;
-                      border-radius: 10px;
-                      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-                      border: 1px solid rgba(255, 255, 255, 0.2);">
-            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-              <span style="font-size: 14px;">🌐</span>
-              <span style="color: white; font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">SHARED</span>
-            </div>
-            <div style="color: rgba(255, 255, 255, 0.9); font-size: 10px; font-weight: 500;">
-              by ${this.getDisplayName(folder.user_email)}
-            </div>
-            <div style="color: rgba(255, 255, 255, 0.7); font-size: 9px; margin-top: 2px;">
-              ${this.formatTimeAgo(folder.updated_at || folder.created_at)}
+          <div style="padding: 12px 12px 0 12px;">
+            <div style="display: inline-flex;
+                        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                        padding: 6px 12px;
+                        border-radius: 8px;
+                        box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3);
+                        border: 1px solid rgba(255, 255, 255, 0.2);">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 12px;">🌐</span>
+                <span style="color: white; font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">SHARED</span>
+              </div>
             </div>
           </div>
         ` : ''}
         
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: ${isColumnView ? 'flex-start' : 'center'}; padding: ${isColumnView ? '20px' : '40px 20px'}; text-align: center;">
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: ${isColumnView ? 'flex-start' : 'center'}; padding: ${isColumnView ? '20px' : '${isShared ? "20px 20px 40px" : "40px 20px"}'}; text-align: center;">
           <div style="font-size: ${isColumnView ? '60px' : '80px'}; margin-bottom: 15px; filter: drop-shadow(0 4px 12px rgba(102, 126, 234, 0.3));">${folder.icon || '📁'}</div>
           <div style="color: white; font-size: 16px; font-weight: 600; margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;">${this.escapeHtml(folder.folder_name)}</div>
-          <div style="color: rgba(255, 255, 255, 0.6); font-size: 12px;">${fileCount} file${fileCount !== 1 ? 's' : ''} · ${this.formatFileSize(totalSize)}</div>
+          <div style="color: rgba(255, 255, 255, 0.6); font-size: 12px; margin-bottom: 8px;">${fileCount} file${fileCount !== 1 ? 's' : ''} · ${this.formatFileSize(totalSize)}</div>
+          ${isShared ? `
+            <div style="color: rgba(255, 255, 255, 0.5); font-size: 10px;">
+              by ${this.getDisplayName(folder.user_email)} • ${this.formatTimeAgo(folder.updated_at || folder.created_at)}
+            </div>
+          ` : ''}
           
           ${isColumnView ? this.generateFolderPreview(folder) : ''}
         </div>
         
         ${isOwner ? `
-          <div style="position: absolute; bottom: 16px; left: 16px; right: 16px; display: flex; gap: 8px;">
+          <div style="padding: 0 16px 16px 16px; display: flex; gap: 8px;">
             <button onclick="event.stopPropagation(); window.FileBankComplete.toggleFolderShare(${folder.id})"
                     style="flex: 1; padding: 10px; 
                            background: ${isShared ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3))'}; 

@@ -555,9 +555,11 @@
 .filebank-grid.columns-view .filebank-file-card {
   width: 100%;
   height: auto;
-  min-height: 450px;
+  min-height: 700px;
   max-width: 100%;
   overflow: visible;
+  display: flex;
+  flex-direction: column;
 }
 
 .filebank-file-card::before {

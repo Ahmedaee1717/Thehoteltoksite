@@ -421,57 +421,45 @@ const FileBankRevolution = {
            data-file-id="${file.id}"
            draggable="true">
         
-        ${file.is_shared ? `
-          <div style="position: absolute; top: 12px; right: 12px; 
-                      background: linear-gradient(135deg, rgba(16, 185, 129, 0.95) 0%, rgba(5, 150, 105, 0.95) 100%);
-                      backdrop-filter: blur(10px);
-                      padding: 6px 12px;
-                      border-radius: 8px;
-                      box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3);
-                      border: 1px solid rgba(255, 255, 255, 0.2);
-                      z-index: 10;">
-            <div style="display: flex; align-items: center; gap: 4px;">
-              <span style="font-size: 12px;">🌐</span>
-              <span style="color: white; font-size: 10px; font-weight: 700; letter-spacing: 0.3px;">SHARED</span>
+        <!-- Status Badges at Top -->
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; min-height: 24px;">
+          ${file.is_shared ? `
+            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                        padding: 4px 10px;
+                        border-radius: 6px;
+                        box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+                        border: 1px solid rgba(255, 255, 255, 0.2);">
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span style="font-size: 10px;">🌐</span>
+                <span style="color: white; font-size: 9px; font-weight: 700;">SHARED</span>
+              </div>
             </div>
-            <div style="color: rgba(255, 255, 255, 0.85); font-size: 8px; font-weight: 500; margin-top: 2px;">
-              by ${this.getDisplayName(file.user_email)}
+          ` : ''}
+          ${file.folder_is_shared ? `
+            <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+                        padding: 4px 10px;
+                        border-radius: 6px;
+                        box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+                        border: 1px solid rgba(255, 255, 255, 0.15);">
+              <div style="display: flex; align-items: center; gap: 3px;">
+                <span style="font-size: 9px;">📁</span>
+                <span style="color: white; font-size: 9px; font-weight: 600;">Folder Shared</span>
+              </div>
             </div>
-          </div>
-        ` : ''}
-        ${file.folder_is_shared ? `
-          <div style="position: absolute; top: ${file.is_shared ? '78px' : '12px'}; right: 12px; 
-                      background: linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%);
-                      backdrop-filter: blur(10px);
-                      padding: 5px 10px;
-                      border-radius: 7px;
-                      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-                      border: 1px solid rgba(255, 255, 255, 0.15);
-                      z-index: 9;">
-            <div style="display: flex; align-items: center; gap: 3px;">
-              <span style="font-size: 10px;">📁</span>
-              <span style="color: white; font-size: 9px; font-weight: 600;">Folder Shared</span>
+          ` : ''}
+          ${!isOwner ? `
+            <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                        padding: 4px 10px;
+                        border-radius: 6px;
+                        box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+                        border: 1px solid rgba(255, 255, 255, 0.15);">
+              <div style="display: flex; align-items: center; gap: 3px;">
+                <span style="font-size: 9px;">👤</span>
+                <span style="color: white; font-size: 9px; font-weight: 600;">by ${this.getDisplayName(file.user_email)}</span>
+              </div>
             </div>
-          </div>
-        ` : ''}
-        ${!isOwner ? `
-          <div style="position: absolute; top: ${file.is_shared && file.folder_is_shared ? '140px' : file.is_shared || file.folder_is_shared ? '78px' : '12px'}; right: 12px; 
-                      background: linear-gradient(135deg, rgba(245, 158, 11, 0.9) 0%, rgba(217, 119, 6, 0.9) 100%);
-                      backdrop-filter: blur(10px);
-                      padding: 5px 10px;
-                      border-radius: 7px;
-                      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
-                      border: 1px solid rgba(255, 255, 255, 0.15);
-                      z-index: 8;">
-            <div style="display: flex; align-items: center; gap: 3px;">
-              <span style="font-size: 10px;">👤</span>
-              <span style="color: white; font-size: 9px; font-weight: 600;">Not Yours</span>
-            </div>
-            <div style="color: rgba(255, 255, 255, 0.8); font-size: 8px; margin-top: 1px;">
-              by ${this.getDisplayName(file.user_email)}
-            </div>
-          </div>
-        ` : ''}
+          ` : ''}
+        </div>
         
         <div class="filebank-file-actions">
           <button class="filebank-file-action-btn" 
