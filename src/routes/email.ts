@@ -2728,6 +2728,14 @@ emailRoutes.post('/receive', async (c) => {
       htmlPreview: bodyHtml.substring(0, 200)
     });
     
+    // Extract all CID references from the HTML to help with debugging
+    if (bodyHtml) {
+      const cidMatches = bodyHtml.match(/cid:[^"'\s>]+/g);
+      if (cidMatches) {
+        console.log('📎 Found CID references in HTML:', cidMatches);
+      }
+    }
+    
     if (!from || !to || !subject) {
       return c.json({ success: false, error: 'Missing required fields' }, 400);
     }
@@ -2981,6 +2989,38 @@ emailRoutes.post('/receive', async (c) => {
         }
         
         console.log(`✅ All ${attachmentCount} attachments processed for email ${emailId}`);
+        
+        // Post-processing: Try to match CIDs in HTML with attachments that don't have content_id
+        if (finalBodyHtml && finalBodyHtml.includes('cid:')) {
+          const cidMatches = finalBodyHtml.match(/cid:([^"'\s>]+)/g);
+          if (cidMatches && cidMatches.length > 0) {
+            console.log(`🔍 Attempting to match ${cidMatches.length} CIDs with attachments...`);
+            
+            // Get all attachments for this email
+            const { results: savedAttachments } = await DB.prepare(`
+              SELECT id, filename, content_id FROM attachments WHERE email_id = ?
+            `).bind(emailId).all();
+            
+            // Find attachments without content_id
+            const attachmentsWithoutCid = savedAttachments.filter((att: any) => !att.content_id);
+            
+            if (attachmentsWithoutCid.length > 0) {
+              console.log(`📎 Found ${attachmentsWithoutCid.length} attachments without Content-ID, attempting to match by position...`);
+              
+              // Match by position (first CID -> first attachment without CID, etc.)
+              for (let j = 0; j < Math.min(cidMatches.length, attachmentsWithoutCid.length); j++) {
+                const cidMatch = cidMatches[j].replace('cid:', '');
+                const attachment = attachmentsWithoutCid[j];
+                
+                await DB.prepare(`
+                  UPDATE attachments SET content_id = ? WHERE id = ?
+                `).bind(cidMatch, attachment.id).run();
+                
+                console.log(`✅ Matched CID "${cidMatch}" to attachment "${attachment.filename}"`);
+              }
+            }
+          }
+        }
       }
     } catch (attachmentError: any) {
       console.error('❌ Attachment processing error:', attachmentError.message);
