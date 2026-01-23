@@ -1878,7 +1878,7 @@ app.get('/files', (c) => {
         </div>
 
         <script src="/static/filebank-revolution.js"></script>
-        <script src="/static/filebank-pro.js"></script>
+        <script src="/static/filebank-pro-minimal.js"></script>
     </body>
     </html>
   `);
