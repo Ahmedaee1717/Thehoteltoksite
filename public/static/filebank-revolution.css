@@ -1136,3 +1136,59 @@
     grid-template-columns: repeat(3, 1fr);
   }
 }
+/* COMPLETE RESET - NO OVERLAPPING */
+
+/* Grid container - FORCE proper layout */
+.filebank-grid {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 24px !important;
+  align-content: flex-start !important;
+  align-items: flex-start !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+.filebank-grid.list-view {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+.filebank-grid.columns-view {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 32px !important;
+  align-items: start !important;
+}
+
+/* File cards - FORCE proper sizing */
+.filebank-file-card {
+  position: relative !important;
+  width: 240px !important;
+  min-width: 240px !important;
+  max-width: 240px !important;
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  flex-shrink: 0 !important;
+  margin: 0 !important;
+  padding: 16px !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+}
+
+.filebank-grid.columns-view .filebank-file-card {
+  width: 100% !important;
+  min-width: auto !important;
+  max-width: 100% !important;
+}
+
+.filebank-grid.list-view .filebank-file-card {
+  width: 100% !important;
+  min-width: auto !important;
+  max-width: 100% !important;
+  flex-direction: row !important;
+}
