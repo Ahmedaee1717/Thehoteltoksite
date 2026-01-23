@@ -2722,6 +2722,12 @@ emailRoutes.post('/receive', async (c) => {
     const replyTo = formData.get('Reply-To') as string;
     const messageId = formData.get('Message-Id') as string;
     
+    console.log('📧 Email body preview:', {
+      textLength: bodyText.length,
+      htmlLength: bodyHtml.length,
+      htmlPreview: bodyHtml.substring(0, 200)
+    });
+    
     if (!from || !to || !subject) {
       return c.json({ success: false, error: 'Missing required fields' }, 400);
     }
@@ -2836,18 +2842,10 @@ emailRoutes.post('/receive', async (c) => {
       }
     }
     
-    // Load email signature for incoming emails
-    const signatureHTML = await getEmailSignatureHTML(DB, emailId);
-    console.log('✉️ Email signature for incoming email:', signatureHTML ? 'YES' : 'NO');
-    
-    // Add signature to body HTML if it exists
-    let finalBodyHtml = bodyHtml || '';
-    if (signatureHTML && finalBodyHtml) {
-      finalBodyHtml = finalBodyHtml + signatureHTML;
-    } else if (signatureHTML && !finalBodyHtml && bodyText) {
-      // Convert text to HTML and add signature
-      finalBodyHtml = `<html><body><div style="white-space: pre-wrap;">${bodyText.replace(/\n/g, '<br>')}</div>${signatureHTML}</body></html>`;
-    }
+    // ❌ DO NOT add signature to incoming emails!
+    // Signatures should only be added when SENDING emails, not RECEIVING them
+    // Store the email body as-is from the sender
+    const finalBodyHtml = bodyHtml || '';
     
     // Insert email (this MUST succeed)
     await DB.prepare(`
@@ -2869,6 +2867,10 @@ emailRoutes.post('/receive', async (c) => {
     // 📎 PROCESS ATTACHMENTS from Mailgun
     // Mailgun sends attachments as: attachment-1, attachment-2, etc.
     try {
+      // DEBUG: Log all formData keys to see what Mailgun sends
+      const allKeys = Array.from(formData.keys());
+      console.log(`📎 Mailgun formData keys:`, allKeys.join(', '));
+      
       const attachmentCount = parseInt(formData.get('attachment-count') as string || '0');
       console.log(`📎 Processing ${attachmentCount} attachments for email ${emailId}`);
       
@@ -2885,17 +2887,38 @@ emailRoutes.post('/receive', async (c) => {
             // Extract Content-ID if present (for inline images with cid: references)
             let contentId = null;
             try {
-              // Check if Mailgun sent content-id as a separate field
-              const cidField = formData.get(`content-id-${i}`);
-              if (cidField) {
-                contentId = cidField.toString().replace(/[<>]/g, ''); // Remove angle brackets
-                console.log(`📎 Found Content-ID from field: ${contentId}`);
+              // Try multiple field name patterns that Mailgun might use
+              const possibleCidFields = [
+                `content-id-${i}`,           // content-id-1
+                `Content-ID-${i}`,           // Content-ID-1
+                `content-id`,                // content-id (generic)
+                `Content-ID`,                // Content-ID (generic)
+                `cid-${i}`,                  // cid-1
+                `inline-${i}`,               // inline-1
+              ];
+              
+              for (const fieldName of possibleCidFields) {
+                const cidField = formData.get(fieldName);
+                if (cidField) {
+                  contentId = cidField.toString().replace(/[<>]/g, ''); // Remove angle brackets
+                  console.log(`📎 Found Content-ID from field "${fieldName}": ${contentId}`);
+                  break;
+                }
+              }
+              
+              // Also check if filename contains CID pattern like: image.png@<cid>
+              if (!contentId && filename.includes('@')) {
+                const cidMatch = filename.match(/@<([^>]+)>/);
+                if (cidMatch) {
+                  contentId = cidMatch[1];
+                  console.log(`📎 Extracted Content-ID from filename: ${contentId}`);
+                }
               }
             } catch (e) {
-              // Ignore
+              console.warn(`⚠️ Error extracting Content-ID:`, e);
             }
             
-            console.log(`📎 Processing attachment ${i}: ${filename} (${size} bytes, ${contentType}, CID: ${contentId || 'none'})`);
+            console.log(`📎 Processing attachment ${i}: ${filename} (${size} bytes, ${contentType}, CID: ${contentId || 'NONE'})`);
             
             // Check if R2 bucket is available
             const R2 = c.env.R2_BUCKET;
