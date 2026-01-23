@@ -320,12 +320,6 @@ function attachPostCardListeners() {
     console.log(`📌 Attaching listener to card ${index}:`, card);
     
     card.addEventListener('click', function(e) {
-      // Don't trigger if clicking on the edit button or its children
-      if (e.target.classList.contains('post-edit-btn') || e.target.closest('.post-edit-btn')) {
-        console.log('🛑 Click on edit button - not opening post');
-        return;
-      }
-      
       console.log('🎯 CLICK on post card!', e.target);
       
       // Find the post-card-content inside this card
@@ -335,9 +329,10 @@ function attachPostCardListeners() {
         if (postDataBase64) {
           try {
             const postDataStr = atob(postDataBase64);
-            const encodedData = encodeURIComponent(postDataStr);
-            console.log('🎯 Opening post:', postDataStr);
-            window.openPost(encodedData);
+            const postData = JSON.parse(postDataStr);
+            
+            // Show modal with options
+            showPostActionModal(postData);
           } catch (error) {
             console.error('❌ Error:', error);
           }
@@ -346,25 +341,7 @@ function attachPostCardListeners() {
     }, { capture: true });
   });
   
-  // Add click listeners to edit buttons
-  const editButtons = document.querySelectorAll('.post-edit-btn');
-  console.log('📌 Found .post-edit-btn elements:', editButtons.length);
-  
-  editButtons.forEach((button, index) => {
-    console.log(`📌 Attaching listener to button ${index}:`, button);
-    
-    button.addEventListener('click', function(e) {
-      e.stopPropagation(); // Prevent card click
-      console.log('🎯 CLICK on Edit button!', e.target);
-      const slug = this.getAttribute('data-slug');
-      if (slug) {
-        console.log('🎯 Editing post:', slug);
-        window.editPost(slug);
-      }
-    }, { capture: true });
-  });
-  
-  console.log(`📌 Attached listeners to ${postCards.length} post cards and ${editButtons.length} edit buttons`);
+  console.log(`📌 Attached listeners to ${postCards.length} post cards`);
   
   // MANUAL TEST
   window.testCardClick = function() {
@@ -382,6 +359,60 @@ function attachPostCardListeners() {
   
   console.log('🧪 TEST: window.testCardClick() available');
 }
+
+// 📋 SHOW POST ACTION MODAL
+function showPostActionModal(postData) {
+  console.log('📋 Showing action modal for:', postData);
+  
+  // Create modal HTML
+  const modal = document.createElement('div');
+  modal.className = 'post-action-modal';
+  modal.innerHTML = `
+    <div class="post-action-modal-overlay"></div>
+    <div class="post-action-modal-content">
+      <h3>What would you like to do?</h3>
+      <p class="post-title-preview">${postData.slug}</p>
+      <div class="post-action-buttons">
+        <button class="post-action-btn view-btn" onclick="viewLivePost('${postData.slug}')">
+          <span class="btn-icon">👁️</span>
+          <span class="btn-text">View Live Post</span>
+        </button>
+        <button class="post-action-btn edit-btn" onclick="editPostFromModal('${postData.slug}')">
+          <span class="btn-icon">✏️</span>
+          <span class="btn-text">Edit Post</span>
+        </button>
+      </div>
+      <button class="modal-close-btn" onclick="closePostActionModal()">✕</button>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Close on overlay click
+  modal.querySelector('.post-action-modal-overlay').addEventListener('click', closePostActionModal);
+}
+
+// 👁️ VIEW LIVE POST
+window.viewLivePost = function(slug) {
+  console.log('👁️ Viewing live post:', slug);
+  closePostActionModal();
+  window.location.href = `/blog/${slug}`;
+};
+
+// ✏️ EDIT POST FROM MODAL
+window.editPostFromModal = function(slug) {
+  console.log('✏️ Editing post:', slug);
+  closePostActionModal();
+  window.editPost(slug);
+};
+
+// ✕ CLOSE MODAL
+window.closePostActionModal = function() {
+  const modal = document.querySelector('.post-action-modal');
+  if (modal) {
+    modal.remove();
+  }
+};
 
 // ✏️ EDIT POST - Load into Collaboration Editor
 async function editPost(slug) {
