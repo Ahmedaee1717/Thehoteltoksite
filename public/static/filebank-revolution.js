@@ -527,222 +527,371 @@ const FileBankRevolution = {
             </div>
           ` : ''}
           
-          <!-- STUNNING 2070 ACTION BUTTONS -->
+          <!-- 🚀 HOLOGRAPHIC FUTURISTIC BUTTONS 2070 -->
           ${isOwner ? `
-            <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.1); display: flex; flex-direction: column; gap: 12px;">
-              <!-- Primary Actions Row -->
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <style>
+              @keyframes holographic-shine {
+                0% { background-position: -200% center; }
+                100% { background-position: 200% center; }
+              }
+              
+              @keyframes neon-pulse {
+                0%, 100% { box-shadow: 0 0 5px currentColor, 0 0 20px currentColor, 0 0 40px currentColor; }
+                50% { box-shadow: 0 0 10px currentColor, 0 0 40px currentColor, 0 0 80px currentColor; }
+              }
+              
+              .holo-btn {
+                position: relative;
+                overflow: hidden;
+              }
+              
+              .holo-btn::before {
+                content: '';
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: linear-gradient(
+                  45deg,
+                  transparent 30%,
+                  rgba(255, 255, 255, 0.3) 50%,
+                  transparent 70%
+                );
+                transform: rotate(45deg);
+                animation: holographic-shine 3s infinite;
+              }
+            </style>
+            
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid rgba(102, 126, 234, 0.3); display: flex; flex-direction: column; gap: 16px;">
+              <!-- 🎯 PRIMARY ACTIONS - HOLOGRAPHIC MEGA BUTTONS -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
                 <button onclick="event.stopPropagation(); FileBankRevolution.emailFile('${file.id}')"
-                        style="padding: 16px 24px; 
-                               background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(37, 99, 235, 0.25) 100%);
-                               backdrop-filter: blur(10px);
+                        class="holo-btn"
+                        style="padding: 24px 20px; 
+                               background: linear-gradient(135deg, 
+                                 rgba(59, 130, 246, 0.4) 0%, 
+                                 rgba(139, 92, 246, 0.4) 50%,
+                                 rgba(236, 72, 153, 0.4) 100%);
+                               backdrop-filter: blur(20px) saturate(180%);
+                               -webkit-backdrop-filter: blur(20px) saturate(180%);
                                color: white; 
-                               border: 1px solid rgba(59, 130, 246, 0.4); 
-                               border-radius: 12px; 
+                               border: 2px solid transparent;
+                               border-image: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899) 1;
+                               border-radius: 16px; 
                                cursor: pointer; 
-                               font-size: 14px; 
-                               font-weight: 700; 
+                               font-size: 15px; 
+                               font-weight: 900; 
+                               text-transform: uppercase;
+                               letter-spacing: 2px;
                                display: flex; 
                                flex-direction: column;
                                align-items: center; 
                                justify-content: center; 
-                               gap: 6px; 
-                               transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                               box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-                               min-height: 80px;"
-                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(59, 130, 246, 0.25)'"
-                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(59, 130, 246, 0.15)'">
-                  <span style="font-size: 24px;">📧</span>
-                  <span style="font-size: 11px; letter-spacing: 1px;">EMAIL</span>
+                               gap: 10px; 
+                               transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                               box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3),
+                                          0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+                                          0 0 20px rgba(139, 92, 246, 0.2);
+                               min-height: 100px;
+                               position: relative;
+                               overflow: hidden;
+                               text-shadow: 0 0 10px rgba(59, 130, 246, 0.8),
+                                           0 0 20px rgba(139, 92, 246, 0.6);"
+                        onmouseover="this.style.transform='translateY(-6px) scale(1.02)'; 
+                                     this.style.boxShadow='0 16px 48px rgba(59, 130, 246, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.2) inset, 0 0 60px rgba(139, 92, 246, 0.5)';
+                                     this.style.borderImage='linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6) 1';"
+                        onmouseout="this.style.transform='translateY(0) scale(1)'; 
+                                    this.style.boxShadow='0 8px 32px rgba(59, 130, 246, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1) inset, 0 0 20px rgba(139, 92, 246, 0.2)';
+                                    this.style.borderImage='linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899) 1';">
+                  <span style="font-size: 32px; filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.8));">📧</span>
+                  <span>EMAIL</span>
                 </button>
+                
                 <button onclick="event.stopPropagation(); FileBankRevolution.downloadFile('${file.id}')"
-                        style="padding: 16px 24px; 
-                               background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.25) 100%);
-                               backdrop-filter: blur(10px);
+                        class="holo-btn"
+                        style="padding: 24px 20px; 
+                               background: linear-gradient(135deg, 
+                                 rgba(16, 185, 129, 0.4) 0%, 
+                                 rgba(6, 182, 212, 0.4) 50%,
+                                 rgba(59, 130, 246, 0.4) 100%);
+                               backdrop-filter: blur(20px) saturate(180%);
+                               -webkit-backdrop-filter: blur(20px) saturate(180%);
                                color: white; 
-                               border: 1px solid rgba(16, 185, 129, 0.4); 
-                               border-radius: 12px; 
+                               border: 2px solid transparent;
+                               border-image: linear-gradient(135deg, #10b981, #06b6d4, #3b82f6) 1;
+                               border-radius: 16px; 
                                cursor: pointer; 
-                               font-size: 14px; 
-                               font-weight: 700; 
+                               font-size: 15px; 
+                               font-weight: 900; 
+                               text-transform: uppercase;
+                               letter-spacing: 2px;
                                display: flex; 
                                flex-direction: column;
                                align-items: center; 
                                justify-content: center; 
-                               gap: 6px; 
-                               transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                               box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
-                               min-height: 80px;"
-                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(16, 185, 129, 0.25)'"
-                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.15)'">
-                  <span style="font-size: 24px;">📥</span>
-                  <span style="font-size: 11px; letter-spacing: 1px;">DOWNLOAD</span>
+                               gap: 10px; 
+                               transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                               box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3),
+                                          0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+                                          0 0 20px rgba(6, 182, 212, 0.2);
+                               min-height: 100px;
+                               position: relative;
+                               overflow: hidden;
+                               text-shadow: 0 0 10px rgba(16, 185, 129, 0.8),
+                                           0 0 20px rgba(6, 182, 212, 0.6);"
+                        onmouseover="this.style.transform='translateY(-6px) scale(1.02)'; 
+                                     this.style.boxShadow='0 16px 48px rgba(16, 185, 129, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.2) inset, 0 0 60px rgba(6, 182, 212, 0.5)';
+                                     this.style.borderImage='linear-gradient(135deg, #34d399, #22d3ee, #60a5fa) 1';"
+                        onmouseout="this.style.transform='translateY(0) scale(1)'; 
+                                    this.style.boxShadow='0 8px 32px rgba(16, 185, 129, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1) inset, 0 0 20px rgba(6, 182, 212, 0.2)';
+                                    this.style.borderImage='linear-gradient(135deg, #10b981, #06b6d4, #3b82f6) 1';">
+                  <span style="font-size: 32px; filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.8));">📥</span>
+                  <span>DOWNLOAD</span>
                 </button>
               </div>
               
-              <!-- Secondary Actions Row -->
-              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+              <!-- ⚡ QUICK ACTIONS - NEON POWER BUTTONS -->
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
                 <button onclick="event.stopPropagation(); FileBankRevolution.toggleStar('${file.id}')"
-                        style="padding: 16px 8px; 
-                               background: ${file.is_starred ? 'linear-gradient(135deg, rgba(251, 191, 36, 0.3) 0%, rgba(245, 158, 11, 0.3) 100%)' : 'linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%)'};
-                               backdrop-filter: blur(10px);
-                               color: white; 
-                               border: 1px solid ${file.is_starred ? 'rgba(251, 191, 36, 0.5)' : 'rgba(102, 126, 234, 0.3)'}; 
-                               border-radius: 10px; 
+                        style="padding: 20px 12px; 
+                               background: ${file.is_starred ? 
+                                 'linear-gradient(135deg, rgba(251, 191, 36, 0.5) 0%, rgba(245, 158, 11, 0.5) 50%, rgba(217, 119, 6, 0.5) 100%)' : 
+                                 'linear-gradient(135deg, rgba(71, 85, 105, 0.4) 0%, rgba(51, 65, 85, 0.4) 100%)'};
+                               backdrop-filter: blur(15px) saturate(180%);
+                               -webkit-backdrop-filter: blur(15px) saturate(180%);
+                               color: ${file.is_starred ? '#fef3c7' : 'rgba(255, 255, 255, 0.7)'}; 
+                               border: 2px solid ${file.is_starred ? 'rgba(251, 191, 36, 0.6)' : 'rgba(100, 116, 139, 0.4)'}; 
+                               border-radius: 14px; 
                                cursor: pointer; 
-                               font-size: 12px; 
-                               font-weight: 700; 
+                               font-size: 13px; 
+                               font-weight: 800; 
+                               text-transform: uppercase;
+                               letter-spacing: 1.5px;
                                display: flex; 
                                flex-direction: column;
                                align-items: center; 
                                justify-content: center; 
-                               gap: 6px; 
-                               transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                               box-shadow: ${file.is_starred ? '0 4px 12px rgba(251, 191, 36, 0.2)' : '0 2px 8px rgba(0, 0, 0, 0.1)'};
-                               min-height: 70px;"
-                        onmouseover="this.style.transform='scale(1.05)'"
-                        onmouseout="this.style.transform='scale(1)'">
-                  <span style="font-size: 24px;">${file.is_starred ? '⭐' : '☆'}</span>
-                  <span style="font-size: 9px; letter-spacing: 0.5px; text-align: center; width: 100%;">${file.is_starred ? 'STARRED' : 'STAR'}</span>
+                               gap: 8px; 
+                               transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+                               box-shadow: ${file.is_starred ? 
+                                 '0 6px 24px rgba(251, 191, 36, 0.4), 0 0 30px rgba(245, 158, 11, 0.3), inset 0 0 20px rgba(254, 243, 199, 0.1)' : 
+                                 '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 0 20px rgba(255, 255, 255, 0.05)'};
+                               min-height: 85px;
+                               position: relative;
+                               text-shadow: ${file.is_starred ? '0 0 15px rgba(251, 191, 36, 0.8)' : 'none'};"
+                        onmouseover="this.style.transform='scale(1.08) rotate(2deg)'; 
+                                     this.style.boxShadow='${file.is_starred ? 
+                                       '0 12px 40px rgba(251, 191, 36, 0.6), 0 0 60px rgba(245, 158, 11, 0.5), inset 0 0 30px rgba(254, 243, 199, 0.2)' : 
+                                       '0 8px 24px rgba(100, 116, 139, 0.4), inset 0 0 30px rgba(255, 255, 255, 0.1)'}';"
+                        onmouseout="this.style.transform='scale(1) rotate(0deg)'; 
+                                    this.style.boxShadow='${file.is_starred ? 
+                                      '0 6px 24px rgba(251, 191, 36, 0.4), 0 0 30px rgba(245, 158, 11, 0.3), inset 0 0 20px rgba(254, 243, 199, 0.1)' : 
+                                      '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 0 20px rgba(255, 255, 255, 0.05)'}';">
+                  <span style="font-size: 28px; filter: drop-shadow(0 0 8px ${file.is_starred ? 'rgba(251, 191, 36, 0.8)' : 'rgba(255, 255, 255, 0.3)'});">${file.is_starred ? '⭐' : '☆'}</span>
+                  <span style="font-size: 10px;">${file.is_starred ? 'STARRED' : 'STAR'}</span>
                 </button>
+                
                 <button onclick="event.stopPropagation(); FileBankRevolution.toggleShareFile('${file.id}')"
-                        style="padding: 16px 8px; 
-                               background: ${file.is_shared ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.3) 0%, rgba(5, 150, 105, 0.3) 100%)' : 'linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%)'};
-                               backdrop-filter: blur(10px);
-                               color: white; 
-                               border: 1px solid ${file.is_shared ? 'rgba(16, 185, 129, 0.5)' : 'rgba(102, 126, 234, 0.3)'}; 
-                               border-radius: 10px; 
+                        style="padding: 20px 12px; 
+                               background: ${file.is_shared ? 
+                                 'linear-gradient(135deg, rgba(16, 185, 129, 0.5) 0%, rgba(5, 150, 105, 0.5) 50%, rgba(4, 120, 87, 0.5) 100%)' : 
+                                 'linear-gradient(135deg, rgba(71, 85, 105, 0.4) 0%, rgba(51, 65, 85, 0.4) 100%)'};
+                               backdrop-filter: blur(15px) saturate(180%);
+                               -webkit-backdrop-filter: blur(15px) saturate(180%);
+                               color: ${file.is_shared ? '#d1fae5' : 'rgba(255, 255, 255, 0.7)'}; 
+                               border: 2px solid ${file.is_shared ? 'rgba(16, 185, 129, 0.6)' : 'rgba(100, 116, 139, 0.4)'}; 
+                               border-radius: 14px; 
                                cursor: pointer; 
-                               font-size: 12px; 
-                               font-weight: 700; 
+                               font-size: 13px; 
+                               font-weight: 800; 
+                               text-transform: uppercase;
+                               letter-spacing: 1.5px;
                                display: flex; 
                                flex-direction: column;
                                align-items: center; 
                                justify-content: center; 
-                               gap: 6px; 
-                               transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                               box-shadow: ${file.is_shared ? '0 4px 12px rgba(16, 185, 129, 0.2)' : '0 2px 8px rgba(0, 0, 0, 0.1)'};
-                               min-height: 70px;"
-                        onmouseover="this.style.transform='scale(1.05)'"
-                        onmouseout="this.style.transform='scale(1)'">
-                  <span style="font-size: 24px;">${file.is_shared ? '🔓' : '🔒'}</span>
-                  <span style="font-size: 9px; letter-spacing: 0.5px; text-align: center; width: 100%;">${file.is_shared ? 'SHARED' : 'SHARE'}</span>
+                               gap: 8px; 
+                               transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+                               box-shadow: ${file.is_shared ? 
+                                 '0 6px 24px rgba(16, 185, 129, 0.4), 0 0 30px rgba(5, 150, 105, 0.3), inset 0 0 20px rgba(209, 250, 229, 0.1)' : 
+                                 '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 0 20px rgba(255, 255, 255, 0.05)'};
+                               min-height: 85px;
+                               position: relative;
+                               text-shadow: ${file.is_shared ? '0 0 15px rgba(16, 185, 129, 0.8)' : 'none'};"
+                        onmouseover="this.style.transform='scale(1.08) rotate(-2deg)'; 
+                                     this.style.boxShadow='${file.is_shared ? 
+                                       '0 12px 40px rgba(16, 185, 129, 0.6), 0 0 60px rgba(5, 150, 105, 0.5), inset 0 0 30px rgba(209, 250, 229, 0.2)' : 
+                                       '0 8px 24px rgba(100, 116, 139, 0.4), inset 0 0 30px rgba(255, 255, 255, 0.1)'}';"
+                        onmouseout="this.style.transform='scale(1) rotate(0deg)'; 
+                                    this.style.boxShadow='${file.is_shared ? 
+                                      '0 6px 24px rgba(16, 185, 129, 0.4), 0 0 30px rgba(5, 150, 105, 0.3), inset 0 0 20px rgba(209, 250, 229, 0.1)' : 
+                                      '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 0 20px rgba(255, 255, 255, 0.05)'}';">
+                  <span style="font-size: 28px; filter: drop-shadow(0 0 8px ${file.is_shared ? 'rgba(16, 185, 129, 0.8)' : 'rgba(255, 255, 255, 0.3)'});">${file.is_shared ? '🔓' : '🔒'}</span>
+                  <span style="font-size: 10px;">${file.is_shared ? 'SHARED' : 'SHARE'}</span>
                 </button>
+                
                 <button onclick="event.stopPropagation(); FileBankRevolution.deleteFile('${file.id}')"
-                        style="padding: 16px 8px; 
-                               background: linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, rgba(220, 38, 38, 0.25) 100%);
-                               backdrop-filter: blur(10px);
-                               color: #fca5a5; 
-                               border: 1px solid rgba(239, 68, 68, 0.4); 
-                               border-radius: 10px; 
+                        style="padding: 20px 12px; 
+                               background: linear-gradient(135deg, rgba(239, 68, 68, 0.5) 0%, rgba(220, 38, 38, 0.5) 50%, rgba(185, 28, 28, 0.5) 100%);
+                               backdrop-filter: blur(15px) saturate(180%);
+                               -webkit-backdrop-filter: blur(15px) saturate(180%);
+                               color: #fee2e2; 
+                               border: 2px solid rgba(239, 68, 68, 0.6); 
+                               border-radius: 14px; 
                                cursor: pointer; 
-                               font-size: 12px; 
-                               font-weight: 700; 
+                               font-size: 13px; 
+                               font-weight: 800; 
+                               text-transform: uppercase;
+                               letter-spacing: 1.5px;
                                display: flex; 
                                flex-direction: column;
                                align-items: center; 
                                justify-content: center; 
-                               gap: 6px; 
-                               transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                               box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
-                               min-height: 70px;"
-                        onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 16px rgba(239, 68, 68, 0.25)'"
-                        onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(239, 68, 68, 0.15)'">
-                  <span style="font-size: 24px;">🗑️</span>
-                  <span style="font-size: 9px; letter-spacing: 0.5px; text-align: center; width: 100%;">DELETE</span>
+                               gap: 8px; 
+                               transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+                               box-shadow: 0 6px 24px rgba(239, 68, 68, 0.4), 
+                                          0 0 30px rgba(220, 38, 38, 0.3),
+                                          inset 0 0 20px rgba(254, 226, 226, 0.1);
+                               min-height: 85px;
+                               position: relative;
+                               text-shadow: 0 0 15px rgba(239, 68, 68, 0.8);"
+                        onmouseover="this.style.transform='scale(1.08) rotate(2deg)'; 
+                                     this.style.boxShadow='0 12px 40px rgba(239, 68, 68, 0.6), 0 0 60px rgba(220, 38, 38, 0.5), inset 0 0 30px rgba(254, 226, 226, 0.2)';"
+                        onmouseout="this.style.transform='scale(1) rotate(0deg)'; 
+                                    this.style.boxShadow='0 6px 24px rgba(239, 68, 68, 0.4), 0 0 30px rgba(220, 38, 38, 0.3), inset 0 0 20px rgba(254, 226, 226, 0.1)';">
+                  <span style="font-size: 28px; filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.8));">🗑️</span>
+                  <span style="font-size: 10px;">DELETE</span>
                 </button>
               </div>
             </div>
           ` : `
-            <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.1); display: flex; flex-direction: column; gap: 12px;">
-              <!-- Non-owner Actions -->
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid rgba(102, 126, 234, 0.3); display: flex; flex-direction: column; gap: 16px;">
+              <!-- 🎯 VIEWER ACTIONS - HOLOGRAPHIC BUTTONS -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
                 <button onclick="event.stopPropagation(); FileBankRevolution.emailFile('${file.id}')"
-                        style="padding: 16px 24px; 
-                               background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(37, 99, 235, 0.25) 100%);
-                               backdrop-filter: blur(10px);
+                        class="holo-btn"
+                        style="padding: 24px 20px; 
+                               background: linear-gradient(135deg, 
+                                 rgba(59, 130, 246, 0.4) 0%, 
+                                 rgba(139, 92, 246, 0.4) 50%,
+                                 rgba(236, 72, 153, 0.4) 100%);
+                               backdrop-filter: blur(20px) saturate(180%);
+                               -webkit-backdrop-filter: blur(20px) saturate(180%);
                                color: white; 
-                               border: 1px solid rgba(59, 130, 246, 0.4); 
-                               border-radius: 12px; 
+                               border: 2px solid transparent;
+                               border-image: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899) 1;
+                               border-radius: 16px; 
                                cursor: pointer; 
-                               font-size: 14px; 
-                               font-weight: 700; 
+                               font-size: 15px; 
+                               font-weight: 900; 
+                               text-transform: uppercase;
+                               letter-spacing: 2px;
                                display: flex; 
                                flex-direction: column;
                                align-items: center; 
                                justify-content: center; 
-                               gap: 6px; 
-                               transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                               box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-                               min-height: 80px;"
-                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(59, 130, 246, 0.25)'"
-                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(59, 130, 246, 0.15)'">
-                  <span style="font-size: 24px;">📧</span>
-                  <span style="font-size: 11px; letter-spacing: 1px;">EMAIL</span>
+                               gap: 10px; 
+                               transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                               box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3),
+                                          0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+                                          0 0 20px rgba(139, 92, 246, 0.2);
+                               min-height: 100px;
+                               position: relative;
+                               overflow: hidden;
+                               text-shadow: 0 0 10px rgba(59, 130, 246, 0.8),
+                                           0 0 20px rgba(139, 92, 246, 0.6);"
+                        onmouseover="this.style.transform='translateY(-6px) scale(1.02)'; 
+                                     this.style.boxShadow='0 16px 48px rgba(59, 130, 246, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.2) inset, 0 0 60px rgba(139, 92, 246, 0.5)';"
+                        onmouseout="this.style.transform='translateY(0) scale(1)'; 
+                                    this.style.boxShadow='0 8px 32px rgba(59, 130, 246, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1) inset, 0 0 20px rgba(139, 92, 246, 0.2)';">
+                  <span style="font-size: 32px; filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.8));">📧</span>
+                  <span>EMAIL</span>
                 </button>
+                
                 <button onclick="event.stopPropagation(); FileBankRevolution.downloadFile('${file.id}')"
-                        style="padding: 16px 24px; 
-                               background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.25) 100%);
-                               backdrop-filter: blur(10px);
+                        class="holo-btn"
+                        style="padding: 24px 20px; 
+                               background: linear-gradient(135deg, 
+                                 rgba(16, 185, 129, 0.4) 0%, 
+                                 rgba(6, 182, 212, 0.4) 50%,
+                                 rgba(59, 130, 246, 0.4) 100%);
+                               backdrop-filter: blur(20px) saturate(180%);
+                               -webkit-backdrop-filter: blur(20px) saturate(180%);
                                color: white; 
-                               border: 1px solid rgba(16, 185, 129, 0.4); 
-                               border-radius: 12px; 
+                               border: 2px solid transparent;
+                               border-image: linear-gradient(135deg, #10b981, #06b6d4, #3b82f6) 1;
+                               border-radius: 16px; 
                                cursor: pointer; 
-                               font-size: 14px; 
-                               font-weight: 700; 
+                               font-size: 15px; 
+                               font-weight: 900; 
+                               text-transform: uppercase;
+                               letter-spacing: 2px;
                                display: flex; 
                                flex-direction: column;
                                align-items: center; 
                                justify-content: center; 
-                               gap: 6px; 
-                               transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                               box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
-                               min-height: 80px;"
-                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(16, 185, 129, 0.25)'"
-                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.15)'">
-                  <span style="font-size: 24px;">📥</span>
-                  <span style="font-size: 11px; letter-spacing: 1px;">DOWNLOAD</span>
+                               gap: 10px; 
+                               transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                               box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3),
+                                          0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+                                          0 0 20px rgba(6, 182, 212, 0.2);
+                               min-height: 100px;
+                               position: relative;
+                               overflow: hidden;
+                               text-shadow: 0 0 10px rgba(16, 185, 129, 0.8),
+                                           0 0 20px rgba(6, 182, 212, 0.6);"
+                        onmouseover="this.style.transform='translateY(-6px) scale(1.02)'; 
+                                     this.style.boxShadow='0 16px 48px rgba(16, 185, 129, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.2) inset, 0 0 60px rgba(6, 182, 212, 0.5)';"
+                        onmouseout="this.style.transform='translateY(0) scale(1)'; 
+                                    this.style.boxShadow='0 8px 32px rgba(16, 185, 129, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1) inset, 0 0 20px rgba(6, 182, 212, 0.2)';">
+                  <span style="font-size: 32px; filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.8));">📥</span>
+                  <span>DOWNLOAD</span>
                 </button>
               </div>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <button onclick="event.stopPropagation(); FileBankRevolution.showNotification('✨ This file is ${file.is_shared ? 'shared with you' : 'view only'}', 'info')"
-                        style="padding: 16px 8px; 
-                               background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
-                               backdrop-filter: blur(10px);
-                               color: rgba(255, 255, 255, 0.5); 
-                               border: 1px solid rgba(255, 255, 255, 0.1); 
-                               border-radius: 10px; 
-                               cursor: not-allowed; 
-                               font-size: 12px; 
-                               font-weight: 700; 
-                               display: flex; 
-                               flex-direction: column;
-                               align-items: center; 
-                               justify-content: center; 
-                               gap: 6px;
-                               min-height: 70px;">
-                  <span style="font-size: 24px;">${file.is_shared ? '🔓' : '👁️'}</span>
-                  <span style="font-size: 9px; letter-spacing: 0.5px; text-align: center; width: 100%;">${file.is_shared ? 'SHARED' : 'VIEW ONLY'}</span>
-                </button>
-                <button onclick="event.stopPropagation(); FileBankRevolution.showNotification('❌ Only owner can delete', 'error')"
-                        style="padding: 16px 8px; 
-                               background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
-                               backdrop-filter: blur(10px);
-                               color: rgba(255, 255, 255, 0.5); 
-                               border: 1px solid rgba(255, 255, 255, 0.1); 
-                               border-radius: 10px; 
-                               cursor: not-allowed; 
-                               font-size: 12px; 
-                               font-weight: 700; 
-                               display: flex; 
-                               flex-direction: column;
-                               align-items: center; 
-                               justify-content: center; 
-                               gap: 6px;
-                               min-height: 70px;">
-                  <span style="font-size: 24px;">🔒</span>
-                  <span style="font-size: 9px; letter-spacing: 0.5px; text-align: center; width: 100%;">LOCKED</span>
-                </button>
+              
+              <!-- 🔒 STATUS INDICATORS -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div style="padding: 20px 12px; 
+                            background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+                            backdrop-filter: blur(15px);
+                            color: rgba(255, 255, 255, 0.6); 
+                            border: 2px solid rgba(255, 255, 255, 0.15); 
+                            border-radius: 14px; 
+                            font-size: 13px; 
+                            font-weight: 700; 
+                            text-transform: uppercase;
+                            letter-spacing: 1.5px;
+                            display: flex; 
+                            flex-direction: column;
+                            align-items: center; 
+                            justify-content: center; 
+                            gap: 8px; 
+                            box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.08);
+                            min-height: 85px;">
+                  <span style="font-size: 28px; opacity: 0.5;">${file.is_shared ? '🔓' : '👁️'}</span>
+                  <span style="font-size: 10px;">${file.is_shared ? 'SHARED' : 'VIEW ONLY'}</span>
+                </div>
+                <div style="padding: 20px 12px; 
+                            background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+                            backdrop-filter: blur(15px);
+                            color: rgba(255, 255, 255, 0.6); 
+                            border: 2px solid rgba(255, 255, 255, 0.15); 
+                            border-radius: 14px; 
+                            font-size: 13px; 
+                            font-weight: 700; 
+                            text-transform: uppercase;
+                            letter-spacing: 1.5px;
+                            display: flex; 
+                            flex-direction: column;
+                            align-items: center; 
+                            justify-content: center; 
+                            gap: 8px; 
+                            box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.08);
+                            min-height: 85px;">
+                  <span style="font-size: 28px; opacity: 0.5;">🔒</span>
+                  <span style="font-size: 10px;">LOCKED</span>
+                </div>
               </div>
             </div>
           `}
