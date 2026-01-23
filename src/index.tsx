@@ -1771,14 +1771,14 @@ app.get('/collaborate', (c) => {
                         </div>
                     </div>
 
-                    <!-- MEETINGS VIEW (OTTER.AI TRANSCRIPTS VIA ZAPIER) -->
+                    <!-- MEETINGS VIEW (OTTER.AI TRANSCRIPTS VIA ZAPIER WEBHOOK) -->
                     <div id="meetings-view" class="collab-view">
                         <div class="view-header">
                             <h1 class="view-title">🎙️ Meeting Transcripts</h1>
-                            <p class="view-subtitle">All your Otter.ai Zoom meetings (synced via Zapier)</p>
-                            <button id="sync-otter-btn" class="collab-btn-primary">
+                            <p class="view-subtitle">Auto-synced from Otter.ai via Zapier webhook (real-time)</p>
+                            <button id="sync-otter-btn" class="collab-btn-primary" style="opacity: 0.7;">
                                 <span>🔄</span>
-                                Sync from Zapier
+                                Manual Sync (Backup)
                             </button>
                         </div>
                         

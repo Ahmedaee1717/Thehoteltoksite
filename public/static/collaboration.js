@@ -1573,14 +1573,26 @@ async function loadMeetings() {
     } else {
       container.innerHTML = `
         <div class="permission-check-box">
-          <h3>🎙️ No meetings found</h3>
-          <p>Click "Sync from Zapier" to import your Otter.ai meeting transcripts</p>
-          <p style="font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 8px;">
-            Your Zapier Zap automatically saves Otter.ai meetings to Zapier Tables.<br>
-            Sync here to pull them into your Collaboration Center!
+          <h3>🎙️ No meetings yet</h3>
+          <p><strong>Your Zapier webhook is ready!</strong></p>
+          <p style="font-size: 14px; color: rgba(255,255,255,0.8); margin-top: 12px; line-height: 1.6;">
+            New meetings automatically appear here when:<br>
+            1. You record a Zoom meeting with Otter.ai<br>
+            2. Otter.ai transcribes it<br>
+            3. Zapier sends it to this webhook (Zap ID: 345249969)<br>
+            4. It appears here instantly!
           </p>
-          <button class="quantum-btn" onclick="showOtterSyncModal()">
-            🔄 Sync Now
+          <div style="margin-top: 16px; padding: 12px; background: rgba(201,169,98,0.1); border-radius: 8px; font-size: 13px; color: rgba(255,255,255,0.7);">
+            <strong>📡 Webhook URL:</strong><br>
+            <code style="background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; font-size: 12px; word-break: break-all;">
+              https://www.investaycapital.com/api/meetings/webhook/zapier
+            </code>
+          </div>
+          <p style="font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 12px;">
+            Or use manual sync if needed:
+          </p>
+          <button class="quantum-btn" onclick="showOtterSyncModal()" style="opacity: 0.7;">
+            🔄 Manual Sync
           </button>
         </div>
       `;

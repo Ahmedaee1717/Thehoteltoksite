@@ -366,7 +366,94 @@ meetings.get('/calendar/summary', async (c) => {
   }
 })
 
-// ===== ZAPIER TABLES INTEGRATION (Otter.ai via Zapier) =====
+// ===== ZAPIER WEBHOOK RECEIVER (Real-time Otter.ai → Zapier → Cloudflare) =====
+
+// Webhook endpoint to receive new meetings from Zapier in real-time
+meetings.post('/webhook/zapier', async (c) => {
+  try {
+    console.log('📥 Zapier webhook received!')
+    
+    const data = await c.req.json()
+    console.log('Webhook data:', data)
+    
+    // Extract fields from Zapier webhook payload
+    const recordId = data.id || `zapier_${Date.now()}`
+    const title = data.title || data.f1 || 'Untitled Meeting'
+    const transcript = data.transcript || data.f2 || ''
+    const summary = data.summary || data.f3 || ''
+    const meetingUrl = data.meeting_url || data.f4 || ''
+    const ownerName = data.owner_name || data.f5 || ''
+    const dateCreated = data.date_created || data.f6 || data.created_at || new Date().toISOString()
+    
+    console.log(`📝 Processing meeting: "${title}"`)
+    
+    // Check if already exists
+    const existing = await c.env.DB.prepare(`
+      SELECT id FROM otter_transcripts WHERE otter_id = ?
+    `).bind(recordId).first()
+    
+    if (!existing) {
+      // Insert new transcript
+      const result = await c.env.DB.prepare(`
+        INSERT INTO otter_transcripts (
+          otter_id, title, summary, start_time, end_time, 
+          transcript_text, speakers, duration_seconds, 
+          meeting_url, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `).bind(
+        recordId,
+        title,
+        summary,
+        dateCreated,
+        dateCreated, // Use same date for end if not provided
+        transcript,
+        JSON.stringify([{ name: ownerName }]), // Store owner as speaker
+        0, // Duration not available from Zapier
+        meetingUrl
+      ).run()
+      
+      console.log(`✅ New meeting saved! ID: ${result.meta.last_row_id}`)
+      
+      return c.json({ 
+        success: true, 
+        message: 'Meeting transcript saved successfully',
+        id: result.meta.last_row_id,
+        title: title
+      })
+    } else {
+      // Update existing transcript
+      await c.env.DB.prepare(`
+        UPDATE otter_transcripts 
+        SET title = ?, summary = ?, transcript_text = ?, 
+            meeting_url = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE otter_id = ?
+      `).bind(
+        title,
+        summary,
+        transcript,
+        meetingUrl,
+        recordId
+      ).run()
+      
+      console.log(`🔄 Meeting updated! Record ID: ${recordId}`)
+      
+      return c.json({ 
+        success: true, 
+        message: 'Meeting transcript updated successfully',
+        title: title
+      })
+    }
+  } catch (error: any) {
+    console.error('❌ Webhook error:', error)
+    return c.json({ 
+      success: false, 
+      error: 'Failed to process webhook', 
+      details: error.message 
+    }, 500)
+  }
+})
+
+// ===== ZAPIER TABLES INTEGRATION (Manual Sync - Backup Method) =====
 
 // Sync from Zapier Tables (Otter.ai transcripts)
 meetings.post('/zapier/sync', async (c) => {
