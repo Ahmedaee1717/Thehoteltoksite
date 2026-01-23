@@ -502,7 +502,8 @@
 .filebank-grid.columns-view {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 24px;
+  align-items: start;
 }
 
 /* 📄 FILE CARD - Desktop Icon Style */
@@ -515,10 +516,13 @@
   cursor: pointer;
   transition: all var(--transition-smooth);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   user-select: none;
   width: 200px;
+  height: auto;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 /* List view: Full width */
@@ -547,9 +551,8 @@
 /* Columns view: Fixed width in 3 columns */
 .filebank-grid.columns-view .filebank-file-card {
   width: 100%;
-  min-height: 600px;
-  display: flex;
-  flex-direction: column;
+  height: auto;
+  min-height: auto;
 }
 
 .filebank-file-card::before {
@@ -625,6 +628,10 @@
 .filebank-file-info {
   position: relative;
   z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .filebank-file-name {

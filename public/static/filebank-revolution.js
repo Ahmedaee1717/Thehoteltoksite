@@ -737,6 +737,9 @@ const FileBankRevolution = {
       if (view === 'list') grid.classList.add('list-view');
       if (view === 'columns') grid.classList.add('columns-view');
     }
+    
+    // Re-render to apply view-specific features (AI preview, folder contents, etc.)
+    this.render();
   },
 
   // Change filter
