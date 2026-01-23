@@ -271,6 +271,12 @@ function createPostCard(post) {
     day: 'numeric'
   });
   
+  // Check if user can edit this post
+  const canEdit = userRole === 'admin' || 
+                  userRole === 'editor' || 
+                  userRole === 'publisher' || 
+                  post.author === currentUser;
+  
   // Store post data for onclick handler
   const postData = encodeURIComponent(JSON.stringify({
     slug: post.slug,
@@ -286,9 +292,17 @@ function createPostCard(post) {
         <span>👤 ${escapeHtml(post.author)}</span>
       </div>
       <p class="post-excerpt">${escapeHtml(post.excerpt || 'No excerpt available')}</p>
-      <span class="post-status ${statusClass}">${post.status}</span>
+      <div class="post-actions">
+        <span class="post-status ${statusClass}">${post.status}</span>
+        ${canEdit ? `<button class="post-edit-btn" onclick="event.stopPropagation(); editPost('${post.slug}')">✏️ Edit</button>` : ''}
+      </div>
     </div>
   `;
+}
+
+// ✏️ EDIT POST
+function editPost(slug) {
+  window.location.href = `/admin/dashboard?edit=${slug}`;
 }
 
 // 🔗 OPEN POST
@@ -297,18 +311,30 @@ function openPost(postDataEncoded) {
     const postData = JSON.parse(decodeURIComponent(postDataEncoded));
     const { slug, author, status } = postData;
     
-    // Users can edit their own posts OR if they have editor/admin/publisher role
+    console.log('🔍 Opening post:', { slug, author, status, currentUser, userRole });
+    console.log('🔍 Status check:', status, typeof status, status === 'published');
+    
+    // PUBLISHED posts: Always show live article
+    if (status === 'published') {
+      console.log('✅ Published post - redirecting to /blog/' + slug);
+      window.location.href = `/blog/${slug}`;
+      return;
+    }
+    
+    // DRAFT posts: Only owners or editors can view/edit
     const canEdit = userRole === 'admin' || 
                     userRole === 'editor' || 
                     userRole === 'publisher' || 
                     author === currentUser;
     
+    console.log('🔍 Draft post - canEdit:', canEdit);
+    
     if (canEdit) {
-      // Redirect to admin dashboard for editing
+      // Redirect to admin dashboard for editing drafts
       window.location.href = `/admin/dashboard?edit=${slug}`;
     } else {
-      // View published post
-      window.location.href = `/blog/${slug}`;
+      // Can't access this draft
+      alert('This post is not yet published.');
     }
   } catch (error) {
     console.error('Error opening post:', error);
