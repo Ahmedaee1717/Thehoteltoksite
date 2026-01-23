@@ -36,31 +36,33 @@ window.addEventListener('scroll', () => {
 const investorForm = document.getElementById('investor-form');
 const investorSuccess = document.getElementById('investor-success');
 
-investorForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = {
-        type: 'investor',
-        name: this.name.value,
-        email: this.email.value,
-        organisation: this.organisation.value,
-        message: this.message.value,
-        timestamp: new Date().toISOString()
-    };
-    
-    console.log('Investor Form Submission:', formData);
-    
-    // Show success message
-    investorSuccess.classList.add('show');
-    
-    // Reset form
-    this.reset();
-    
-    // Hide success message after 5 seconds
-    setTimeout(() => {
-        investorSuccess.classList.remove('show');
-    }, 5000);
-});
+if (investorForm && investorSuccess) {
+    investorForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            type: 'investor',
+            name: this.name.value,
+            email: this.email.value,
+            organisation: this.organisation.value,
+            message: this.message.value,
+            timestamp: new Date().toISOString()
+        };
+        
+        console.log('Investor Form Submission:', formData);
+        
+        // Show success message
+        investorSuccess.classList.add('show');
+        
+        // Reset form
+        this.reset();
+        
+        // Hide success message after 5 seconds
+        setTimeout(() => {
+            investorSuccess.classList.remove('show');
+        }, 5000);
+    });
+}
 
 // Hotel form submission
 const hotelForm = document.getElementById('hotel-form');
