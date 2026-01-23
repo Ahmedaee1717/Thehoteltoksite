@@ -359,6 +359,22 @@ function attachPostCardListeners() {
   });
   
   console.log(`📌 Attached listeners to ${cardContents.length} post cards and ${editButtons.length} edit buttons`);
+  
+  // MANUAL TEST - Add a test function to the window that can be called from console
+  window.testCardClick = function() {
+    console.log('🧪 MANUAL TEST: Calling openPost directly');
+    const firstCard = document.querySelector('.post-card-content');
+    if (firstCard) {
+      const postDataBase64 = firstCard.getAttribute('data-post-base64');
+      if (postDataBase64) {
+        const postDataStr = atob(postDataBase64);
+        const encodedData = encodeURIComponent(postDataStr);
+        window.openPost(encodedData);
+      }
+    }
+  };
+  
+  console.log('🧪 TEST AVAILABLE: Type window.testCardClick() in console to test manually');
 }
 
 // ✏️ EDIT POST - Load into Collaboration Editor
