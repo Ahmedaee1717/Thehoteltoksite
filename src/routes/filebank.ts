@@ -384,6 +384,63 @@ fileBank.put('/files/:id', async (c) => {
 })
 
 // Delete file (soft delete) - only owner can delete
+// Update file metadata (star, share, etc.)
+fileBank.patch('/files/:id', async (c) => {
+  const fileId = c.req.param('id')
+  const body = await c.req.json()
+  const userEmail = body.userEmail || c.req.header('X-User-Email') || 'unknown'
+  
+  try {
+    // First check if file exists and belongs to user
+    const file = await c.env.DB.prepare(`
+      SELECT user_email, is_starred, is_shared FROM file_bank_files WHERE id = ? AND deleted_at IS NULL
+    `).bind(fileId).first()
+    
+    if (!file) {
+      return c.json({ error: 'File not found' }, 404)
+    }
+    
+    // Build update query dynamically
+    const updates: string[] = []
+    const values: any[] = []
+    
+    // Only owner can update is_shared
+    if ('is_shared' in body) {
+      if (file.user_email !== userEmail) {
+        return c.json({ 
+          error: 'Permission denied',
+          message: 'You can only share files you uploaded'
+        }, 403)
+      }
+      updates.push('is_shared = ?')
+      values.push(body.is_shared ? 1 : 0)
+    }
+    
+    // Anyone can star/unstar
+    if ('is_starred' in body) {
+      updates.push('is_starred = ?')
+      values.push(body.is_starred ? 1 : 0)
+    }
+    
+    if (updates.length === 0) {
+      return c.json({ error: 'No valid fields to update' }, 400)
+    }
+    
+    values.push(fileId)
+    
+    await c.env.DB.prepare(`
+      UPDATE file_bank_files
+      SET ${updates.join(', ')}
+      WHERE id = ?
+    `).bind(...values).run()
+    
+    return c.json({ success: true, message: 'File updated successfully' })
+  } catch (error: any) {
+    console.error('Error updating file:', error)
+    return c.json({ error: 'Failed to update file', details: error.message }, 500)
+  }
+})
+
 fileBank.delete('/files/:id', async (c) => {
   const fileId = c.req.param('id')
   const userEmail = c.req.header('X-User-Email') || c.req.query('userEmail') || 'unknown'

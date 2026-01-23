@@ -246,7 +246,8 @@ const FileBankRevolution = {
            data-file-id="${file.id}"
            draggable="true">
         
-        ${file.folder_is_shared ? '<div class="filebank-collab-badge">👥</div>' : ''}
+        ${file.folder_is_shared ? '<div class="filebank-collab-badge" title="Folder is shared">👥 Folder</div>' : ''}
+        ${file.is_shared ? '<div class="filebank-collab-badge" style="top: 12px; right: 12px; background: linear-gradient(135deg, #10b981 0%, #059669 100%);" title="File is shared with everyone">🌐 Shared</div>' : ''}
         
         <div class="filebank-file-actions">
           <button class="filebank-file-action-btn" 
@@ -535,7 +536,9 @@ const FileBankRevolution = {
     
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext)) return 'image';
     if (['pdf'].includes(ext)) return 'pdf';
-    if (['txt', 'md', 'json', 'xml', 'html', 'css', 'js'].includes(ext)) return 'text';
+    if (['txt', 'md', 'json', 'xml', 'html', 'css', 'js', 'log'].includes(ext)) return 'text';
+    if (['csv', 'tsv'].includes(ext)) return 'csv';
+    if (['xls', 'xlsx'].includes(ext)) return 'spreadsheet';
     if (['mp4', 'mov', 'avi', 'webm'].includes(ext)) return 'video';
     if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) return 'audio';
     
@@ -596,6 +599,13 @@ const FileBankRevolution = {
                 style="width: 100%; height: 70vh; border: none; border-radius: 8px; background: white;">
         </iframe>
       `);
+    } else if (type === 'csv') {
+      console.log('📊 Showing CSV preview');
+      const csvPreview = await this.showCSVPreview(file);
+      this.showEnhancedPreview(file, csvPreview);
+    } else if (type === 'text') {
+      console.log('📝 Showing text preview');
+      this.showTextPreview(file);
     } else if (type === 'video') {
       console.log('🎬 Showing video preview');
       this.showEnhancedPreview(file, `
@@ -889,6 +899,166 @@ Best regards</textarea>
   },
 
   // Show context menu
+  // CSV Preview Function
+  async showCSVPreview(file) {
+    try {
+      const response = await fetch(`/api/filebank${file.file_url}`);
+      if (!response.ok) throw new Error('Failed to fetch CSV');
+      
+      const csvText = await response.text();
+      
+      // Parse CSV
+      const lines = csvText.split('\n').filter(line => line.trim());
+      if (lines.length === 0) return '<p style="color: #999; padding: 20px;">Empty CSV file</p>';
+      
+      const headers = lines[0].split(',').map(h => h.trim());
+      const rows = lines.slice(1, 101); // Limit to 100 rows for performance
+      
+      // Build HTML table with 2070 styling
+      let tableHTML = `
+        <div style="overflow: auto; max-height: 500px; background: #0a0d1f; padding: 20px; border-radius: 8px;">
+          <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 32px;">📊</span>
+            <div>
+              <h3 style="color: #fff; margin: 0 0 5px 0;">${this.escapeHtml(file.original_filename)}</h3>
+              <p style="color: #999; margin: 0; font-size: 13px;">${this.formatFileSize(file.file_size)} • ${lines.length - 1} rows • ${headers.length} columns</p>
+            </div>
+          </div>
+          <table style="width: 100%; border-collapse: collapse; font-family: 'Monaco', 'Courier New', monospace; font-size: 12px;">
+            <thead>
+              <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); position: sticky; top: 0; z-index: 10;">`;
+      
+      // Headers
+      headers.forEach(header => {
+        tableHTML += `<th style="padding: 12px 16px; text-align: left; color: #fff; font-weight: 600; border: 1px solid rgba(255,255,255,0.1); white-space: nowrap;">${this.escapeHtml(header)}</th>`;
+      });
+      
+      tableHTML += `</tr></thead><tbody>`;
+      
+      // Rows
+      rows.forEach((row, idx) => {
+        const cells = row.split(',').map(c => c.trim());
+        const bgColor = idx % 2 === 0 ? 'rgba(102,126,234,0.05)' : 'rgba(102,126,234,0.02)';
+        tableHTML += `<tr style="background: ${bgColor};" onmouseover="this.style.background='rgba(102,126,234,0.15)'" onmouseout="this.style.background='${bgColor}'">`;
+        cells.forEach(cell => {
+          tableHTML += `<td style="padding: 10px 16px; color: #e0e0e0; border: 1px solid rgba(255,255,255,0.05); white-space: nowrap;">${this.escapeHtml(cell)}</td>`;
+        });
+        tableHTML += `</tr>`;
+      });
+      
+      tableHTML += `</tbody></table>`;
+      
+      if (lines.length > 101) {
+        tableHTML += `<p style="color: #999; text-align: center; margin-top: 20px; font-size: 13px; background: rgba(102,126,234,0.1); padding: 10px; border-radius: 6px;">
+          📊 Showing first 100 rows of ${lines.length - 1} total rows
+        </p>`;
+      }
+      
+      tableHTML += `</div>`;
+      
+      return tableHTML;
+    } catch (error) {
+      console.error('CSV preview error:', error);
+      return `<p style="color: #ff6b6b; padding: 20px; background: rgba(255,107,107,0.1); border-radius: 8px;">❌ Failed to load CSV preview: ${error.message}</p>`;
+    }
+  },
+
+  // Delete File Function (Owner Only)
+  async deleteFile(fileId) {
+    const file = this.state.files.find(f => String(f.id) === String(fileId));
+    if (!file) {
+      this.showNotification('File not found', 'error');
+      return;
+    }
+
+    // Check if user is owner
+    const isOwner = file.user_email === this.state.userEmail;
+    if (!isOwner) {
+      this.showNotification('❌ You can only delete your own files', 'error');
+      return;
+    }
+
+    // Confirm deletion
+    if (!confirm(`Delete "${file.original_filename}"?\n\nThis action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`/api/filebank/files/${fileId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ userEmail: this.state.userEmail })
+      });
+
+      if (response.ok) {
+        await this.loadFiles();
+        this.render();
+        this.showNotification(`🗑️ Deleted "${file.original_filename}"`, 'success');
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || 'Delete failed');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      this.showNotification(`Failed to delete: ${error.message}`, 'error');
+    }
+  },
+
+  // Share/Unshare File Function
+  async toggleShareFile(fileId) {
+    const file = this.state.files.find(f => String(f.id) === String(fileId));
+    if (!file) {
+      this.showNotification('File not found', 'error');
+      return;
+    }
+
+    // Check if user is owner
+    const isOwner = file.user_email === this.state.userEmail;
+    if (!isOwner) {
+      this.showNotification('❌ You can only share your own files', 'error');
+      return;
+    }
+
+    const newSharedState = file.is_shared ? 0 : 1;
+    const action = newSharedState ? 'share' : 'unshare';
+
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`/api/filebank/files/${fileId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          userEmail: this.state.userEmail,
+          is_shared: newSharedState
+        })
+      });
+
+      if (response.ok) {
+        file.is_shared = newSharedState;
+        this.render();
+        this.showNotification(
+          newSharedState 
+            ? `🌐 "${file.original_filename}" is now shared with everyone`
+            : `🔒 "${file.original_filename}" is now private`,
+          'success'
+        );
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || `Failed to ${action}`);
+      }
+    } catch (error) {
+      console.error('Share toggle error:', error);
+      this.showNotification(`Failed to ${action}: ${error.message}`, 'error');
+    }
+  },
+
   showContextMenu(event, fileId) {
     event.preventDefault();
     
@@ -1156,6 +1326,137 @@ Best regards</textarea>
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  },
+  
+  // Show CSV preview with table
+  async showCSVPreview(file) {
+    try {
+      const response = await fetch(`/api/filebank${file.file_url}`);
+      const text = await response.text();
+      
+      // Parse CSV
+      const lines = text.split('\n').filter(line => line.trim());
+      const headers = lines[0].split(',').map(h => h.trim());
+      const rows = lines.slice(1).map(line => line.split(',').map(cell => cell.trim()));
+      
+      const tableHTML = `
+        <div style="overflow-x: auto; max-height: 60vh; background: #1e1e1e; border-radius: 8px; padding: 20px;">
+          <table style="width: 100%; border-collapse: collapse; color: white; font-size: 13px;">
+            <thead>
+              <tr style="background: rgba(102, 126, 234, 0.2); position: sticky; top: 0;">
+                ${headers.map(h => `<th style="padding: 12px; text-align: left; border: 1px solid rgba(255,255,255,0.1); font-weight: 600;">${this.escapeHtml(h)}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(row => `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                  ${row.map(cell => `<td style="padding: 10px; border: 1px solid rgba(255,255,255,0.05);">${this.escapeHtml(cell)}</td>`).join('')}
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+      
+      this.showEnhancedPreview(file, tableHTML);
+    } catch (error) {
+      console.error('Error loading CSV:', error);
+      this.showNotification('Failed to load CSV', 'error');
+    }
+  },
+  
+  // Show text file preview
+  async showTextPreview(file) {
+    try {
+      const response = await fetch(`/api/filebank${file.file_url}`);
+      const text = await response.text();
+      
+      const textHTML = `
+        <pre style="background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 8px; max-height: 60vh; overflow: auto; font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.6; text-align: left;">${this.escapeHtml(text)}</pre>
+      `;
+      
+      this.showEnhancedPreview(file, textHTML);
+    } catch (error) {
+      console.error('Error loading text file:', error);
+      this.showNotification('Failed to load file', 'error');
+    }
+  },
+  
+  // Delete file
+  async deleteFile(fileId) {
+    const file = this.state.files.find(f => String(f.id) === String(fileId));
+    if (!file) return;
+    
+    // Check if user owns the file
+    if (file.user_email !== this.state.userEmail) {
+      this.showNotification('You can only delete your own files', 'error');
+      return;
+    }
+    
+    if (!confirm(`Delete "${file.original_filename}"? This cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/filebank/files/${fileId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          userEmail: this.state.userEmail
+        })
+      });
+      
+      if (response.ok) {
+        // Remove from state
+        this.state.files = this.state.files.filter(f => String(f.id) !== String(fileId));
+        this.render();
+        this.showNotification(`Deleted ${file.original_filename}`, 'success');
+      } else {
+        throw new Error('Delete failed');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      this.showNotification('Failed to delete file', 'error');
+    }
+  },
+  
+  // Toggle file sharing
+  async toggleShare(fileId) {
+    const file = this.state.files.find(f => String(f.id) === String(fileId));
+    if (!file) return;
+    
+    // Check if user owns the file
+    if (file.user_email !== this.state.userEmail) {
+      this.showNotification('You can only share your own files', 'error');
+      return;
+    }
+    
+    const newSharedStatus = !file.is_shared;
+    
+    try {
+      const response = await fetch(`/api/filebank/files/${fileId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          is_shared: newSharedStatus,
+          userEmail: this.state.userEmail
+        })
+      });
+
+      if (response.ok) {
+        file.is_shared = newSharedStatus;
+        this.render();
+        this.showNotification(
+          newSharedStatus ? '✅ File shared with team' : '🔒 File is now private', 
+          'success'
+        );
+      }
+    } catch (error) {
+      console.error('Error toggling share:', error);
+      this.showNotification('Failed to update sharing', 'error');
+    }
   },
 
   // Reorder files when dragging

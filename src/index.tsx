@@ -1840,23 +1840,27 @@ app.get('/files', (c) => {
                 <span>📂</span>
                 <span>Open</span>
             </div>
+            <div class="filebank-context-item" onclick="FileBankRevolution.downloadFile(this.closest('.filebank-context-menu').dataset.fileId)">
+                <span>📥</span>
+                <span>Download</span>
+            </div>
             <div class="filebank-context-item" onclick="FileBankRevolution.toggleStar(this.closest('.filebank-context-menu').dataset.fileId)">
                 <span>⭐</span>
-                <span>Star</span>
+                <span>Star/Unstar</span>
             </div>
             <div class="filebank-context-divider"></div>
-            <div class="filebank-context-item">
-                <span>📋</span>
-                <span>Copy Link</span>
+            <div class="filebank-context-item" onclick="FileBankRevolution.emailFile(this.closest('.filebank-context-menu').dataset.fileId)">
+                <span>📧</span>
+                <span>Send via Email</span>
             </div>
-            <div class="filebank-context-item">
-                <span>📤</span>
-                <span>Share</span>
+            <div class="filebank-context-item" onclick="FileBankRevolution.toggleShareFile(this.closest('.filebank-context-menu').dataset.fileId)">
+                <span>🌐</span>
+                <span>Share/Unshare</span>
             </div>
             <div class="filebank-context-divider"></div>
-            <div class="filebank-context-item danger" onclick="FileBankRevolution.deleteSelectedFiles()">
+            <div class="filebank-context-item danger" onclick="FileBankRevolution.deleteFile(this.closest('.filebank-context-menu').dataset.fileId)">
                 <span>🗑️</span>
-                <span>Delete</span>
+                <span>Delete (Owner Only)</span>
             </div>
         </div>
 
