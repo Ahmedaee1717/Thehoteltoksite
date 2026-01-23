@@ -280,16 +280,17 @@ function createPostCard(post) {
                   userRole === 'publisher' || 
                   post.author === currentUser;
   
-  // Store post data for onclick handler
-  const postData = encodeURIComponent(JSON.stringify({
+  // Store post data for onclick handler - escape for HTML attribute
+  const postDataStr = JSON.stringify({
     slug: post.slug,
     author: post.author,
     status: post.status
-  }));
+  });
+  const postData = encodeURIComponent(postDataStr).replace(/'/g, "\\'");
   
   return `
     <div class="post-card">
-      <div onclick="openPost('${postData}')" style="cursor: pointer;">
+      <div onclick="console.log('Card clicked!'); window.openPost('${postData}')" style="cursor: pointer;">
         <h3 class="post-title">${escapeHtml(post.title)}</h3>
         <div class="post-meta">
           <span>📅 ${date}</span>
@@ -299,7 +300,7 @@ function createPostCard(post) {
       </div>
       <div class="post-actions">
         <span class="post-status ${statusClass}">${post.status}</span>
-        ${canEdit ? `<button class="post-edit-btn" onclick="editPost('${post.slug}')">✏️ Edit</button>` : ''}
+        ${canEdit ? `<button class="post-edit-btn" onclick="console.log('Edit clicked!'); window.editPost('${escapeHtml(post.slug)}')">✏️ Edit</button>` : ''}
       </div>
     </div>
   `;
