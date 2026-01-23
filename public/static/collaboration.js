@@ -378,6 +378,27 @@ function attachPostCardListeners() {
   
   console.log(`📌 Attached listeners to ${cardContents.length} post cards and ${editButtons.length} edit buttons`);
   
+  // DEBUG: Check computed styles
+  cardContents.forEach((el, i) => {
+    const styles = window.getComputedStyle(el);
+    console.log(`🔍 Card ${i} computed styles:`, {
+      pointerEvents: styles.pointerEvents,
+      zIndex: styles.zIndex,
+      position: styles.position,
+      display: styles.display
+    });
+  });
+  
+  editButtons.forEach((el, i) => {
+    const styles = window.getComputedStyle(el);
+    console.log(`🔍 Button ${i} computed styles:`, {
+      pointerEvents: styles.pointerEvents,
+      zIndex: styles.zIndex,
+      position: styles.position,
+      display: styles.display
+    });
+  });
+  
   // MANUAL TEST - Add a test function to the window that can be called from console
   window.testCardClick = function() {
     console.log('🧪 MANUAL TEST: Calling openPost directly');
