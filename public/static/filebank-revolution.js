@@ -986,7 +986,7 @@ const FileBankRevolution = {
                 </span>
               </div>
             </div>
-          `
+          `}
         </div>
       </div>
     `;
