@@ -29,8 +29,16 @@ export const homePage = (c: Context) => {
         <link rel="stylesheet" href="/static/styles.css">
         <link rel="canonical" href="https://investaycapital.com">
         
-        <!-- Analytics Placeholder - Add your tracking IDs -->
-        <!-- Google Analytics 4: Replace GA_MEASUREMENT_ID with your actual ID -->
+        <!-- Cloudflare Web Analytics (Privacy-friendly, no cookies) -->
+        <!-- To enable: Go to Cloudflare Dashboard → Analytics → Web Analytics → Add Site -->
+        <!-- Then replace CLOUDFLARE_TOKEN with your actual token -->
+        <!-- 
+        <script defer src='https://static.cloudflareinsights.com/beacon.min.js' 
+                data-cf-beacon='{"token": "CLOUDFLARE_TOKEN"}'></script>
+        -->
+        
+        <!-- Alternative: Google Analytics 4 (if you prefer) -->
+        <!-- Replace GA_MEASUREMENT_ID with your actual ID -->
         <!-- 
         <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
         <script>
