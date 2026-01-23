@@ -527,44 +527,202 @@ const FileBankRevolution = {
             </div>
           ` : ''}
           
-          <!-- 🚀 HOLOGRAPHIC FUTURISTIC BUTTONS 2070 -->
+          <!-- 💎 LUXURY PROFESSIONAL BUTTONS -->
           ${isOwner ? `
-            <style>
-              @keyframes holographic-shine {
-                0% { background-position: -200% center; }
-                100% { background-position: 200% center; }
-              }
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; flex-direction: column; gap: 14px;">
+              <!-- Primary Actions -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <button onclick="event.stopPropagation(); FileBankRevolution.emailFile('${file.id}')"
+                        style="padding: 18px 16px; 
+                               background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(99, 102, 241, 0.12) 100%);
+                               backdrop-filter: blur(12px);
+                               color: #dbeafe; 
+                               border: 1.5px solid rgba(59, 130, 246, 0.25); 
+                               border-radius: 12px; 
+                               cursor: pointer; 
+                               font-size: 12px; 
+                               font-weight: 600; 
+                               text-transform: uppercase;
+                               letter-spacing: 1.2px;
+                               display: flex; 
+                               flex-direction: column;
+                               align-items: center; 
+                               justify-content: center; 
+                               gap: 8px; 
+                               transition: all 0.25s ease;
+                               box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+                               min-height: 90px;"
+                        onmouseover="this.style.background='linear-gradient(135deg, rgba(59, 130, 246, 0.18) 0%, rgba(99, 102, 241, 0.18) 100%)'; this.style.borderColor='rgba(59, 130, 246, 0.4)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(59, 130, 246, 0.15)';"
+                        onmouseout="this.style.background='linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(99, 102, 241, 0.12) 100%)'; this.style.borderColor='rgba(59, 130, 246, 0.25)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 12px rgba(0, 0, 0, 0.15)';">
+                  <span style="font-size: 28px;">📧</span>
+                  <span>Email</span>
+                </button>
+                
+                <button onclick="event.stopPropagation(); FileBankRevolution.downloadFile('${file.id}')"
+                        style="padding: 18px 16px; 
+                               background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(5, 150, 105, 0.12) 100%);
+                               backdrop-filter: blur(12px);
+                               color: #d1fae5; 
+                               border: 1.5px solid rgba(16, 185, 129, 0.25); 
+                               border-radius: 12px; 
+                               cursor: pointer; 
+                               font-size: 12px; 
+                               font-weight: 600; 
+                               text-transform: uppercase;
+                               letter-spacing: 1.2px;
+                               display: flex; 
+                               flex-direction: column;
+                               align-items: center; 
+                               justify-content: center; 
+                               gap: 8px; 
+                               transition: all 0.25s ease;
+                               box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+                               min-height: 90px;"
+                        onmouseover="this.style.background='linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(5, 150, 105, 0.18) 100%)'; this.style.borderColor='rgba(16, 185, 129, 0.4)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(16, 185, 129, 0.15)';"
+                        onmouseout="this.style.background='linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(5, 150, 105, 0.12) 100%)'; this.style.borderColor='rgba(16, 185, 129, 0.25)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 12px rgba(0, 0, 0, 0.15)';">
+                  <span style="font-size: 28px;">📥</span>
+                  <span>Download</span>
+                </button>
+              </div>
               
-              @keyframes neon-pulse {
-                0%, 100% { box-shadow: 0 0 5px currentColor, 0 0 20px currentColor, 0 0 40px currentColor; }
-                50% { box-shadow: 0 0 10px currentColor, 0 0 40px currentColor, 0 0 80px currentColor; }
-              }
-              
-              .holo-btn {
-                position: relative;
-                overflow: hidden;
-              }
-              
-              .holo-btn::before {
-                content: '';
-                position: absolute;
-                top: -50%;
-                left: -50%;
-                width: 200%;
-                height: 200%;
-                background: linear-gradient(
-                  45deg,
-                  transparent 30%,
-                  rgba(255, 255, 255, 0.3) 50%,
-                  transparent 70%
-                );
-                transform: rotate(45deg);
-                animation: holographic-shine 3s infinite;
-              }
-            </style>
-            
-            <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid rgba(102, 126, 234, 0.3); display: flex; flex-direction: column; gap: 16px;">
-              <!-- 🎯 PRIMARY ACTIONS - HOLOGRAPHIC MEGA BUTTONS -->
+              <!-- Quick Actions -->
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                <button onclick="event.stopPropagation(); FileBankRevolution.toggleStar('${file.id}')"
+                        style="padding: 16px 10px; 
+                               background: ${file.is_starred ? 'linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.15) 100%)' : 'linear-gradient(135deg, rgba(100, 116, 139, 0.08) 0%, rgba(71, 85, 105, 0.08) 100%)'};
+                               backdrop-filter: blur(12px);
+                               color: ${file.is_starred ? '#fef3c7' : 'rgba(255, 255, 255, 0.6)'}; 
+                               border: 1.5px solid ${file.is_starred ? 'rgba(251, 191, 36, 0.3)' : 'rgba(100, 116, 139, 0.2)'}; 
+                               border-radius: 10px; 
+                               cursor: pointer; 
+                               font-size: 11px; 
+                               font-weight: 600; 
+                               text-transform: uppercase;
+                               letter-spacing: 0.8px;
+                               display: flex; 
+                               flex-direction: column;
+                               align-items: center; 
+                               justify-content: center; 
+                               gap: 6px; 
+                               transition: all 0.25s ease;
+                               box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                               min-height: 75px;"
+                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px ${file.is_starred ? 'rgba(251, 191, 36, 0.15)' : 'rgba(0, 0, 0, 0.15)'}'; this.style.borderColor='${file.is_starred ? 'rgba(251, 191, 36, 0.5)' : 'rgba(100, 116, 139, 0.35)'}';"
+                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0, 0, 0, 0.1)'; this.style.borderColor='${file.is_starred ? 'rgba(251, 191, 36, 0.3)' : 'rgba(100, 116, 139, 0.2)'}';">
+                  <span style="font-size: 24px;">${file.is_starred ? '⭐' : '☆'}</span>
+                  <span style="font-size: 9px; white-space: nowrap;">${file.is_starred ? 'Starred' : 'Star'}</span>
+                </button>
+                
+                <button onclick="event.stopPropagation(); FileBankRevolution.toggleShareFile('${file.id}')"
+                        style="padding: 16px 10px; 
+                               background: ${file.is_shared ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%)' : 'linear-gradient(135deg, rgba(100, 116, 139, 0.08) 0%, rgba(71, 85, 105, 0.08) 100%)'};
+                               backdrop-filter: blur(12px);
+                               color: ${file.is_shared ? '#d1fae5' : 'rgba(255, 255, 255, 0.6)'}; 
+                               border: 1.5px solid ${file.is_shared ? 'rgba(16, 185, 129, 0.3)' : 'rgba(100, 116, 139, 0.2)'}; 
+                               border-radius: 10px; 
+                               cursor: pointer; 
+                               font-size: 11px; 
+                               font-weight: 600; 
+                               text-transform: uppercase;
+                               letter-spacing: 0.8px;
+                               display: flex; 
+                               flex-direction: column;
+                               align-items: center; 
+                               justify-content: center; 
+                               gap: 6px; 
+                               transition: all 0.25s ease;
+                               box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                               min-height: 75px;"
+                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px ${file.is_shared ? 'rgba(16, 185, 129, 0.15)' : 'rgba(0, 0, 0, 0.15)'}'; this.style.borderColor='${file.is_shared ? 'rgba(16, 185, 129, 0.5)' : 'rgba(100, 116, 139, 0.35)'}';"
+                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0, 0, 0, 0.1)'; this.style.borderColor='${file.is_shared ? 'rgba(16, 185, 129, 0.3)' : 'rgba(100, 116, 139, 0.2)'}';">
+                  <span style="font-size: 24px;">${file.is_shared ? '🔓' : '🔒'}</span>
+                  <span style="font-size: 9px; white-space: nowrap;">${file.is_shared ? 'Shared' : 'Share'}</span>
+                </button>
+                
+                <button onclick="event.stopPropagation(); FileBankRevolution.deleteFile('${file.id}')"
+                        style="padding: 16px 10px; 
+                               background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(220, 38, 38, 0.12) 100%);
+                               backdrop-filter: blur(12px);
+                               color: #fecaca; 
+                               border: 1.5px solid rgba(239, 68, 68, 0.25); 
+                               border-radius: 10px; 
+                               cursor: pointer; 
+                               font-size: 11px; 
+                               font-weight: 600; 
+                               text-transform: uppercase;
+                               letter-spacing: 0.8px;
+                               display: flex; 
+                               flex-direction: column;
+                               align-items: center; 
+                               justify-content: center; 
+                               gap: 6px; 
+                               transition: all 0.25s ease;
+                               box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                               min-height: 75px;"
+                        onmouseover="this.style.transform='translateY(-2px)'; this.style.background='linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(220, 38, 38, 0.18) 100%)'; this.style.borderColor='rgba(239, 68, 68, 0.4)'; this.style.boxShadow='0 4px 12px rgba(239, 68, 68, 0.15)';"
+                        onmouseout="this.style.transform='translateY(0)'; this.style.background='linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(220, 38, 38, 0.12) 100%)'; this.style.borderColor='rgba(239, 68, 68, 0.25)'; this.style.boxShadow='0 2px 8px rgba(0, 0, 0, 0.1)';">
+                  <span style="font-size: 24px;">🗑️</span>
+                  <span style="font-size: 9px; white-space: nowrap;">Delete</span>
+                </button>
+              </div>
+            </div>
+          ` : `
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; flex-direction: column; gap: 14px;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <button onclick="event.stopPropagation(); FileBankRevolution.emailFile('${file.id}')"
+                        style="padding: 18px 16px; 
+                               background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(99, 102, 241, 0.12) 100%);
+                               backdrop-filter: blur(12px);
+                               color: #dbeafe; 
+                               border: 1.5px solid rgba(59, 130, 246, 0.25); 
+                               border-radius: 12px; 
+                               cursor: pointer; 
+                               font-size: 12px; 
+                               font-weight: 600; 
+                               text-transform: uppercase;
+                               letter-spacing: 1.2px;
+                               display: flex; 
+                               flex-direction: column;
+                               align-items: center; 
+                               justify-content: center; 
+                               gap: 8px; 
+                               transition: all 0.25s ease;
+                               box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+                               min-height: 90px;"
+                        onmouseover="this.style.background='linear-gradient(135deg, rgba(59, 130, 246, 0.18) 0%, rgba(99, 102, 241, 0.18) 100%)'; this.style.borderColor='rgba(59, 130, 246, 0.4)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(59, 130, 246, 0.15)';"
+                        onmouseout="this.style.background='linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(99, 102, 241, 0.12) 100%)'; this.style.borderColor='rgba(59, 130, 246, 0.25)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 12px rgba(0, 0, 0, 0.15)';">
+                  <span style="font-size: 28px;">📧</span>
+                  <span>Email</span>
+                </button>
+                
+                <button onclick="event.stopPropagation(); FileBankRevolution.downloadFile('${file.id}')"
+                        style="padding: 18px 16px; 
+                               background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(5, 150, 105, 0.12) 100%);
+                               backdrop-filter: blur(12px);
+                               color: #d1fae5; 
+                               border: 1.5px solid rgba(16, 185, 129, 0.25); 
+                               border-radius: 12px; 
+                               cursor: pointer; 
+                               font-size: 12px; 
+                               font-weight: 600; 
+                               text-transform: uppercase;
+                               letter-spacing: 1.2px;
+                               display: flex; 
+                               flex-direction: column;
+                               align-items: center; 
+                               justify-content: center; 
+                               gap: 8px; 
+                               transition: all 0.25s ease;
+                               box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+                               min-height: 90px;"
+                        onmouseover="this.style.background='linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(5, 150, 105, 0.18) 100%)'; this.style.borderColor='rgba(16, 185, 129, 0.4)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(16, 185, 129, 0.15)';"
+                        onmouseout="this.style.background='linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(5, 150, 105, 0.12) 100%)'; this.style.borderColor='rgba(16, 185, 129, 0.25)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 12px rgba(0, 0, 0, 0.15)';">
+                  <span style="font-size: 28px;">📥</span>
+                  <span>Download</span>
+                </button>
+              </div>
+            </div>
+          `}
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
                 <button onclick="event.stopPropagation(); FileBankRevolution.emailFile('${file.id}')"
                         class="holo-btn"
