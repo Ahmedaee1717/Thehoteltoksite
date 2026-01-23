@@ -2264,3 +2264,17 @@ trix-toolbar .trix-button.trix-active {
 .info-box a:hover {
   text-decoration: underline;
 }
+
+/* Manual Upload Modal - Larger Width */
+.manual-upload-modal-content {
+  background: linear-gradient(145deg, #1a1d2e 0%, #252938 100%);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  width: 90%;
+  max-width: 800px; /* Wider than regular modals */
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+}

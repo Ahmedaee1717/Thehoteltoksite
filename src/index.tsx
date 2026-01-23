@@ -1776,10 +1776,16 @@ app.get('/collaborate', (c) => {
                         <div class="view-header">
                             <h1 class="view-title">🎙️ Meeting Transcripts</h1>
                             <p class="view-subtitle">Auto-synced from Otter.ai via Zapier webhook (real-time)</p>
-                            <button id="sync-otter-btn" class="collab-btn-primary" style="opacity: 0.7;">
-                                <span>🔄</span>
-                                Manual Sync (Backup)
-                            </button>
+                            <div style="display: flex; gap: 12px;">
+                                <button id="manual-upload-btn" class="collab-btn-primary">
+                                    <span>📤</span>
+                                    Upload Historical Meeting
+                                </button>
+                                <button id="sync-otter-btn" class="collab-btn-primary" style="opacity: 0.7;">
+                                    <span>🔄</span>
+                                    Manual Sync (Backup)
+                                </button>
+                            </div>
                         </div>
                         
                         <!-- Search Bar -->

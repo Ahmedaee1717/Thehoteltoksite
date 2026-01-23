@@ -1783,6 +1783,158 @@ window.closeOtterSyncModal = function() {
   }
 };
 
+// 📤 MANUAL MEETING UPLOAD MODAL
+window.showManualUploadModal = function() {
+  const modalHtml = `
+    <div id="manual-upload-modal" class="collab-email-modal" onclick="if(event.target === this) closeManualUploadModal()">
+      <div class="manual-upload-modal-content">
+        <div class="collab-email-modal-header">
+          <h3>📤 Upload Historical Meeting</h3>
+          <button class="collab-email-modal-close" onclick="closeManualUploadModal()">×</button>
+        </div>
+        
+        <div class="collab-email-modal-body" style="max-height: 70vh; overflow-y: auto;">
+          <div class="info-box" style="margin-bottom: 20px; padding: 12px; background: rgba(201, 169, 98, 0.1); border-radius: 8px; color: rgba(255,255,255,0.8); font-size: 13px;">
+            <p><strong>ℹ️ How to use:</strong></p>
+            <ol style="margin: 8px 0 0 20px; padding: 0;">
+              <li>Copy meeting details from your Otter.ai transcript PDF</li>
+              <li>Paste each field into the form below</li>
+              <li>Click "Upload Meeting" - it will be saved to your database</li>
+              <li>Meeting appears instantly in the Meetings tab!</li>
+            </ol>
+          </div>
+          
+          <div class="collab-email-form-group">
+            <label>Meeting Title: *</label>
+            <input type="text" id="manual-title" placeholder="e.g., AS Legal __ Mattereum" required>
+          </div>
+          
+          <div class="collab-email-form-group">
+            <label>Full Transcript: *</label>
+            <textarea id="manual-transcript" rows="8" placeholder="Paste the full transcript text here..." required></textarea>
+            <small>Copy the entire transcript from your PDF</small>
+          </div>
+          
+          <div class="collab-email-form-group">
+            <label>Summary:</label>
+            <textarea id="manual-summary" rows="4" placeholder="Meeting summary (optional)"></textarea>
+            <small>If available, paste the summary from the transcript</small>
+          </div>
+          
+          <div class="collab-email-form-group">
+            <label>Meeting URL:</label>
+            <input type="url" id="manual-url" placeholder="https://otter.ai/note/...">
+            <small>Otter.ai meeting URL (if available)</small>
+          </div>
+          
+          <div class="collab-email-form-group">
+            <label>Owner Name:</label>
+            <input type="text" id="manual-owner" placeholder="e.g., Ahmed Abou El-Enin">
+            <small>Person who recorded/owns the meeting</small>
+          </div>
+          
+          <div class="collab-email-form-group">
+            <label>Date Created:</label>
+            <input type="datetime-local" id="manual-date">
+            <small>Meeting date and time</small>
+          </div>
+        </div>
+        
+        <div class="collab-email-modal-footer">
+          <button class="collab-email-btn-cancel" onclick="closeManualUploadModal()">Cancel</button>
+          <button class="collab-email-btn-send" onclick="uploadManualMeeting()">
+            <span class="email-btn-icon">📤</span>
+            Upload Meeting
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  
+  // Set default date to now
+  const dateInput = document.getElementById('manual-date');
+  if (dateInput) {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    dateInput.value = now.toISOString().slice(0, 16);
+  }
+  
+  setTimeout(() => {
+    document.getElementById('manual-title').focus();
+  }, 100);
+};
+
+window.closeManualUploadModal = function() {
+  const modal = document.getElementById('manual-upload-modal');
+  if (modal) {
+    modal.remove();
+  }
+};
+
+window.uploadManualMeeting = async function() {
+  const title = document.getElementById('manual-title').value.trim();
+  const transcript = document.getElementById('manual-transcript').value.trim();
+  const summary = document.getElementById('manual-summary').value.trim();
+  const meetingUrl = document.getElementById('manual-url').value.trim();
+  const ownerName = document.getElementById('manual-owner').value.trim() || 'Unknown';
+  const dateCreated = document.getElementById('manual-date').value;
+  
+  if (!title) {
+    showNotification('❌ Please enter a meeting title', 'error');
+    return;
+  }
+  
+  if (!transcript) {
+    showNotification('❌ Please enter the meeting transcript', 'error');
+    return;
+  }
+  
+  try {
+    showNotification('📤 Uploading meeting...', 'info');
+    
+    // Format date to ISO 8601
+    const isoDate = dateCreated ? new Date(dateCreated).toISOString() : new Date().toISOString();
+    
+    // Post directly to webhook endpoint (same as Zapier would)
+    const response = await fetch('/api/meetings/webhook/zapier', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        title: title,
+        transcript: transcript,
+        summary: summary,
+        meeting_url: meetingUrl,
+        owner_name: ownerName,
+        date_created: isoDate
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      showNotification(`✅ Meeting "${title}" uploaded successfully!`, 'success');
+      closeManualUploadModal();
+      loadMeetings(); // Reload meetings list
+    } else {
+      showNotification(`❌ ${data.error || 'Failed to upload meeting'}`, 'error');
+    }
+  } catch (error) {
+    console.error('Error uploading meeting:', error);
+    showNotification('❌ Error uploading meeting', 'error');
+  }
+};
+
+window.closeOtterSyncModal = function() {
+  const modal = document.getElementById('otter-sync-modal');
+  if (modal) {
+    modal.remove();
+  }
+};
+
 window.syncFromZapier = async function() {
   const apiKey = document.getElementById('zapier-api-key').value.trim();
   
@@ -1824,6 +1976,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const syncBtn = document.getElementById('sync-otter-btn');
   if (syncBtn) {
     syncBtn.addEventListener('click', showOtterSyncModal);
+  }
+  
+  const manualUploadBtn = document.getElementById('manual-upload-btn');
+  if (manualUploadBtn) {
+    manualUploadBtn.addEventListener('click', showManualUploadModal);
   }
   
   // Setup search
