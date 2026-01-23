@@ -414,6 +414,14 @@ function attachPostCardListeners() {
   };
   
   console.log('🧪 TEST AVAILABLE: Type window.testCardClick() in console to test manually');
+  
+  // ADD GLOBAL CLICK LISTENER to see if clicks are happening at all
+  document.addEventListener('click', function(e) {
+    console.log('🌍 GLOBAL CLICK detected on:', e.target);
+    console.log('🌍 Event path:', e.composedPath().map(el => el.className || el.tagName));
+  }, true); // Use capture phase
+  
+  console.log('🌍 Global click listener added - will log ALL clicks on the page');
 }
 
 // ✏️ EDIT POST - Load into Collaboration Editor
