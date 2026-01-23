@@ -282,16 +282,17 @@ function createPostCard(post) {
                   userRole === 'publisher' || 
                   post.author === currentUser;
   
-  // Store post data as data attributes for event listeners
+  // Store post data as data attributes - DON'T escape, use base64 to avoid quote issues
   const postDataStr = JSON.stringify({
     slug: post.slug,
     author: post.author,
     status: post.status
   });
+  const postDataBase64 = btoa(postDataStr); // Convert to base64 to avoid any escaping issues
   
   return `
     <div class="post-card">
-      <div class="post-card-content" data-post='${escapeHtml(postDataStr)}' style="cursor: pointer;">
+      <div class="post-card-content" data-post-base64="${postDataBase64}" style="cursor: pointer;">
         <h3 class="post-title">${escapeHtml(post.title)}</h3>
         <div class="post-meta">
           <span>📅 ${date}</span>
@@ -301,7 +302,7 @@ function createPostCard(post) {
       </div>
       <div class="post-actions">
         <span class="post-status ${statusClass}">${post.status}</span>
-        ${canEdit ? `<button class="post-edit-btn" data-slug="${escapeHtml(post.slug)}">✏️ Edit</button>` : ''}
+        ${canEdit ? `<button class="post-edit-btn" data-slug="${post.slug}">✏️ Edit</button>` : ''}
       </div>
     </div>
   `;
@@ -319,12 +320,18 @@ function attachPostCardListeners() {
     console.log(`📌 Attaching listener to card ${index}:`, element);
     element.addEventListener('click', function(e) {
       console.log('🎯 Card content clicked!', e.target);
-      const postData = this.getAttribute('data-post');
-      console.log('🎯 Post data:', postData);
-      if (postData) {
-        const encodedData = encodeURIComponent(postData);
-        console.log('🎯 Calling openPost with:', encodedData);
-        window.openPost(encodedData);
+      const postDataBase64 = this.getAttribute('data-post-base64');
+      console.log('🎯 Post data (base64):', postDataBase64);
+      if (postDataBase64) {
+        try {
+          const postDataStr = atob(postDataBase64); // Decode from base64
+          console.log('🎯 Post data (decoded):', postDataStr);
+          const encodedData = encodeURIComponent(postDataStr);
+          console.log('🎯 Calling openPost with:', encodedData);
+          window.openPost(encodedData);
+        } catch (error) {
+          console.error('❌ Error decoding post data:', error);
+        }
       } else {
         console.error('❌ No post data found on element');
       }
