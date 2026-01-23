@@ -844,8 +844,8 @@ const FileBankRevolution = {
       files = files.filter(f => f.folder_id === this.state.currentFolder);
     } else {
       // At root level: show only files NOT in any folder (folder_id is null)
-      // EXCEPTION: 'shared' filter should show ALL shared files regardless of folder
-      if (this.state.currentFilter !== 'shared') {
+      // EXCEPTION: 'shared', 'images', 'documents', 'starred' filters should show ALL files regardless of folder
+      if (!['shared', 'images', 'documents', 'starred'].includes(this.state.currentFilter)) {
         files = files.filter(f => !f.folder_id || f.folder_id === null);
       }
     }
@@ -1832,9 +1832,152 @@ Best regards</textarea>
 
   // Show notification
   showNotification(message, type = 'info') {
-    console.log(`${type.toUpperCase()}: ${message}`);
-    // TODO: Implement beautiful toast notifications
-    alert(message);
+    // Create toast container if it doesn't exist
+    let container = document.getElementById('filebank-toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'filebank-toast-container';
+      container.style.cssText = `
+        position: fixed;
+        top: 24px;
+        right: 24px;
+        z-index: 100000;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        pointer-events: none;
+      `;
+      document.body.appendChild(container);
+    }
+
+    // Icon and color based on type
+    const config = {
+      success: { icon: '✓', gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', glow: 'rgba(16, 185, 129, 0.4)' },
+      error: { icon: '✕', gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', glow: 'rgba(239, 68, 68, 0.4)' },
+      info: { icon: 'ℹ', gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', glow: 'rgba(59, 130, 246, 0.4)' },
+      warning: { icon: '⚠', gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', glow: 'rgba(245, 158, 11, 0.4)' }
+    };
+    
+    const { icon, gradient, glow } = config[type] || config.info;
+
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+      background: rgba(30, 41, 59, 0.98);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 16px 20px;
+      min-width: 300px;
+      max-width: 500px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 8px 32px ${glow}, 0 0 0 1px rgba(255, 255, 255, 0.05);
+      transform: translateX(400px);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: auto;
+      cursor: pointer;
+    `;
+
+    // Icon circle
+    const iconCircle = document.createElement('div');
+    iconCircle.style.cssText = `
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: ${gradient};
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: white;
+      font-weight: bold;
+      flex-shrink: 0;
+      box-shadow: 0 0 20px ${glow};
+    `;
+    iconCircle.textContent = icon;
+
+    // Message text
+    const messageEl = document.createElement('div');
+    messageEl.style.cssText = `
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.5;
+      flex: 1;
+    `;
+    messageEl.textContent = message;
+
+    // Close button
+    const closeBtn = document.createElement('div');
+    closeBtn.style.cssText = `
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    `;
+    closeBtn.textContent = '×';
+    closeBtn.onmouseover = () => {
+      closeBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+      closeBtn.style.color = '#ffffff';
+    };
+    closeBtn.onmouseout = () => {
+      closeBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+      closeBtn.style.color = 'rgba(255, 255, 255, 0.6)';
+    };
+
+    // Assemble toast
+    toast.appendChild(iconCircle);
+    toast.appendChild(messageEl);
+    toast.appendChild(closeBtn);
+    container.appendChild(toast);
+
+    // Animate in
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        toast.style.transform = 'translateX(0)';
+        toast.style.opacity = '1';
+      });
+    });
+
+    // Remove toast function
+    const removeToast = () => {
+      toast.style.transform = 'translateX(400px)';
+      toast.style.opacity = '0';
+      setTimeout(() => {
+        if (toast.parentElement) {
+          toast.remove();
+          // Remove container if empty
+          if (container.children.length === 0) {
+            container.remove();
+          }
+        }
+      }, 400);
+    };
+
+    // Auto-remove after 4 seconds
+    const autoRemoveTimer = setTimeout(removeToast, 4000);
+
+    // Click to dismiss
+    toast.onclick = () => {
+      clearTimeout(autoRemoveTimer);
+      removeToast();
+    };
+    closeBtn.onclick = (e) => {
+      e.stopPropagation();
+      clearTimeout(autoRemoveTimer);
+      removeToast();
+    };
   },
 
   // Utility: Check if file is image
