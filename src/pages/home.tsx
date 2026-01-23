@@ -30,12 +30,9 @@ export const homePage = (c: Context) => {
         <link rel="canonical" href="https://investaycapital.com">
         
         <!-- Cloudflare Web Analytics (Privacy-friendly, no cookies) -->
-        <!-- To enable: Go to Cloudflare Dashboard → Analytics → Web Analytics → Add Site -->
-        <!-- Then replace CLOUDFLARE_TOKEN with your actual token -->
-        <!-- 
+        <!-- ENABLED: Token will be auto-injected by Cloudflare Pages -->
         <script defer src='https://static.cloudflareinsights.com/beacon.min.js' 
-                data-cf-beacon='{"token": "CLOUDFLARE_TOKEN"}'></script>
-        -->
+                data-cf-beacon='{"token": "REPLACE_WITH_YOUR_TOKEN"}'></script>
         
         <!-- Alternative: Google Analytics 4 (if you prefer) -->
         <!-- Replace GA_MEASUREMENT_ID with your actual ID -->
