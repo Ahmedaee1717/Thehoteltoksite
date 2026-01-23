@@ -285,16 +285,18 @@ function createPostCard(post) {
   }));
   
   return `
-    <div class="post-card" onclick="openPost('${postData}')">
-      <h3 class="post-title">${escapeHtml(post.title)}</h3>
-      <div class="post-meta">
-        <span>📅 ${date}</span>
-        <span>👤 ${escapeHtml(post.author)}</span>
+    <div class="post-card">
+      <div onclick="openPost('${postData}')" style="cursor: pointer;">
+        <h3 class="post-title">${escapeHtml(post.title)}</h3>
+        <div class="post-meta">
+          <span>📅 ${date}</span>
+          <span>👤 ${escapeHtml(post.author)}</span>
+        </div>
+        <p class="post-excerpt">${escapeHtml(post.excerpt || 'No excerpt available')}</p>
       </div>
-      <p class="post-excerpt">${escapeHtml(post.excerpt || 'No excerpt available')}</p>
       <div class="post-actions">
         <span class="post-status ${statusClass}">${post.status}</span>
-        ${canEdit ? `<button class="post-edit-btn" onclick="event.stopPropagation(); editPost('${post.slug}')">✏️ Edit</button>` : ''}
+        ${canEdit ? `<button class="post-edit-btn" onclick="editPost('${post.slug}')">✏️ Edit</button>` : ''}
       </div>
     </div>
   `;
