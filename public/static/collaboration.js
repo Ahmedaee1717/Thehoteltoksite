@@ -142,6 +142,9 @@ function switchView(view) {
   }
 }
 
+// Make switchView available globally
+window.switchView = switchView;
+
 // ↩ BACK BUTTON
 function setupBackButton() {
   document.getElementById('back-to-mail-btn').addEventListener('click', () => {
@@ -304,9 +307,11 @@ function createPostCard(post) {
 
 // ✏️ EDIT POST - Load into Collaboration Editor
 async function editPost(slug) {
+  console.log('🔧 editPost called with slug:', slug);
   try {
     // Fetch the post data
     const token = localStorage.getItem('auth_token');
+    console.log('🔧 Fetching post from API...');
     const response = await fetch(`/api/admin/posts/${slug}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -360,8 +365,12 @@ async function editPost(slug) {
   }
 }
 
+// Make editPost available globally
+window.editPost = editPost;
+
 // 🔗 OPEN POST
 function openPost(postDataEncoded) {
+  console.log('🔗 openPost called with:', postDataEncoded);
   try {
     const postData = JSON.parse(decodeURIComponent(postDataEncoded));
     const { slug, author, status } = postData;
@@ -397,6 +406,9 @@ function openPost(postDataEncoded) {
     window.location.href = `/blog/${postDataEncoded}`;
   }
 }
+
+// Make openPost available globally
+window.openPost = openPost;
 
 // ✨ CHECK NEW POST PERMISSION
 async function checkNewPostPermission() {
