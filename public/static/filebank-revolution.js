@@ -924,6 +924,69 @@ const FileBankRevolution = {
               </div>
             </div>
           ` : `
+            <!-- 👁️ VIEWER MODE: EMAIL + DOWNLOAD ONLY -->
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid rgba(102, 126, 234, 0.2); display: flex; flex-direction: column; gap: 16px;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <!-- EMAIL Button -->
+                <button onclick="event.stopPropagation(); FileBankRevolution.emailFile('${file.id}')"
+                        style="min-height: 90px; 
+                               padding: 18px 16px; 
+                               background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(37, 99, 235, 0.12) 100%); 
+                               border: 1.5px solid rgba(59, 130, 246, 0.25); 
+                               border-radius: 16px; 
+                               cursor: pointer; 
+                               transition: all 0.25s ease; 
+                               display: flex; 
+                               flex-direction: column; 
+                               align-items: center; 
+                               justify-content: center; 
+                               gap: 8px;
+                               box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);"
+                        onmouseover="this.style.transform='translateY(-2px)'; 
+                                     this.style.borderColor='rgba(59, 130, 246, 0.4)'; 
+                                     this.style.boxShadow='0 4px 16px rgba(59, 130, 246, 0.15)';"
+                        onmouseout="this.style.transform='translateY(0)'; 
+                                    this.style.borderColor='rgba(59, 130, 246, 0.25)'; 
+                                    this.style.boxShadow='0 2px 12px rgba(0, 0, 0, 0.15)';">
+                  <span style="font-size: 28px;">📧</span>
+                  <span style="font-size: 10px; color: #dbeafe; font-weight: 600; letter-spacing: 1px; white-space: nowrap;">EMAIL</span>
+                </button>
+
+                <!-- DOWNLOAD Button -->
+                <button onclick="event.stopPropagation(); FileBankRevolution.downloadFile('${file.id}')"
+                        style="min-height: 90px; 
+                               padding: 18px 16px; 
+                               background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(5, 150, 105, 0.12) 100%); 
+                               border: 1.5px solid rgba(16, 185, 129, 0.25); 
+                               border-radius: 16px; 
+                               cursor: pointer; 
+                               transition: all 0.25s ease; 
+                               display: flex; 
+                               flex-direction: column; 
+                               align-items: center; 
+                               justify-content: center; 
+                               gap: 8px;
+                               box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);"
+                        onmouseover="this.style.transform='translateY(-2px)'; 
+                                     this.style.borderColor='rgba(16, 185, 129, 0.4)'; 
+                                     this.style.boxShadow='0 4px 16px rgba(16, 185, 129, 0.15)';"
+                        onmouseout="this.style.transform='translateY(0)'; 
+                                    this.style.borderColor='rgba(16, 185, 129, 0.25)'; 
+                                    this.style.boxShadow='0 2px 12px rgba(0, 0, 0, 0.15)';">
+                  <span style="font-size: 28px;">📥</span>
+                  <span style="font-size: 10px; color: #d1fae5; font-weight: 600; letter-spacing: 1px; white-space: nowrap;">DOWNLOAD</span>
+                </button>
+              </div>
+
+              <!-- View Only Status -->
+              <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: rgba(156, 163, 175, 0.08); border: 1.5px solid rgba(156, 163, 175, 0.2); border-radius: 12px;">
+                <span style="font-size: 16px;">👁️</span>
+                <span style="font-size: 11px; color: rgba(255, 255, 255, 0.6); font-weight: 500; letter-spacing: 0.5px;">
+                  ${file.is_shared ? 'SHARED WITH YOU • VIEW ONLY' : 'VIEW ONLY MODE'}
+                </span>
+              </div>
+            </div>
+          `
         </div>
       </div>
     `;
