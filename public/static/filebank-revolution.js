@@ -36,7 +36,7 @@ const FileBankRevolution = {
     await this.loadFiles();
     await this.loadFolders();
     
-    // Render
+    // Render AFTER both files and folders are loaded
     this.render();
     
     console.log('✅ File Bank Revolution Ready!');
@@ -1265,15 +1265,18 @@ Best regards</textarea>
 
   // Update counts in sidebar
   updateCounts() {
+    // Count only files at root level (not in folders) for "All Files"
+    const rootFiles = this.state.files.filter(f => !f.folder_id || f.folder_id === null);
+    
     const counts = {
-      all: this.state.files.length,
-      recent: this.state.files.filter(f => {
+      all: rootFiles.length,
+      recent: rootFiles.filter(f => {
         const date = new Date(f.created_at);
         const now = new Date();
         const diff = now - date;
         return diff < 7 * 24 * 60 * 60 * 1000; // Last 7 days
       }).length,
-      starred: this.state.files.filter(f => f.is_starred).length,
+      starred: rootFiles.filter(f => f.is_starred).length,
       shared: this.state.files.filter(f => f.is_shared === 1 || f.folder_is_shared === 1).length
     };
 
