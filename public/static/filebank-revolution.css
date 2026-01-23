@@ -547,6 +547,9 @@
 /* Columns view: Fixed width in 3 columns */
 .filebank-grid.columns-view .filebank-file-card {
   width: 100%;
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
 }
 
 .filebank-file-card::before {

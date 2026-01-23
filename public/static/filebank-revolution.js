@@ -237,78 +237,148 @@ const FileBankRevolution = {
   },
 
   // Create file card HTML
+  // Analyze filename to extract meaning
+  analyzeFilename(filename) {
+    const name = filename.toLowerCase().replace(/[_-]/g, ' ').replace(/\.[^.]+$/, '');
+    
+    // Common patterns
+    if (name.includes('budget')) return { type: 'Budget Report', desc: 'Financial budget planning document' };
+    if (name.includes('invoice')) return { type: 'Invoice', desc: 'Billing document for payment' };
+    if (name.includes('report')) return { type: 'Report', desc: 'Detailed analysis or summary document' };
+    if (name.includes('contract')) return { type: 'Contract', desc: 'Legal agreement document' };
+    if (name.includes('proposal')) return { type: 'Proposal', desc: 'Business or project proposal' };
+    if (name.includes('presentation')) return { type: 'Presentation', desc: 'Slide deck for meetings' };
+    if (name.includes('template')) return { type: 'Template', desc: 'Reusable document template' };
+    if (name.includes('logo')) return { type: 'Logo', desc: 'Company or brand logo image' };
+    if (name.includes('screenshot')) return { type: 'Screenshot', desc: 'Screen capture image' };
+    if (name.includes('photo')) return { type: 'Photo', desc: 'Photograph or image' };
+    if (name.includes('handbook')) return { type: 'Handbook', desc: 'Guide or reference manual' };
+    if (name.includes('policy')) return { type: 'Policy Document', desc: 'Company policy or guidelines' };
+    if (name.includes('sow')) return { type: 'Statement of Work', desc: 'Project scope and deliverables' };
+    if (name.includes('resume') || name.includes('cv')) return { type: 'Resume/CV', desc: 'Professional resume document' };
+    if (name.includes('quote')) return { type: 'Quote', desc: 'Price quotation document' };
+    
+    // Extract dates
+    const dateMatch = name.match(/q[1-4].*20\d{2}|20\d{2}.*q[1-4]|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/);
+    if (dateMatch) {
+      return { type: 'Dated Document', desc: `Document from ${dateMatch[0].toUpperCase()}` };
+    }
+    
+    return null;
+  },
+  
   // Generate AI summary based on file type
   generateAISummary(file) {
     const ext = file.original_filename.split('.').pop().toLowerCase();
     const fileType = file.file_type || '';
+    const analysis = this.analyzeFilename(file.original_filename);
     
     // PDF documents
     if (ext === 'pdf') {
+      const sizeDesc = file.file_size > 5000000 ? 'Large document with extensive content' : 
+                       file.file_size > 1000000 ? 'Medium-sized document' : 'Compact document';
+      if (analysis) {
+        return `📄 <strong>${analysis.type}</strong><br>
+                ${analysis.desc}. ${sizeDesc}. Contains ${Math.ceil(file.file_size / 50000)} estimated pages.`;
+      }
       return `📄 <strong>PDF Document</strong><br>
-              Professional document likely containing text, images, and formatted content. 
-              Size: ${this.formatFileSize(file.file_size)}. 
-              ${file.file_size > 5000000 ? 'Large document with extensive content.' : 'Standard size document.'}`;
+              Professional document containing text, images, and formatted content. 
+              ${sizeDesc}. Size: ${this.formatFileSize(file.file_size)}.`;
     }
     
     // Images
     if (fileType.startsWith('image/')) {
+      const resolution = file.file_size > 2000000 ? 'High resolution (print quality)' : 
+                        file.file_size > 500000 ? 'Medium resolution (web/screen)' : 'Optimized for web';
+      if (analysis) {
+        return `🖼️ <strong>${analysis.type}</strong><br>
+                ${analysis.desc}. ${ext.toUpperCase()} format. ${resolution}.`;
+      }
       return `🖼️ <strong>Image File</strong><br>
-              Visual content in ${ext.toUpperCase()} format. 
-              ${file.file_size > 2000000 ? 'High resolution image suitable for printing.' : 'Web-optimized image.'}`;
+              Visual content in ${ext.toUpperCase()} format. ${resolution}. ${this.formatFileSize(file.file_size)}.`;
     }
     
     // Spreadsheets
     if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') {
+      const rows = Math.ceil(file.file_size / 100); // Rough estimate
+      if (analysis) {
+        return `📊 <strong>${analysis.type}</strong><br>
+                ${analysis.desc}. Tabular data with approximately ${rows.toLocaleString()} rows. 
+                ${ext === 'csv' ? 'CSV format (universal compatibility)' : 'Excel format with formulas and formatting'}.`;
+      }
       return `📊 <strong>Spreadsheet</strong><br>
-              Tabular data with rows and columns. 
+              Tabular data with rows and columns. Approximately ${rows.toLocaleString()} rows. 
               Useful for data analysis, calculations, and record keeping. 
-              ${ext === 'csv' ? 'Simple format compatible with all systems.' : 'Excel format with advanced features.'}`;
+              ${ext === 'csv' ? 'CSV format (universal)' : 'Excel format with advanced features'}.`;
     }
     
     // Presentations
     if (ext === 'pptx' || ext === 'ppt') {
+      const slides = Math.ceil(file.file_size / 150000); // Rough estimate
+      if (analysis) {
+        return `📽️ <strong>${analysis.type}</strong><br>
+                ${analysis.desc}. Approximately ${slides} slides. PowerPoint format.`;
+      }
       return `📽️ <strong>Presentation</strong><br>
-              Slide deck for presentations and meetings. 
+              Slide deck for presentations. Approximately ${slides} slides. 
               Contains visual slides with text, images, and graphics.`;
     }
     
     // Word documents
     if (ext === 'docx' || ext === 'doc') {
+      const pages = Math.ceil(file.file_size / 20000); // Rough estimate
+      if (analysis) {
+        return `📝 <strong>${analysis.type}</strong><br>
+                ${analysis.desc}. Approximately ${pages} pages. Microsoft Word format.`;
+      }
       return `📝 <strong>Word Document</strong><br>
-              Text document with formatting, likely containing written content, reports, or documentation.`;
+              Text document with formatting. Approximately ${pages} pages. 
+              Likely contains written content, reports, or documentation.`;
     }
     
     // Videos
     if (fileType.startsWith('video/')) {
+      const duration = Math.ceil(file.file_size / 2000000); // Rough minutes estimate
+      const quality = file.file_size > 50000000 ? 'HD/4K quality' : 'Standard quality';
       return `🎬 <strong>Video File</strong><br>
-              Multimedia content in ${ext.toUpperCase()} format. 
-              ${file.file_size > 50000000 ? 'High quality video, possibly HD or 4K.' : 'Standard video file.'}`;
+              Multimedia content in ${ext.toUpperCase()} format. ${quality}. 
+              Approximately ${duration} minute${duration !== 1 ? 's' : ''} of video.`;
     }
     
     // Audio
     if (fileType.startsWith('audio/')) {
+      const duration = Math.ceil(file.file_size / 150000); // Rough minutes estimate
+      const quality = file.file_size > 10000000 ? 'High quality audio' : 'Standard audio quality';
       return `🎵 <strong>Audio File</strong><br>
-              Sound recording in ${ext.toUpperCase()} format. 
-              ${file.file_size > 10000000 ? 'High quality audio.' : 'Standard audio file.'}`;
+              Sound recording in ${ext.toUpperCase()} format. ${quality}. 
+              Approximately ${duration} minute${duration !== 1 ? 's' : ''} long.`;
     }
     
     // Archives
     if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) {
+      const files = Math.ceil(file.file_size / 50000); // Rough estimate
       return `📦 <strong>Compressed Archive</strong><br>
-              Collection of files compressed into a single package. 
+              Collection of approximately ${files} files compressed into ${this.formatFileSize(file.file_size)}. 
               Extract to access contents.`;
     }
     
     // Code files
-    if (['js', 'ts', 'py', 'java', 'cpp', 'html', 'css'].includes(ext)) {
-      return `💻 <strong>Code File</strong><br>
-              ${ext.toUpperCase()} source code. 
-              Programming file for software development.`;
+    if (['js', 'ts', 'py', 'java', 'cpp', 'html', 'css', 'jsx', 'tsx'].includes(ext)) {
+      const lines = Math.ceil(file.file_size / 50); // Rough lines estimate
+      return `💻 <strong>${ext.toUpperCase()} Code File</strong><br>
+              Programming source code. Approximately ${lines.toLocaleString()} lines of ${ext.toUpperCase()} code. 
+              For software development and applications.`;
     }
     
-    // Default
-    return `📄 <strong>${ext.toUpperCase()} File</strong><br>
-            ${this.formatFileSize(file.file_size)} ${file.file_type || 'file'}.
+    // Default with filename analysis
+    if (analysis) {
+      return `📄 <strong>${analysis.type}</strong><br>
+              ${analysis.desc}. ${ext.toUpperCase()} format. Size: ${this.formatFileSize(file.file_size)}.`;
+    }
+    
+    // Absolute default
+    return `📄 <strong>${this.escapeHtml(file.original_filename)}</strong><br>
+            ${ext.toUpperCase()} file • ${this.formatFileSize(file.file_size)} • 
             Created ${this.formatDate(file.created_at)}.`;
   },
   
