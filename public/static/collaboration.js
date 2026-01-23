@@ -1795,13 +1795,33 @@ window.showManualUploadModal = function() {
         
         <div class="collab-email-modal-body" style="max-height: 70vh; overflow-y: auto;">
           <div class="info-box" style="margin-bottom: 20px; padding: 12px; background: rgba(201, 169, 98, 0.1); border-radius: 8px; color: rgba(255,255,255,0.8); font-size: 13px;">
-            <p><strong>ℹ️ How to use:</strong></p>
+            <p><strong>ℹ️ Two Ways to Upload:</strong></p>
             <ol style="margin: 8px 0 0 20px; padding: 0;">
-              <li>Copy meeting details from your Otter.ai transcript PDF</li>
-              <li>Paste each field into the form below</li>
-              <li>Click "Upload Meeting" - it will be saved to your database</li>
-              <li>Meeting appears instantly in the Meetings tab!</li>
+              <li><strong>Upload PDF</strong> - Drag & drop or select your Otter.ai transcript PDF (auto-extracts text)</li>
+              <li><strong>Manual Entry</strong> - Copy/paste text manually into the form below</li>
             </ol>
+          </div>
+          
+          <!-- PDF Upload Section -->
+          <div class="pdf-upload-section" style="margin-bottom: 24px;">
+            <div class="pdf-dropzone" id="pdf-dropzone">
+              <div class="pdf-dropzone-content">
+                <span style="font-size: 48px; margin-bottom: 12px;">📄</span>
+                <h3 style="margin: 0 0 8px 0; color: #fff;">Drop PDF Here</h3>
+                <p style="margin: 0 0 12px 0; color: rgba(255,255,255,0.6); font-size: 14px;">
+                  or click to browse
+                </p>
+                <input type="file" id="pdf-file-input" accept=".pdf" style="display: none;">
+                <button type="button" class="quantum-btn" onclick="document.getElementById('pdf-file-input').click()">
+                  Choose PDF File
+                </button>
+              </div>
+            </div>
+            <div id="pdf-upload-status" style="margin-top: 12px; display: none;"></div>
+          </div>
+          
+          <div style="text-align: center; margin: 20px 0; color: rgba(255,255,255,0.4); font-size: 13px;">
+            — OR ENTER MANUALLY —
           </div>
           
           <div class="collab-email-form-group">
@@ -1861,10 +1881,133 @@ window.showManualUploadModal = function() {
     dateInput.value = now.toISOString().slice(0, 16);
   }
   
+  // Setup PDF upload handlers
+  setupPDFUpload();
+  
   setTimeout(() => {
     document.getElementById('manual-title').focus();
   }, 100);
 };
+
+function setupPDFUpload() {
+  const dropzone = document.getElementById('pdf-dropzone');
+  const fileInput = document.getElementById('pdf-file-input');
+  
+  // Drag & Drop handlers
+  dropzone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.style.borderColor = '#C9A962';
+    dropzone.style.background = 'rgba(201, 169, 98, 0.1)';
+  });
+  
+  dropzone.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    dropzone.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+    dropzone.style.background = 'rgba(255, 255, 255, 0.03)';
+  });
+  
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+    dropzone.style.background = 'rgba(255, 255, 255, 0.03)';
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handlePDFUpload(files[0]);
+    }
+  });
+  
+  // File input handler
+  fileInput.addEventListener('change', (e) => {
+    const files = e.target.files;
+    if (files.length > 0) {
+      handlePDFUpload(files[0]);
+    }
+  });
+  
+  // Click to open file picker
+  dropzone.addEventListener('click', (e) => {
+    if (e.target === dropzone || e.target.closest('.pdf-dropzone-content')) {
+      fileInput.click();
+    }
+  });
+}
+
+async function handlePDFUpload(file) {
+  if (file.type !== 'application/pdf') {
+    showNotification('❌ Please upload a PDF file', 'error');
+    return;
+  }
+  
+  const statusDiv = document.getElementById('pdf-upload-status');
+  statusDiv.style.display = 'block';
+  statusDiv.innerHTML = `
+    <div style="padding: 12px; background: rgba(201, 169, 98, 0.1); border-radius: 8px; color: #fff;">
+      <strong>📄 ${file.name}</strong> (${(file.size / 1024).toFixed(0)} KB)<br>
+      <small style="color: rgba(255,255,255,0.7);">🔄 Extracting text from PDF...</small>
+    </div>
+  `;
+  
+  try {
+    // Create FormData to upload PDF
+    const formData = new FormData();
+    formData.append('pdf', file);
+    
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch('/api/meetings/parse-pdf', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      // Auto-fill form with extracted data
+      document.getElementById('manual-title').value = data.title || file.name.replace('.pdf', '');
+      document.getElementById('manual-transcript').value = data.transcript || '';
+      document.getElementById('manual-summary').value = data.summary || '';
+      
+      if (data.date) {
+        document.getElementById('manual-date').value = data.date;
+      }
+      
+      if (data.owner) {
+        document.getElementById('manual-owner').value = data.owner;
+      }
+      
+      statusDiv.innerHTML = `
+        <div style="padding: 12px; background: rgba(67, 233, 123, 0.1); border-radius: 8px; color: #43e97b;">
+          <strong>✅ PDF Extracted Successfully!</strong><br>
+          <small style="color: rgba(255,255,255,0.7);">
+            Title, transcript, and other fields have been auto-filled. Review and upload!
+          </small>
+        </div>
+      `;
+      
+      showNotification('✅ PDF extracted successfully!', 'success');
+    } else {
+      statusDiv.innerHTML = `
+        <div style="padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; color: #ef4444;">
+          <strong>❌ Failed to extract PDF</strong><br>
+          <small style="color: rgba(255,255,255,0.7);">${data.error || 'Unknown error'}</small>
+        </div>
+      `;
+      showNotification('❌ Failed to extract PDF. Try manual entry.', 'error');
+    }
+  } catch (error) {
+    console.error('PDF upload error:', error);
+    statusDiv.innerHTML = `
+      <div style="padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; color: #ef4444;">
+        <strong>❌ Upload Error</strong><br>
+        <small style="color: rgba(255,255,255,0.7);">Please try manual entry instead.</small>
+      </div>
+    `;
+    showNotification('❌ PDF upload failed. Try manual entry.', 'error');
+  }
+}
 
 window.closeManualUploadModal = function() {
   const modal = document.getElementById('manual-upload-modal');

@@ -2278,3 +2278,34 @@ trix-toolbar .trix-button.trix-active {
   flex-direction: column;
   animation: slideUp 0.3s ease;
 }
+
+/* PDF Dropzone */
+.pdf-dropzone {
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.pdf-dropzone:hover {
+  border-color: #C9A962;
+  background: rgba(201, 169, 98, 0.05);
+}
+
+.pdf-dropzone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pdf-dropzone-content h3 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.pdf-dropzone-content p {
+  font-size: 14px;
+}

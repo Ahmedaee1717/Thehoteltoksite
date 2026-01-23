@@ -558,6 +558,112 @@ meetings.post('/zapier/sync', async (c) => {
   }
 })
 
+// ===== PDF PARSING FOR MANUAL UPLOAD =====
+
+// Parse PDF transcript and extract meeting details
+meetings.post('/parse-pdf', async (c) => {
+  try {
+    const formData = await c.req.formData()
+    const pdfFile = formData.get('pdf')
+    
+    if (!pdfFile || !(pdfFile instanceof File)) {
+      return c.json({ error: 'No PDF file provided' }, 400)
+    }
+    
+    // Get PDF as ArrayBuffer
+    const arrayBuffer = await pdfFile.arrayBuffer()
+    const pdfBytes = new Uint8Array(arrayBuffer)
+    
+    // Convert to text (simple extraction)
+    // Note: This is a basic text extraction. For production, use a proper PDF parsing library
+    let text = ''
+    try {
+      // Convert bytes to string (basic approach)
+      const decoder = new TextDecoder('utf-8', { fatal: false })
+      text = decoder.decode(pdfBytes)
+      
+      // Clean up text - remove binary data, keep readable text
+      text = text
+        .replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, ' ') // Remove control chars
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim()
+      
+      // Extract title (look for common patterns)
+      let title = pdfFile.name.replace('.pdf', '')
+      const titleMatch = text.match(/##\s*([^\n]{5,100})/i) || text.match(/^([^\n]{5,100})/i)
+      if (titleMatch) {
+        title = titleMatch[1].trim()
+      }
+      
+      // Extract date
+      let date = ''
+      const dateMatch = text.match(/\w+,\s+\w+\s+\d{1,2},\s+\d{4}\s+\d{1,2}:\d{2}[AP]M/i)
+      if (dateMatch) {
+        try {
+          const parsedDate = new Date(dateMatch[0])
+          if (!isNaN(parsedDate.getTime())) {
+            date = parsedDate.toISOString().slice(0, 16)
+          }
+        } catch (e) {
+          console.error('Date parse error:', e)
+        }
+      }
+      
+      // Extract summary (look for SUMMARY section)
+      let summary = ''
+      const summaryMatch = text.match(/SUMMARY[:\s]*([\s\S]{50,1000}?)(?:KEYWORDS|SPEAKERS|$)/i)
+      if (summaryMatch) {
+        summary = summaryMatch[1].trim()
+      }
+      
+      // Extract speakers/owner
+      let owner = ''
+      const speakersMatch = text.match(/SPEAKERS[:\s]*([\s\S]{10,200}?)(?:\n\n|##|$)/i)
+      if (speakersMatch) {
+        const speakers = speakersMatch[1].trim().split(/[,\n]/)
+        if (speakers.length > 0) {
+          owner = speakers[0].trim()
+        }
+      }
+      
+      // Extract full transcript (everything after headers)
+      let transcript = text
+      
+      // Clean up transcript
+      transcript = transcript
+        .replace(/[^\x20-\x7E\n\r\t]/g, '') // Keep only printable ASCII
+        .replace(/\n{3,}/g, '\n\n') // Max 2 consecutive newlines
+        .trim()
+      
+      return c.json({
+        success: true,
+        title: title.substring(0, 200),
+        transcript: transcript.substring(0, 50000), // Limit size
+        summary: summary.substring(0, 2000),
+        owner: owner.substring(0, 100),
+        date: date,
+        message: 'PDF parsed successfully'
+      })
+      
+    } catch (parseError: any) {
+      console.error('PDF parse error:', parseError)
+      return c.json({
+        success: false,
+        error: 'Failed to parse PDF content',
+        details: parseError.message
+      }, 500)
+    }
+    
+  } catch (error: any) {
+    console.error('PDF upload error:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to process PDF',
+      details: error.message
+    }, 500)
+  }
+})
+
 // Get all Otter transcripts
 meetings.get('/otter/transcripts', async (c) => {
   const limit = parseInt(c.req.query('limit') || '50')
