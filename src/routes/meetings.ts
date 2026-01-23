@@ -366,44 +366,57 @@ meetings.get('/calendar/summary', async (c) => {
   }
 })
 
-// ===== OTTER.AI INTEGRATION =====
+// ===== ZAPIER TABLES INTEGRATION (Otter.ai via Zapier) =====
 
-// Sync Otter.ai transcripts
-meetings.post('/otter/sync', async (c) => {
+// Sync from Zapier Tables (Otter.ai transcripts)
+meetings.post('/zapier/sync', async (c) => {
   try {
-    const { otterApiKey } = await c.req.json()
+    const { zapierApiKey } = await c.req.json()
     
-    if (!otterApiKey) {
-      return c.json({ error: 'Otter API key is required' }, 400)
+    if (!zapierApiKey) {
+      return c.json({ error: 'Zapier API key is required' }, 400)
     }
     
-    // Call Otter.ai API to get speeches (meetings)
-    const response = await fetch('https://otter.ai/forward/api/v1/speeches', {
+    const TABLE_ID = '01KFP9A1JMZYREQSMBWGGQ726Q'
+    
+    // Call Zapier Tables API to get all meeting records
+    const response = await fetch(`https://api.zapier.com/v1/tables/${TABLE_ID}/records`, {
       headers: {
-        'Authorization': `Bearer ${otterApiKey}`,
+        'Authorization': `Bearer ${zapierApiKey}`,
         'Content-Type': 'application/json'
       }
     })
     
     if (!response.ok) {
       const error = await response.text()
-      console.error('Otter API error:', error)
-      return c.json({ error: 'Failed to fetch from Otter.ai', details: error }, response.status)
+      console.error('Zapier API error:', error)
+      return c.json({ error: 'Failed to fetch from Zapier Tables', details: error }, response.status)
     }
     
     const data = await response.json()
-    const speeches = data.speeches || []
+    const meetings = data.records || []
     
-    console.log(`📥 Fetched ${speeches.length} meetings from Otter.ai`)
+    console.log(`📥 Fetched ${meetings.length} meetings from Zapier Tables`)
     
     // Store each meeting transcript in database
     let syncedCount = 0
-    for (const speech of speeches) {
+    for (const meeting of meetings) {
       try {
+        const recordId = meeting.id
+        const fields = meeting.fields || {}
+        
+        // Extract fields from Zapier Tables
+        const title = fields['Meeting Title'] || fields['title'] || 'Untitled Meeting'
+        const transcript = fields['Full Transcript'] || fields['transcript'] || ''
+        const summary = fields['Summary'] || fields['summary'] || ''
+        const meetingUrl = fields['Meeting URL'] || fields['url'] || ''
+        const ownerName = fields['Owner Name'] || fields['owner'] || ''
+        const dateCreated = fields['Date Created'] || meeting.created_at || new Date().toISOString()
+        
         // Check if already exists
         const existing = await c.env.DB.prepare(`
           SELECT id FROM otter_transcripts WHERE otter_id = ?
-        `).bind(speech.id).first()
+        `).bind(recordId).first()
         
         if (!existing) {
           // Insert new transcript
@@ -412,17 +425,17 @@ meetings.post('/otter/sync', async (c) => {
               otter_id, title, summary, start_time, end_time, 
               transcript_text, speakers, duration_seconds, 
               meeting_url, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
           `).bind(
-            speech.id,
-            speech.title || 'Untitled Meeting',
-            speech.summary || '',
-            speech.start_time || new Date().toISOString(),
-            speech.end_time || new Date().toISOString(),
-            speech.transcript || '',
-            JSON.stringify(speech.speakers || []),
-            speech.duration || 0,
-            speech.otid ? `https://otter.ai/u/${speech.otid}` : ''
+            recordId,
+            title,
+            summary,
+            dateCreated,
+            dateCreated, // Use same date for end if not provided
+            transcript,
+            JSON.stringify([{ name: ownerName }]), // Store owner as speaker
+            0, // Duration not available from Zapier
+            meetingUrl
           ).run()
           
           syncedCount++
@@ -431,30 +444,30 @@ meetings.post('/otter/sync', async (c) => {
           await c.env.DB.prepare(`
             UPDATE otter_transcripts 
             SET title = ?, summary = ?, transcript_text = ?, 
-                speakers = ?, updated_at = CURRENT_TIMESTAMP
+                meeting_url = ?, updated_at = CURRENT_TIMESTAMP
             WHERE otter_id = ?
           `).bind(
-            speech.title || 'Untitled Meeting',
-            speech.summary || '',
-            speech.transcript || '',
-            JSON.stringify(speech.speakers || []),
-            speech.id
+            title,
+            summary,
+            transcript,
+            meetingUrl,
+            recordId
           ).run()
         }
       } catch (error: any) {
-        console.error(`Error syncing speech ${speech.id}:`, error)
+        console.error(`Error syncing meeting ${meeting.id}:`, error)
       }
     }
     
     return c.json({ 
       success: true, 
-      totalMeetings: speeches.length,
+      totalMeetings: meetings.length,
       newMeetings: syncedCount,
-      message: `Synced ${syncedCount} new meetings from Otter.ai`
+      message: `Synced ${syncedCount} new meetings from Zapier Tables`
     })
   } catch (error: any) {
-    console.error('Error syncing Otter transcripts:', error)
-    return c.json({ error: 'Failed to sync Otter transcripts', details: error.message }, 500)
+    console.error('Error syncing Zapier transcripts:', error)
+    return c.json({ error: 'Failed to sync Zapier transcripts', details: error.message }, 500)
   }
 })
 

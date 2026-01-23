@@ -1574,7 +1574,11 @@ async function loadMeetings() {
       container.innerHTML = `
         <div class="permission-check-box">
           <h3>🎙️ No meetings found</h3>
-          <p>Click "Sync from Otter.ai" to import your Zoom meeting transcripts</p>
+          <p>Click "Sync from Zapier" to import your Otter.ai meeting transcripts</p>
+          <p style="font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 8px;">
+            Your Zapier Zap automatically saves Otter.ai meetings to Zapier Tables.<br>
+            Sync here to pull them into your Collaboration Center!
+          </p>
           <button class="quantum-btn" onclick="showOtterSyncModal()">
             🔄 Sync Now
           </button>
@@ -1719,33 +1723,33 @@ window.showOtterSyncModal = function() {
     <div id="otter-sync-modal" class="collab-email-modal" onclick="if(event.target === this) closeOtterSyncModal()">
       <div class="collab-email-modal-content">
         <div class="collab-email-modal-header">
-          <h3>🔄 Sync from Otter.ai</h3>
+          <h3>🔄 Sync from Zapier Tables</h3>
           <button class="collab-email-modal-close" onclick="closeOtterSyncModal()">×</button>
         </div>
         
         <div class="collab-email-modal-body">
           <div class="collab-email-form-group">
-            <label>Otter.ai API Key:</label>
-            <input type="password" id="otter-api-key" placeholder="Enter your Otter.ai API key...">
+            <label>Zapier API Key:</label>
+            <input type="password" id="zapier-api-key" placeholder="Enter your Zapier API key...">
             <small>
-              Get your API key from <a href="https://otter.ai/developers" target="_blank" style="color: #C9A962;">Otter.ai Developer Dashboard</a>
+              Get your API key from <a href="https://zapier.com/app/settings/api" target="_blank" style="color: #C9A962;">Zapier Settings → API</a>
             </small>
           </div>
           
           <div class="info-box" style="margin-top: 16px; padding: 12px; background: rgba(201, 169, 98, 0.1); border-radius: 8px; color: rgba(255,255,255,0.8); font-size: 13px;">
-            <p><strong>ℹ️ How to get your Otter.ai API key:</strong></p>
+            <p><strong>ℹ️ How it works:</strong></p>
             <ol style="margin: 8px 0 0 20px; padding: 0;">
-              <li>Go to <a href="https://otter.ai/developers" target="_blank" style="color: #C9A962;">otter.ai/developers</a></li>
-              <li>Log in to your Otter account</li>
-              <li>Create a new API key</li>
-              <li>Copy and paste it above</li>
+              <li>Your Zap automatically sends Otter.ai meetings to Zapier Tables</li>
+              <li>Table ID: <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">01KFP9A1JMZYREQSMBWGGQ726Q</code></li>
+              <li>This sync pulls all meetings from your Zapier Table</li>
+              <li>Run sync anytime to get latest meetings!</li>
             </ol>
           </div>
         </div>
         
         <div class="collab-email-modal-footer">
           <button class="collab-email-btn-cancel" onclick="closeOtterSyncModal()">Cancel</button>
-          <button class="collab-email-btn-send" onclick="syncFromOtter()">
+          <button class="collab-email-btn-send" onclick="syncFromZapier()">
             <span class="email-btn-icon">🔄</span>
             Sync Meetings
           </button>
@@ -1756,7 +1760,7 @@ window.showOtterSyncModal = function() {
   
   document.body.insertAdjacentHTML('beforeend', modalHtml);
   setTimeout(() => {
-    document.getElementById('otter-api-key').focus();
+    document.getElementById('zapier-api-key').focus();
   }, 100);
 };
 
@@ -1767,25 +1771,25 @@ window.closeOtterSyncModal = function() {
   }
 };
 
-window.syncFromOtter = async function() {
-  const apiKey = document.getElementById('otter-api-key').value.trim();
+window.syncFromZapier = async function() {
+  const apiKey = document.getElementById('zapier-api-key').value.trim();
   
   if (!apiKey) {
-    showNotification('❌ Please enter your Otter.ai API key', 'error');
+    showNotification('❌ Please enter your Zapier API key', 'error');
     return;
   }
   
   try {
-    showNotification('🔄 Syncing meetings from Otter.ai...', 'info');
+    showNotification('🔄 Syncing meetings from Zapier Tables...', 'info');
     
     const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${API_BASE}/meetings/otter/sync`, {
+    const response = await fetch(`${API_BASE}/meetings/zapier/sync`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ otterApiKey: apiKey })
+      body: JSON.stringify({ zapierApiKey: apiKey })
     });
     
     const data = await response.json();
@@ -1798,7 +1802,7 @@ window.syncFromOtter = async function() {
       showNotification(`❌ ${data.error || 'Failed to sync meetings'}`, 'error');
     }
   } catch (error) {
-    console.error('Error syncing Otter:', error);
+    console.error('Error syncing Zapier:', error);
     showNotification('❌ Error syncing meetings', 'error');
   }
 };
