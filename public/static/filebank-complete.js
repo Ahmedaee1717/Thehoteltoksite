@@ -32,6 +32,11 @@ window.FileBankComplete = {
           return false;
         }
         
+        // SHARED TAB: Only show shared folders (is_team_shared === 1)
+        if (this.state.currentFilter === 'shared') {
+          return f.is_team_shared === 1;
+        }
+        
         // Show folders based on current location
         if (this.state.currentFolder) {
           return f.parent_folder_id === this.state.currentFolder;
