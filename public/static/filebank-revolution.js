@@ -448,7 +448,8 @@ const FileBankRevolution = {
         files = files.filter(f => f.is_starred);
         break;
       case 'shared':
-        files = files.filter(f => f.folder_is_shared);
+        // Show files that are individually shared OR in shared folders
+        files = files.filter(f => f.is_shared === 1 || f.folder_is_shared === 1);
         break;
       case 'images':
         files = files.filter(f => this.isImageFile(f));
@@ -1266,7 +1267,7 @@ Best regards</textarea>
         return diff < 7 * 24 * 60 * 60 * 1000; // Last 7 days
       }).length,
       starred: this.state.files.filter(f => f.is_starred).length,
-      shared: this.state.files.filter(f => f.folder_is_shared).length
+      shared: this.state.files.filter(f => f.is_shared === 1 || f.folder_is_shared === 1).length
     };
 
     Object.keys(counts).forEach(key => {

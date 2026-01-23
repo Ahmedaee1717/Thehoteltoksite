@@ -553,9 +553,16 @@ fileBank.get('/folders', async (c) => {
 // Create folder
 fileBank.post('/folders', async (c) => {
   try {
-    const { userEmail, folderName, parentFolderId, icon, color, description, isShared, isTeamShared } = await c.req.json()
+    const body = await c.req.json()
+    const userEmail = body.userEmail || body.user_email
+    const folderName = body.folderName || body.folder_name
+    const parentFolderId = body.parentFolderId || body.parent_folder_id
+    const { icon, color, description, isShared, isTeamShared } = body
+    
+    console.log('📁 Creating folder:', { userEmail, folderName, parentFolderId, body })
     
     if (!userEmail || !folderName) {
+      console.error('❌ Validation failed:', { userEmail, folderName })
       return c.json({ error: 'userEmail and folderName are required' }, 400)
     }
     
@@ -567,6 +574,8 @@ fileBank.post('/folders', async (c) => {
         folderPath = `${parent.folder_path}/${folderName}`
       }
     }
+    
+    console.log('📂 Folder path:', folderPath)
     
     const result = await c.env.DB.prepare(`
       INSERT INTO file_bank_folders (
@@ -584,14 +593,16 @@ fileBank.post('/folders', async (c) => {
       isTeamShared ? 1 : 0
     ).run()
     
+    console.log('✅ Folder created successfully:', result.meta.last_row_id)
+    
     return c.json({
       success: true,
       folderId: result.meta.last_row_id,
       message: 'Folder created successfully'
     })
   } catch (error: any) {
-    console.error('Error creating folder:', error)
-    return c.json({ error: 'Failed to create folder', details: error.message }, 500)
+    console.error('❌ Error creating folder:', error)
+    return c.json({ error: 'Failed to create folder', details: error.message, stack: error.stack }, 500)
   }
 })
 
