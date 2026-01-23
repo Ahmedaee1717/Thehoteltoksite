@@ -335,7 +335,7 @@ function attachPostCardListeners() {
       } else {
         console.error('❌ No post data found on element');
       }
-    });
+    }, { capture: true }); // CAPTURE PHASE - fires BEFORE anything can block it
   });
   
   // Add click listeners to edit buttons
@@ -355,7 +355,7 @@ function attachPostCardListeners() {
       } else {
         console.error('❌ No slug found on button');
       }
-    });
+    }, { capture: true }); // CAPTURE PHASE
   });
   
   console.log(`📌 Attached listeners to ${cardContents.length} post cards and ${editButtons.length} edit buttons`);
