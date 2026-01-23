@@ -271,8 +271,15 @@ function createPostCard(post) {
     day: 'numeric'
   });
   
+  // Store post data for onclick handler
+  const postData = encodeURIComponent(JSON.stringify({
+    slug: post.slug,
+    author: post.author,
+    status: post.status
+  }));
+  
   return `
-    <div class="post-card" onclick="openPost('${post.slug}')">
+    <div class="post-card" onclick="openPost('${postData}')">
       <h3 class="post-title">${escapeHtml(post.title)}</h3>
       <div class="post-meta">
         <span>📅 ${date}</span>
@@ -285,12 +292,28 @@ function createPostCard(post) {
 }
 
 // 🔗 OPEN POST
-function openPost(slug) {
-  // Check if user has edit permission
-  if (userRole === 'admin' || userRole === 'editor' || userRole === 'publisher') {
-    window.location.href = `/admin/dashboard?edit=${slug}`;
-  } else {
-    window.location.href = `/blog/${slug}`;
+function openPost(postDataEncoded) {
+  try {
+    const postData = JSON.parse(decodeURIComponent(postDataEncoded));
+    const { slug, author, status } = postData;
+    
+    // Users can edit their own posts OR if they have editor/admin/publisher role
+    const canEdit = userRole === 'admin' || 
+                    userRole === 'editor' || 
+                    userRole === 'publisher' || 
+                    author === currentUser;
+    
+    if (canEdit) {
+      // Redirect to admin dashboard for editing
+      window.location.href = `/admin/dashboard?edit=${slug}`;
+    } else {
+      // View published post
+      window.location.href = `/blog/${slug}`;
+    }
+  } catch (error) {
+    console.error('Error opening post:', error);
+    // Fallback: treat as slug and view the post
+    window.location.href = `/blog/${postDataEncoded}`;
   }
 }
 

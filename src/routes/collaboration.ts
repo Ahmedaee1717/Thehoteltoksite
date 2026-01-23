@@ -154,14 +154,14 @@ collaborationRoutes.get('/blog-posts', async (c) => {
     if (role === 'admin' || role === 'publisher') {
       // Admins and publishers see all posts
       posts = await DB.prepare(`
-        SELECT id, title, status, author, created_at, updated_at, published_at
+        SELECT id, title, slug, excerpt, status, author, created_at, updated_at, published_at
         FROM blog_posts
         ORDER BY created_at DESC
       `).all();
     } else if (role === 'editor') {
       // Editors see posts they're collaborating on + drafts
       posts = await DB.prepare(`
-        SELECT DISTINCT bp.id, bp.title, bp.status, bp.author, bp.created_at, bp.updated_at, bp.published_at
+        SELECT DISTINCT bp.id, bp.title, bp.slug, bp.excerpt, bp.status, bp.author, bp.created_at, bp.updated_at, bp.published_at
         FROM blog_posts bp
         LEFT JOIN blog_collaborations bc ON bp.id = bc.post_id AND bc.collaborator_email = ?
         WHERE bp.status = 'draft' OR bc.id IS NOT NULL
@@ -170,7 +170,7 @@ collaborationRoutes.get('/blog-posts', async (c) => {
     } else {
       // Viewers see only published posts they're invited to
       posts = await DB.prepare(`
-        SELECT DISTINCT bp.id, bp.title, bp.status, bp.author, bp.created_at, bp.updated_at, bp.published_at
+        SELECT DISTINCT bp.id, bp.title, bp.slug, bp.excerpt, bp.status, bp.author, bp.created_at, bp.updated_at, bp.published_at
         FROM blog_posts bp
         INNER JOIN blog_collaborations bc ON bp.id = bc.post_id
         WHERE bc.collaborator_email = ? AND bc.status = 'accepted'
