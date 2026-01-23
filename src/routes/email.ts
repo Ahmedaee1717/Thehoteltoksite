@@ -2878,6 +2878,15 @@ emailRoutes.post('/receive', async (c) => {
       // DEBUG: Log all formData keys to see what Mailgun sends
       const allKeys = Array.from(formData.keys());
       console.log(`📎 Mailgun formData keys:`, allKeys.join(', '));
+      console.log(`📎 ALL formData entries:`);
+      for (const [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`  - ${key}: [File] ${value.name} (${value.size} bytes, ${value.type})`);
+        } else {
+          const valueStr = value.toString();
+          console.log(`  - ${key}: ${valueStr.length > 100 ? valueStr.substring(0, 100) + '...' : valueStr}`);
+        }
+      }
       
       const attachmentCount = parseInt(formData.get('attachment-count') as string || '0');
       console.log(`📎 Processing ${attachmentCount} attachments for email ${emailId}`);
