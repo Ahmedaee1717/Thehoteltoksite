@@ -461,7 +461,14 @@ const FileBankRevolution = {
 
     // Apply folder filter
     if (this.state.currentFolder) {
+      // Inside a folder: show only files IN this folder
       files = files.filter(f => f.folder_id === this.state.currentFolder);
+    } else {
+      // At root level: show only files NOT in any folder (folder_id is null)
+      // EXCEPTION: 'shared' filter should show ALL shared files regardless of folder
+      if (this.state.currentFilter !== 'shared') {
+        files = files.filter(f => !f.folder_id || f.folder_id === null);
+      }
     }
 
     // Apply search

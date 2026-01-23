@@ -13,22 +13,8 @@ window.FileBankComplete = {
     
     const FBR = window.FileBankRevolution;
     
-    // Override getFilteredFiles to properly filter by currentFolder
-    const originalGetFilteredFiles = FBR.getFilteredFiles.bind(FBR);
-    FBR.getFilteredFiles = function() {
-      let files = originalGetFilteredFiles.call(this);
-      
-      // CRITICAL FIX: When viewing root (currentFolder is null), only show files NOT in any folder
-      // When viewing a folder, only show files IN that folder
-      if (this.state.currentFolder) {
-        files = files.filter(f => f.folder_id === this.state.currentFolder);
-      } else if (this.state.currentFilter !== 'shared') {
-        // At root level, only show files without a folder (unless viewing "shared" filter)
-        files = files.filter(f => !f.folder_id || f.folder_id === null);
-      }
-      
-      return files;
-    };
+    // NOTE: getFilteredFiles in filebank-revolution.js already handles folder filtering correctly
+    // We don't need to override it anymore
     
     // Override render to show FOLDERS FIRST as big cards
     const originalRender = FBR.render.bind(FBR);
