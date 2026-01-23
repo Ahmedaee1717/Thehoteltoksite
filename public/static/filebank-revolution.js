@@ -1114,8 +1114,49 @@ Best regards</textarea>
 
   // Create new folder
   async createFolder() {
-    const folderName = prompt('Enter folder name:');
-    if (!folderName) return;
+    // Create beautiful modal
+    const modalHTML = `
+      <div id="filebank-folder-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(4px);">
+        <div style="background: linear-gradient(135deg, #1a1d3e 0%, #2d3561 100%); border-radius: 16px; padding: 40px; max-width: 500px; width: 90%; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); border: 1px solid rgba(102, 126, 234, 0.3);">
+          <h3 style="color: white; margin: 0 0 25px 0; font-size: 24px; font-weight: 600; text-align: center;">📁 Create New Folder</h3>
+          
+          <div style="margin-bottom: 25px;">
+            <label style="color: rgba(255, 255, 255, 0.9); display: block; margin-bottom: 10px; font-size: 14px; font-weight: 500;">Folder Name:</label>
+            <input type="text" 
+                   id="folder-name-input" 
+                   placeholder="Enter folder name..." 
+                   style="width: 100%; padding: 14px 16px; background: rgba(255, 255, 255, 0.08); border: 2px solid rgba(102, 126, 234, 0.3); border-radius: 10px; color: white; font-size: 15px; outline: none; transition: all 0.3s;"
+                   onkeypress="if(event.key==='Enter') document.getElementById('folder-create-btn').click()"
+                   autofocus>
+          </div>
+          
+          <div style="display: flex; gap: 12px; justify-content: flex-end;">
+            <button onclick="document.getElementById('filebank-folder-modal').remove()" 
+                    style="padding: 12px 24px; background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s;">
+              Cancel
+            </button>
+            <button id="folder-create-btn" 
+                    onclick="FileBankRevolution.confirmCreateFolder()" 
+                    style="padding: 12px 28px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+              ✨ Create Folder
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    setTimeout(() => document.getElementById('folder-name-input').focus(), 100);
+  },
+  
+  async confirmCreateFolder() {
+    const input = document.getElementById('folder-name-input');
+    const folderName = input.value.trim();
+    
+    if (!folderName) {
+      this.showNotification('❌ Please enter a folder name', 'error');
+      return;
+    }
 
     try {
       const response = await fetch('/api/filebank/folders', {
@@ -1130,7 +1171,10 @@ Best regards</textarea>
 
       if (response.ok) {
         await this.loadFolders();
-        this.showNotification('Folder created', 'success');
+        this.showNotification(`✅ Folder "${folderName}" created`, 'success');
+        document.getElementById('filebank-folder-modal').remove();
+      } else {
+        throw new Error('Failed to create folder');
       }
     } catch (error) {
       console.error('Error creating folder:', error);
@@ -1328,137 +1372,6 @@ Best regards</textarea>
     return div.innerHTML;
   },
   
-  // Show CSV preview with table
-  async showCSVPreview(file) {
-    try {
-      const response = await fetch(`/api/filebank${file.file_url}`);
-      const text = await response.text();
-      
-      // Parse CSV
-      const lines = text.split('\n').filter(line => line.trim());
-      const headers = lines[0].split(',').map(h => h.trim());
-      const rows = lines.slice(1).map(line => line.split(',').map(cell => cell.trim()));
-      
-      const tableHTML = `
-        <div style="overflow-x: auto; max-height: 60vh; background: #1e1e1e; border-radius: 8px; padding: 20px;">
-          <table style="width: 100%; border-collapse: collapse; color: white; font-size: 13px;">
-            <thead>
-              <tr style="background: rgba(102, 126, 234, 0.2); position: sticky; top: 0;">
-                ${headers.map(h => `<th style="padding: 12px; text-align: left; border: 1px solid rgba(255,255,255,0.1); font-weight: 600;">${this.escapeHtml(h)}</th>`).join('')}
-              </tr>
-            </thead>
-            <tbody>
-              ${rows.map(row => `
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                  ${row.map(cell => `<td style="padding: 10px; border: 1px solid rgba(255,255,255,0.05);">${this.escapeHtml(cell)}</td>`).join('')}
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      `;
-      
-      this.showEnhancedPreview(file, tableHTML);
-    } catch (error) {
-      console.error('Error loading CSV:', error);
-      this.showNotification('Failed to load CSV', 'error');
-    }
-  },
-  
-  // Show text file preview
-  async showTextPreview(file) {
-    try {
-      const response = await fetch(`/api/filebank${file.file_url}`);
-      const text = await response.text();
-      
-      const textHTML = `
-        <pre style="background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 8px; max-height: 60vh; overflow: auto; font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.6; text-align: left;">${this.escapeHtml(text)}</pre>
-      `;
-      
-      this.showEnhancedPreview(file, textHTML);
-    } catch (error) {
-      console.error('Error loading text file:', error);
-      this.showNotification('Failed to load file', 'error');
-    }
-  },
-  
-  // Delete file
-  async deleteFile(fileId) {
-    const file = this.state.files.find(f => String(f.id) === String(fileId));
-    if (!file) return;
-    
-    // Check if user owns the file
-    if (file.user_email !== this.state.userEmail) {
-      this.showNotification('You can only delete your own files', 'error');
-      return;
-    }
-    
-    if (!confirm(`Delete "${file.original_filename}"? This cannot be undone.`)) {
-      return;
-    }
-    
-    try {
-      const response = await fetch(`/api/filebank/files/${fileId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userEmail: this.state.userEmail
-        })
-      });
-      
-      if (response.ok) {
-        // Remove from state
-        this.state.files = this.state.files.filter(f => String(f.id) !== String(fileId));
-        this.render();
-        this.showNotification(`Deleted ${file.original_filename}`, 'success');
-      } else {
-        throw new Error('Delete failed');
-      }
-    } catch (error) {
-      console.error('Delete error:', error);
-      this.showNotification('Failed to delete file', 'error');
-    }
-  },
-  
-  // Toggle file sharing
-  async toggleShare(fileId) {
-    const file = this.state.files.find(f => String(f.id) === String(fileId));
-    if (!file) return;
-    
-    // Check if user owns the file
-    if (file.user_email !== this.state.userEmail) {
-      this.showNotification('You can only share your own files', 'error');
-      return;
-    }
-    
-    const newSharedStatus = !file.is_shared;
-    
-    try {
-      const response = await fetch(`/api/filebank/files/${fileId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          is_shared: newSharedStatus,
-          userEmail: this.state.userEmail
-        })
-      });
-
-      if (response.ok) {
-        file.is_shared = newSharedStatus;
-        this.render();
-        this.showNotification(
-          newSharedStatus ? '✅ File shared with team' : '🔒 File is now private', 
-          'success'
-        );
-      }
-    } catch (error) {
-      console.error('Error toggling share:', error);
-      this.showNotification('Failed to update sharing', 'error');
-    }
-  },
-
   // Reorder files when dragging
   reorderFiles(draggedId, targetId) {
     const draggedIndex = this.state.files.findIndex(f => f.id === draggedId);
