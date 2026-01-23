@@ -2309,3 +2309,356 @@ figcaption {
     }
 }
 
+
+/* ==========================================
+   ANALYTICS DASHBOARD STYLES
+   ========================================== */
+
+.analytics-period-selector {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.period-btn {
+    padding: 0.5rem 1rem;
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+}
+
+.period-btn:hover {
+    background: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+}
+
+.period-btn.active {
+    background: var(--color-accent);
+    color: #000;
+    border-color: var(--color-accent);
+}
+
+.analytics-notice {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: 8px;
+    padding: 2rem;
+    margin: 2rem 0;
+    display: flex;
+    gap: 1.5rem;
+}
+
+.notice-icon {
+    font-size: 2rem;
+}
+
+.notice-content h3 {
+    margin: 0 0 1rem 0;
+    color: var(--color-text-primary);
+}
+
+.notice-content p {
+    margin: 0.5rem 0;
+    color: var(--color-text-secondary);
+}
+
+.notice-content ol {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+    color: var(--color-text-secondary);
+}
+
+.notice-content a {
+    color: var(--color-accent);
+    text-decoration: none;
+}
+
+.notice-content a:hover {
+    text-decoration: underline;
+}
+
+.analytics-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.analytics-card {
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.analytics-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.card-icon {
+    font-size: 2rem;
+    opacity: 0.8;
+}
+
+.card-content {
+    flex: 1;
+}
+
+.card-label {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.card-value {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.card-change {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+}
+
+.card-change.positive {
+    color: #4caf50;
+}
+
+.card-change.negative {
+    color: #f44336;
+}
+
+.analytics-section {
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+}
+
+.analytics-section h2 {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.25rem;
+    color: var(--color-text-primary);
+}
+
+.analytics-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.analytics-table thead {
+    border-bottom: 1px solid var(--color-border);
+}
+
+.analytics-table th {
+    text-align: left;
+    padding: 0.75rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+}
+
+.analytics-table td {
+    padding: 0.75rem;
+    color: var(--color-text-primary);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.analytics-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.analytics-table tbody tr:hover {
+    background: var(--color-bg-secondary);
+}
+
+.analytics-table .loading {
+    text-align: center;
+    color: var(--color-text-secondary);
+    padding: 2rem;
+}
+
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+}
+
+.chart-container {
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chart-bar {
+    display: flex;
+    align-items: center;
+    margin: 0.5rem 0;
+}
+
+.chart-label {
+    flex: 0 0 100px;
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+}
+
+.chart-progress {
+    flex: 1;
+    height: 24px;
+    background: var(--color-bg-secondary);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.chart-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-accent), rgba(201, 169, 98, 0.6));
+    transition: width 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 0.5rem;
+}
+
+.chart-value {
+    font-size: 0.75rem;
+    color: #000;
+    font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .analytics-summary {
+        grid-template-columns: 1fr;
+    }
+    
+    .analytics-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .period-btn {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.8rem;
+    }
+}
+
+/* Analytics Percentage Bars */
+.percentage-bar {
+    position: relative;
+    width: 100%;
+    height: 24px;
+    background: #f3f4f6;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.percentage-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+    transition: width 0.5s ease;
+}
+
+.percentage-text {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-weight: 600;
+    font-size: 12px;
+    color: #1f2937;
+    z-index: 1;
+}
+
+/* Analytics Charts */
+.pie-chart {
+    padding: 20px;
+}
+
+.chart-item {
+    margin-bottom: 16px;
+}
+
+.chart-bar {
+    height: 32px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+}
+
+.chart-item:hover .chart-bar {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.chart-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #4b5563;
+}
+
+.chart-legend {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.chart-value {
+    margin-left: auto;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+/* Analytics Card Changes */
+.card-change {
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.card-change.positive {
+    color: #10b981;
+}
+
+.card-change.negative {
+    color: #ef4444;
+}
+
+.card-change.neutral {
+    color: #6b7280;
+}
+
+/* Chart Container */
+.chart-container {
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chart-container .loading {
+    color: #9ca3af;
+    font-size: 14px;
+}

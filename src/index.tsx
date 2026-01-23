@@ -1125,7 +1125,8 @@ app.get('/admin/dashboard', (c) => {
             <aside class="admin-sidebar">
                 <div class="admin-logo">Investay Capital</div>
                 <nav class="admin-nav">
-                    <a href="#" class="admin-nav-item active" data-view="posts">Blog Posts</a>
+                    <a href="#" class="admin-nav-item" data-view="analytics">📊 Analytics</a>
+                    <a href="#" class="admin-nav-item" data-view="posts">Blog Posts</a>
                     <a href="#" class="admin-nav-item" data-view="new-post">New Post</a>
                     <a href="/admin/email-accounts" class="admin-nav-item">📧 Email Management</a>
                     <a href="#" class="admin-nav-item" data-view="email-settings">✉️ Email Settings</a>
@@ -1136,8 +1137,153 @@ app.get('/admin/dashboard', (c) => {
             </aside>
             
             <main class="admin-main">
+                <!-- Analytics View -->
+                <div id="analytics-view" class="admin-view active">
+                    <div class="admin-header">
+                        <h1>📊 Website Analytics</h1>
+                        <div class="analytics-period-selector">
+                            <button class="period-btn active" data-period="24h">24 Hours</button>
+                            <button class="period-btn" data-period="7d">7 Days</button>
+                            <button class="period-btn" data-period="30d">30 Days</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Setup Notice (shown if not configured) -->
+                    <div id="analytics-setup-notice" class="analytics-notice" style="display: none;">
+                        <div class="notice-icon">⚠️</div>
+                        <div class="notice-content">
+                            <h3>Analytics Not Set Up</h3>
+                            <p>To start tracking website analytics, you need to enable Cloudflare Web Analytics:</p>
+                            <ol>
+                                <li>Go to <a href="https://dash.cloudflare.com" target="_blank">Cloudflare Dashboard</a></li>
+                                <li>Select your domain: <strong>investaycapital.com</strong></li>
+                                <li>Click <strong>Analytics → Web Analytics → Add Site</strong></li>
+                                <li>Copy your token and add it to the website code</li>
+                            </ol>
+                            <p>See <code>ANALYTICS_SETUP.md</code> for detailed instructions.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Analytics Dashboard (shown when configured) -->
+                    <div id="analytics-dashboard">
+                        <!-- Summary Cards -->
+                        <div class="analytics-summary">
+                            <div class="analytics-card">
+                                <div class="card-icon">👁️</div>
+                                <div class="card-content">
+                                    <div class="card-label">Page Views</div>
+                                    <div class="card-value" id="stat-pageviews">-</div>
+                                    <div class="card-change" id="stat-pageviews-change">-</div>
+                                </div>
+                            </div>
+                            
+                            <div class="analytics-card">
+                                <div class="card-icon">👥</div>
+                                <div class="card-content">
+                                    <div class="card-label">Unique Visitors</div>
+                                    <div class="card-value" id="stat-visitors">-</div>
+                                    <div class="card-change" id="stat-visitors-change">-</div>
+                                </div>
+                            </div>
+                            
+                            <div class="analytics-card">
+                                <div class="card-icon">⏱️</div>
+                                <div class="card-content">
+                                    <div class="card-label">Avg. Time on Site</div>
+                                    <div class="card-value" id="stat-avgtime">-</div>
+                                    <div class="card-change" id="stat-avgtime-change">-</div>
+                                </div>
+                            </div>
+                            
+                            <div class="analytics-card">
+                                <div class="card-icon">📈</div>
+                                <div class="card-content">
+                                    <div class="card-label">Bounce Rate</div>
+                                    <div class="card-value" id="stat-bounce">-</div>
+                                    <div class="card-change" id="stat-bounce-change">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Top Pages -->
+                        <div class="analytics-section">
+                            <h2>📄 Top Pages</h2>
+                            <div class="analytics-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Page</th>
+                                            <th>Views</th>
+                                            <th>Visitors</th>
+                                            <th>Avg. Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="top-pages-table">
+                                        <tr><td colspan="4" class="loading">Loading data...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Traffic Sources -->
+                        <div class="analytics-section">
+                            <h2>🌐 Traffic Sources</h2>
+                            <div class="analytics-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Source</th>
+                                            <th>Visitors</th>
+                                            <th>Percentage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="traffic-sources-table">
+                                        <tr><td colspan="3" class="loading">Loading data...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Countries -->
+                        <div class="analytics-section">
+                            <h2>🌍 Top Countries</h2>
+                            <div class="analytics-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Country</th>
+                                            <th>Visitors</th>
+                                            <th>Percentage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="countries-table">
+                                        <tr><td colspan="3" class="loading">Loading data...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Devices & Browsers -->
+                        <div class="analytics-grid">
+                            <div class="analytics-section">
+                                <h2>📱 Devices</h2>
+                                <div id="devices-chart" class="chart-container">
+                                    <div class="loading">Loading...</div>
+                                </div>
+                            </div>
+                            
+                            <div class="analytics-section">
+                                <h2>🌐 Browsers</h2>
+                                <div id="browsers-chart" class="chart-container">
+                                    <div class="loading">Loading...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Posts List View -->
-                <div id="posts-view" class="admin-view active">
+                <div id="posts-view" class="admin-view">
                     <div class="admin-header">
                         <h1>Blog Posts</h1>
                         <button id="new-post-btn" class="btn btn-primary">Create New Post</button>
