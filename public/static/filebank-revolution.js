@@ -231,6 +231,9 @@ const FileBankRevolution = {
 
     // Setup file card event listeners
     this.setupFileCardListeners();
+    
+    // Update selection toolbar
+    this.updateSelectionToolbar();
   },
 
   // Create file card HTML
@@ -608,6 +611,74 @@ const FileBankRevolution = {
       const fileId = card.dataset.fileId;
       card.classList.toggle('selected', this.state.selectedFiles.includes(fileId));
     });
+    this.updateSelectionToolbar();
+  },
+  
+  // Update selection toolbar
+  updateSelectionToolbar() {
+    const count = this.state.selectedFiles.length;
+    let toolbar = document.getElementById('filebank-selection-toolbar');
+    
+    if (count === 0) {
+      // Hide toolbar
+      if (toolbar) toolbar.remove();
+      return;
+    }
+    
+    // Create or update toolbar
+    if (!toolbar) {
+      toolbar = document.createElement('div');
+      toolbar.id = 'filebank-selection-toolbar';
+      toolbar.style.cssText = `
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
+        backdrop-filter: blur(20px);
+        padding: 16px 24px;
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        animation: slideUp 0.3s ease;
+      `;
+      document.body.appendChild(toolbar);
+    }
+    
+    toolbar.innerHTML = `
+      <style>
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+          to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+      </style>
+      <div style="color: white; font-weight: 600; font-size: 14px;">
+        ${count} file${count !== 1 ? 's' : ''} selected
+      </div>
+      <div style="width: 1px; height: 30px; background: rgba(255, 255, 255, 0.3);"></div>
+      <button onclick="FileBankRevolution.emailSelectedFiles()" 
+              style="padding: 10px 18px; background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 8px;"
+              onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'"
+              onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'">
+        <span>📧</span> Email All
+      </button>
+      <button onclick="FileBankRevolution.downloadSelectedFiles()" 
+              style="padding: 10px 18px; background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 8px;"
+              onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'"
+              onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'">
+        <span>📥</span> Download All
+      </button>
+      <button onclick="FileBankRevolution.clearSelection()" 
+              style="padding: 10px 18px; background: rgba(239, 68, 68, 0.2); color: white; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 8px;"
+              onmouseover="this.style.background='rgba(239, 68, 68, 0.3)'"
+              onmouseout="this.style.background='rgba(239, 68, 68, 0.2)'">
+        <span>✕</span> Clear
+      </button>
+    `;
   },
 
   // Open file
@@ -670,6 +741,27 @@ const FileBankRevolution = {
     } catch (error) {
       console.error('Download error:', error);
       this.showNotification('Download failed', 'error');
+    }
+  },
+  
+  // Download selected files
+  async downloadSelectedFiles() {
+    if (this.state.selectedFiles.length === 0) {
+      this.showNotification('No files selected', 'error');
+      return;
+    }
+
+    const files = this.state.files.filter(f => this.state.selectedFiles.includes(String(f.id)));
+    
+    this.showNotification(`📥 Downloading ${files.length} file(s)...`, 'info');
+    
+    // Download each file with a small delay to avoid overwhelming the browser
+    for (let i = 0; i < files.length; i++) {
+      await this.downloadFile(files[i].id);
+      // Small delay between downloads
+      if (i < files.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
   },
   

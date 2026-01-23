@@ -504,6 +504,16 @@ window.FileBankComplete = {
   openFolder(folderId) {
     const FBR = window.FileBankRevolution;
     FBR.state.currentFolder = folderId;
+    
+    // Reset filter to 'all' when opening a folder (so all files in folder show)
+    if (FBR.state.currentFilter !== 'all') {
+      FBR.state.currentFilter = 'all';
+      // Update sidebar active state
+      document.querySelectorAll('[data-filter]').forEach(el => {
+        el.classList.toggle('active', el.dataset.filter === 'all');
+      });
+    }
+    
     FBR.render();
     
     // Update breadcrumb
