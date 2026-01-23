@@ -28,14 +28,29 @@ const FileBankPro = {
     await this.loadFiles();
     
     // Render
-    this.renderFolders();
     this.render();
     
     // Setup event listeners
     this.setupEventListeners();
     this.setupGlobalContextMenu();
     
+    // Integrate with existing FileBankRevolution if it exists
+    if (window.FileBankRevolution) {
+      this.integrateWithExisting();
+    }
+    
     console.log('✅ File Bank Pro Ready!');
+  },
+
+  // Integrate with existing FileBank
+  integrateWithExisting() {
+    // Copy file card creation from existing implementation
+    if (window.FileBankRevolution.createFileCard) {
+      this.createFileCard = window.FileBankRevolution.createFileCard.bind(window.FileBankRevolution);
+    }
+    
+    // Share state
+    this.state.userEmail = window.FileBankRevolution.state.userEmail;
   },
 
   // Load folders
@@ -525,10 +540,228 @@ const FileBankPro = {
     });
   },
 
-  // Render files (stub - keep existing render logic)
+  // Render files AND folders in grid
   render() {
-    // Keep existing file rendering logic
-    console.log('Rendering files...');
+    const grid = document.getElementById('filebank-grid');
+    if (!grid) return;
+
+    const filteredFiles = this.getFilteredFiles();
+    const filteredFolders = this.getFilteredFolders();
+
+    if (filteredFiles.length === 0 && filteredFolders.length === 0) {
+      this.renderEmptyState(grid);
+      return;
+    }
+
+    // Render folders FIRST, then files
+    const foldersHTML = filteredFolders.map(folder => this.createFolderCard(folder)).join('');
+    const filesHTML = filteredFiles.map(file => this.createFileCard(file)).join('');
+    
+    grid.innerHTML = foldersHTML + filesHTML;
+
+    // Setup event listeners
+    this.setupFolderCardListeners();
+    this.setupFileCardListeners();
+  },
+
+  // Get filtered folders (show subfolders of current folder)
+  getFilteredFolders() {
+    let folders = this.state.folders;
+
+    // Filter by parent folder
+    if (this.state.currentFolder) {
+      folders = folders.filter(f => f.parent_folder_id === this.state.currentFolder);
+    } else {
+      // Show top-level folders (no parent)
+      folders = folders.filter(f => !f.parent_folder_id);
+    }
+
+    return folders;
+  },
+
+  // Create folder card (looks like a folder in the grid)
+  createFolderCard(folder) {
+    const isOwner = folder.user_email === this.state.userEmail;
+    const isShared = folder.is_team_shared === 1;
+    const fileCount = this.getFilesInFolder(folder.id).length;
+
+    return `
+      <div class="filebank-folder-card" 
+           data-folder-id="${folder.id}"
+           draggable="true"
+           ondblclick="FileBankPro.openFolder(${folder.id})"
+           oncontextmenu="event.preventDefault(); FileBankPro.showFolderContextMenu(event, ${folder.id}); return false;"
+           style="position: relative; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border: 2px solid rgba(102, 126, 234, 0.3); border-radius: 16px; padding: 20px; cursor: pointer; transition: all 0.3s; min-height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+        
+        ${isShared ? '<div class="filebank-collab-badge" style="position: absolute; top: 12px; right: 12px; background: linear-gradient(135deg, #10b981 0%, #059669 100%);" title="Shared with everyone">🌐</div>' : ''}
+        ${!isOwner ? '<div class="filebank-collab-badge" style="position: absolute; top: 42px; right: 12px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);" title="Not your folder">👤</div>' : ''}
+        
+        <div style="font-size: 80px; margin-bottom: 15px;">${folder.icon || '📁'}</div>
+        
+        <div style="color: white; font-size: 16px; font-weight: 600; margin-bottom: 8px; word-break: break-word;">
+          ${this.escapeHtml(folder.folder_name)}
+        </div>
+        
+        <div style="color: rgba(255, 255, 255, 0.6); font-size: 12px;">
+          ${fileCount} file${fileCount !== 1 ? 's' : ''}
+        </div>
+        
+        ${isOwner ? `
+          <div style="position: absolute; bottom: 16px; left: 16px; right: 16px; display: flex; gap: 8px; justify-content: center;">
+            <button onclick="event.stopPropagation(); FileBankPro.toggleFolderShare(${folder.id})"
+                    style="flex: 1; padding: 8px 12px; background: ${isShared ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'rgba(102, 126, 234, 0.2)'}; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600;">
+              ${isShared ? '🔓 SHARED' : '🔒 SHARE'}
+            </button>
+            <button onclick="event.stopPropagation(); FileBankPro.deleteFolder(${folder.id})"
+                    style="padding: 8px 12px; background: rgba(239, 68, 68, 0.2); color: #ff6b6b; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600;">
+              🗑️
+            </button>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  },
+
+  // Create file card (delegate to existing implementation or create simple one)
+  createFileCard(file) {
+    // If FileBankRevolution exists and has createFileCard, use it
+    if (window.FileBankRevolution && window.FileBankRevolution.createFileCard) {
+      return window.FileBankRevolution.createFileCard.call(window.FileBankRevolution, file);
+    }
+    
+    // Otherwise, create a simple file card
+    const isOwner = file.user_email === this.state.userEmail;
+    const fileSize = this.formatFileSize(file.file_size);
+    const fileIcon = this.getSimpleFileIcon(file);
+    
+    return `
+      <div class="filebank-file-card" 
+           data-file-id="${file.id}"
+           draggable="true"
+           style="background: linear-gradient(135deg, rgba(26, 29, 62, 0.6) 0%, rgba(45, 53, 97, 0.6) 100%); border: 1px solid rgba(102, 126, 234, 0.2); border-radius: 16px; padding: 20px; cursor: pointer; transition: all 0.3s;">
+        
+        <div style="font-size: 64px; text-align: center; margin-bottom: 15px;">${fileIcon}</div>
+        
+        <div style="color: white; font-size: 14px; font-weight: 600; margin-bottom: 8px; word-break: break-word; text-align: center;">
+          ${this.escapeHtml(file.original_filename)}
+        </div>
+        
+        <div style="color: rgba(255, 255, 255, 0.6); font-size: 12px; text-align: center;">
+          ${fileSize}
+        </div>
+      </div>
+    `;
+  },
+
+  // Get simple file icon
+  getSimpleFileIcon(file) {
+    const ext = file.file_extension?.toLowerCase();
+    const iconMap = {
+      'pdf': '📄',
+      'doc': '📝', 'docx': '📝',
+      'xls': '📊', 'xlsx': '📊', 'csv': '📊',
+      'ppt': '📊', 'pptx': '📊',
+      'jpg': '🖼️', 'jpeg': '🖼️', 'png': '🖼️', 'gif': '🖼️', 'webp': '🖼️',
+      'mp4': '🎬', 'mov': '🎬', 'avi': '🎬',
+      'mp3': '🎵', 'wav': '🎵',
+      'zip': '🗜️', 'rar': '🗜️',
+      'txt': '📃'
+    };
+    return iconMap[ext] || '📄';
+  },
+
+  // Format file size
+  formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+  },
+
+  // Setup folder card listeners
+  setupFolderCardListeners() {
+    document.querySelectorAll('.filebank-folder-card').forEach(card => {
+      const folderId = parseInt(card.dataset.folderId);
+      
+      // Drag start
+      card.addEventListener('dragstart', (e) => {
+        this.state.draggedItem = folderId;
+        this.state.draggedType = 'folder';
+        card.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      
+      // Drag end
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        this.state.draggedItem = null;
+        this.state.draggedType = null;
+      });
+      
+      // Drop zone (accept files)
+      card.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (this.state.draggedType === 'file') {
+          card.style.transform = 'scale(1.05)';
+          card.style.borderColor = '#667eea';
+          card.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
+        }
+      });
+      
+      card.addEventListener('dragleave', () => {
+        card.style.transform = '';
+        card.style.borderColor = '';
+        card.style.boxShadow = '';
+      });
+      
+      card.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        card.style.transform = '';
+        card.style.borderColor = '';
+        card.style.boxShadow = '';
+        
+        if (this.state.draggedType === 'file' && this.state.draggedItem) {
+          await this.moveFileToFolder(this.state.draggedItem, folderId);
+        }
+      });
+    });
+  },
+
+  // Setup file card listeners
+  setupFileCardListeners() {
+    document.querySelectorAll('.filebank-file-card').forEach(card => {
+      const fileId = parseInt(card.dataset.fileId);
+      
+      // Drag start
+      card.addEventListener('dragstart', (e) => {
+        this.state.draggedItem = fileId;
+        this.state.draggedType = 'file';
+        card.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      
+      // Drag end
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        this.state.draggedItem = null;
+        this.state.draggedType = null;
+      });
+    });
+  },
+
+  // Render empty state
+  renderEmptyState(grid) {
+    grid.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: rgba(255, 255, 255, 0.6);">
+        <div style="font-size: 64px; margin-bottom: 20px;">📁</div>
+        <h3 style="font-size: 20px; margin-bottom: 10px; color: rgba(255, 255, 255, 0.8);">No files or folders yet</h3>
+        <p style="font-size: 14px; margin-bottom: 20px;">Right-click to create a folder or upload files</p>
+        <button onclick="FileBankPro.createFolderModal()" style="padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;">
+          📁 Create Folder
+        </button>
+      </div>
+    `;
   },
 
   // Show notification
