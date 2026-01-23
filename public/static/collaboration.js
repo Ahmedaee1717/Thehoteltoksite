@@ -320,8 +320,9 @@ function attachPostCardListeners() {
     console.log(`📌 Attaching listener to card ${index}:`, card);
     
     card.addEventListener('click', function(e) {
-      // Don't trigger if clicking on the edit button
-      if (e.target.closest('.post-edit-btn')) {
+      // Don't trigger if clicking on the edit button or its children
+      if (e.target.classList.contains('post-edit-btn') || e.target.closest('.post-edit-btn')) {
+        console.log('🛑 Click on edit button - not opening post');
         return;
       }
       
