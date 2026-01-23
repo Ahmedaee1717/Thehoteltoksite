@@ -824,11 +824,11 @@ const FileBankRevolution = {
         files = files.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 20);
         break;
       case 'starred':
-        files = files.filter(f => f.is_starred);
+        files = files.filter(f => f.is_starred === 1);
         break;
       case 'shared':
-        // Show files that are individually shared OR in shared folders
-        files = files.filter(f => f.is_shared === 1 || f.folder_is_shared === 1);
+        // Show ONLY files that are individually shared (NOT folder-shared files)
+        files = files.filter(f => f.is_shared === 1);
         break;
       case 'images':
         files = files.filter(f => this.isImageFile(f));
@@ -1407,20 +1407,22 @@ Best regards</textarea>
     const file = this.state.files.find(f => String(f.id) === String(fileId));
     if (!file) return;
 
+    const newStarredState = file.is_starred === 1 ? 0 : 1;
+
     try {
       const response = await fetch(`/api/filebank/files/${fileId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          is_starred: !file.is_starred,
+          is_starred: newStarredState,
           userEmail: this.state.userEmail
         })
       });
 
       if (response.ok) {
-        file.is_starred = !file.is_starred;
+        file.is_starred = newStarredState;
         this.render();
-        this.showNotification(file.is_starred ? 'Added to starred' : 'Removed from starred', 'success');
+        this.showNotification(file.is_starred === 1 ? '⭐ Added to starred' : '☆ Removed from starred', 'success');
       }
     } catch (error) {
       console.error('Error toggling star:', error);
