@@ -300,9 +300,62 @@ function createPostCard(post) {
   `;
 }
 
-// ✏️ EDIT POST
-function editPost(slug) {
-  window.location.href = `/admin/dashboard?edit=${slug}`;
+// ✏️ EDIT POST - Load into Collaboration Editor
+async function editPost(slug) {
+  try {
+    // Fetch the post data
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`/api/admin/posts/${slug}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success && data.post) {
+      const post = data.post;
+      
+      // Switch to new post view
+      switchView('new-post');
+      
+      // Wait for the view to render
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Populate the form fields
+      document.getElementById('collab-post-title').value = post.title || '';
+      document.getElementById('collab-post-slug').value = post.slug || '';
+      document.getElementById('collab-post-author').value = post.author || '';
+      document.getElementById('collab-post-excerpt').value = post.excerpt || '';
+      document.getElementById('collab-post-featured-image').value = post.featured_image || '';
+      document.getElementById('collab-post-meta-title').value = post.meta_title || '';
+      document.getElementById('collab-post-meta-description').value = post.meta_description || '';
+      document.getElementById('collab-post-meta-keywords').value = post.meta_keywords || '';
+      document.getElementById('collab-post-og-image').value = post.og_image || '';
+      document.getElementById('collab-post-status').value = post.status || 'draft';
+      
+      // Set the Trix editor content
+      const trixEditor = document.querySelector('trix-editor');
+      if (trixEditor) {
+        trixEditor.editor.loadHTML(post.content || '');
+      }
+      
+      // Update the form to be in edit mode
+      const form = document.getElementById('collab-post-form');
+      form.dataset.editSlug = slug; // Store the slug for updating
+      
+      // Update the submit button text
+      const submitBtn = form.querySelector('.ultra-btn-save .ultra-btn-text');
+      if (submitBtn) {
+        submitBtn.textContent = 'Update Post';
+      }
+      
+      showNotification('📝 Editing post: ' + post.title, 'info');
+    } else {
+      showNotification('❌ Failed to load post', 'error');
+    }
+  } catch (error) {
+    console.error('Error loading post for editing:', error);
+    showNotification('❌ Error loading post', 'error');
+  }
 }
 
 // 🔗 OPEN POST
@@ -633,6 +686,9 @@ async function checkNewPostPermission() {
 async function handlePostSubmit(e) {
   e.preventDefault();
   
+  const form = e.target;
+  const editSlug = form.dataset.editSlug; // Check if we're editing
+  
   const formData = {
     title: document.getElementById('collab-post-title').value,
     slug: document.getElementById('collab-post-slug').value,
@@ -651,8 +707,13 @@ async function handlePostSubmit(e) {
   try {
     const token = localStorage.getItem('auth_token');
     
-    const response = await fetch('/api/admin/posts', {
-      method: 'POST',
+    // Determine if this is an update or create
+    const isUpdate = !!editSlug;
+    const url = isUpdate ? `/api/admin/posts/${editSlug}` : '/api/admin/posts';
+    const method = isUpdate ? 'PUT' : 'POST';
+    
+    const response = await fetch(url, {
+      method: method,
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -663,17 +724,18 @@ async function handlePostSubmit(e) {
     const data = await response.json();
     
     if (data.success) {
-      showNotification('✅ Post created successfully! 🚀', 'success');
+      showNotification(`✅ Post ${isUpdate ? 'updated' : 'created'} successfully! 🚀`, 'success');
       // Reset form
       document.getElementById('collab-post-form').reset();
+      delete form.dataset.editSlug; // Clear edit mode
       // Switch to my posts view
       setTimeout(() => switchView('my-posts'), 1500);
     } else {
-      showNotification(`❌ Failed to create post: ${data.error}`, 'error');
+      showNotification(`❌ Failed to ${isUpdate ? 'update' : 'create'} post: ${data.error}`, 'error');
     }
   } catch (error) {
-    console.error('Error creating post:', error);
-    showNotification('❌ Error creating post', 'error');
+    console.error(`Error ${editSlug ? 'updating' : 'creating'} post:`, error);
+    showNotification(`❌ Error ${editSlug ? 'updating' : 'creating'} post`, 'error');
   }
 }
 
