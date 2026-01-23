@@ -336,3 +336,78 @@ adminRoutes.post('/test-signature-email', async (c) => {
   }
 });
 
+// Analytics endpoint (for future Cloudflare Web Analytics integration)
+adminRoutes.get('/analytics', async (c) => {
+  const period = c.req.query('period') || '24h';
+  
+  // For now, return a flag indicating analytics is not yet configured
+  // When you enable Cloudflare Web Analytics, you'll:
+  // 1. Get your API token and Zone ID from Cloudflare
+  // 2. Call: https://api.cloudflare.com/client/v4/accounts/{account_id}/rum/site_info/{site_id}/performance
+  // 3. Parse and return the data
+  
+  return c.json({
+    configured: false,
+    message: 'Cloudflare Web Analytics not yet configured. See ANALYTICS_SETUP.md for instructions.',
+    period: period
+  });
+  
+  /* Future implementation:
+  try {
+    const CF_API_TOKEN = c.env.CLOUDFLARE_API_TOKEN;
+    const CF_ACCOUNT_ID = c.env.CLOUDFLARE_ACCOUNT_ID;
+    const CF_SITE_ID = c.env.CLOUDFLARE_SITE_ID;
+    
+    if (!CF_API_TOKEN || !CF_ACCOUNT_ID || !CF_SITE_ID) {
+      return c.json({ configured: false });
+    }
+    
+    // Calculate date range based on period
+    const now = new Date();
+    const since = new Date();
+    if (period === '24h') since.setHours(now.getHours() - 24);
+    else if (period === '7d') since.setDate(now.getDate() - 7);
+    else since.setDate(now.getDate() - 30);
+    
+    // Fetch from Cloudflare Web Analytics API
+    const response = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/rum/site_info/${CF_SITE_ID}/performance?since=${since.toISOString()}&until=${now.toISOString()}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${CF_API_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    const data = await response.json();
+    
+    // Transform the data for the frontend
+    return c.json({
+      configured: true,
+      period: period,
+      summary: {
+        pageviews: data.result.pageviews || 0,
+        visitors: data.result.visitors || 0,
+        avgTime: data.result.avgSessionDuration || 0,
+        bounceRate: data.result.bounceRate || 0,
+        changes: {
+          pageviews: data.result.pageviewsChange || 0,
+          visitors: data.result.visitorsChange || 0,
+          avgTime: data.result.avgTimeChange || 0,
+          bounceRate: data.result.bounceRateChange || 0
+        }
+      },
+      topPages: data.result.topPages || [],
+      trafficSources: data.result.referrers || [],
+      countries: data.result.countries || [],
+      devices: data.result.devices || [],
+      browsers: data.result.browsers || []
+    });
+  } catch (error) {
+    console.error('Analytics API error:', error);
+    return c.json({ configured: false, error: error.message }, 500);
+  }
+  */
+});
+
