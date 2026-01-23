@@ -1661,3 +1661,50 @@ body {
   text-align: center;
   font-weight: 500;
 }
+
+/* ==========================================
+   ENHANCED EMAIL BUTTON IN FILE BANK
+   Make the Email button more prominent and obvious
+   ========================================== */
+
+/* Email button in file actions - primary prominence */
+.filebank-action-btn:contains("Email"),
+button:has-text("Email"),
+[data-action="email"],
+.action-email,
+button[onclick*="email"] {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+    border: 2px solid #60a5fa !important;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4), 0 0 20px rgba(59, 130, 246, 0.2) !important;
+    transform: scale(1.05);
+    position: relative;
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Pulse animation for Email button */
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4), 0 0 20px rgba(59, 130, 246, 0.2);
+    }
+    50% {
+        box-shadow: 0 6px 16px rgba(59, 130, 246, 0.6), 0 0 30px rgba(59, 130, 246, 0.4);
+    }
+}
+
+/* Hover effect for Email button */
+.filebank-action-btn:contains("Email"):hover,
+button:has-text("Email"):hover,
+[data-action="email"]:hover,
+.action-email:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.5), 0 0 30px rgba(37, 99, 235, 0.3) !important;
+    transform: scale(1.08) translateY(-2px) !important;
+}
+
+/* Email icon enhancement */
+button:contains("📧"),
+span:contains("📧") {
+    font-size: 1.2em;
+    filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.3));
+}
+

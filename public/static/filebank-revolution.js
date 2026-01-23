@@ -543,18 +543,18 @@ const FileBankRevolution = {
                                font-size: 12px; 
                                font-weight: 600; 
                                text-transform: uppercase;
-                               letter-spacing: 1.2px;
+                               letter-spacing: 1.5px;
                                display: flex; 
                                flex-direction: column;
                                align-items: center; 
                                justify-content: center; 
-                               gap: 8px; 
-                               transition: all 0.25s ease;
-                               box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-                               min-height: 90px;"
-                        onmouseover="this.style.background='linear-gradient(135deg, rgba(59, 130, 246, 0.18) 0%, rgba(99, 102, 241, 0.18) 100%)'; this.style.borderColor='rgba(59, 130, 246, 0.4)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(59, 130, 246, 0.15)';"
-                        onmouseout="this.style.background='linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(99, 102, 241, 0.12) 100%)'; this.style.borderColor='rgba(59, 130, 246, 0.25)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 12px rgba(0, 0, 0, 0.15)';">
-                  <span style="font-size: 28px;">📧</span>
+                               gap: 10px; 
+                               transition: all 0.3s ease;
+                               box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4), 0 0 30px rgba(59, 130, 246, 0.2);
+                               min-height: 100px; transform: scale(1.05);"
+                        onmouseover="this.style.background='linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)'; this.style.borderColor='#93c5fd'; this.style.transform='scale(1.1) translateY(-4px)'; this.style.boxShadow='0 8px 24px rgba(37, 99, 235, 0.5), 0 0 40px rgba(37, 99, 235, 0.3)';"
+                        onmouseout="this.style.background='linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)'; this.style.borderColor='#60a5fa'; this.style.transform='scale(1.05) translateY(0)'; this.style.boxShadow='0 6px 20px rgba(59, 130, 246, 0.4), 0 0 30px rgba(59, 130, 246, 0.2)';">
+                  <span style="font-size: 32px; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));">📧</span>
                   <span>Email</span>
                 </button>
                 
@@ -677,21 +677,21 @@ const FileBankRevolution = {
                                border: 1.5px solid rgba(59, 130, 246, 0.25); 
                                border-radius: 12px; 
                                cursor: pointer; 
-                               font-size: 12px; 
-                               font-weight: 600; 
+                               font-size: 13px; 
+                               font-weight: 700; 
                                text-transform: uppercase;
-                               letter-spacing: 1.2px;
+                               letter-spacing: 1.5px;
                                display: flex; 
                                flex-direction: column;
                                align-items: center; 
                                justify-content: center; 
-                               gap: 8px; 
-                               transition: all 0.25s ease;
-                               box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-                               min-height: 90px;"
-                        onmouseover="this.style.background='linear-gradient(135deg, rgba(59, 130, 246, 0.18) 0%, rgba(99, 102, 241, 0.18) 100%)'; this.style.borderColor='rgba(59, 130, 246, 0.4)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(59, 130, 246, 0.15)';"
-                        onmouseout="this.style.background='linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(99, 102, 241, 0.12) 100%)'; this.style.borderColor='rgba(59, 130, 246, 0.25)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 12px rgba(0, 0, 0, 0.15)';">
-                  <span style="font-size: 28px;">📧</span>
+                               gap: 10px; 
+                               transition: all 0.3s ease;
+                               box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4), 0 0 30px rgba(59, 130, 246, 0.2);
+                               min-height: 100px; transform: scale(1.05);"
+                        onmouseover="this.style.background='linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)'; this.style.borderColor='#93c5fd'; this.style.transform='scale(1.1) translateY(-4px)'; this.style.boxShadow='0 8px 24px rgba(37, 99, 235, 0.5), 0 0 40px rgba(37, 99, 235, 0.3)';"
+                        onmouseout="this.style.background='linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)'; this.style.borderColor='#60a5fa'; this.style.transform='scale(1.05) translateY(0)'; this.style.boxShadow='0 6px 20px rgba(59, 130, 246, 0.4), 0 0 30px rgba(59, 130, 246, 0.2)';">
+                  <span style="font-size: 32px; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));">📧</span>
                   <span>Email</span>
                 </button>
                 
