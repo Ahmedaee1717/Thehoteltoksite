@@ -29,8 +29,8 @@ export const homePage = (c: Context) => {
         <link rel="stylesheet" href="/static/styles.css">
         <link rel="canonical" href="https://investaycapital.com">
         
-        <!-- Cloudflare Web Analytics is AUTO-INJECTED by Cloudflare Pages -->
-        <!-- No manual script needed - Cloudflare handles it automatically -->
+        <!-- Cloudflare Web Analytics -->
+        <!-- Token is managed by Cloudflare Pages - Analytics is ENABLED -->
         
         <!-- Alternative: Google Analytics 4 (if you prefer) -->
         <!-- Replace GA_MEASUREMENT_ID with your actual ID -->
