@@ -13,6 +13,23 @@ window.FileBankComplete = {
     
     const FBR = window.FileBankRevolution;
     
+    // Override getFilteredFiles to properly filter by currentFolder
+    const originalGetFilteredFiles = FBR.getFilteredFiles.bind(FBR);
+    FBR.getFilteredFiles = function() {
+      let files = originalGetFilteredFiles.call(this);
+      
+      // CRITICAL FIX: When viewing root (currentFolder is null), only show files NOT in any folder
+      // When viewing a folder, only show files IN that folder
+      if (this.state.currentFolder) {
+        files = files.filter(f => f.folder_id === this.state.currentFolder);
+      } else if (this.state.currentFilter !== 'shared') {
+        // At root level, only show files without a folder (unless viewing "shared" filter)
+        files = files.filter(f => !f.folder_id || f.folder_id === null);
+      }
+      
+      return files;
+    };
+    
     // Override render to show FOLDERS FIRST as big cards
     const originalRender = FBR.render.bind(FBR);
     FBR.render = function() {
@@ -20,9 +37,22 @@ window.FileBankComplete = {
       if (!grid) return;
 
       const filteredFiles = this.getFilteredFiles();
-      const filteredFolders = this.state.folders.filter(f => 
-        this.state.currentFolder ? f.parent_folder_id === this.state.currentFolder : !f.parent_folder_id
-      );
+      
+      // FILTER OUT "Team Shared" folders from grid - they only show in sidebar
+      // Also filter based on currentFolder
+      const filteredFolders = this.state.folders.filter(f => {
+        // Hide "Team Shared" folders in main grid
+        if (f.folder_name === 'Team Shared' || f.folder_name === 'Shared') {
+          return false;
+        }
+        
+        // Show folders based on current location
+        if (this.state.currentFolder) {
+          return f.parent_folder_id === this.state.currentFolder;
+        } else {
+          return !f.parent_folder_id;
+        }
+      });
 
       if (filteredFiles.length === 0 && filteredFolders.length === 0) {
         this.renderEmptyState(grid);
@@ -442,11 +472,17 @@ window.FileBankComplete = {
     }
   },
   
-  // Delete folder
+  // Delete folder (only if user owns it)
   async deleteFolder(folderId) {
     const FBR = window.FileBankRevolution;
     const folder = FBR.state.folders.find(f => f.id === folderId);
     if (!folder) return;
+    
+    // Check ownership
+    if (folder.user_email !== FBR.state.userEmail) {
+      FBR.showNotification('❌ You can only delete folders you created', 'error');
+      return;
+    }
     
     const fileCount = FBR.state.files.filter(f => f.folder_id === folderId).length;
     const confirmMsg = fileCount > 0 
