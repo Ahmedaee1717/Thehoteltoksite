@@ -133,6 +133,9 @@ function switchView(view) {
     case 'team':
       loadTeam();
       break;
+    case 'meetings':
+      loadMeetings();
+      break;
     case 'activity':
       loadActivity();
       break;
@@ -1545,6 +1548,314 @@ async function collabAIGenerateEmbedding(silent = false) {
   } catch (error) {
     console.error('AI embedding error:', error);
     if (!silent) showNotification('❌ Embedding generation failed', 'error');
+  }
+}
+
+// 🎙️ OTTER.AI MEETINGS INTEGRATION
+
+async function loadMeetings() {
+  const container = document.getElementById('meetings-list');
+  container.innerHTML = '<div class="loading-quantum"><div class="loading-spinner"></div><p>Loading meetings...</p></div>';
+  
+  try {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE}/meetings/otter/transcripts?limit=50`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    const data = await response.json();
+    
+    if (data.transcripts && data.transcripts.length > 0) {
+      container.innerHTML = data.transcripts.map(meeting => createMeetingCard(meeting)).join('');
+      
+      // Update count
+      document.getElementById('meetings-count').textContent = data.total || data.transcripts.length;
+    } else {
+      container.innerHTML = `
+        <div class="permission-check-box">
+          <h3>🎙️ No meetings found</h3>
+          <p>Click "Sync from Otter.ai" to import your Zoom meeting transcripts</p>
+          <button class="quantum-btn" onclick="showOtterSyncModal()">
+            🔄 Sync Now
+          </button>
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error('Error loading meetings:', error);
+    container.innerHTML = `
+      <div class="permission-check-box">
+        <p>❌ Error loading meetings. Please try again.</p>
+      </div>
+    `;
+  }
+}
+
+function createMeetingCard(meeting) {
+  const startDate = new Date(meeting.start_time);
+  const duration = Math.round(meeting.duration_seconds / 60);
+  const speakers = meeting.speakers ? JSON.parse(meeting.speakers) : [];
+  const speakerCount = speakers.length;
+  
+  return `
+    <div class="meeting-card" onclick="openMeetingTranscript('${meeting.id}')">
+      <div class="meeting-header">
+        <div class="meeting-icon">🎙️</div>
+        <div class="meeting-info">
+          <h3 class="meeting-title">${escapeHtml(meeting.title)}</h3>
+          <div class="meeting-meta">
+            <span>📅 ${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+            <span>⏱️ ${duration} min</span>
+            <span>👥 ${speakerCount} speaker${speakerCount !== 1 ? 's' : ''}</span>
+          </div>
+        </div>
+      </div>
+      
+      ${meeting.summary ? `
+        <div class="meeting-summary">
+          <p>${escapeHtml(meeting.summary.substring(0, 200))}${meeting.summary.length > 200 ? '...' : ''}</p>
+        </div>
+      ` : ''}
+      
+      <div class="meeting-footer">
+        <span class="meeting-length">${(meeting.transcript_length / 1000).toFixed(1)}k characters</span>
+        ${meeting.meeting_url ? `
+          <a href="${meeting.meeting_url}" target="_blank" class="meeting-link" onclick="event.stopPropagation()">
+            View in Otter.ai →
+          </a>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
+window.openMeetingTranscript = async function(meetingId) {
+  try {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE}/meetings/otter/transcripts/${meetingId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    const data = await response.json();
+    
+    if (data.transcript) {
+      showMeetingModal(data.transcript);
+    }
+  } catch (error) {
+    console.error('Error loading transcript:', error);
+    showNotification('❌ Failed to load transcript', 'error');
+  }
+};
+
+function showMeetingModal(meeting) {
+  const startDate = new Date(meeting.start_time);
+  const speakers = meeting.speakers ? JSON.parse(meeting.speakers) : [];
+  
+  const modalHtml = `
+    <div id="meeting-transcript-modal" class="collab-email-modal" onclick="if(event.target === this) closeMeetingModal()">
+      <div class="meeting-modal-content">
+        <div class="meeting-modal-header">
+          <div>
+            <h2>🎙️ ${escapeHtml(meeting.title)}</h2>
+            <div class="meeting-meta">
+              <span>📅 ${startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+              <span>⏱️ ${Math.round(meeting.duration_seconds / 60)} minutes</span>
+              <span>👥 ${speakers.length} speakers</span>
+            </div>
+          </div>
+          <button class="collab-email-modal-close" onclick="closeMeetingModal()">×</button>
+        </div>
+        
+        <div class="meeting-modal-body">
+          ${meeting.summary ? `
+            <div class="meeting-summary-section">
+              <h3>📝 Summary</h3>
+              <p>${escapeHtml(meeting.summary)}</p>
+            </div>
+          ` : ''}
+          
+          ${speakers.length > 0 ? `
+            <div class="meeting-speakers-section">
+              <h3>👥 Speakers</h3>
+              <div class="speakers-list">
+                ${speakers.map(s => `<span class="speaker-tag">${escapeHtml(s.name || s.speaker_name || 'Unknown')}</span>`).join('')}
+              </div>
+            </div>
+          ` : ''}
+          
+          <div class="meeting-transcript-section">
+            <h3>📄 Full Transcript</h3>
+            <div class="transcript-text">
+              ${escapeHtml(meeting.transcript_text || 'No transcript available')}
+            </div>
+          </div>
+        </div>
+        
+        <div class="meeting-modal-footer">
+          ${meeting.meeting_url ? `
+            <a href="${meeting.meeting_url}" target="_blank" class="collab-email-btn-send">
+              <span class="email-btn-icon">🔗</span>
+              Open in Otter.ai
+            </a>
+          ` : ''}
+          <button class="collab-email-btn-cancel" onclick="closeMeetingModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+window.closeMeetingModal = function() {
+  const modal = document.getElementById('meeting-transcript-modal');
+  if (modal) {
+    modal.remove();
+  }
+};
+
+window.showOtterSyncModal = function() {
+  const modalHtml = `
+    <div id="otter-sync-modal" class="collab-email-modal" onclick="if(event.target === this) closeOtterSyncModal()">
+      <div class="collab-email-modal-content">
+        <div class="collab-email-modal-header">
+          <h3>🔄 Sync from Otter.ai</h3>
+          <button class="collab-email-modal-close" onclick="closeOtterSyncModal()">×</button>
+        </div>
+        
+        <div class="collab-email-modal-body">
+          <div class="collab-email-form-group">
+            <label>Otter.ai API Key:</label>
+            <input type="password" id="otter-api-key" placeholder="Enter your Otter.ai API key...">
+            <small>
+              Get your API key from <a href="https://otter.ai/developers" target="_blank" style="color: #C9A962;">Otter.ai Developer Dashboard</a>
+            </small>
+          </div>
+          
+          <div class="info-box" style="margin-top: 16px; padding: 12px; background: rgba(201, 169, 98, 0.1); border-radius: 8px; color: rgba(255,255,255,0.8); font-size: 13px;">
+            <p><strong>ℹ️ How to get your Otter.ai API key:</strong></p>
+            <ol style="margin: 8px 0 0 20px; padding: 0;">
+              <li>Go to <a href="https://otter.ai/developers" target="_blank" style="color: #C9A962;">otter.ai/developers</a></li>
+              <li>Log in to your Otter account</li>
+              <li>Create a new API key</li>
+              <li>Copy and paste it above</li>
+            </ol>
+          </div>
+        </div>
+        
+        <div class="collab-email-modal-footer">
+          <button class="collab-email-btn-cancel" onclick="closeOtterSyncModal()">Cancel</button>
+          <button class="collab-email-btn-send" onclick="syncFromOtter()">
+            <span class="email-btn-icon">🔄</span>
+            Sync Meetings
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  setTimeout(() => {
+    document.getElementById('otter-api-key').focus();
+  }, 100);
+};
+
+window.closeOtterSyncModal = function() {
+  const modal = document.getElementById('otter-sync-modal');
+  if (modal) {
+    modal.remove();
+  }
+};
+
+window.syncFromOtter = async function() {
+  const apiKey = document.getElementById('otter-api-key').value.trim();
+  
+  if (!apiKey) {
+    showNotification('❌ Please enter your Otter.ai API key', 'error');
+    return;
+  }
+  
+  try {
+    showNotification('🔄 Syncing meetings from Otter.ai...', 'info');
+    
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE}/meetings/otter/sync`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ otterApiKey: apiKey })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      showNotification(`✅ ${data.message}`, 'success');
+      closeOtterSyncModal();
+      loadMeetings(); // Reload meetings list
+    } else {
+      showNotification(`❌ ${data.error || 'Failed to sync meetings'}`, 'error');
+    }
+  } catch (error) {
+    console.error('Error syncing Otter:', error);
+    showNotification('❌ Error syncing meetings', 'error');
+  }
+};
+
+// Setup sync button
+document.addEventListener('DOMContentLoaded', () => {
+  const syncBtn = document.getElementById('sync-otter-btn');
+  if (syncBtn) {
+    syncBtn.addEventListener('click', showOtterSyncModal);
+  }
+  
+  // Setup search
+  const searchInput = document.getElementById('meetings-search-input');
+  if (searchInput) {
+    let searchTimeout;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        searchMeetings(e.target.value);
+      }, 500);
+    });
+  }
+});
+
+async function searchMeetings(query) {
+  if (!query) {
+    loadMeetings();
+    return;
+  }
+  
+  const container = document.getElementById('meetings-list');
+  container.innerHTML = '<div class="loading-quantum"><div class="loading-spinner"></div><p>Searching...</p></div>';
+  
+  try {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE}/meetings/otter/search?q=${encodeURIComponent(query)}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    const data = await response.json();
+    
+    if (data.results && data.results.length > 0) {
+      container.innerHTML = data.results.map(meeting => createMeetingCard(meeting)).join('');
+    } else {
+      container.innerHTML = `
+        <div class="permission-check-box">
+          <p>No meetings found for "${escapeHtml(query)}"</p>
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error('Error searching meetings:', error);
+    container.innerHTML = `
+      <div class="permission-check-box">
+        <p>❌ Error searching meetings</p>
+      </div>
+    `;
   }
 }
 

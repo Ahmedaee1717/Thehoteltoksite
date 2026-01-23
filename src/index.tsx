@@ -1696,6 +1696,11 @@ app.get('/collaborate', (c) => {
                             <span class="nav-label">Team</span>
                             <span class="nav-count" id="team-count">0</span>
                         </button>
+                        <button class="collab-nav-item" data-view="meetings">
+                            <span class="nav-icon">🎙️</span>
+                            <span class="nav-label">Meetings</span>
+                            <span class="nav-count" id="meetings-count">0</span>
+                        </button>
                         <button class="collab-nav-item" data-view="activity">
                             <span class="nav-icon">📊</span>
                             <span class="nav-label">Activity</span>
@@ -1762,6 +1767,34 @@ app.get('/collaborate', (c) => {
                             <div class="loading-quantum">
                                 <div class="loading-spinner"></div>
                                 <p>Loading team...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MEETINGS VIEW (OTTER.AI TRANSCRIPTS) -->
+                    <div id="meetings-view" class="collab-view">
+                        <div class="view-header">
+                            <h1 class="view-title">🎙️ Meeting Transcripts</h1>
+                            <p class="view-subtitle">All your Otter.ai Zoom meeting transcriptions</p>
+                            <button id="sync-otter-btn" class="collab-btn-primary">
+                                <span>🔄</span>
+                                Sync from Otter.ai
+                            </button>
+                        </div>
+                        
+                        <!-- Search Bar -->
+                        <div class="meetings-search-bar">
+                            <input 
+                                type="text" 
+                                id="meetings-search-input" 
+                                placeholder="🔍 Search meetings, transcripts, speakers..." 
+                            />
+                        </div>
+                        
+                        <div id="meetings-list" class="meetings-grid">
+                            <div class="loading-quantum">
+                                <div class="loading-spinner"></div>
+                                <p>Loading meetings...</p>
                             </div>
                         </div>
                     </div>

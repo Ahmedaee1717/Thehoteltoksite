@@ -2030,3 +2030,237 @@ trix-toolbar .trix-button.trix-active {
 .email-btn-icon {
   font-size: 16px;
 }
+
+/* 🎙️ MEETINGS SECTION */
+.meetings-search-bar {
+  margin: 24px 0;
+}
+
+.meetings-search-bar input {
+  width: 100%;
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 15px;
+  transition: all 0.2s ease;
+}
+
+.meetings-search-bar input:focus {
+  outline: none;
+  border-color: #C9A962;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 3px rgba(201, 169, 98, 0.1);
+}
+
+.meetings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.meeting-card {
+  background: linear-gradient(145deg, #1a1d2e 0%, #252938 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.meeting-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.meeting-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+  border-color: rgba(201, 169, 98, 0.3);
+}
+
+.meeting-card:hover::before {
+  opacity: 1;
+}
+
+.meeting-header {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.meeting-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #C9A962 0%, #A88B4E 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.meeting-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.meeting-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 8px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meeting-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.meeting-summary {
+  margin: 16px 0;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
+}
+
+.meeting-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 13px;
+}
+
+.meeting-length {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.meeting-link {
+  color: #C9A962;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.meeting-link:hover {
+  color: #E0C97D;
+}
+
+/* Meeting Modal */
+.meeting-modal-content {
+  background: linear-gradient(145deg, #1a1d2e 0%, #252938 100%);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  width: 90%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+}
+
+.meeting-modal-header {
+  padding: 32px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.meeting-modal-header h2 {
+  margin: 0 0 12px 0;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.meeting-modal-body {
+  padding: 32px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.meeting-summary-section,
+.meeting-speakers-section,
+.meeting-transcript-section {
+  margin-bottom: 32px;
+}
+
+.meeting-summary-section h3,
+.meeting-speakers-section h3,
+.meeting-transcript-section h3 {
+  margin: 0 0 16px 0;
+  color: #C9A962;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.speakers-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.speaker-tag {
+  padding: 6px 12px;
+  background: rgba(201, 169, 98, 0.2);
+  border: 1px solid rgba(201, 169, 98, 0.3);
+  border-radius: 20px;
+  color: #C9A962;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.transcript-text {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 20px;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.8;
+  font-size: 14px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.meeting-modal-footer {
+  padding: 24px 32px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.info-box a {
+  color: #C9A962;
+  text-decoration: none;
+}
+
+.info-box a:hover {
+  text-decoration: underline;
+}

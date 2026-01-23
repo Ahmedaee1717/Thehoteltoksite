@@ -366,4 +366,205 @@ meetings.get('/calendar/summary', async (c) => {
   }
 })
 
+// ===== OTTER.AI INTEGRATION =====
+
+// Sync Otter.ai transcripts
+meetings.post('/otter/sync', async (c) => {
+  try {
+    const { otterApiKey } = await c.req.json()
+    
+    if (!otterApiKey) {
+      return c.json({ error: 'Otter API key is required' }, 400)
+    }
+    
+    // Call Otter.ai API to get speeches (meetings)
+    const response = await fetch('https://otter.ai/forward/api/v1/speeches', {
+      headers: {
+        'Authorization': `Bearer ${otterApiKey}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    if (!response.ok) {
+      const error = await response.text()
+      console.error('Otter API error:', error)
+      return c.json({ error: 'Failed to fetch from Otter.ai', details: error }, response.status)
+    }
+    
+    const data = await response.json()
+    const speeches = data.speeches || []
+    
+    console.log(`📥 Fetched ${speeches.length} meetings from Otter.ai`)
+    
+    // Store each meeting transcript in database
+    let syncedCount = 0
+    for (const speech of speeches) {
+      try {
+        // Check if already exists
+        const existing = await c.env.DB.prepare(`
+          SELECT id FROM otter_transcripts WHERE otter_id = ?
+        `).bind(speech.id).first()
+        
+        if (!existing) {
+          // Insert new transcript
+          await c.env.DB.prepare(`
+            INSERT INTO otter_transcripts (
+              otter_id, title, summary, start_time, end_time, 
+              transcript_text, speakers, duration_seconds, 
+              meeting_url, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          `).bind(
+            speech.id,
+            speech.title || 'Untitled Meeting',
+            speech.summary || '',
+            speech.start_time || new Date().toISOString(),
+            speech.end_time || new Date().toISOString(),
+            speech.transcript || '',
+            JSON.stringify(speech.speakers || []),
+            speech.duration || 0,
+            speech.otid ? `https://otter.ai/u/${speech.otid}` : ''
+          ).run()
+          
+          syncedCount++
+        } else {
+          // Update existing transcript
+          await c.env.DB.prepare(`
+            UPDATE otter_transcripts 
+            SET title = ?, summary = ?, transcript_text = ?, 
+                speakers = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE otter_id = ?
+          `).bind(
+            speech.title || 'Untitled Meeting',
+            speech.summary || '',
+            speech.transcript || '',
+            JSON.stringify(speech.speakers || []),
+            speech.id
+          ).run()
+        }
+      } catch (error: any) {
+        console.error(`Error syncing speech ${speech.id}:`, error)
+      }
+    }
+    
+    return c.json({ 
+      success: true, 
+      totalMeetings: speeches.length,
+      newMeetings: syncedCount,
+      message: `Synced ${syncedCount} new meetings from Otter.ai`
+    })
+  } catch (error: any) {
+    console.error('Error syncing Otter transcripts:', error)
+    return c.json({ error: 'Failed to sync Otter transcripts', details: error.message }, 500)
+  }
+})
+
+// Get all Otter transcripts
+meetings.get('/otter/transcripts', async (c) => {
+  const limit = parseInt(c.req.query('limit') || '50')
+  const offset = parseInt(c.req.query('offset') || '0')
+  const search = c.req.query('search') || ''
+  
+  try {
+    let query = `
+      SELECT 
+        id, otter_id, title, summary, start_time, end_time,
+        duration_seconds, meeting_url, created_at, updated_at,
+        LENGTH(transcript_text) as transcript_length,
+        speakers
+      FROM otter_transcripts
+    `
+    const params: any[] = []
+    
+    if (search) {
+      query += ` WHERE title LIKE ? OR summary LIKE ? OR transcript_text LIKE ?`
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`)
+    }
+    
+    query += ` ORDER BY start_time DESC LIMIT ? OFFSET ?`
+    params.push(limit, offset)
+    
+    const { results } = await c.env.DB.prepare(query).bind(...params).all()
+    
+    // Get total count
+    const countQuery = search 
+      ? `SELECT COUNT(*) as total FROM otter_transcripts WHERE title LIKE ? OR summary LIKE ? OR transcript_text LIKE ?`
+      : `SELECT COUNT(*) as total FROM otter_transcripts`
+    const countParams = search ? [`%${search}%`, `%${search}%`, `%${search}%`] : []
+    const totalResult = await c.env.DB.prepare(countQuery).bind(...countParams).first()
+    
+    return c.json({ 
+      transcripts: results || [],
+      total: totalResult?.total || 0,
+      limit,
+      offset
+    })
+  } catch (error: any) {
+    console.error('Error fetching Otter transcripts:', error)
+    return c.json({ error: 'Failed to fetch transcripts', details: error.message }, 500)
+  }
+})
+
+// Get single transcript with full text
+meetings.get('/otter/transcripts/:id', async (c) => {
+  const id = c.req.param('id')
+  
+  try {
+    const transcript = await c.env.DB.prepare(`
+      SELECT * FROM otter_transcripts WHERE id = ?
+    `).bind(id).first()
+    
+    if (!transcript) {
+      return c.json({ error: 'Transcript not found' }, 404)
+    }
+    
+    return c.json({ transcript })
+  } catch (error: any) {
+    console.error('Error fetching transcript:', error)
+    return c.json({ error: 'Failed to fetch transcript', details: error.message }, 500)
+  }
+})
+
+// Delete transcript
+meetings.delete('/otter/transcripts/:id', async (c) => {
+  const id = c.req.param('id')
+  
+  try {
+    await c.env.DB.prepare(`
+      DELETE FROM otter_transcripts WHERE id = ?
+    `).bind(id).run()
+    
+    return c.json({ success: true, message: 'Transcript deleted' })
+  } catch (error: any) {
+    console.error('Error deleting transcript:', error)
+    return c.json({ error: 'Failed to delete transcript', details: error.message }, 500)
+  }
+})
+
+// Search transcripts (full-text search)
+meetings.get('/otter/search', async (c) => {
+  const query = c.req.query('q') || ''
+  const limit = parseInt(c.req.query('limit') || '20')
+  
+  try {
+    if (!query) {
+      return c.json({ results: [] })
+    }
+    
+    const { results } = await c.env.DB.prepare(`
+      SELECT 
+        id, otter_id, title, summary, start_time,
+        substr(transcript_text, 1, 500) as transcript_preview
+      FROM otter_transcripts
+      WHERE title LIKE ? OR summary LIKE ? OR transcript_text LIKE ?
+      ORDER BY start_time DESC
+      LIMIT ?
+    `).bind(`%${query}%`, `%${query}%`, `%${query}%`, limit).all()
+    
+    return c.json({ results: results || [] })
+  } catch (error: any) {
+    console.error('Error searching transcripts:', error)
+    return c.json({ error: 'Failed to search transcripts', details: error.message }, 500)
+  }
+})
+
 export default meetings
