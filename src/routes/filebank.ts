@@ -246,20 +246,32 @@ fileBank.post('/files/upload', async (c) => {
       // R2 file URL (will be served via /r2/ endpoint)
       const fileUrl = `/r2/${r2Key}`;
       
-      // Determine file path
+      // Determine file path and check if folder is shared
       let filePath = `/${filename}`
+      let isShared = 0; // Default: not shared
+      
       if (folderId) {
-        const folder = await c.env.DB.prepare('SELECT folder_path FROM file_bank_folders WHERE id = ?').bind(folderId).first()
+        const folder = await c.env.DB.prepare(`
+          SELECT folder_path, is_team_shared 
+          FROM file_bank_folders 
+          WHERE id = ?
+        `).bind(folderId).first()
+        
         if (folder && folder.folder_path) {
           filePath = `${folder.folder_path}/${filename}`
+          // If uploading to a shared folder, auto-share the file
+          if (folder.is_team_shared === 1) {
+            isShared = 1;
+            console.log(`📁 Folder "${folder.folder_path}" is shared, auto-sharing file: ${filename}`);
+          }
         }
       }
       
       const result = await c.env.DB.prepare(`
         INSERT INTO file_bank_files (
           user_email, filename, original_filename, file_path, file_url,
-          file_type, file_size, file_extension, folder_id, tags, description
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          file_type, file_size, file_extension, folder_id, tags, description, is_shared
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         userEmail,
         filename,
@@ -271,7 +283,8 @@ fileBank.post('/files/upload', async (c) => {
         fileExtension || '',
         folderId || null,
         '[]',
-        ''
+        '',
+        isShared
       ).run()
       
       // Log activity
@@ -442,13 +455,16 @@ fileBank.patch('/files/:id', async (c) => {
     
     console.log('✏️ Updating file:', { updates, values })
     
-    await c.env.DB.prepare(`
+    const updateQuery = `
       UPDATE file_bank_files
       SET ${updates.join(', ')}
       WHERE id = ?
-    `).bind(...values).run()
+    `;
+    console.log('📝 SQL Query:', updateQuery, 'Values:', values);
     
-    console.log('✅ File updated successfully')
+    const updateResult = await c.env.DB.prepare(updateQuery).bind(...values).run()
+    
+    console.log('✅ File updated successfully', updateResult)
     
     return c.json({ success: true, message: 'File updated successfully' })
   } catch (error: any) {
