@@ -111,6 +111,11 @@ function switchView(view) {
     if (view === 'email-settings') {
         loadEmailSignature();
     }
+    
+    // Load analytics data if switching to analytics view
+    if (view === 'analytics') {
+        loadAnalyticsData();
+    }
 }
 
 // Logout
@@ -1133,19 +1138,14 @@ function setupAnalytics() {
     });
 }
 
-// Call setupAnalytics on page load
+// Call setupAnalytics on page load and load initial data
 document.addEventListener('DOMContentLoaded', function() {
     setupAnalytics();
-});
-
-// Update switchView to load analytics when analytics view is shown
-const originalSwitchView = switchView;
-switchView = function(view) {
-    originalSwitchView(view);
-    if (view === 'analytics') {
+    // Load analytics data immediately if analytics view is active
+    if (document.getElementById('analytics-view').classList.contains('active')) {
         loadAnalyticsData();
     }
-};
+});
 
 async function loadAnalyticsData() {
     try {
