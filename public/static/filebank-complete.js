@@ -147,9 +147,19 @@ window.FileBankComplete = {
   setupDragDropIntoFolders() {
     const FBR = window.FileBankRevolution;
     
-    // Make files draggable
+    // Make files draggable AND add right-click menu
     document.querySelectorAll('.filebank-file-card:not(.filebank-folder-card)').forEach(fileCard => {
       fileCard.draggable = true;
+      
+      // Right-click context menu for files
+      fileCard.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const fileId = e.currentTarget.dataset.fileId;
+        if (fileId) {
+          this.showFileMenu(e, fileId);
+        }
+      });
       
       fileCard.addEventListener('dragstart', (e) => {
         const fileId = e.currentTarget.dataset.fileId;
@@ -368,6 +378,86 @@ window.FileBankComplete = {
       ` : `
         <div style="padding: 12px; color: rgba(255,255,255,0.5); font-size: 12px; text-align: center;">
           You don't own this folder
+        </div>
+      `}
+    `;
+    
+    document.body.appendChild(menu);
+    
+    // Close on click outside
+    setTimeout(() => {
+      document.addEventListener('click', function closeMenu(e) {
+        if (!menu.contains(e.target)) {
+          menu.remove();
+          document.removeEventListener('click', closeMenu);
+        }
+      });
+    }, 100);
+  },
+  
+  // Show file context menu
+  showFileMenu(event, fileId) {
+    const FBR = window.FileBankRevolution;
+    const file = FBR.state.files.find(f => f.id == fileId);
+    if (!file) return;
+    
+    const isOwner = file.user_email === FBR.state.userEmail;
+    const isShared = file.is_shared === 1;
+    const isStarred = file.is_starred === 1;
+    
+    // Remove existing menu
+    const existingMenu = document.getElementById('filebank-global-menu');
+    if (existingMenu) existingMenu.remove();
+    
+    // Create menu
+    const menu = document.createElement('div');
+    menu.id = 'filebank-global-menu';
+    menu.style.cssText = `
+      position: fixed;
+      left: ${event.pageX}px;
+      top: ${event.pageY}px;
+      background: rgba(20, 24, 36, 0.98);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(102, 126, 234, 0.3);
+      border-radius: 12px;
+      padding: 8px;
+      z-index: 10000;
+      min-width: 220px;
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+      animation: menuSlideIn 0.2s ease;
+    `;
+    
+    menu.innerHTML = `
+      <div class="context-menu-item" onclick="FileBankRevolution.openFile('${fileId}'); document.getElementById('filebank-global-menu').remove();">
+        <span style="font-size: 18px;">👁️</span>
+        <span>Open / Preview</span>
+      </div>
+      <div class="context-menu-item" onclick="FileBankRevolution.downloadFile('${fileId}'); document.getElementById('filebank-global-menu').remove();">
+        <span style="font-size: 18px;">📥</span>
+        <span>Download</span>
+      </div>
+      <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 8px 0;"></div>
+      <div class="context-menu-item" onclick="FileBankRevolution.toggleStar('${fileId}'); document.getElementById('filebank-global-menu').remove();">
+        <span style="font-size: 18px;">${isStarred ? '⭐' : '☆'}</span>
+        <span>${isStarred ? 'Unstar' : 'Star'}</span>
+      </div>
+      <div class="context-menu-item" onclick="FileBankRevolution.emailFile('${fileId}'); document.getElementById('filebank-global-menu').remove();">
+        <span style="font-size: 18px;">📧</span>
+        <span>Send via Email</span>
+      </div>
+      ${isOwner ? `
+        <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 8px 0;"></div>
+        <div class="context-menu-item" onclick="FileBankRevolution.toggleShareFile('${fileId}'); document.getElementById('filebank-global-menu').remove();">
+          <span style="font-size: 18px;">${isShared ? '🔓' : '🔒'}</span>
+          <span>${isShared ? 'Unshare' : 'Share'}</span>
+        </div>
+        <div class="context-menu-item context-menu-danger" onclick="FileBankRevolution.deleteFile('${fileId}'); document.getElementById('filebank-global-menu').remove();">
+          <span style="font-size: 18px;">🗑️</span>
+          <span>Delete</span>
+        </div>
+      ` : `
+        <div style="padding: 12px; color: rgba(255,255,255,0.5); font-size: 12px; text-align: center;">
+          You can view and download this file
         </div>
       `}
     `;

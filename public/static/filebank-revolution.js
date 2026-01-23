@@ -375,14 +375,14 @@ const FileBankRevolution = {
         this.openFile(fileId);
       });
 
-      // Right click for context menu
-      card.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        if (!this.state.selectedFiles.includes(fileId)) {
-          this.selectFile(fileId, true);
-        }
-        this.showContextMenu(e, fileId);
-      });
+      // Right click for context menu - DISABLED (handled by filebank-complete.js)
+      // card.addEventListener('contextmenu', (e) => {
+      //   e.preventDefault();
+      //   if (!this.state.selectedFiles.includes(fileId)) {
+      //     this.selectFile(fileId, true);
+      //   }
+      //   this.showContextMenu(e, fileId);
+      // });
 
       // Drag start - Desktop-style reordering
       card.addEventListener('dragstart', (e) => {
