@@ -63,8 +63,8 @@ export const homePage = (c: Context) => {
         <header id="header" class="premium-header">
             <div class="container">
                 <div class="logo">
-                    <span class="logo-icon">◆</span>
-                    <span class="logo-text">INVESTAY CAPITAL</span>
+                    <span class="logo-dot">■</span>
+                    <span class="logo-text">iNVESTAY CAPITAL</span>
                 </div>
                 <nav class="premium-nav">
                     <a href="#about">About</a>
