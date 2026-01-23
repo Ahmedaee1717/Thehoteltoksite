@@ -531,55 +531,59 @@ const FileBankRevolution = {
           ${isOwner ? `
             <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.1); display: flex; flex-direction: column; gap: 12px;">
               <!-- Primary Actions Row -->
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <button onclick="event.stopPropagation(); FileBankRevolution.emailFile('${file.id}')"
-                        style="padding: 14px 20px; 
+                        style="padding: 16px 24px; 
                                background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(37, 99, 235, 0.25) 100%);
                                backdrop-filter: blur(10px);
                                color: white; 
                                border: 1px solid rgba(59, 130, 246, 0.4); 
                                border-radius: 12px; 
                                cursor: pointer; 
-                               font-size: 13px; 
+                               font-size: 14px; 
                                font-weight: 700; 
                                display: flex; 
+                               flex-direction: column;
                                align-items: center; 
                                justify-content: center; 
-                               gap: 8px; 
+                               gap: 6px; 
                                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                               box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);"
+                               box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+                               min-height: 80px;"
                         onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(59, 130, 246, 0.25)'"
                         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(59, 130, 246, 0.15)'">
-                  <span style="font-size: 16px;">📧</span>
-                  <span>EMAIL</span>
+                  <span style="font-size: 24px;">📧</span>
+                  <span style="font-size: 11px; letter-spacing: 1px;">EMAIL</span>
                 </button>
                 <button onclick="event.stopPropagation(); FileBankRevolution.downloadFile('${file.id}')"
-                        style="padding: 14px 20px; 
+                        style="padding: 16px 24px; 
                                background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.25) 100%);
                                backdrop-filter: blur(10px);
                                color: white; 
                                border: 1px solid rgba(16, 185, 129, 0.4); 
                                border-radius: 12px; 
                                cursor: pointer; 
-                               font-size: 13px; 
+                               font-size: 14px; 
                                font-weight: 700; 
                                display: flex; 
+                               flex-direction: column;
                                align-items: center; 
                                justify-content: center; 
-                               gap: 8px; 
+                               gap: 6px; 
                                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                               box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);"
+                               box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+                               min-height: 80px;"
                         onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(16, 185, 129, 0.25)'"
                         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.15)'">
-                  <span style="font-size: 16px;">📥</span>
-                  <span>DOWNLOAD</span>
+                  <span style="font-size: 24px;">📥</span>
+                  <span style="font-size: 11px; letter-spacing: 1px;">DOWNLOAD</span>
                 </button>
               </div>
               
               <!-- Secondary Actions Row -->
               <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
                 <button onclick="event.stopPropagation(); FileBankRevolution.toggleStar('${file.id}')"
-                        style="padding: 12px 16px; 
+                        style="padding: 16px 8px; 
                                background: ${file.is_starred ? 'linear-gradient(135deg, rgba(251, 191, 36, 0.3) 0%, rgba(245, 158, 11, 0.3) 100%)' : 'linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%)'};
                                backdrop-filter: blur(10px);
                                color: white; 
@@ -592,16 +596,17 @@ const FileBankRevolution = {
                                flex-direction: column;
                                align-items: center; 
                                justify-content: center; 
-                               gap: 4px; 
+                               gap: 6px; 
                                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                               box-shadow: ${file.is_starred ? '0 4px 12px rgba(251, 191, 36, 0.2)' : '0 2px 8px rgba(0, 0, 0, 0.1)'};"
+                               box-shadow: ${file.is_starred ? '0 4px 12px rgba(251, 191, 36, 0.2)' : '0 2px 8px rgba(0, 0, 0, 0.1)'};
+                               min-height: 70px;"
                         onmouseover="this.style.transform='scale(1.05)'"
                         onmouseout="this.style.transform='scale(1)'">
-                  <span style="font-size: 20px;">${file.is_starred ? '⭐' : '☆'}</span>
-                  <span style="font-size: 10px; letter-spacing: 0.5px;">${file.is_starred ? 'STARRED' : 'STAR'}</span>
+                  <span style="font-size: 24px;">${file.is_starred ? '⭐' : '☆'}</span>
+                  <span style="font-size: 9px; letter-spacing: 0.5px; text-align: center; width: 100%;">${file.is_starred ? 'STARRED' : 'STAR'}</span>
                 </button>
                 <button onclick="event.stopPropagation(); FileBankRevolution.toggleShareFile('${file.id}')"
-                        style="padding: 12px 16px; 
+                        style="padding: 16px 8px; 
                                background: ${file.is_shared ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.3) 0%, rgba(5, 150, 105, 0.3) 100%)' : 'linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%)'};
                                backdrop-filter: blur(10px);
                                color: white; 
@@ -614,16 +619,17 @@ const FileBankRevolution = {
                                flex-direction: column;
                                align-items: center; 
                                justify-content: center; 
-                               gap: 4px; 
+                               gap: 6px; 
                                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                               box-shadow: ${file.is_shared ? '0 4px 12px rgba(16, 185, 129, 0.2)' : '0 2px 8px rgba(0, 0, 0, 0.1)'};"
+                               box-shadow: ${file.is_shared ? '0 4px 12px rgba(16, 185, 129, 0.2)' : '0 2px 8px rgba(0, 0, 0, 0.1)'};
+                               min-height: 70px;"
                         onmouseover="this.style.transform='scale(1.05)'"
                         onmouseout="this.style.transform='scale(1)'">
-                  <span style="font-size: 20px;">${file.is_shared ? '🔓' : '🔒'}</span>
-                  <span style="font-size: 10px; letter-spacing: 0.5px;">${file.is_shared ? 'SHARED' : 'SHARE'}</span>
+                  <span style="font-size: 24px;">${file.is_shared ? '🔓' : '🔒'}</span>
+                  <span style="font-size: 9px; letter-spacing: 0.5px; text-align: center; width: 100%;">${file.is_shared ? 'SHARED' : 'SHARE'}</span>
                 </button>
                 <button onclick="event.stopPropagation(); FileBankRevolution.deleteFile('${file.id}')"
-                        style="padding: 12px 16px; 
+                        style="padding: 16px 8px; 
                                background: linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, rgba(220, 38, 38, 0.25) 100%);
                                backdrop-filter: blur(10px);
                                color: #fca5a5; 
@@ -636,66 +642,71 @@ const FileBankRevolution = {
                                flex-direction: column;
                                align-items: center; 
                                justify-content: center; 
-                               gap: 4px; 
+                               gap: 6px; 
                                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                               box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);"
+                               box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+                               min-height: 70px;"
                         onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 16px rgba(239, 68, 68, 0.25)'"
                         onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(239, 68, 68, 0.15)'">
-                  <span style="font-size: 20px;">🗑️</span>
-                  <span style="font-size: 10px; letter-spacing: 0.5px;">DELETE</span>
+                  <span style="font-size: 24px;">🗑️</span>
+                  <span style="font-size: 9px; letter-spacing: 0.5px; text-align: center; width: 100%;">DELETE</span>
                 </button>
               </div>
             </div>
           ` : `
             <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.1); display: flex; flex-direction: column; gap: 12px;">
               <!-- Non-owner Actions -->
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <button onclick="event.stopPropagation(); FileBankRevolution.emailFile('${file.id}')"
-                        style="padding: 14px 20px; 
+                        style="padding: 16px 24px; 
                                background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(37, 99, 235, 0.25) 100%);
                                backdrop-filter: blur(10px);
                                color: white; 
                                border: 1px solid rgba(59, 130, 246, 0.4); 
                                border-radius: 12px; 
                                cursor: pointer; 
-                               font-size: 13px; 
+                               font-size: 14px; 
                                font-weight: 700; 
                                display: flex; 
+                               flex-direction: column;
                                align-items: center; 
                                justify-content: center; 
-                               gap: 8px; 
+                               gap: 6px; 
                                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                               box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);"
+                               box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+                               min-height: 80px;"
                         onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(59, 130, 246, 0.25)'"
                         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(59, 130, 246, 0.15)'">
-                  <span style="font-size: 16px;">📧</span>
-                  <span>EMAIL</span>
+                  <span style="font-size: 24px;">📧</span>
+                  <span style="font-size: 11px; letter-spacing: 1px;">EMAIL</span>
                 </button>
                 <button onclick="event.stopPropagation(); FileBankRevolution.downloadFile('${file.id}')"
-                        style="padding: 14px 20px; 
+                        style="padding: 16px 24px; 
                                background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.25) 100%);
                                backdrop-filter: blur(10px);
                                color: white; 
                                border: 1px solid rgba(16, 185, 129, 0.4); 
                                border-radius: 12px; 
                                cursor: pointer; 
-                               font-size: 13px; 
+                               font-size: 14px; 
                                font-weight: 700; 
                                display: flex; 
+                               flex-direction: column;
                                align-items: center; 
                                justify-content: center; 
-                               gap: 8px; 
+                               gap: 6px; 
                                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                               box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);"
+                               box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+                               min-height: 80px;"
                         onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(16, 185, 129, 0.25)'"
                         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.15)'">
-                  <span style="font-size: 16px;">📥</span>
-                  <span>DOWNLOAD</span>
+                  <span style="font-size: 24px;">📥</span>
+                  <span style="font-size: 11px; letter-spacing: 1px;">DOWNLOAD</span>
                 </button>
               </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <button onclick="event.stopPropagation(); FileBankRevolution.showNotification('✨ This file is ${file.is_shared ? 'shared with you' : 'view only'}', 'info')"
-                        style="padding: 12px 16px; 
+                        style="padding: 16px 8px; 
                                background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
                                backdrop-filter: blur(10px);
                                color: rgba(255, 255, 255, 0.5); 
@@ -708,12 +719,13 @@ const FileBankRevolution = {
                                flex-direction: column;
                                align-items: center; 
                                justify-content: center; 
-                               gap: 4px;">
-                  <span style="font-size: 20px;">${file.is_shared ? '🔓' : '👁️'}</span>
-                  <span style="font-size: 10px; letter-spacing: 0.5px;">${file.is_shared ? 'SHARED' : 'VIEW ONLY'}</span>
+                               gap: 6px;
+                               min-height: 70px;">
+                  <span style="font-size: 24px;">${file.is_shared ? '🔓' : '👁️'}</span>
+                  <span style="font-size: 9px; letter-spacing: 0.5px; text-align: center; width: 100%;">${file.is_shared ? 'SHARED' : 'VIEW ONLY'}</span>
                 </button>
                 <button onclick="event.stopPropagation(); FileBankRevolution.showNotification('❌ Only owner can delete', 'error')"
-                        style="padding: 12px 16px; 
+                        style="padding: 16px 8px; 
                                background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
                                backdrop-filter: blur(10px);
                                color: rgba(255, 255, 255, 0.5); 
@@ -726,9 +738,10 @@ const FileBankRevolution = {
                                flex-direction: column;
                                align-items: center; 
                                justify-content: center; 
-                               gap: 4px;">
-                  <span style="font-size: 20px;">🔒</span>
-                  <span style="font-size: 10px; letter-spacing: 0.5px;">LOCKED</span>
+                               gap: 6px;
+                               min-height: 70px;">
+                  <span style="font-size: 24px;">🔒</span>
+                  <span style="font-size: 9px; letter-spacing: 0.5px; text-align: center; width: 100%;">LOCKED</span>
                 </button>
               </div>
             </div>
