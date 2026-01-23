@@ -318,24 +318,35 @@ function attachPostCardListeners() {
   
   cardContents.forEach((element, index) => {
     console.log(`📌 Attaching listener to card ${index}:`, element);
+    
+    // Try BOTH click AND mousedown events
     element.addEventListener('click', function(e) {
-      console.log('🎯 Card content clicked!', e.target);
+      console.log('🎯 CLICK event on card!', e.target);
       const postDataBase64 = this.getAttribute('data-post-base64');
-      console.log('🎯 Post data (base64):', postDataBase64);
       if (postDataBase64) {
         try {
-          const postDataStr = atob(postDataBase64); // Decode from base64
-          console.log('🎯 Post data (decoded):', postDataStr);
+          const postDataStr = atob(postDataBase64);
           const encodedData = encodeURIComponent(postDataStr);
-          console.log('🎯 Calling openPost with:', encodedData);
           window.openPost(encodedData);
         } catch (error) {
-          console.error('❌ Error decoding post data:', error);
+          console.error('❌ Error:', error);
         }
-      } else {
-        console.error('❌ No post data found on element');
       }
-    }, { capture: true }); // CAPTURE PHASE - fires BEFORE anything can block it
+    }, { capture: true });
+    
+    element.addEventListener('mousedown', function(e) {
+      console.log('🎯 MOUSEDOWN event on card!', e.target);
+      const postDataBase64 = this.getAttribute('data-post-base64');
+      if (postDataBase64) {
+        try {
+          const postDataStr = atob(postDataBase64);
+          const encodedData = encodeURIComponent(postDataStr);
+          window.openPost(encodedData);
+        } catch (error) {
+          console.error('❌ Error:', error);
+        }
+      }
+    }, { capture: true });
   });
   
   // Add click listeners to edit buttons
@@ -344,18 +355,25 @@ function attachPostCardListeners() {
   
   editButtons.forEach((button, index) => {
     console.log(`📌 Attaching listener to button ${index}:`, button);
+    
+    // Try BOTH click AND mousedown
     button.addEventListener('click', function(e) {
-      e.stopPropagation(); // Prevent card click
-      console.log('🎯 Edit button clicked!', e.target);
+      e.stopPropagation();
+      console.log('🎯 CLICK on Edit button!', e.target);
       const slug = this.getAttribute('data-slug');
-      console.log('🎯 Slug:', slug);
       if (slug) {
-        console.log('🎯 Calling editPost with:', slug);
         window.editPost(slug);
-      } else {
-        console.error('❌ No slug found on button');
       }
-    }, { capture: true }); // CAPTURE PHASE
+    }, { capture: true });
+    
+    button.addEventListener('mousedown', function(e) {
+      e.stopPropagation();
+      console.log('🎯 MOUSEDOWN on Edit button!', e.target);
+      const slug = this.getAttribute('data-slug');
+      if (slug) {
+        window.editPost(slug);
+      }
+    }, { capture: true });
   });
   
   console.log(`📌 Attached listeners to ${cardContents.length} post cards and ${editButtons.length} edit buttons`);
