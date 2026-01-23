@@ -69,6 +69,37 @@ window.FileBankComplete = {
     console.log('✅ Complete File Bank Ready!');
   },
   
+  // Get files inside folder for preview
+  getFilesInFolder(folderId) {
+    const FBR = window.FileBankRevolution;
+    return FBR.state.files.filter(f => f.folder_id === folderId);
+  },
+  
+  // Generate folder preview content
+  generateFolderPreview(folder) {
+    const files = this.getFilesInFolder(folder.id);
+    if (files.length === 0) {
+      return `<div style="padding: 20px; text-align: center; color: rgba(255, 255, 255, 0.5); font-size: 12px;">📂 Empty folder</div>`;
+    }
+    
+    const previewFiles = files.slice(0, 5);
+    return `
+      <div style="padding: 16px; background: rgba(0, 0, 0, 0.3); border-radius: 8px; margin-top: 12px;">
+        <div style="color: rgba(255, 255, 255, 0.7); font-size: 11px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">📁 Contents</div>
+        ${previewFiles.map(f => `
+          <div style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: rgba(255, 255, 255, 0.05); border-radius: 6px; margin-bottom: 4px;">
+            <span style="font-size: 16px;">${window.FileBankRevolution.getFileIcon(f)}</span>
+            <div style="flex: 1; min-width: 0;">
+              <div style="color: white; font-size: 11px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${this.escapeHtml(f.original_filename)}</div>
+              <div style="color: rgba(255, 255, 255, 0.5); font-size: 9px;">${this.formatFileSize(f.file_size)}</div>
+            </div>
+          </div>
+        `).join('')}
+        ${files.length > 5 ? `<div style="color: rgba(255, 255, 255, 0.5); font-size: 10px; text-align: center; margin-top: 8px;">+${files.length - 5} more files</div>` : ''}
+      </div>
+    `;
+  },
+  
   // Create beautiful folder card
   createFolderCard(folder) {
     const FBR = window.FileBankRevolution;
@@ -78,6 +109,9 @@ window.FileBankComplete = {
     const totalSize = FBR.state.files
       .filter(f => f.folder_id === folder.id)
       .reduce((sum, f) => sum + (f.file_size || 0), 0);
+    
+    // Check if column view
+    const isColumnView = document.getElementById('filebank-grid')?.classList.contains('columns-view');
 
     console.log('📁 Rendering folder:', { 
       name: folder.folder_name, 
@@ -119,10 +153,12 @@ window.FileBankComplete = {
           </div>
         ` : ''}
         
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; text-align: center;">
-          <div style="font-size: 80px; margin-bottom: 15px; filter: drop-shadow(0 4px 12px rgba(102, 126, 234, 0.3));">${folder.icon || '📁'}</div>
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: ${isColumnView ? 'flex-start' : 'center'}; padding: ${isColumnView ? '20px' : '40px 20px'}; text-align: center;">
+          <div style="font-size: ${isColumnView ? '60px' : '80px'}; margin-bottom: 15px; filter: drop-shadow(0 4px 12px rgba(102, 126, 234, 0.3));">${folder.icon || '📁'}</div>
           <div style="color: white; font-size: 16px; font-weight: 600; margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;">${this.escapeHtml(folder.folder_name)}</div>
           <div style="color: rgba(255, 255, 255, 0.6); font-size: 12px;">${fileCount} file${fileCount !== 1 ? 's' : ''} · ${this.formatFileSize(totalSize)}</div>
+          
+          ${isColumnView ? this.generateFolderPreview(folder) : ''}
         </div>
         
         ${isOwner ? `

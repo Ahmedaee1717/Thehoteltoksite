@@ -237,6 +237,104 @@ const FileBankRevolution = {
   },
 
   // Create file card HTML
+  // Generate AI summary based on file type
+  generateAISummary(file) {
+    const ext = file.original_filename.split('.').pop().toLowerCase();
+    const fileType = file.file_type || '';
+    
+    // PDF documents
+    if (ext === 'pdf') {
+      return `📄 <strong>PDF Document</strong><br>
+              Professional document likely containing text, images, and formatted content. 
+              Size: ${this.formatFileSize(file.file_size)}. 
+              ${file.file_size > 5000000 ? 'Large document with extensive content.' : 'Standard size document.'}`;
+    }
+    
+    // Images
+    if (fileType.startsWith('image/')) {
+      return `🖼️ <strong>Image File</strong><br>
+              Visual content in ${ext.toUpperCase()} format. 
+              ${file.file_size > 2000000 ? 'High resolution image suitable for printing.' : 'Web-optimized image.'}`;
+    }
+    
+    // Spreadsheets
+    if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') {
+      return `📊 <strong>Spreadsheet</strong><br>
+              Tabular data with rows and columns. 
+              Useful for data analysis, calculations, and record keeping. 
+              ${ext === 'csv' ? 'Simple format compatible with all systems.' : 'Excel format with advanced features.'}`;
+    }
+    
+    // Presentations
+    if (ext === 'pptx' || ext === 'ppt') {
+      return `📽️ <strong>Presentation</strong><br>
+              Slide deck for presentations and meetings. 
+              Contains visual slides with text, images, and graphics.`;
+    }
+    
+    // Word documents
+    if (ext === 'docx' || ext === 'doc') {
+      return `📝 <strong>Word Document</strong><br>
+              Text document with formatting, likely containing written content, reports, or documentation.`;
+    }
+    
+    // Videos
+    if (fileType.startsWith('video/')) {
+      return `🎬 <strong>Video File</strong><br>
+              Multimedia content in ${ext.toUpperCase()} format. 
+              ${file.file_size > 50000000 ? 'High quality video, possibly HD or 4K.' : 'Standard video file.'}`;
+    }
+    
+    // Audio
+    if (fileType.startsWith('audio/')) {
+      return `🎵 <strong>Audio File</strong><br>
+              Sound recording in ${ext.toUpperCase()} format. 
+              ${file.file_size > 10000000 ? 'High quality audio.' : 'Standard audio file.'}`;
+    }
+    
+    // Archives
+    if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) {
+      return `📦 <strong>Compressed Archive</strong><br>
+              Collection of files compressed into a single package. 
+              Extract to access contents.`;
+    }
+    
+    // Code files
+    if (['js', 'ts', 'py', 'java', 'cpp', 'html', 'css'].includes(ext)) {
+      return `💻 <strong>Code File</strong><br>
+              ${ext.toUpperCase()} source code. 
+              Programming file for software development.`;
+    }
+    
+    // Default
+    return `📄 <strong>${ext.toUpperCase()} File</strong><br>
+            ${this.formatFileSize(file.file_size)} ${file.file_type || 'file'}.
+            Created ${this.formatDate(file.created_at)}.`;
+  },
+  
+  // Generate content preview based on file type
+  generateContentPreview(file) {
+    const ext = file.original_filename.split('.').pop().toLowerCase();
+    
+    // For images, show thumbnail
+    if (this.isImageFile(file) && file.file_url) {
+      return `<img src="/api/filebank${file.file_url}" 
+                   alt="${this.escapeHtml(file.original_filename)}" 
+                   loading="lazy"
+                   style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: 12px;">`;
+    }
+    
+    // For documents, show icon and description
+    const fileIcon = this.getFileIcon(file);
+    return `
+      <div style="display: flex; align-items: center; justify-content: center; 
+                  height: 80px; background: rgba(102, 126, 234, 0.1); 
+                  border-radius: 8px; margin-bottom: 12px;">
+        <div style="font-size: 48px;">${fileIcon}</div>
+      </div>
+    `;
+  },
+
   createFileCard(file) {
     const isSelected = this.state.selectedFiles.includes(file.id);
     const isImage = this.isImageFile(file);
@@ -244,6 +342,9 @@ const FileBankRevolution = {
     const fileSize = this.formatFileSize(file.file_size);
     const fileDate = this.formatDate(file.created_at);
     const isOwner = file.user_email === this.state.userEmail;
+    
+    // Check if column view
+    const isColumnView = document.getElementById('filebank-grid')?.classList.contains('columns-view');
 
     return `
       <div class="filebank-file-card ${isSelected ? 'selected' : ''}" 
@@ -358,6 +459,21 @@ const FileBankRevolution = {
           ${file.tags && file.tags.length > 0 ? `
             <div class="filebank-file-tags" style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
               ${file.tags.map(tag => `<span class="filebank-file-tag" style="background: rgba(102, 126, 234, 0.2); color: rgba(255, 255, 255, 0.8); padding: 4px 8px; border-radius: 4px; font-size: 11px;">${this.escapeHtml(tag)}</span>`).join('')}
+            </div>
+          ` : ''}
+          
+          <!-- AI PREVIEW (COLUMN VIEW ONLY) -->
+          ${isColumnView ? `
+            <div style="margin-top: 12px; padding: 12px; background: rgba(0, 0, 0, 0.3); border-radius: 8px; border: 1px solid rgba(102, 126, 234, 0.2);">
+              <div style="color: rgba(255, 255, 255, 0.7); font-size: 10px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">🤖 AI Analysis</div>
+              <div style="color: rgba(255, 255, 255, 0.8); font-size: 11px; line-height: 1.6;">
+                ${this.generateAISummary(file)}
+              </div>
+            </div>
+            
+            <div style="margin-top: 12px;">
+              <div style="color: rgba(255, 255, 255, 0.7); font-size: 10px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">👁️ Preview</div>
+              ${this.generateContentPreview(file)}
             </div>
           ` : ''}
           
