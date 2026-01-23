@@ -522,15 +522,15 @@ const FileBankRevolution = {
           
           <!-- AI PREVIEW (COLUMN VIEW ONLY) -->
           ${isColumnView ? `
-            <div style="margin-top: 12px; padding: 12px; background: rgba(0, 0, 0, 0.3); border-radius: 8px; border: 1px solid rgba(102, 126, 234, 0.2);">
-              <div style="color: rgba(255, 255, 255, 0.7); font-size: 10px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">🤖 AI Analysis</div>
-              <div style="color: rgba(255, 255, 255, 0.8); font-size: 11px; line-height: 1.6;">
+            <div style="margin-top: 8px; padding: 10px; background: rgba(0, 0, 0, 0.2); border-radius: 6px; border: 1px solid rgba(102, 126, 234, 0.15);">
+              <div style="color: rgba(255, 255, 255, 0.7); font-size: 9px; font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">🤖 AI</div>
+              <div style="color: rgba(255, 255, 255, 0.75); font-size: 10px; line-height: 1.5;">
                 ${this.generateAISummary(file)}
               </div>
             </div>
             
-            <div style="margin-top: 12px;">
-              <div style="color: rgba(255, 255, 255, 0.7); font-size: 10px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">👁️ Preview</div>
+            <div style="margin-top: 8px;">
+              <div style="color: rgba(255, 255, 255, 0.7); font-size: 9px; font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">👁️ Preview</div>
               ${this.generateContentPreview(file)}
             </div>
           ` : ''}

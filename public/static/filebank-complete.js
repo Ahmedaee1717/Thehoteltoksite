@@ -79,23 +79,23 @@ window.FileBankComplete = {
   generateFolderPreview(folder) {
     const files = this.getFilesInFolder(folder.id);
     if (files.length === 0) {
-      return `<div style="padding: 20px; text-align: center; color: rgba(255, 255, 255, 0.5); font-size: 12px;">📂 Empty folder</div>`;
+      return `<div style="padding: 12px; text-align: center; color: rgba(255, 255, 255, 0.5); font-size: 11px;">📂 Empty</div>`;
     }
     
-    const previewFiles = files.slice(0, 5);
+    const previewFiles = files.slice(0, 3);
     return `
-      <div style="padding: 16px; background: rgba(0, 0, 0, 0.3); border-radius: 8px; margin-top: 12px;">
-        <div style="color: rgba(255, 255, 255, 0.7); font-size: 11px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">📁 Contents</div>
+      <div style="padding: 10px; background: rgba(0, 0, 0, 0.2); border-radius: 6px; margin-top: 8px;">
+        <div style="color: rgba(255, 255, 255, 0.7); font-size: 9px; font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">📁 Files</div>
         ${previewFiles.map(f => `
-          <div style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: rgba(255, 255, 255, 0.05); border-radius: 6px; margin-bottom: 4px;">
-            <span style="font-size: 16px;">${window.FileBankRevolution.getFileIcon(f)}</span>
+          <div style="display: flex; align-items: center; gap: 6px; padding: 4px 6px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; margin-bottom: 3px;">
+            <span style="font-size: 14px;">${window.FileBankRevolution.getFileIcon(f)}</span>
             <div style="flex: 1; min-width: 0;">
-              <div style="color: white; font-size: 11px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${this.escapeHtml(f.original_filename)}</div>
-              <div style="color: rgba(255, 255, 255, 0.5); font-size: 9px;">${this.formatFileSize(f.file_size)}</div>
+              <div style="color: white; font-size: 10px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${this.escapeHtml(f.original_filename)}</div>
+              <div style="color: rgba(255, 255, 255, 0.5); font-size: 8px;">${this.formatFileSize(f.file_size)}</div>
             </div>
           </div>
         `).join('')}
-        ${files.length > 5 ? `<div style="color: rgba(255, 255, 255, 0.5); font-size: 10px; text-align: center; margin-top: 8px;">+${files.length - 5} more files</div>` : ''}
+        ${files.length > 3 ? `<div style="color: rgba(255, 255, 255, 0.5); font-size: 9px; text-align: center; margin-top: 4px;">+${files.length - 3} more</div>` : ''}
       </div>
     `;
   },
