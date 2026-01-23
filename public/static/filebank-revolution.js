@@ -471,33 +471,6 @@ const FileBankRevolution = {
           ` : ''}
         </div>
         
-        <div class="filebank-file-actions">
-          <button class="filebank-file-action-btn" 
-                  onclick="event.stopPropagation(); FileBankRevolution.downloadFile('${file.id}')"
-                  title="Download"
-                  style="background: rgba(102, 126, 234, 0.2); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;">
-            📥
-          </button>
-          <button class="filebank-file-action-btn ${file.is_starred ? 'starred' : ''}" 
-                  onclick="event.stopPropagation(); FileBankRevolution.toggleStar('${file.id}')"
-                  title="Star"
-                  style="border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;">
-            ⭐
-          </button>
-          <button class="filebank-file-action-btn" 
-                  onclick="event.stopPropagation(); ${isOwner ? `FileBankRevolution.toggleShareFile('${file.id}')` : `FileBankRevolution.showNotification('❌ You can only share your own files', 'error')`}"
-                  title="${isOwner ? (file.is_shared ? 'Unshare (make private)' : 'Share with everyone') : 'Only owner can toggle share'}"
-                  style="background: ${file.is_shared ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'rgba(255, 255, 255, 0.1)'}; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; cursor: ${isOwner ? 'pointer' : 'not-allowed'}; opacity: ${isOwner ? '1' : '0.5'};">
-            🌐
-          </button>
-          <button class="filebank-file-action-btn" 
-                  onclick="event.stopPropagation(); FileBankRevolution.deleteFile('${file.id}')"
-                  title="${isOwner ? 'Delete this file' : 'You can only delete your own files'}"
-                  style="background: rgba(239, 68, 68, 0.2); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; cursor: ${isOwner ? 'pointer' : 'not-allowed'}; opacity: ${isOwner ? '1' : '0.5'};">
-            🗑️
-          </button>
-        </div>
-
         <div class="filebank-file-preview" style="position: relative; width: 100%; height: 150px; display: flex; align-items: center; justify-content: center; background: rgba(102, 126, 234, 0.1); border-radius: 12px; overflow: hidden;">
           ${isImage && file.file_url ? 
             `<img src="/api/filebank${file.file_url}" 
@@ -557,6 +530,20 @@ const FileBankRevolution = {
           <!-- PROMINENT ACTION BUTTONS WITH TEXT -->
           ${isOwner ? `
             <div class="filebank-file-actions-bar" style="display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+              <button onclick="event.stopPropagation(); FileBankRevolution.emailFile('${file.id}')"
+                      style="flex: 1; padding: 8px 12px; background: rgba(102, 126, 234, 0.2); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.3s;">
+                📧 EMAIL
+              </button>
+              <button onclick="event.stopPropagation(); FileBankRevolution.downloadFile('${file.id}')"
+                      style="flex: 1; padding: 8px 12px; background: rgba(102, 126, 234, 0.2); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.3s;">
+                📥 DOWNLOAD
+              </button>
+              <button onclick="event.stopPropagation(); FileBankRevolution.toggleStar('${file.id}')"
+                      style="padding: 8px 12px; background: ${file.is_starred ? 'rgba(251, 191, 36, 0.2)' : 'rgba(102, 126, 234, 0.2)'}; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px; transition: all 0.3s;">
+                ${file.is_starred ? '⭐ STARRED' : '☆ STAR'}
+              </button>
+            </div>
+            <div class="filebank-file-actions-bar" style="display: flex; gap: 8px; margin-top: 8px;">
               <button onclick="event.stopPropagation(); FileBankRevolution.toggleShareFile('${file.id}')"
                       style="flex: 1; padding: 8px 12px; background: ${file.is_shared ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'rgba(102, 126, 234, 0.2)'}; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.3s;">
                 ${file.is_shared ? '🔓 SHARED' : '🔒 SHARE'}
@@ -569,6 +556,16 @@ const FileBankRevolution = {
             </div>
           ` : `
             <div class="filebank-file-actions-bar" style="display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+              <button onclick="event.stopPropagation(); FileBankRevolution.emailFile('${file.id}')"
+                      style="flex: 1; padding: 8px 12px; background: rgba(102, 126, 234, 0.2); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                📧 EMAIL
+              </button>
+              <button onclick="event.stopPropagation(); FileBankRevolution.downloadFile('${file.id}')"
+                      style="flex: 1; padding: 8px 12px; background: rgba(102, 126, 234, 0.2); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                📥 DOWNLOAD
+              </button>
+            </div>
+            <div class="filebank-file-actions-bar" style="display: flex; gap: 8px; margin-top: 8px;">
               <button onclick="event.stopPropagation(); FileBankRevolution.showNotification('❌ You can only manage your own files', 'error')"
                       style="flex: 1; padding: 8px 12px; background: rgba(255, 255, 255, 0.05); color: rgba(255, 255, 255, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; cursor: not-allowed; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px;">
                 ${file.is_shared ? '🔓 SHARED' : '🔒 VIEW ONLY'}
@@ -592,7 +589,8 @@ const FileBankRevolution = {
 
       // Click to select
       card.addEventListener('click', (e) => {
-        if (e.target.closest('.filebank-file-action-btn')) return;
+        // Allow clicking on buttons and checkboxes
+        if (e.target.closest('button') || e.target.closest('input[type="checkbox"]')) return;
         
         if (e.ctrlKey || e.metaKey) {
           this.toggleFileSelection(fileId);
