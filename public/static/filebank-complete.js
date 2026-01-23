@@ -85,6 +85,13 @@ window.FileBankComplete = {
       .filter(f => f.folder_id === folder.id)
       .reduce((sum, f) => sum + (f.file_size || 0), 0);
 
+    console.log('📁 Rendering folder:', { 
+      name: folder.folder_name, 
+      is_team_shared: folder.is_team_shared, 
+      isShared,
+      rawFolder: folder 
+    });
+
     return `
       <div class="filebank-folder-card filebank-file-card" 
            data-folder-id="${folder.id}"

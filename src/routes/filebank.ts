@@ -577,6 +577,12 @@ fileBank.post('/folders', async (c) => {
     
     console.log('📂 Folder path:', folderPath)
     
+    // Explicitly default to NOT shared unless specified
+    const isSharedValue = isShared === true ? 1 : 0
+    const isTeamSharedValue = isTeamShared === true ? 1 : 0
+    
+    console.log('🔒 Share settings:', { isShared, isTeamShared, isSharedValue, isTeamSharedValue })
+    
     const result = await c.env.DB.prepare(`
       INSERT INTO file_bank_folders (
         user_email, folder_name, parent_folder_id, folder_path, icon, color, description, is_shared, is_team_shared
@@ -589,8 +595,8 @@ fileBank.post('/folders', async (c) => {
       icon || '📁',
       color || '#C9A962',
       description || '',
-      isShared ? 1 : 0,
-      isTeamShared ? 1 : 0
+      isSharedValue,
+      isTeamSharedValue
     ).run()
     
     console.log('✅ Folder created successfully:', result.meta.last_row_id)
