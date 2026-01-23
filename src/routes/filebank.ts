@@ -606,6 +606,125 @@ fileBank.post('/folders', async (c) => {
   }
 })
 
+// Update folder (PATCH)
+fileBank.patch('/folders/:id', async (c) => {
+  const folderId = c.req.param('id')
+  const body = await c.req.json()
+  const userEmail = body.userEmail || body.user_email
+  
+  try {
+    // Check if folder exists and user owns it
+    const folder = await c.env.DB.prepare(`
+      SELECT user_email, is_team_shared FROM file_bank_folders WHERE id = ?
+    `).bind(folderId).first()
+    
+    if (!folder) {
+      return c.json({ error: 'Folder not found' }, 404)
+    }
+    
+    if (folder.user_email !== userEmail) {
+      return c.json({ error: 'Permission denied', message: 'You can only update your own folders' }, 403)
+    }
+    
+    // Build update query
+    const updates: string[] = []
+    const values: any[] = []
+    
+    if ('is_team_shared' in body) {
+      updates.push('is_team_shared = ?')
+      values.push(body.is_team_shared ? 1 : 0)
+    }
+    
+    if ('folder_name' in body || 'folderName' in body) {
+      const folderName = body.folder_name || body.folderName
+      updates.push('folder_name = ?')
+      values.push(folderName)
+    }
+    
+    if (updates.length === 0) {
+      return c.json({ error: 'No valid fields to update' }, 400)
+    }
+    
+    values.push(folderId)
+    
+    await c.env.DB.prepare(`
+      UPDATE file_bank_folders
+      SET ${updates.join(', ')}
+      WHERE id = ?
+    `).bind(...values).run()
+    
+    return c.json({ success: true, message: 'Folder updated successfully' })
+  } catch (error: any) {
+    console.error('Error updating folder:', error)
+    return c.json({ error: 'Failed to update folder', details: error.message }, 500)
+  }
+})
+
+// Delete folder
+fileBank.delete('/folders/:id', async (c) => {
+  const folderId = c.req.param('id')
+  const bodyText = await c.req.text()
+  let body: any = {}
+  try {
+    body = bodyText ? JSON.parse(bodyText) : {}
+  } catch (e) {}
+  const userEmail = body.userEmail || body.user_email
+  
+  try {
+    // Check if folder exists and user owns it
+    const folder = await c.env.DB.prepare(`
+      SELECT user_email FROM file_bank_folders WHERE id = ?
+    `).bind(folderId).first()
+    
+    if (!folder) {
+      return c.json({ error: 'Folder not found' }, 404)
+    }
+    
+    if (folder.user_email !== userEmail) {
+      return c.json({ error: 'Permission denied', message: 'You can only delete your own folders' }, 403)
+    }
+    
+    // Delete folder (files will be orphaned - you may want to handle this differently)
+    await c.env.DB.prepare(`
+      DELETE FROM file_bank_folders WHERE id = ?
+    `).bind(folderId).run()
+    
+    return c.json({ success: true, message: 'Folder deleted successfully' })
+  } catch (error: any) {
+    console.error('Error deleting folder:', error)
+    return c.json({ error: 'Failed to delete folder', details: error.message }, 500)
+  }
+})
+
+// Move file to folder
+fileBank.post('/files/:id/move', async (c) => {
+  const fileId = c.req.param('id')
+  const { userEmail, folderId } = await c.req.json()
+  
+  try {
+    // Check if file exists
+    const file = await c.env.DB.prepare(`
+      SELECT user_email FROM file_bank_files WHERE id = ? AND deleted_at IS NULL
+    `).bind(fileId).first()
+    
+    if (!file) {
+      return c.json({ error: 'File not found' }, 404)
+    }
+    
+    // Update file's folder_id
+    await c.env.DB.prepare(`
+      UPDATE file_bank_files
+      SET folder_id = ?
+      WHERE id = ?
+    `).bind(folderId || null, fileId).run()
+    
+    return c.json({ success: true, message: 'File moved successfully' })
+  } catch (error: any) {
+    console.error('Error moving file:', error)
+    return c.json({ error: 'Failed to move file', details: error.message }, 500)
+  }
+})
+
 // ===== USAGE TRACKING =====
 
 // Track file usage in email
