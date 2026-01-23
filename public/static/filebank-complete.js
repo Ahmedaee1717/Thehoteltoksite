@@ -189,6 +189,15 @@ window.FileBankComplete = {
   // Setup folder listeners
   setupFolderListeners() {
     document.querySelectorAll('.filebank-folder-card').forEach(card => {
+      // Double-click to open folder
+      card.addEventListener('dblclick', (e) => {
+        const folderId = parseInt(e.currentTarget.dataset.folderId);
+        console.log('🖱️ Double-clicked folder:', folderId);
+        if (folderId) {
+          this.openFolder(folderId);
+        }
+      });
+      
       // Hover effects
       card.addEventListener('mouseenter', (e) => {
         e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)';

@@ -421,6 +421,16 @@ const FileBankRevolution = {
            data-file-id="${file.id}"
            draggable="true">
         
+        <!-- Selection Checkbox (Top Left) -->
+        <div style="position: absolute; top: 8px; left: 8px; z-index: 10;">
+          <input type="checkbox" 
+                 class="filebank-select-checkbox"
+                 data-file-id="${file.id}"
+                 ${isSelected ? 'checked' : ''}
+                 onclick="event.stopPropagation(); FileBankRevolution.toggleFileSelection('${file.id}')"
+                 style="width: 20px; height: 20px; cursor: pointer; accent-color: #667eea;">
+        </div>
+        
         <!-- Status Badges at Top -->
         <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; min-height: 24px;">
           ${file.is_shared ? `
@@ -786,7 +796,14 @@ const FileBankRevolution = {
   updateSelection() {
     document.querySelectorAll('.filebank-file-card').forEach(card => {
       const fileId = card.dataset.fileId;
-      card.classList.toggle('selected', this.state.selectedFiles.includes(fileId));
+      const isSelected = this.state.selectedFiles.includes(fileId);
+      card.classList.toggle('selected', isSelected);
+      
+      // Update checkbox state
+      const checkbox = card.querySelector('.filebank-select-checkbox');
+      if (checkbox) {
+        checkbox.checked = isSelected;
+      }
     });
     this.updateSelectionToolbar();
   },
