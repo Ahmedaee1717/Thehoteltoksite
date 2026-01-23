@@ -247,9 +247,57 @@ const FileBankRevolution = {
            data-file-id="${file.id}"
            draggable="true">
         
-        ${file.folder_is_shared ? '<div class="filebank-collab-badge" title="Folder is shared">👥 Folder</div>' : ''}
-        ${file.is_shared ? '<div class="filebank-collab-badge" style="top: 12px; right: 12px; background: linear-gradient(135deg, #10b981 0%, #059669 100%);" title="File is shared with everyone">🌐 Shared</div>' : ''}
-        ${!isOwner ? '<div class="filebank-collab-badge" style="top: 42px; right: 12px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);" title="You don\'t own this file">👤 Not Yours</div>' : ''}
+        ${file.is_shared ? `
+          <div style="position: absolute; top: 12px; right: 12px; 
+                      background: linear-gradient(135deg, rgba(16, 185, 129, 0.95) 0%, rgba(5, 150, 105, 0.95) 100%);
+                      backdrop-filter: blur(10px);
+                      padding: 6px 12px;
+                      border-radius: 8px;
+                      box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3);
+                      border: 1px solid rgba(255, 255, 255, 0.2);
+                      z-index: 10;">
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span style="font-size: 12px;">🌐</span>
+              <span style="color: white; font-size: 10px; font-weight: 700; letter-spacing: 0.3px;">SHARED</span>
+            </div>
+            <div style="color: rgba(255, 255, 255, 0.85); font-size: 8px; font-weight: 500; margin-top: 2px;">
+              by ${this.getDisplayName(file.user_email)}
+            </div>
+          </div>
+        ` : ''}
+        ${file.folder_is_shared ? `
+          <div style="position: absolute; top: ${file.is_shared ? '78px' : '12px'}; right: 12px; 
+                      background: linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%);
+                      backdrop-filter: blur(10px);
+                      padding: 5px 10px;
+                      border-radius: 7px;
+                      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+                      border: 1px solid rgba(255, 255, 255, 0.15);
+                      z-index: 9;">
+            <div style="display: flex; align-items: center; gap: 3px;">
+              <span style="font-size: 10px;">📁</span>
+              <span style="color: white; font-size: 9px; font-weight: 600;">Folder Shared</span>
+            </div>
+          </div>
+        ` : ''}
+        ${!isOwner ? `
+          <div style="position: absolute; top: ${file.is_shared && file.folder_is_shared ? '140px' : file.is_shared || file.folder_is_shared ? '78px' : '12px'}; right: 12px; 
+                      background: linear-gradient(135deg, rgba(245, 158, 11, 0.9) 0%, rgba(217, 119, 6, 0.9) 100%);
+                      backdrop-filter: blur(10px);
+                      padding: 5px 10px;
+                      border-radius: 7px;
+                      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+                      border: 1px solid rgba(255, 255, 255, 0.15);
+                      z-index: 8;">
+            <div style="display: flex; align-items: center; gap: 3px;">
+              <span style="font-size: 10px;">👤</span>
+              <span style="color: white; font-size: 9px; font-weight: 600;">Not Yours</span>
+            </div>
+            <div style="color: rgba(255, 255, 255, 0.8); font-size: 8px; margin-top: 1px;">
+              by ${this.getDisplayName(file.user_email)}
+            </div>
+          </div>
+        ` : ''}
         
         <div class="filebank-file-actions">
           <button class="filebank-file-action-btn" 
@@ -1418,6 +1466,16 @@ Best regards</textarea>
     
     // Format as date
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  },
+
+  // Utility: Get display name from email
+  getDisplayName(email) {
+    if (!email) return 'Unknown';
+    // Extract name before @ and capitalize
+    const name = email.split('@')[0];
+    return name.split('.').map(part => 
+      part.charAt(0).toUpperCase() + part.slice(1)
+    ).join(' ');
   },
 
   // Utility: Escape HTML

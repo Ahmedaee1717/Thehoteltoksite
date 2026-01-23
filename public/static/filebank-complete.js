@@ -95,7 +95,26 @@ window.FileBankComplete = {
                   transition: all 0.3s ease;
                   cursor: pointer;">
         
-        ${isShared ? '<div class="filebank-collab-badge" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); position: absolute; top: 12px; right: 12px; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600;">🌐 Shared</div>' : ''}
+        ${isShared ? `
+          <div style="position: absolute; top: 12px; right: 12px; 
+                      background: linear-gradient(135deg, rgba(16, 185, 129, 0.95) 0%, rgba(5, 150, 105, 0.95) 100%);
+                      backdrop-filter: blur(10px);
+                      padding: 8px 14px;
+                      border-radius: 10px;
+                      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+                      border: 1px solid rgba(255, 255, 255, 0.2);">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+              <span style="font-size: 14px;">🌐</span>
+              <span style="color: white; font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">SHARED</span>
+            </div>
+            <div style="color: rgba(255, 255, 255, 0.9); font-size: 10px; font-weight: 500;">
+              by ${this.getDisplayName(folder.user_email)}
+            </div>
+            <div style="color: rgba(255, 255, 255, 0.7); font-size: 9px; margin-top: 2px;">
+              ${this.formatTimeAgo(folder.updated_at || folder.created_at)}
+            </div>
+          </div>
+        ` : ''}
         
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; text-align: center;">
           <div style="font-size: 80px; margin-bottom: 15px; filter: drop-shadow(0 4px 12px rgba(102, 126, 234, 0.3));">${folder.icon || '📁'}</div>
@@ -619,6 +638,32 @@ window.FileBankComplete = {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  },
+  
+  // Helper: Get display name from email
+  getDisplayName(email) {
+    if (!email) return 'Unknown';
+    // Extract name before @ and capitalize
+    const name = email.split('@')[0];
+    return name.split('.').map(part => 
+      part.charAt(0).toUpperCase() + part.slice(1)
+    ).join(' ');
+  },
+  
+  // Helper: Format time ago
+  formatTimeAgo(dateString) {
+    if (!dateString) return 'recently';
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+    
+    if (seconds < 60) return 'just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+    if (seconds < 2592000) return `${Math.floor(seconds / 604800)}w ago`;
+    return `${Math.floor(seconds / 2592000)}mo ago`;
   }
 };
 
