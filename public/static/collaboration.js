@@ -1559,7 +1559,7 @@ async function loadMeetings() {
   
   try {
     const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${API_BASE}/meetings/otter/transcripts?limit=50`, {
+    const response = await fetch(`/api/meetings/otter/transcripts?limit=50`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     
@@ -1648,7 +1648,7 @@ function createMeetingCard(meeting) {
 window.openMeetingTranscript = async function(meetingId) {
   try {
     const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${API_BASE}/meetings/otter/transcripts/${meetingId}`, {
+    const response = await fetch(`/api/meetings/otter/transcripts/${meetingId}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     
@@ -1795,7 +1795,7 @@ window.syncFromZapier = async function() {
     showNotification('🔄 Syncing meetings from Zapier Tables...', 'info');
     
     const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${API_BASE}/meetings/zapier/sync`, {
+    const response = await fetch(`/api/meetings/zapier/sync`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -1850,7 +1850,7 @@ async function searchMeetings(query) {
   
   try {
     const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${API_BASE}/meetings/otter/search?q=${encodeURIComponent(query)}`, {
+    const response = await fetch(`/api/meetings/otter/search?q=${encodeURIComponent(query)}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     
