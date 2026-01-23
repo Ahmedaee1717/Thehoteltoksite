@@ -29,10 +29,8 @@ export const homePage = (c: Context) => {
         <link rel="stylesheet" href="/static/styles.css">
         <link rel="canonical" href="https://investaycapital.com">
         
-        <!-- Cloudflare Web Analytics (Privacy-friendly, no cookies) -->
-        <!-- ENABLED: Token will be auto-injected by Cloudflare Pages -->
-        <script defer src='https://static.cloudflareinsights.com/beacon.min.js' 
-                data-cf-beacon='{"token": "REPLACE_WITH_YOUR_TOKEN"}'></script>
+        <!-- Cloudflare Web Analytics is AUTO-INJECTED by Cloudflare Pages -->
+        <!-- No manual script needed - Cloudflare handles it automatically -->
         
         <!-- Alternative: Google Analytics 4 (if you prefer) -->
         <!-- Replace GA_MEASUREMENT_ID with your actual ID -->
