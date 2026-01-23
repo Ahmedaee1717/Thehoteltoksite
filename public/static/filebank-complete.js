@@ -32,6 +32,11 @@ window.FileBankComplete = {
           return false;
         }
         
+        // HIDE FOLDERS when filtering by file type (images, documents, etc.)
+        if (this.state.currentFilter === 'images' || this.state.currentFilter === 'documents') {
+          return false;
+        }
+        
         // SHARED TAB: Only show shared folders (is_team_shared === 1)
         if (this.state.currentFilter === 'shared') {
           return f.is_team_shared === 1;
