@@ -1192,3 +1192,74 @@
   max-width: 100% !important;
   flex-direction: row !important;
 }
+
+/* ULTRA NUCLEAR FIX - Override EVERYTHING including inline styles */
+#filebank-grid.filebank-grid,
+div#filebank-grid.filebank-grid,
+.filebank-canvas > #filebank-grid.filebank-grid {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 24px !important;
+  align-content: flex-start !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+#filebank-grid.filebank-grid.columns-view,
+div#filebank-grid.filebank-grid.columns-view {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 32px !important;
+  align-items: start !important;
+  justify-items: stretch !important;
+}
+
+/* FORCE card dimensions with ID selector */
+#filebank-grid .filebank-file-card,
+#filebank-grid > .filebank-file-card,
+.filebank-grid > .filebank-file-card,
+div.filebank-file-card {
+  position: relative !important;
+  width: 240px !important;
+  min-width: 240px !important;
+  max-width: 240px !important;
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  flex-shrink: 0 !important;
+  margin: 0 !important;
+  padding: 16px !important;
+  box-sizing: border-box !important;
+  float: none !important;
+  clear: none !important;
+}
+
+#filebank-grid.columns-view .filebank-file-card,
+#filebank-grid.columns-view > .filebank-file-card {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+/* FORCE folder cards same way */
+#filebank-grid .filebank-folder-card,
+#filebank-grid > .filebank-folder-card,
+.filebank-grid > .filebank-folder-card {
+  position: relative !important;
+  width: 240px !important;
+  min-width: 240px !important;
+  max-width: 240px !important;
+  height: auto !important;
+  margin: 0 !important;
+  float: none !important;
+}
+
+#filebank-grid.columns-view .filebank-folder-card,
+#filebank-grid.columns-view > .filebank-folder-card {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
