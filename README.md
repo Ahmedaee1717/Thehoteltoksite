@@ -7,6 +7,27 @@
 - Security features (auth, password hashing) still active  
 - See `ENCRYPTION_ROLLBACK_SUCCESS.md` for full details
 
+## 🎙️ NEW: Otter.ai Meeting Transcripts Integration!
+**All your Zoom meeting transcripts now in Collaboration Center!**
+- ✅ Sync all Otter.ai meeting transcripts with one click
+- ✅ View full transcripts with speakers and summaries
+- ✅ Search across all meetings and transcripts
+- ✅ Ready for AI assistant integration (knows all emails, files, meetings)
+
+**How to Use:**
+1. Go to Collaboration Center → "🎙️ Meetings" tab
+2. Click "🔄 Sync from Otter.ai"
+3. Enter your Otter.ai API key (get it from https://otter.ai/developers)
+4. Click "Sync Meetings" - all transcripts imported!
+5. Browse, search, and view full meeting transcripts
+
+**Features:**
+- Beautiful meeting cards with date, duration, speaker count
+- Full transcript view with speakers and summaries
+- Real-time search across all transcripts
+- Direct links to view in Otter.ai
+- Stored in D1 database for AI assistant access
+
 ## 🚀 LATEST UPDATE: R2 Storage Implemented!
 **FileBank attachments now work with Cloudflare R2!**
 - ✅ Real file storage (not just URLs)
