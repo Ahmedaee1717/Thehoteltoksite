@@ -263,10 +263,16 @@ const FileBankRevolution = {
             ⭐
           </button>
           <button class="filebank-file-action-btn" 
-                  onclick="event.stopPropagation(); FileBankRevolution.showFileMenu(event, '${file.id}')"
-                  title="More"
-                  style="border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;">
-            ⋯
+                  onclick="event.stopPropagation(); FileBankRevolution.toggleShareFile('${file.id}')"
+                  title="${file.is_shared ? 'Unshare (make private)' : 'Share with everyone'}"
+                  style="background: ${file.is_shared ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'rgba(255, 255, 255, 0.1)'}; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;">
+            🌐
+          </button>
+          <button class="filebank-file-action-btn" 
+                  onclick="event.stopPropagation(); FileBankRevolution.deleteFile('${file.id}')"
+                  title="Delete (owner only)"
+                  style="background: rgba(239, 68, 68, 0.2); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;">
+            🗑️
           </button>
         </div>
 
@@ -301,6 +307,19 @@ const FileBankRevolution = {
               ${file.tags.map(tag => `<span class="filebank-file-tag" style="background: rgba(102, 126, 234, 0.2); color: rgba(255, 255, 255, 0.8); padding: 4px 8px; border-radius: 4px; font-size: 11px;">${this.escapeHtml(tag)}</span>`).join('')}
             </div>
           ` : ''}
+          
+          <!-- PROMINENT ACTION BUTTONS WITH TEXT -->
+          <div class="filebank-file-actions-bar" style="display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+            <button onclick="event.stopPropagation(); FileBankRevolution.toggleShareFile('${file.id}')"
+                    style="flex: 1; padding: 8px 12px; background: ${file.is_shared ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'rgba(102, 126, 234, 0.2)'}; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.3s;">
+              ${file.is_shared ? '🔓 SHARED' : '🔒 SHARE'}
+            </button>
+            <button onclick="event.stopPropagation(); FileBankRevolution.deleteFile('${file.id}')"
+                    style="padding: 8px 12px; background: rgba(239, 68, 68, 0.2); color: #ff6b6b; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px; transition: all 0.3s;"
+                    title="Delete this file (owner only)">
+              🗑️ DELETE
+            </button>
+          </div>
         </div>
       </div>
     `;
