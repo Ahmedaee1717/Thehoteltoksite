@@ -390,11 +390,15 @@ fileBank.patch('/files/:id', async (c) => {
   const body = await c.req.json()
   const userEmail = body.userEmail || c.req.header('X-User-Email') || 'unknown'
   
+  console.log('🔧 PATCH /files/:id', { fileId, userEmail, body })
+  
   try {
-    // First check if file exists and belongs to user
+    // First check if file exists
     const file = await c.env.DB.prepare(`
-      SELECT user_email, is_starred, is_shared FROM file_bank_files WHERE id = ? AND deleted_at IS NULL
+      SELECT id, user_email, is_starred, is_shared FROM file_bank_files WHERE id = ? AND deleted_at IS NULL
     `).bind(fileId).first()
+    
+    console.log('📁 File found:', file)
     
     if (!file) {
       return c.json({ error: 'File not found' }, 404)
@@ -406,10 +410,18 @@ fileBank.patch('/files/:id', async (c) => {
     
     // Only owner can update is_shared
     if ('is_shared' in body) {
+      console.log('🔍 Checking ownership:', { 
+        fileOwner: file.user_email, 
+        requestUser: userEmail,
+        match: file.user_email === userEmail 
+      })
+      
       if (file.user_email !== userEmail) {
+        console.log('❌ Permission denied: user_email mismatch')
         return c.json({ 
           error: 'Permission denied',
-          message: 'You can only share files you uploaded'
+          message: 'You can only share files you uploaded',
+          debug: { fileOwner: file.user_email, requestUser: userEmail }
         }, 403)
       }
       updates.push('is_shared = ?')
@@ -428,38 +440,61 @@ fileBank.patch('/files/:id', async (c) => {
     
     values.push(fileId)
     
+    console.log('✏️ Updating file:', { updates, values })
+    
     await c.env.DB.prepare(`
       UPDATE file_bank_files
       SET ${updates.join(', ')}
       WHERE id = ?
     `).bind(...values).run()
     
+    console.log('✅ File updated successfully')
+    
     return c.json({ success: true, message: 'File updated successfully' })
   } catch (error: any) {
-    console.error('Error updating file:', error)
-    return c.json({ error: 'Failed to update file', details: error.message }, 500)
+    console.error('❌ Error updating file:', error)
+    return c.json({ error: 'Failed to update file', details: error.message, stack: error.stack }, 500)
   }
 })
 
 fileBank.delete('/files/:id', async (c) => {
   const fileId = c.req.param('id')
-  const userEmail = c.req.header('X-User-Email') || c.req.query('userEmail') || 'unknown'
+  const bodyText = await c.req.text()
+  let body: any = {}
+  try {
+    body = bodyText ? JSON.parse(bodyText) : {}
+  } catch (e) {
+    console.log('⚠️ Could not parse DELETE body')
+  }
+  const userEmail = body.userEmail || c.req.header('X-User-Email') || c.req.query('userEmail') || 'unknown'
+  
+  console.log('🗑️ DELETE /files/:id', { fileId, userEmail, body })
   
   try {
-    // First check if file exists and belongs to user
+    // First check if file exists
     const file = await c.env.DB.prepare(`
-      SELECT user_email FROM file_bank_files WHERE id = ? AND deleted_at IS NULL
+      SELECT id, user_email FROM file_bank_files WHERE id = ? AND deleted_at IS NULL
     `).bind(fileId).first()
+    
+    console.log('📁 File found:', file)
     
     if (!file) {
       return c.json({ error: 'File not found' }, 404)
     }
     
-    // Check ownership (allow deletion only by owner or from shared folders owned by system)
-    if (file.user_email !== userEmail && file.user_email !== 'system@investaycapital.com') {
+    console.log('🔍 Checking ownership:', { 
+      fileOwner: file.user_email, 
+      requestUser: userEmail,
+      match: file.user_email === userEmail 
+    })
+    
+    // Check ownership (allow deletion only by owner)
+    if (file.user_email !== userEmail) {
+      console.log('❌ Permission denied: user_email mismatch')
       return c.json({ 
         error: 'Permission denied',
-        message: 'You can only delete files you uploaded'
+        message: 'You can only delete files you uploaded',
+        debug: { fileOwner: file.user_email, requestUser: userEmail }
       }, 403)
     }
     
@@ -469,10 +504,12 @@ fileBank.delete('/files/:id', async (c) => {
       WHERE id = ?
     `).bind(fileId).run()
     
+    console.log('✅ File deleted successfully')
+    
     return c.json({ success: true, message: 'File deleted successfully' })
   } catch (error: any) {
-    console.error('Error deleting file:', error)
-    return c.json({ error: 'Failed to delete file', details: error.message }, 500)
+    console.error('❌ Error deleting file:', error)
+    return c.json({ error: 'Failed to delete file', details: error.message, stack: error.stack }, 500)
   }
 })
 
