@@ -72,11 +72,21 @@ adminRoutes.get('/posts/:id', async (c) => {
   const id = c.req.param('id');
   
   try {
-    const post = await DB.prepare(`
+    // Try to fetch by slug first, then by id
+    let post = await DB.prepare(`
       SELECT *
       FROM blog_posts
-      WHERE id = ?
+      WHERE slug = ?
     `).bind(id).first();
+    
+    // If not found by slug, try by id (numeric)
+    if (!post && !isNaN(Number(id))) {
+      post = await DB.prepare(`
+        SELECT *
+        FROM blog_posts
+        WHERE id = ?
+      `).bind(Number(id)).first();
+    }
 
     if (!post) {
       return c.json({ success: false, error: 'Post not found' }, 404);
@@ -147,14 +157,21 @@ adminRoutes.put('/posts/:id', async (c) => {
   console.log('PUT /posts/:id - Received data:', JSON.stringify(data, null, 2));
   
   try {
-    // Check if post exists
-    const existingPost = await DB.prepare('SELECT status, published_at FROM blog_posts WHERE id = ?').bind(id).first();
+    // Check if post exists - try slug first, then id
+    let existingPost = await DB.prepare('SELECT id, status, published_at FROM blog_posts WHERE slug = ?').bind(id).first();
+    
+    // If not found by slug, try by id
+    if (!existingPost && !isNaN(Number(id))) {
+      existingPost = await DB.prepare('SELECT id, status, published_at FROM blog_posts WHERE id = ?').bind(Number(id)).first();
+    }
     
     console.log('Existing post:', existingPost);
     
     if (!existingPost) {
       return c.json({ success: false, error: 'Post not found' }, 404);
     }
+
+    const postId = existingPost.id; // Use the actual numeric id for update
 
     // Update published_at if status changes to published
     let publishedAt = data.published_at || existingPost.published_at || null;
@@ -192,7 +209,7 @@ adminRoutes.put('/posts/:id', async (c) => {
       data.og_image || null,
       data.status,
       publishedAt,
-      id
+      postId
     ).run();
     
     console.log('Update result:', result);
