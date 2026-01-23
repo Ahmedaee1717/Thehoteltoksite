@@ -8233,6 +8233,45 @@ window.addEventListener('DOMContentLoaded', function() {
         return result;
       };
       
+      // Replace cid: references with actual attachment URLs
+      const replaceCidReferences = (html, attachmentsList) => {
+        if (!html || !attachmentsList || attachmentsList.length === 0) {
+          return html;
+        }
+        
+        let processedHtml = html;
+        
+        // Find all cid: references in the HTML
+        const cidRegex = /src=["']cid:([^"']+)["']/gi;
+        const matches = [...html.matchAll(cidRegex)];
+        
+        console.log(`🔗 Found ${matches.length} CID references in email HTML`);
+        
+        // Replace each CID with the corresponding attachment URL
+        for (const match of matches) {
+          const contentId = match[1]; // e.g., "ii_mkr2iaog0"
+          
+          // Find attachment with matching content_id
+          const attachment = attachmentsList.find(att => 
+            att.content_id === contentId || 
+            att.content_id === `<${contentId}>` ||
+            att.content_id?.replace(/[<>]/g, '') === contentId
+          );
+          
+          if (attachment && attachment.r2_url) {
+            console.log(`✅ Replacing cid:${contentId} with ${attachment.r2_url}`);
+            processedHtml = processedHtml.replace(
+              new RegExp(`src=["']cid:${contentId}["']`, 'gi'),
+              `src="${attachment.r2_url}"`
+            );
+          } else {
+            console.warn(`⚠️ No attachment found for cid:${contentId}`);
+          }
+        }
+        
+        return processedHtml;
+      };
+      
       return h('div', {
         onClick: onClose,
         style: {
@@ -8673,7 +8712,7 @@ window.addEventListener('DOMContentLoaded', function() {
                         margin: 8px 0;
                       }
                     </style>
-                    <div class="email-body-content">${stripQuotedReply(msg.body_html)}</div>` }
+                    <div class="email-body-content">${replaceCidReferences(stripQuotedReply(msg.body_html), attachments)}</div>` }
                   }) : h('div', { 
                     style: { 
                       fontSize: isLatest ? '15px' : '14px', 

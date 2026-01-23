@@ -2165,7 +2165,7 @@ emailRoutes.get('/:id/attachments', async (c) => {
     
     // Get attachments
     const { results: attachments } = await DB.prepare(`
-      SELECT id, email_id, filename, content_type, size, r2_url, created_at
+      SELECT id, email_id, filename, content_type, content_id, size, r2_url, created_at
       FROM attachments 
       WHERE email_id = ?
       ORDER BY created_at ASC
@@ -2882,7 +2882,20 @@ emailRoutes.post('/receive', async (c) => {
             const contentType = attachmentFile.type || 'application/octet-stream';
             const size = attachmentFile.size;
             
-            console.log(`📎 Processing attachment ${i}: ${filename} (${size} bytes, ${contentType})`);
+            // Extract Content-ID if present (for inline images with cid: references)
+            let contentId = null;
+            try {
+              // Check if Mailgun sent content-id as a separate field
+              const cidField = formData.get(`content-id-${i}`);
+              if (cidField) {
+                contentId = cidField.toString().replace(/[<>]/g, ''); // Remove angle brackets
+                console.log(`📎 Found Content-ID from field: ${contentId}`);
+              }
+            } catch (e) {
+              // Ignore
+            }
+            
+            console.log(`📎 Processing attachment ${i}: ${filename} (${size} bytes, ${contentType}, CID: ${contentId || 'none'})`);
             
             // Check if R2 bucket is available
             const R2 = c.env.R2_BUCKET;
@@ -2901,8 +2914,8 @@ emailRoutes.post('/receive', async (c) => {
                   }
                 });
                 
-                // Generate public URL (adjust domain as needed)
-                r2Url = `https://files.investaycapital.com/${r2Key}`;
+                // Generate public URL - use our own proxy endpoint
+                r2Url = `/api/email/files/${r2Key}`;
                 console.log(`✅ Uploaded to R2: ${r2Key}`);
               } catch (r2Error: any) {
                 console.error(`❌ R2 upload failed for ${filename}:`, r2Error.message);
@@ -2926,14 +2939,15 @@ emailRoutes.post('/receive', async (c) => {
             // Insert attachment record
             await DB.prepare(`
               INSERT INTO attachments (
-                id, email_id, filename, content_type, size, 
+                id, email_id, filename, content_type, content_id, size, 
                 r2_key, r2_url, created_at
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             `).bind(
               attachmentId,
               emailId,
               filename,
               contentType,
+              contentId,
               size,
               r2Key,
               r2Url
@@ -3581,6 +3595,48 @@ emailRoutes.delete('/shared-mailboxes/:id/members/:memberEmail', async (c) => {
   } catch (error: any) {
     console.error('Remove member error:', error);
     return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================
+// GET /api/email/files/*
+// Serve files from R2 storage
+// This is a proxy endpoint to serve R2 files publicly
+// ============================================
+emailRoutes.get('/files/*', async (c) => {
+  const R2 = c.env.R2_BUCKET;
+  
+  if (!R2) {
+    return c.json({ error: 'R2 storage not configured' }, 500);
+  }
+  
+  try {
+    // Get the path after /files/
+    const path = c.req.path.replace('/api/email/files/', '');
+    
+    console.log(`📥 Fetching file from R2: ${path}`);
+    
+    // Fetch from R2
+    const object = await R2.get(path);
+    
+    if (!object) {
+      console.log(`❌ File not found in R2: ${path}`);
+      return c.json({ error: 'File not found' }, 404);
+    }
+    
+    console.log(`✅ Found file in R2: ${path}`);
+    
+    // Return the file with proper content type
+    return new Response(object.body, {
+      headers: {
+        'Content-Type': object.httpMetadata?.contentType || 'application/octet-stream',
+        'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
+        'Access-Control-Allow-Origin': '*' // Allow cross-origin access
+      }
+    });
+  } catch (error: any) {
+    console.error('R2 fetch error:', error);
+    return c.json({ error: error.message }, 500);
   }
 });
 
