@@ -312,38 +312,34 @@ function createPostCard(post) {
 function attachPostCardListeners() {
   console.log('📌 Attaching event listeners to post cards...');
   
-  // Add click listeners to post card content
-  const cardContents = document.querySelectorAll('.post-card-content');
-  console.log('📌 Found .post-card-content elements:', cardContents.length);
+  // Attach to .post-card (parent) instead of .post-card-content
+  const postCards = document.querySelectorAll('.post-card');
+  console.log('📌 Found .post-card elements:', postCards.length);
   
-  cardContents.forEach((element, index) => {
-    console.log(`📌 Attaching listener to card ${index}:`, element);
+  postCards.forEach((card, index) => {
+    console.log(`📌 Attaching listener to card ${index}:`, card);
     
-    // Try BOTH click AND mousedown events
-    element.addEventListener('click', function(e) {
-      console.log('🎯 CLICK event on card!', e.target);
-      const postDataBase64 = this.getAttribute('data-post-base64');
-      if (postDataBase64) {
-        try {
-          const postDataStr = atob(postDataBase64);
-          const encodedData = encodeURIComponent(postDataStr);
-          window.openPost(encodedData);
-        } catch (error) {
-          console.error('❌ Error:', error);
-        }
+    card.addEventListener('click', function(e) {
+      // Don't trigger if clicking on the edit button
+      if (e.target.closest('.post-edit-btn')) {
+        return;
       }
-    }, { capture: true });
-    
-    element.addEventListener('mousedown', function(e) {
-      console.log('🎯 MOUSEDOWN event on card!', e.target);
-      const postDataBase64 = this.getAttribute('data-post-base64');
-      if (postDataBase64) {
-        try {
-          const postDataStr = atob(postDataBase64);
-          const encodedData = encodeURIComponent(postDataStr);
-          window.openPost(encodedData);
-        } catch (error) {
-          console.error('❌ Error:', error);
+      
+      console.log('🎯 CLICK on post card!', e.target);
+      
+      // Find the post-card-content inside this card
+      const contentDiv = this.querySelector('.post-card-content');
+      if (contentDiv) {
+        const postDataBase64 = contentDiv.getAttribute('data-post-base64');
+        if (postDataBase64) {
+          try {
+            const postDataStr = atob(postDataBase64);
+            const encodedData = encodeURIComponent(postDataStr);
+            console.log('🎯 Opening post:', postDataStr);
+            window.openPost(encodedData);
+          } catch (error) {
+            console.error('❌ Error:', error);
+          }
         }
       }
     }, { capture: true });
@@ -356,50 +352,20 @@ function attachPostCardListeners() {
   editButtons.forEach((button, index) => {
     console.log(`📌 Attaching listener to button ${index}:`, button);
     
-    // Try BOTH click AND mousedown
     button.addEventListener('click', function(e) {
-      e.stopPropagation();
+      e.stopPropagation(); // Prevent card click
       console.log('🎯 CLICK on Edit button!', e.target);
       const slug = this.getAttribute('data-slug');
       if (slug) {
-        window.editPost(slug);
-      }
-    }, { capture: true });
-    
-    button.addEventListener('mousedown', function(e) {
-      e.stopPropagation();
-      console.log('🎯 MOUSEDOWN on Edit button!', e.target);
-      const slug = this.getAttribute('data-slug');
-      if (slug) {
+        console.log('🎯 Editing post:', slug);
         window.editPost(slug);
       }
     }, { capture: true });
   });
   
-  console.log(`📌 Attached listeners to ${cardContents.length} post cards and ${editButtons.length} edit buttons`);
+  console.log(`📌 Attached listeners to ${postCards.length} post cards and ${editButtons.length} edit buttons`);
   
-  // DEBUG: Check computed styles
-  cardContents.forEach((el, i) => {
-    const styles = window.getComputedStyle(el);
-    console.log(`🔍 Card ${i} computed styles:`, {
-      pointerEvents: styles.pointerEvents,
-      zIndex: styles.zIndex,
-      position: styles.position,
-      display: styles.display
-    });
-  });
-  
-  editButtons.forEach((el, i) => {
-    const styles = window.getComputedStyle(el);
-    console.log(`🔍 Button ${i} computed styles:`, {
-      pointerEvents: styles.pointerEvents,
-      zIndex: styles.zIndex,
-      position: styles.position,
-      display: styles.display
-    });
-  });
-  
-  // MANUAL TEST - Add a test function to the window that can be called from console
+  // MANUAL TEST
   window.testCardClick = function() {
     console.log('🧪 MANUAL TEST: Calling openPost directly');
     const firstCard = document.querySelector('.post-card-content');
@@ -413,15 +379,7 @@ function attachPostCardListeners() {
     }
   };
   
-  console.log('🧪 TEST AVAILABLE: Type window.testCardClick() in console to test manually');
-  
-  // ADD GLOBAL CLICK LISTENER to see if clicks are happening at all
-  document.addEventListener('click', function(e) {
-    console.log('🌍 GLOBAL CLICK detected on:', e.target);
-    console.log('🌍 Event path:', e.composedPath().map(el => el.className || el.tagName));
-  }, true); // Use capture phase
-  
-  console.log('🌍 Global click listener added - will log ALL clicks on the page');
+  console.log('🧪 TEST: window.testCardClick() available');
 }
 
 // ✏️ EDIT POST - Load into Collaboration Editor
