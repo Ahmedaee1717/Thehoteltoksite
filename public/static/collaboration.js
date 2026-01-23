@@ -216,6 +216,7 @@ async function loadMyPosts() {
       }
       
       container.innerHTML = myPosts.map(post => createPostCard(post)).join('');
+      attachPostCardListeners();
     } else {
       container.innerHTML = `
         <div class="permission-check-box">
@@ -248,6 +249,7 @@ async function loadAllPosts() {
     
     if (data.success && data.posts.length > 0) {
       container.innerHTML = data.posts.map(post => createPostCard(post)).join('');
+      attachPostCardListeners();
     } else {
       container.innerHTML = `
         <div class="permission-check-box">
@@ -280,17 +282,16 @@ function createPostCard(post) {
                   userRole === 'publisher' || 
                   post.author === currentUser;
   
-  // Store post data for onclick handler - escape for HTML attribute
+  // Store post data as data attributes for event listeners
   const postDataStr = JSON.stringify({
     slug: post.slug,
     author: post.author,
     status: post.status
   });
-  const postData = encodeURIComponent(postDataStr).replace(/'/g, "\\'");
   
   return `
     <div class="post-card">
-      <div onclick="console.log('Card clicked!'); window.openPost('${postData}')" style="cursor: pointer;">
+      <div class="post-card-content" data-post='${escapeHtml(postDataStr)}' style="cursor: pointer;">
         <h3 class="post-title">${escapeHtml(post.title)}</h3>
         <div class="post-meta">
           <span>📅 ${date}</span>
@@ -300,10 +301,41 @@ function createPostCard(post) {
       </div>
       <div class="post-actions">
         <span class="post-status ${statusClass}">${post.status}</span>
-        ${canEdit ? `<button class="post-edit-btn" onclick="console.log('Edit clicked!'); window.editPost('${escapeHtml(post.slug)}')">✏️ Edit</button>` : ''}
+        ${canEdit ? `<button class="post-edit-btn" data-slug="${escapeHtml(post.slug)}">✏️ Edit</button>` : ''}
       </div>
     </div>
   `;
+}
+
+// 🎯 ATTACH EVENT LISTENERS TO POST CARDS
+function attachPostCardListeners() {
+  console.log('📌 Attaching event listeners to post cards...');
+  
+  // Add click listeners to post card content
+  document.querySelectorAll('.post-card-content').forEach(element => {
+    element.addEventListener('click', function() {
+      console.log('Card clicked!');
+      const postData = this.getAttribute('data-post');
+      if (postData) {
+        const encodedData = encodeURIComponent(postData);
+        window.openPost(encodedData);
+      }
+    });
+  });
+  
+  // Add click listeners to edit buttons
+  document.querySelectorAll('.post-edit-btn').forEach(button => {
+    button.addEventListener('click', function(e) {
+      e.stopPropagation(); // Prevent card click
+      console.log('Edit button clicked!');
+      const slug = this.getAttribute('data-slug');
+      if (slug) {
+        window.editPost(slug);
+      }
+    });
+  });
+  
+  console.log(`📌 Attached listeners to ${document.querySelectorAll('.post-card-content').length} post cards`);
 }
 
 // ✏️ EDIT POST - Load into Collaboration Editor
