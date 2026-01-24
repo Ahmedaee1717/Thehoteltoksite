@@ -1072,16 +1072,38 @@
       
       // Draft email based on ACTUAL meeting goal/context
       // Extract goal - support multiple formats
-      let meetingGoal = task.text; // Default to the task text itself
+      let meetingGoal = '';
       let fullMeetingSummary = meeting.summary || '';
       
+      // PRIORITY 1: Try to extract from meeting summary "Goal:" section
       if (meeting.summary) {
-        // Try to extract "Goal: ..." (can be multiple lines)
         const goalMatch = meeting.summary.match(/Goal:\s*(.+?)(?:\n\n|\n[A-Z]|$)/is);
         if (goalMatch) {
           meetingGoal = goalMatch[1].trim();
-          console.log('📝 Extracted goal:', meetingGoal);
+          console.log('📝 Extracted goal from summary:', meetingGoal);
         }
+      }
+      
+      // PRIORITY 2: If no goal found, look in meeting title
+      if (!meetingGoal && meeting.title) {
+        // Skip generic titles like "Catchup meeting", "Daily standup", etc.
+        const genericTitles = ['catchup', 'standup', 'daily', 'weekly', 'check-in', 'sync'];
+        const isGeneric = genericTitles.some(term => meeting.title.toLowerCase().includes(term));
+        
+        if (!isGeneric) {
+          meetingGoal = meeting.title;
+          console.log('📝 Using meeting title as goal:', meetingGoal);
+        }
+      }
+      
+      // PRIORITY 3: If still no goal, use task.text but CLEAN IT UP
+      if (!meetingGoal) {
+        // Remove action words like "Find", "Email", "Contact"
+        meetingGoal = task.text
+          .replace(/^(Find|Email|Contact|Reach out to|Get|Set up)\s+/i, '')
+          .replace(/\s+contact information$/i, '')
+          .replace(/\s+and email them$/i, '');
+        console.log('📝 Cleaned up task text as goal:', meetingGoal);
       }
       
       // Also get the full transcript context for better understanding
@@ -1113,18 +1135,33 @@
         }
       }
       
-      // Extract WHAT WE WANT from meeting goal
+      // Extract WHAT WE WANT from meeting goal, summary, and transcript
       const whatPatterns = [
-        /(?:want to|looking to|interested in|need to|goal.*?:)\s+(.+?)(?:\.|$)/i,
-        /(?:explore|discuss)\s+(?:how|ways|opportunities)\s+(.+?)(?:\.|$)/i
+        /(?:want to|looking to|interested in|need to|goal is to|aim to|plan to)\s+(.+?)(?:\.|$)/i,
+        /(?:explore|discuss)\s+(?:how|ways|opportunities|the possibility of)\s+(.+?)(?:\.|$)/i,
+        /(?:to|regarding|about)\s+(tokenize|tokenizing|blockchain|partner|collaborate|work together|integrate)(?:ing)?\s+(.+?)(?:\.|$)/i,
+        /(?:set a meeting|discuss)\s+(?:a |potential |possible )?(.+?)(?:\.|$)/i
       ];
       
       for (const pattern of whatPatterns) {
-        const match = (meetingGoal + ' ' + fullMeetingSummary).match(pattern);
+        const searchText = meetingGoal + ' ' + fullMeetingSummary + ' ' + fullTranscript.substring(0, 500);
+        const match = searchText.match(pattern);
         if (match) {
-          whatWeWant = match[1].trim();
+          // Get the captured group (might be [1] or [2] depending on pattern)
+          whatWeWant = (match[2] || match[1]).trim();
+          
+          // Clean up common prefixes
+          whatWeWant = whatWeWant
+            .replace(/^(a |the |potential |possible )/i, '')
+            .replace(/\s+with\s+them$/i, '')
+            .replace(/\s+regarding$/i, '');
+          
           console.log('🎯 WHAT WE WANT:', whatWeWant);
-          break;
+          
+          // If we found something meaningful (not just a name), break
+          if (whatWeWant.length > 5 && !whatWeWant.toLowerCase().includes('mattereum')) {
+            break;
+          }
         }
       }
       
