@@ -403,7 +403,14 @@ function extractSpeakers(transcript: string): any[] {
 
 // Helper function to generate AI summary (simplified - can be enhanced with actual AI later)
 /**
- * Generate AI-powered summary using OpenAI GPT-4
+ * Generate OTTER-LEVEL AI-powered summary using OpenAI GPT-4
+ * 
+ * This generates:
+ * - Detailed multi-paragraph summary
+ * - Key discussion points
+ * - Decisions made
+ * - Action items with owners
+ * - Next steps
  */
 async function generateAISummary(transcript: string, apiKey?: string): Promise<string> {
   if (!apiKey) {
@@ -412,8 +419,8 @@ async function generateAISummary(transcript: string, apiKey?: string): Promise<s
   }
 
   try {
-    // Limit transcript to 8000 characters for API
-    const truncatedTranscript = transcript.substring(0, 8000)
+    // Limit transcript to 12000 characters for API (more context = better analysis)
+    const truncatedTranscript = transcript.substring(0, 12000)
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -422,19 +429,45 @@ async function generateAISummary(transcript: string, apiKey?: string): Promise<s
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         messages: [
           {
             role: 'system',
-            content: 'You are an expert meeting analyst. Generate concise, professional meeting summaries that capture key points, decisions, and action items.'
+            content: `You are an expert meeting analyst. Generate comprehensive, professional meeting summaries similar to Otter.ai.
+
+Your summary MUST include:
+
+1. **Overview** (2-3 sentences): High-level meeting purpose and outcome
+
+2. **Key Discussion Points** (bullet points):
+   - Main topics discussed
+   - Important details mentioned
+   - Context and background
+
+3. **Decisions Made** (if any):
+   - Explicit decisions reached
+   - Who made the decision
+   - Rationale if provided
+
+4. **Action Items** (format: "• [Action] - @[Owner]"):
+   - Specific tasks mentioned
+   - Who is responsible
+   - Any deadlines mentioned
+
+5. **Next Steps**:
+   - Follow-up meetings
+   - Deliverables
+   - Timeline
+
+Format clearly with headers. Be specific and detailed. Extract ALL actionable items.`
           },
           {
             role: 'user',
-            content: `Please generate a 2-3 sentence summary of this meeting transcript:\n\n${truncatedTranscript}`
+            content: `Analyze this meeting transcript and provide a comprehensive summary:\n\n${truncatedTranscript}`
           }
         ],
-        temperature: 0.3,
-        max_tokens: 200,
+        temperature: 0.2,
+        max_tokens: 1500,
       }),
     })
 
@@ -444,7 +477,7 @@ async function generateAISummary(transcript: string, apiKey?: string): Promise<s
 
     const data = await response.json()
     const summary = data.choices[0].message.content.trim()
-    console.log('✨ AI-generated summary:', summary.substring(0, 100) + '...')
+    console.log('✨ AI-generated Otter-level summary:', summary.substring(0, 150) + '...')
     return summary
   } catch (error: any) {
     console.error('❌ Error generating AI summary:', error.message)

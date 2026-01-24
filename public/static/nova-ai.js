@@ -223,39 +223,62 @@
     }
   }
 
-  // Make NOVA draggable
+  // Make NOVA draggable (FIXED - proper offset calculation)
   function makeNovaDraggable(container) {
     const entity = container.querySelector('#nova-entity');
     let isDragging = false;
-    let currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0;
+    let startX, startY, initialX = 0, initialY = 0;
 
     entity.addEventListener('mousedown', dragStart);
     document.addEventListener('mousemove', drag);
     document.addEventListener('mouseup', dragEnd);
 
     function dragStart(e) {
-      initialX = e.clientX - xOffset;
-      initialY = e.clientY - yOffset;
       isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      
+      // Get current transform values
+      const transform = window.getComputedStyle(container).transform;
+      if (transform && transform !== 'none') {
+        const matrix = transform.match(/matrix\((.+)\)/);
+        if (matrix) {
+          const values = matrix[1].split(', ');
+          initialX = parseFloat(values[4]) || 0;
+          initialY = parseFloat(values[5]) || 0;
+        }
+      }
+      
       container.classList.add('dragging');
       setNovaMood(NOVA_STATES.WORKING);
+      e.preventDefault();
     }
 
     function drag(e) {
-      if (isDragging) {
-        e.preventDefault();
-        currentX = e.clientX - initialX;
-        currentY = e.clientY - initialY;
-        xOffset = currentX;
-        yOffset = currentY;
-        container.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
-      }
+      if (!isDragging) return;
+      
+      e.preventDefault();
+      
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+      
+      const newX = initialX + deltaX;
+      const newY = initialY + deltaY;
+      
+      container.style.transform = `translate3d(${newX}px, ${newY}px, 0)`;
     }
 
-    function dragEnd() {
-      initialX = currentX;
-      initialY = currentY;
+    function dragEnd(e) {
+      if (!isDragging) return;
+      
       isDragging = false;
+      
+      // Update initial position for next drag
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+      initialX += deltaX;
+      initialY += deltaY;
+      
       container.classList.remove('dragging');
       setNovaMood(NOVA_STATES.IDLE);
     }
