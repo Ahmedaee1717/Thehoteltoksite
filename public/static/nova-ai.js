@@ -500,13 +500,137 @@
     }
   }
 
+  // INTELLIGENT CROSS-MEETING ANALYSIS
+  function extractCrossMeetingInsights() {
+    const peopleMap = new Map();
+    const projectMap = new Map();
+    const actionItemsMap = [];
+
+    // Scan ALL meetings for patterns
+    novaState.data.meetings.forEach(meeting => {
+      const text = `${meeting.title} ${meeting.summary || ''}`;
+      
+      // Extract @mentions (people)
+      const peopleRegex = /@([A-Za-z\s]+?)(?=\s|,|;|\.|$|@|\n)/g;
+      let match;
+      while ((match = peopleRegex.exec(meeting.summary || '')) !== null) {
+        const person = match[1].trim();
+        if (person.length > 2) {
+          if (!peopleMap.has(person)) {
+            peopleMap.set(person, []);
+          }
+          peopleMap.get(person).push({
+            meetingId: meeting.id,
+            title: meeting.title,
+            date: meeting.start_time
+          });
+        }
+      }
+
+      // Extract project/company names (case-insensitive)
+      const projectRegex = /\b(agridex|mattereum|adgm|aslegal|as legal|investay)\b/gi;
+      while ((match = projectRegex.exec(text)) !== null) {
+        const project = match[1].toUpperCase();
+        if (!projectMap.has(project)) {
+          projectMap.set(project, []);
+        }
+        projectMap.get(project).push({
+          meetingId: meeting.id,
+          title: meeting.title,
+          date: meeting.start_time
+        });
+      }
+
+      // Extract uncompleted action items
+      if (meeting.summary && meeting.summary.includes('Action Items:')) {
+        const actionSection = meeting.summary.split('Action Items:')[1]?.split('Next Steps:')[0];
+        if (actionSection) {
+          const actions = actionSection.split('\n').filter(line => 
+            line.trim().startsWith('•') || line.trim().startsWith('-')
+          );
+          actions.forEach(action => {
+            const cleanAction = action.replace(/^[•\-]\s*/, '').trim();
+            if (cleanAction.length > 10) {
+              actionItemsMap.push({
+                text: cleanAction,
+                meetingId: meeting.id,
+                meetingTitle: meeting.title,
+                assignee: cleanAction.match(/@([A-Za-z\s]+)/)?.[1]
+              });
+            }
+          });
+        }
+      }
+    });
+
+    return { peopleMap, projectMap, actionItemsMap };
+  }
+
   // Analyze everything - THIS IS NOVA'S BRAIN
   async function analyzeEverything() {
     setNovaMood(NOVA_STATES.THINKING);
     
     const insights = [];
 
-    // Extract action items from meetings
+    // 🧠 CROSS-MEETING INTELLIGENCE
+    const { peopleMap, projectMap, actionItemsMap } = extractCrossMeetingInsights();
+
+    // Surface people mentioned in multiple meetings
+    peopleMap.forEach((meetings, person) => {
+      if (meetings.length > 1) {
+        insights.push({
+          type: 'person-connection',
+          priority: 'medium',
+          icon: '👤',
+          title: `${person} mentioned in ${meetings.length} meetings`,
+          subtitle: `Most recent: "${meetings[meetings.length - 1].title}"`,
+          action: () => {
+            novaSpeak(`Found ${person} in ${meetings.length} meetings: ${meetings.map(m => m.title).join(', ')}`);
+            // TODO: Show detailed person timeline
+          },
+          data: { person, meetings }
+        });
+      }
+    });
+
+    // Surface projects discussed across meetings
+    projectMap.forEach((meetings, project) => {
+      if (meetings.length > 1) {
+        insights.push({
+          type: 'project-connection',
+          priority: 'medium',
+          icon: '🏢',
+          title: `${project} discussed in ${meetings.length} meetings`,
+          subtitle: meetings.map(m => `• ${m.title.substring(0, 40)}...`).slice(0, 2).join('\n'),
+          action: () => {
+            novaSpeak(`${project} timeline: ${meetings.map(m => m.title).join(' → ')}`);
+            // TODO: Show project timeline
+          },
+          data: { project, meetings }
+        });
+      }
+    });
+
+    // Surface uncompleted action items (not converted to tasks)
+    const openActionItems = actionItemsMap.filter(action => {
+      return !novaState.data.tasks.some(task => 
+        task.title.toLowerCase().includes(action.text.substring(0, 30).toLowerCase())
+      );
+    });
+    
+    if (openActionItems.length > 0) {
+      insights.push({
+        type: 'open-actions',
+        priority: 'high',
+        icon: '📋',
+        title: `${openActionItems.length} action items not yet tasks`,
+        subtitle: openActionItems.slice(0, 2).map(a => `• ${a.text.substring(0, 50)}...`).join('\n'),
+        action: () => showActionItems(openActionItems, { title: 'From Multiple Meetings' }),
+        data: { actions: openActionItems }
+      });
+    }
+
+    // Extract action items from recent meetings
     for (const meeting of novaState.data.meetings.slice(0, 3)) {
       const items = extractActionItemsFromMeeting(meeting);
       if (items.length > 0) {
@@ -556,6 +680,18 @@
 
     displayInsights(insights);
     setNovaMood(insights.length > 0 ? NOVA_STATES.EXCITED : NOVA_STATES.IDLE);
+    
+    // NOVA announces findings
+    if (peopleMap.size > 0 || projectMap.size > 0) {
+      const people = Array.from(peopleMap.keys()).filter(p => peopleMap.get(p).length > 1);
+      const projects = Array.from(projectMap.keys()).filter(p => projectMap.get(p).length > 1);
+      
+      if (people.length > 0) {
+        novaSpeak(`I found ${people.join(', ')} mentioned across multiple meetings! 🔍`);
+      } else if (projects.length > 0) {
+        novaSpeak(`Tracking ${projects.join(', ')} across your meetings! 📊`);
+      }
+    }
   }
 
   // Extract action items from meeting
