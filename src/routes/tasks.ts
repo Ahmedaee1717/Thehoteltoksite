@@ -7,30 +7,40 @@ const tasks = new Hono<{ Bindings: CloudflareBindings }>()
 
 // Get all tasks for user
 tasks.get('/', async (c) => {
-  const userEmail = c.req.query('userEmail') || 'admin@investaycapital.com'
+  // Get auth token from header
+  const authHeader = c.req.header('Authorization')
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
+  // Decode JWT to get user email
+  const token = authHeader.replace('Bearer ', '')
+  let userEmail = 'admin@investaycapital.com'
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    userEmail = payload.email || userEmail
+  } catch (e) {
+    console.error('Error decoding token:', e)
+  }
+
   const status = c.req.query('status') // all, pending, in_progress, completed
   const priority = c.req.query('priority') // low, medium, high, urgent
   
   try {
-    let query = `
-      SELECT t.*, e.subject as email_subject, e.from_email
-      FROM email_tasks t
-      LEFT JOIN emails e ON t.email_id = e.id
-      WHERE t.user_email = ?
-    `
+    let query = `SELECT * FROM tasks WHERE user_email = ?`
     const params: any[] = [userEmail]
     
     if (status && status !== 'all') {
-      query += ' AND t.status = ?'
+      query += ' AND status = ?'
       params.push(status)
     }
     
     if (priority) {
-      query += ' AND t.priority = ?'
+      query += ' AND priority = ?'
       params.push(priority)
     }
     
-    query += ' ORDER BY t.due_date ASC, t.priority DESC, t.created_at DESC'
+    query += ' ORDER BY due_date ASC, priority DESC, created_at DESC'
     
     const { results } = await c.env.DB.prepare(query).bind(...params).all()
     

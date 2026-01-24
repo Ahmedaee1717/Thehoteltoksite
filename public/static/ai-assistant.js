@@ -194,29 +194,57 @@
       const tasksRes = await fetch(`${API_BASE}/tasks`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const tasksData = await tasksRes.json();
-      assistantData.tasks = tasksData.tasks || [];
+      
+      if (tasksRes.ok) {
+        const tasksData = await tasksRes.json();
+        assistantData.tasks = tasksData.tasks || [];
+        console.log('✅ Tasks loaded:', assistantData.tasks.length);
+      } else {
+        console.error('❌ Tasks error:', tasksRes.status);
+        assistantData.tasks = [];
+      }
 
-      // Load recent emails
-      const emailsRes = await fetch(`${API_BASE}/emails?limit=10`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const emailsData = await emailsRes.json();
-      assistantData.emails = emailsData.emails || [];
+      // Load recent emails - try /api/email/list first
+      try {
+        const emailsRes = await fetch(`${API_BASE}/email/list?limit=10`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (emailsRes.ok) {
+          const emailsData = await emailsRes.json();
+          assistantData.emails = emailsData.emails || [];
+          console.log('✅ Emails loaded:', assistantData.emails.length);
+        } else {
+          console.error('❌ Emails error:', emailsRes.status);
+          assistantData.emails = [];
+        }
+      } catch (emailError) {
+        console.error('❌ Email fetch failed:', emailError);
+        assistantData.emails = [];
+      }
 
       // Load meetings
       const meetingsRes = await fetch(`${API_BASE}/meetings/otter/transcripts?limit=10`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const meetingsData = await meetingsRes.json();
-      assistantData.meetings = meetingsData.transcripts || [];
+      
+      if (meetingsRes.ok) {
+        const meetingsData = await meetingsRes.json();
+        assistantData.meetings = meetingsData.transcripts || [];
+        console.log('✅ Meetings loaded:', assistantData.meetings.length);
+      } else {
+        console.error('❌ Meetings error:', meetingsRes.status);
+        assistantData.meetings = [];
+      }
 
       // Generate AI suggestions
       await generateSuggestions();
 
     } catch (error) {
       console.error('Error loading assistant data:', error);
-      showMessage('Failed to load data. Please try again.', 'error');
+      showMessage('Failed to load some data. Features may be limited.', 'warning');
+      // Still try to generate suggestions with whatever data we have
+      await generateSuggestions();
     }
   }
 
@@ -299,6 +327,11 @@
         <div class="ai-no-suggestions">
           <p>✨ All caught up!</p>
           <p class="ai-subtitle">No urgent items right now</p>
+          <p class="ai-subtitle" style="margin-top: 12px; font-size: 12px;">
+            📊 ${assistantData.tasks.length} tasks • 
+            📧 ${assistantData.emails.length} emails • 
+            🎙️ ${assistantData.meetings.length} meetings
+          </p>
         </div>
       `;
       return;
