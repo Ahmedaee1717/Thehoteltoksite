@@ -2575,42 +2575,6 @@ function renderSmartEmailTask(task) {
   `;
 }
 
-// Keep the old function for context section but don't use it
-function renderOldSmartEmailTask_UNUSED(task) {
-  // Old complex version - not used anymore
-  return '';
-}
-
-// Simpler continuation -->
-        ${meetingContext ? `
-        <div class="smart-section collapsible">
-          <details>
-            <summary>
-              <span class="section-icon">💬</span>
-              <span>Meeting Context</span>
-            </summary>
-            <p class="context-text">${escapeHtml(meetingContext)}</p>
-          </details>
-        </div>
-        ` : ''}
-        
-      </div>
-      
-      <!-- Task Meta & Actions -->
-      <div class="task-footer">
-        <div class="task-meta">
-          <span class="priority-badge priority-${task.priority}">${task.priority}</span>
-          ${task.due_date ? `<span class="due-date">📅 ${new Date(task.due_date).toLocaleDateString()}</span>` : ''}
-          ${task.source_type === 'meeting' ? '<span class="source-badge">🎙️ From Meeting</span>' : ''}
-        </div>
-        <div class="task-actions">
-          <button class="task-btn-delete" onclick="deleteTask(${task.id})">Delete</button>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
 // Copy to clipboard helper
 window.copyToClipboard = async function(text) {
   try {
