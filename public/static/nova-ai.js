@@ -721,9 +721,12 @@
       });
     }
 
-    novaState.currentInsights = insights;
-    displayInsights(insights);
-    setNovaMood(insights.length > 0 ? NOVA_STATES.EXCITED : NOVA_STATES.IDLE);
+    // Filter out dismissed insights
+    const filteredInsights = insights.filter(insight => !isInsightDismissed(insight));
+    
+    novaState.currentInsights = filteredInsights;
+    displayInsights(filteredInsights);
+    setNovaMood(filteredInsights.length > 0 ? NOVA_STATES.EXCITED : NOVA_STATES.IDLE);
     
     // NOVA announces findings
     if (peopleMap.size > 0 || projectMap.size > 0) {
@@ -1055,13 +1058,43 @@ ${meeting.summary?.substring(0, 500)}`;
     });
   }
 
-  // Dismiss an insight
+  // Dismiss an insight and persist to localStorage
   function dismissInsight(index) {
     if (novaState.currentInsights && novaState.currentInsights[index]) {
+      const dismissedInsight = novaState.currentInsights[index];
+      
+      // Create a unique ID for this insight
+      const insightId = `${dismissedInsight.type}_${JSON.stringify(dismissedInsight.data || {})}`;
+      
+      // Get existing dismissed insights from localStorage
+      const dismissed = JSON.parse(localStorage.getItem('nova_dismissed_insights') || '{}');
+      
+      // Add this insight with timestamp
+      dismissed[insightId] = Date.now();
+      
+      // Clean up old dismissed insights (older than 7 days)
+      const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+      Object.keys(dismissed).forEach(key => {
+        if (dismissed[key] < sevenDaysAgo) {
+          delete dismissed[key];
+        }
+      });
+      
+      // Save to localStorage
+      localStorage.setItem('nova_dismissed_insights', JSON.stringify(dismissed));
+      
+      // Remove from current insights
       novaState.currentInsights.splice(index, 1);
       displayInsights(novaState.currentInsights);
       novaSpeak('Insight dismissed! ✓');
     }
+  }
+  
+  // Check if an insight was previously dismissed
+  function isInsightDismissed(insight) {
+    const insightId = `${insight.type}_${JSON.stringify(insight.data || {})}`;
+    const dismissed = JSON.parse(localStorage.getItem('nova_dismissed_insights') || '{}');
+    return dismissed[insightId] !== undefined;
   }
 
   // Show action items
