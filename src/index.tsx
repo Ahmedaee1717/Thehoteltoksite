@@ -1701,6 +1701,11 @@ app.get('/collaborate', (c) => {
                             <span class="nav-label">Meetings</span>
                             <span class="nav-count" id="meetings-count">0</span>
                         </button>
+                        <button class="collab-nav-item" data-view="tasks">
+                            <span class="nav-icon">✅</span>
+                            <span class="nav-label">Tasks</span>
+                            <span class="nav-count" id="tasks-count">0</span>
+                        </button>
                         <button class="collab-nav-item" data-view="activity">
                             <span class="nav-icon">📊</span>
                             <span class="nav-label">Activity</span>
@@ -1801,6 +1806,33 @@ app.get('/collaborate', (c) => {
                             <div class="loading-quantum">
                                 <div class="loading-spinner"></div>
                                 <p>Loading meetings...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TASKS VIEW -->
+                    <div id="tasks-view" class="collab-view">
+                        <div class="view-header">
+                            <h1 class="view-title">✅ Tasks</h1>
+                            <p class="view-subtitle">Action items from meetings and manual tasks</p>
+                            <button id="create-task-btn" class="collab-btn-primary">
+                                <span>➕</span>
+                                Create Task
+                            </button>
+                        </div>
+                        
+                        <!-- Filter Bar -->
+                        <div class="tasks-filter-bar" style="display: flex; gap: 12px; margin-bottom: 20px;">
+                            <button class="filter-btn active" data-filter="all">All</button>
+                            <button class="filter-btn" data-filter="pending">Pending</button>
+                            <button class="filter-btn" data-filter="in_progress">In Progress</button>
+                            <button class="filter-btn" data-filter="completed">Completed</button>
+                        </div>
+                        
+                        <div id="tasks-list" class="tasks-grid">
+                            <div class="loading-quantum">
+                                <div class="loading-spinner"></div>
+                                <p>Loading tasks...</p>
                             </div>
                         </div>
                     </div>

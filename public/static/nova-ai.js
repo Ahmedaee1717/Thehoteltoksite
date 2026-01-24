@@ -810,23 +810,95 @@
     `;
 
     // Add handlers
-    document.getElementById('create-all-tasks').addEventListener('click', () => {
+    document.getElementById('create-all-tasks').addEventListener('click', async () => {
       setNovaMood(NOVA_STATES.WORKING);
       novaSpeak("Creating tasks from action items... ⚡");
-      // TODO: Actually create tasks via API
-      setTimeout(() => {
+      
+      try {
+        const token = localStorage.getItem('auth_token');
+        let created = 0;
+        
+        for (const item of items) {
+          const res = await fetch(`${API_BASE}/tasks`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              title: item.text.substring(0, 200),
+              description: `From meeting: ${meeting.title}`,
+              priority: 'medium',
+              category: 'meeting-action',
+              meetingId: meeting.id
+            })
+          });
+          
+          if (res.ok) {
+            created++;
+          }
+        }
+        
+        // Reload tasks
+        await loadTasks(token);
+        
         setNovaMood(NOVA_STATES.CELEBRATING);
-        novaSpeak(`Done! Created ${items.length} tasks! 🎉`);
-      }, 2000);
+        novaSpeak(`Done! Created ${created} tasks! 🎉`);
+        
+        // Switch to a success view
+        switchTab('chat');
+        addChatMessage('nova', `✅ Successfully created ${created} tasks from "${meeting.title}"! Check your tasks view to see them.`);
+      } catch (error) {
+        console.error('Error creating tasks:', error);
+        setNovaMood(NOVA_STATES.CONCERNED);
+        novaSpeak('Oops, had trouble creating tasks...');
+      }
     });
 
     list.querySelectorAll('.action-btn-create').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const index = btn.dataset.index;
         const item = items[index];
         novaSpeak(`Creating task: "${item.text.substring(0, 40)}..."`);
         setNovaMood(NOVA_STATES.WORKING);
-        // TODO: Create single task
+        
+        try {
+          const token = localStorage.getItem('auth_token');
+          const res = await fetch(`${API_BASE}/tasks`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              title: item.text.substring(0, 200),
+              description: `From meeting: ${meeting.title}`,
+              priority: 'medium',
+              category: 'meeting-action',
+              meetingId: meeting.id
+            })
+          });
+          
+          if (res.ok) {
+            const data = await res.json();
+            setNovaMood(NOVA_STATES.CELEBRATING);
+            novaSpeak('Task created! ✨');
+            
+            // Mark as created visually
+            btn.textContent = '✓';
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            
+            // Reload tasks
+            await loadTasks(token);
+          } else {
+            throw new Error('Failed to create task');
+          }
+        } catch (error) {
+          console.error('Error creating task:', error);
+          setNovaMood(NOVA_STATES.CONCERNED);
+          novaSpeak('Had trouble creating that task...');
+        }
       });
     });
 

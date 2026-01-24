@@ -2409,3 +2409,126 @@ window.sendTeamEmail = async function() {
     showNotification('❌ Error sending email', 'error');
   }
 };
+
+// ===== TASKS FUNCTIONALITY =====
+let allTasks = [];
+let currentTaskFilter = 'all';
+
+async function loadTasks() {
+  try {
+    const token = localStorage.getItem('auth_token');
+    const res = await fetch('/api/tasks', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      allTasks = data.tasks || [];
+      document.getElementById('tasks-count').textContent = allTasks.filter(t => t.status !== 'completed').length;
+      renderTasks();
+    }
+  } catch (error) {
+    console.error('Error loading tasks:', error);
+  }
+}
+
+function renderTasks() {
+  const container = document.getElementById('tasks-list');
+  const filtered = currentTaskFilter === 'all' 
+    ? allTasks 
+    : allTasks.filter(t => t.status === currentTaskFilter);
+  
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <h3>No tasks yet</h3>
+        <p>Create tasks from meetings or add them manually</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = filtered.map(task => `
+    <div class="task-card ${task.status}" data-id="${task.id}">
+      <div class="task-header">
+        <input 
+          type="checkbox" 
+          class="task-checkbox" 
+          ${task.status === 'completed' ? 'checked' : ''}
+          onchange="toggleTask(${task.id}, this.checked)"
+        />
+        <h3 class="task-title ${task.status === 'completed' ? 'completed' : ''}">${task.title}</h3>
+      </div>
+      <p class="task-description">${task.description || ''}</p>
+      <div class="task-meta">
+        <span class="priority-badge priority-${task.priority}">${task.priority}</span>
+        ${task.due_date ? `<span class="due-date">📅 ${new Date(task.due_date).toLocaleDateString()}</span>` : ''}
+        ${task.source_type === 'meeting' ? '<span class="source-badge">🎙️ From Meeting</span>' : ''}
+      </div>
+      <div class="task-actions">
+        <button class="task-btn-edit" onclick="editTask(${task.id})">Edit</button>
+        <button class="task-btn-delete" onclick="deleteTask(${task.id})">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function toggleTask(id, completed) {
+  try {
+    const token = localStorage.getItem('auth_token');
+    const res = await fetch(`/api/tasks/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        status: completed ? 'completed' : 'pending'
+      })
+    });
+    
+    if (res.ok) {
+      await loadTasks();
+      showNotification(completed ? '✅ Task completed!' : '📋 Task reopened', 'success');
+    }
+  } catch (error) {
+    console.error('Error toggling task:', error);
+  }
+}
+
+async function deleteTask(id) {
+  if (!confirm('Delete this task?')) return;
+  
+  try {
+    const token = localStorage.getItem('auth_token');
+    const res = await fetch(`/api/tasks/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (res.ok) {
+      await loadTasks();
+      showNotification('✅ Task deleted', 'success');
+    }
+  } catch (error) {
+    console.error('Error deleting task:', error);
+  }
+}
+
+// Filter buttons
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentTaskFilter = btn.dataset.filter;
+    renderTasks();
+  });
+});
+
+// Load tasks when tasks view is shown
+document.querySelector('[data-view="tasks"]')?.addEventListener('click', loadTasks);
+
+// Make functions global
+window.toggleTask = toggleTask;
+window.deleteTask = deleteTask;

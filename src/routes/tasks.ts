@@ -89,18 +89,34 @@ tasks.post('/from-email', async (c) => {
 
 // Create standalone task
 tasks.post('/', async (c) => {
+  // Get auth token from header
+  const authHeader = c.req.header('Authorization')
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
+  // Decode JWT to get user email
+  const token = authHeader.replace('Bearer ', '')
+  let userEmail = 'admin@investaycapital.com'
   try {
-    const { userEmail, title, description, dueDate, priority, category, tags } = await c.req.json()
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    userEmail = payload.email || userEmail
+  } catch (e) {
+    console.error('Error decoding token:', e)
+  }
+
+  try {
+    const { title, description, dueDate, priority, category, tags, meetingId } = await c.req.json()
     
-    if (!userEmail || !title) {
-      return c.json({ error: 'userEmail and title are required' }, 400)
+    if (!title) {
+      return c.json({ error: 'title is required' }, 400)
     }
     
     const result = await c.env.DB.prepare(`
-      INSERT INTO email_tasks (
+      INSERT INTO tasks (
         user_email, title, description, 
-        due_date, priority, category, tags, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+        due_date, priority, category, tags, status, source_type, source_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
     `).bind(
       userEmail,
       title,
@@ -108,12 +124,14 @@ tasks.post('/', async (c) => {
       dueDate || null,
       priority || 'medium',
       category || 'general',
-      tags || '',
-      'pending'
+      tags ? JSON.stringify(tags) : null,
+      meetingId ? 'meeting' : 'manual',
+      meetingId || null
     ).run()
     
     return c.json({ 
       success: true, 
+      id: result.meta.last_row_id,
       taskId: result.meta.last_row_id,
       message: 'Task created successfully' 
     })
@@ -160,7 +178,7 @@ tasks.put('/:id', async (c) => {
     params.push(taskId)
     
     await c.env.DB.prepare(`
-      UPDATE email_tasks 
+      UPDATE tasks 
       SET ${updates.join(', ')}
       WHERE id = ?
     `).bind(...params).run()
@@ -177,7 +195,7 @@ tasks.delete('/:id', async (c) => {
   const taskId = c.req.param('id')
   
   try {
-    await c.env.DB.prepare('DELETE FROM email_tasks WHERE id = ?').bind(taskId).run()
+    await c.env.DB.prepare('DELETE FROM tasks WHERE id = ?').bind(taskId).run()
     return c.json({ success: true, message: 'Task deleted successfully' })
   } catch (error: any) {
     console.error('Error deleting task:', error)
