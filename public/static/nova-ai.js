@@ -1032,6 +1032,7 @@
       // Draft email based on ACTUAL meeting goal/context
       // Extract goal - support multiple formats
       let meetingGoal = task.text; // Default to the task text itself
+      let fullMeetingSummary = meeting.summary || '';
       
       if (meeting.summary) {
         // Try to extract "Goal: ..." (can be multiple lines)
@@ -1042,41 +1043,119 @@
         }
       }
       
+      // Also get the full transcript context for better understanding
+      const fullTranscript = meeting.transcript_text || '';
       const meetingTopic = meeting.title || 'recent discussion';
       
-      // Determine email type from goal
+      // INTELLIGENT EMAIL COMPOSITION
+      // Analyze what we ACTUALLY want to do (not the task action)
+      let emailIntent = '';
+      let emailSubject = '';
+      let targetAction = '';
+      
+      // Pattern 1: "email them regarding X" or "email them about X"
+      const regardingMatch = meetingGoal.match(/(?:email|contact).*?(?:regarding|about|to discuss|concerning)\s+(.+?)(?:\.|$)/i);
+      if (regardingMatch) {
+        targetAction = regardingMatch[1].trim();
+        console.log('🎯 Intent extracted (regarding pattern):', targetAction);
+      }
+      
+      // Pattern 2: "so that we could X" or "to X"
+      if (!targetAction) {
+        const soThatMatch = meetingGoal.match(/(?:so that|in order to|to)\s+(?:we could|we can|I could|I can)?\s*(.+?)(?:\.|$)/i);
+        if (soThatMatch) {
+          targetAction = soThatMatch[1].trim();
+          console.log('🎯 Intent extracted (so that pattern):', targetAction);
+        }
+      }
+      
+      // Pattern 3: Look in transcript for context
+      if (!targetAction && fullTranscript) {
+        const transcriptIntent = fullTranscript.match(/(?:we want to|we need to|let's|should)\s+(.+?)(?:at|with)?\s+(?:rawsummit|${searchTarget})/i);
+        if (transcriptIntent) {
+          targetAction = transcriptIntent[1].trim();
+          console.log('🎯 Intent extracted (transcript):', targetAction);
+        }
+      }
+      
+      // Fallback: Use cleaned task text
+      if (!targetAction) {
+        targetAction = meetingGoal
+          .replace(/^(?:find a contact at|email someone at|contact|email|reach out to)\s+[a-z0-9.-]+\s+(?:and|to|regarding|about)?\s*/i, '')
+          .replace(/^(?:so that|in order to|to)\s+(?:we could|we can)?\s*/i, '')
+          .trim();
+      }
+      
+      console.log('✅ Final target action:', targetAction);
+      
+      // Determine email type and compose intelligently
+      const isSpeakingRequest = 
+        targetAction.toLowerCase().includes('feature') ||
+        targetAction.toLowerCase().includes('speak') ||
+        targetAction.toLowerCase().includes('present') ||
+        targetAction.toLowerCase().includes('participate');
+      
       const isPartnershipRequest = 
-        meetingGoal.toLowerCase().includes('partner') ||
-        meetingGoal.toLowerCase().includes('feature') ||
-        meetingGoal.toLowerCase().includes('event') ||
-        meetingGoal.toLowerCase().includes('speak') ||
-        meetingGoal.toLowerCase().includes('collaborate');
+        targetAction.toLowerCase().includes('partner') ||
+        targetAction.toLowerCase().includes('collaborate') ||
+        targetAction.toLowerCase().includes('work together');
       
-      // Smart email drafting based on context
-      let emailSubject = isPartnershipRequest 
-        ? `Partnership Opportunity - ${searchTarget}` 
-        : `Following up from ${meetingTopic}`;
+      const isEventRequest = 
+        targetAction.toLowerCase().includes('event') ||
+        targetAction.toLowerCase().includes('summit') ||
+        targetAction.toLowerCase().includes('conference');
       
+      // Compose subject line
+      if (isSpeakingRequest || (isEventRequest && targetAction.includes('feature'))) {
+        emailSubject = `Speaking/Partnership Opportunity - ${searchTarget}`;
+        emailIntent = 'speaking_opportunity';
+      } else if (isPartnershipRequest) {
+        emailSubject = `Partnership Opportunity - ${searchTarget}`;
+        emailIntent = 'partnership';
+      } else {
+        emailSubject = `Inquiry - ${searchTarget}`;
+        emailIntent = 'general';
+      }
+      
+      // Compose email body
       let emailDraft = `Subject: ${emailSubject}\n\n`;
       emailDraft += `Hi there,\n\n`;
       emailDraft += `I hope this email finds you well. `;
       
-      // Add context from the goal
-      if (isPartnershipRequest) {
-        emailDraft += `I'm reaching out regarding a potential partnership opportunity.\n\n`;
+      // Add intelligent context based on intent
+      if (isSpeakingRequest || (isEventRequest && targetAction.includes('feature'))) {
+        emailDraft += `I'm reaching out to explore potential speaking/partnership opportunities at ${searchTarget}.\n\n`;
         
-        // Clean up the goal text (remove "Email someone at" prefix)
-        const cleanedGoal = meetingGoal
-          .replace(/^email\s+someone\s+at\s+[a-z0-9.-]+\s+(so that|to|because)/i, '')
-          .replace(/^(so that|to|because)\s+/i, '')
+        // Clean and present the actual intent
+        const cleanIntent = targetAction
+          .replace(/^(feature|speak|present|participate)\s+(at|in|on)?\s*/i, '')
+          .replace(/one of (their|your) events?/i, 'your events')
           .trim();
         
-        if (cleanedGoal) {
-          emailDraft += `We'd love to explore the possibility of ${cleanedGoal}. `;
+        emailDraft += `We'd love to feature at your events and contribute valuable content to your community. `;
+        
+        if (cleanIntent && cleanIntent.length > 10) {
+          emailDraft += `Specifically, we're interested in ${cleanIntent}. `;
         }
         
+        emailDraft += `We believe we could bring significant value to your audience and create a mutually beneficial partnership.\n\n`;
+        emailDraft += `Would you be available for a brief call to discuss potential speaking/partnership opportunities for your upcoming events?\n\n`;
+      } else if (isPartnershipRequest) {
+        emailDraft += `I'm reaching out regarding a potential partnership opportunity.\n\n`;
+        emailDraft += `${targetAction.charAt(0).toUpperCase() + targetAction.slice(1)}. `;
         emailDraft += `We believe this could be mutually beneficial and would create value for both our audiences.\n\n`;
         emailDraft += `Would you be available for a brief call to discuss potential collaboration opportunities?\n\n`;
+      } else {
+        emailDraft += `I wanted to reach out regarding: ${targetAction}\n\n`;
+        emailDraft += `Would you be available for a brief call to discuss this further?\n\n`;
+      }
+      
+      emailDraft += `Looking forward to hearing from you.\n\n`;
+      emailDraft += `Best regards`;
+      
+      console.log('📧 Email intent:', emailIntent);
+      console.log('📧 Email subject:', emailSubject);
+      console.log('📧 Draft length:', emailDraft.length);
       } else {
         emailDraft += `I wanted to reach out regarding: ${meetingGoal}\n\n`;
         emailDraft += `Would you be available for a brief call to discuss this further?\n\n`;
