@@ -1156,14 +1156,6 @@
       console.log('📧 Email intent:', emailIntent);
       console.log('📧 Email subject:', emailSubject);
       console.log('📧 Draft length:', emailDraft.length);
-      } else {
-        emailDraft += `I wanted to reach out regarding: ${meetingGoal}\n\n`;
-        emailDraft += `Would you be available for a brief call to discuss this further?\n\n`;
-      }
-      
-      emailDraft += `Looking forward to hearing from you.\n\n`;
-      emailDraft += `Best regards`;
-      
       
       addChatMessage('nova', `📝 **EMAIL DRAFT FOR YOU:**\n\n\`\`\`\n${emailDraft}\n\`\`\``);
       
