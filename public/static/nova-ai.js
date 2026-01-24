@@ -696,30 +696,59 @@
 
   // Extract action items from meeting
   function extractActionItemsFromMeeting(meeting) {
-    const text = meeting.transcript_text || '';
     const items = [];
     
-    const patterns = [
-      /(?:will|should|need to|must|have to)\s+([^.!?]{10,150})/gi,
-      /(?:action item|todo|task):\s*([^.!?]{10,150})/gi,
-      /(?:follow up|reach out|contact|email|call)\s+([^.!?]{10,150})/gi
-    ];
-
-    patterns.forEach(pattern => {
-      const matches = text.matchAll(pattern);
-      for (const match of matches) {
-        const item = match[1].trim();
-        if (item.length > 10 && item.length < 200 && !items.some(i => i.text === item)) {
-          items.push({
-            text: item,
-            meetingId: meeting.id,
-            meetingTitle: meeting.title
-          });
-        }
+    // NEW: Extract from GPT-4 structured summary
+    if (meeting.summary && meeting.summary.includes('Action Items:')) {
+      const actionSection = meeting.summary.split('Action Items:')[1]?.split('Next Steps:')[0];
+      if (actionSection) {
+        const lines = actionSection.split('\n');
+        lines.forEach(line => {
+          // Match lines like: • Send WhatsApp contact details - @Ali
+          // or: - Arrange meeting on January 14th - @Hamada
+          const match = line.match(/^[•\-]\s*(.+?)(?:\s*-\s*@(.+))?$/);
+          if (match) {
+            const text = match[1].trim();
+            const assignee = match[2]?.trim();
+            if (text.length > 10 && text.length < 200) {
+              items.push({
+                text: text,
+                assignee: assignee,
+                meetingId: meeting.id,
+                meetingTitle: meeting.title
+              });
+            }
+          }
+        });
       }
-    });
+    }
+    
+    // FALLBACK: Old pattern matching on transcript
+    if (items.length === 0) {
+      const text = meeting.transcript_text || '';
+      const patterns = [
+        /(?:will|should|need to|must|have to)\s+([^.!?]{10,150})/gi,
+        /(?:action item|todo|task):\s*([^.!?]{10,150})/gi,
+        /(?:follow up|reach out|contact|email|call)\s+([^.!?]{10,150})/gi
+      ];
 
-    return items.slice(0, 5);
+      patterns.forEach(pattern => {
+        const matches = text.matchAll(pattern);
+        for (const match of matches) {
+          const item = match[1].trim();
+          if (item.length > 10 && item.length < 200 && !items.some(i => i.text === item)) {
+            items.push({
+              text: item,
+              meetingId: meeting.id,
+              meetingTitle: meeting.title
+            });
+          }
+        }
+      });
+    }
+
+    console.log(`📋 Extracted ${items.length} action items from "${meeting.title}"`);
+    return items.slice(0, 10);
   }
 
   // Find commitments in email

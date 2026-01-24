@@ -115,18 +115,14 @@ tasks.post('/', async (c) => {
     const result = await c.env.DB.prepare(`
       INSERT INTO tasks (
         user_email, title, description, 
-        due_date, priority, category, tags, status, source_type, source_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+        due_date, priority, status
+      ) VALUES (?, ?, ?, ?, ?, 'pending')
     `).bind(
       userEmail,
       title,
       description || '',
       dueDate || null,
-      priority || 'medium',
-      category || 'general',
-      tags ? JSON.stringify(tags) : null,
-      meetingId ? 'meeting' : 'manual',
-      meetingId || null
+      priority || 'medium'
     ).run()
     
     return c.json({ 
