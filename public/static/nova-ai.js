@@ -1019,10 +1019,28 @@
     try {
       setNovaMood(NOVA_STATES.THINKING);
       
-      // Search for contact info via our API
-      const searchQuery = companyDomain 
-        ? `${companyDomain} contact email address`
-        : `${recipient} contact email address`;
+      // SMART SEARCH QUERY BUILDING:
+      // Priority 1: If task text contains full company name, extract it
+      // e.g., "Find NEOS Legal UAE contact information" → search for "NEOS Legal UAE"
+      let searchQuery;
+      
+      // Try to extract full company name from task text
+      // Pattern: "Find [Company Name] contact information"
+      const fullNameMatch = task.text.match(/(?:Find|Email|Contact)\s+(.+?)\s+(?:contact information|and email|to request)/i);
+      
+      if (fullNameMatch && fullNameMatch[1].length > 3) {
+        // Use the full extracted name for search
+        const fullCompanyName = fullNameMatch[1].trim();
+        searchQuery = `${fullCompanyName} contact email address`;
+        console.log('✅ Using full company name for search:', fullCompanyName);
+        console.log('   (extracted from task text)');
+      } else if (companyDomain) {
+        searchQuery = `${companyDomain} contact email address`;
+        console.log('✅ Using domain for search:', companyDomain);
+      } else {
+        searchQuery = `${recipient} contact email address`;
+        console.log('✅ Using recipient for search:', recipient);
+      }
       
       addChatMessage('nova', `🌐 Searching the web for "${searchTarget}"...`);
       
