@@ -1016,17 +1016,38 @@
         addChatMessage('nova', `📖 Found: ${contactInfo.abstract}`);
       }
       
-      // Display found contact info with REAL email suggestions
+      // Display found contact info with REAL emails and names
       const emailList = contactInfo.suggestedEmails?.length > 0 
         ? contactInfo.suggestedEmails.slice(0, 4).join('\n• ')
         : companyDomain 
           ? `hello@${companyDomain}\n• contact@${companyDomain}\n• info@${companyDomain}`
           : `hello@${recipient.toLowerCase()}.com\n• contact@${recipient.toLowerCase()}.com`;
       
+      const contactNamesList = contactInfo.contactNames?.length > 0
+        ? contactInfo.contactNames.slice(0, 3).join(', ')
+        : '';
+      
       console.log('📧 Suggested emails from API:', contactInfo.suggestedEmails);
+      console.log('👤 Contact names from scraping:', contactInfo.contactNames);
       console.log('📧 Email list for display:', emailList);
       
-      addChatMessage('nova', `✅ **FOUND CONTACT INFO FOR ${searchTarget.toUpperCase()}:**\n\n📧 **Suggested Email Addresses:**\n• ${emailList}\n\n🔍 **WHERE TO FIND MORE:**\n• [Search Google](${contactInfo.searchLinks.google})\n• [LinkedIn](${contactInfo.searchLinks.linkedin})\n• [Hunter.io Email Finder](${contactInfo.searchLinks.hunter})`);
+      let contactMessage = `✅ **FOUND CONTACT INFO FOR ${searchTarget.toUpperCase()}:**\n\n`;
+      
+      if (contactNamesList) {
+        contactMessage += `👤 **Contact Names Found:** ${contactNamesList}\n\n`;
+      }
+      
+      contactMessage += `📧 **Email Addresses:**\n• ${emailList}`;
+      
+      if (contactInfo.scrapedEmails > 0) {
+        contactMessage += `\n\n✨ *${contactInfo.scrapedEmails} emails scraped from their website!*`;
+      }
+      
+      if (contactInfo.scrapedNames > 0) {
+        contactMessage += `\n🎯 *${contactInfo.scrapedNames} contact names found automatically!*`;
+      }
+      
+      addChatMessage('nova', contactMessage);
       
       
       // Draft email based on ACTUAL meeting goal/context
@@ -1118,21 +1139,36 @@
       }
       
       // Compose email body
-      let emailDraft = `Subject: ${emailSubject}\n\n`;
-      emailDraft += `Hi there,\n\n`;
-      emailDraft += `I hope this email finds you well. `;
+      let emailDraft = '';
       
       // Add intelligent context based on intent
       if (isSpeakingRequest || (isEventRequest && targetAction.includes('feature'))) {
-        emailDraft += `I'm reaching out to explore potential speaking/partnership opportunities at ${searchTarget}.\n\n`;
-        
         // Clean and present the actual intent
         const cleanIntent = targetAction
           .replace(/^(feature|speak|present|participate)\s+(at|in|on)?\s*/i, '')
-          .replace(/one of (their|your) events?/i, 'your events')
+          .replace(/one of (their|your) events?/gi, 'your events')
+          .replace(/their/gi, 'your')
           .trim();
         
+        // Use contact name if found
+        const greeting = contactInfo.contactNames && contactInfo.contactNames.length > 0
+          ? `Hi ${contactInfo.contactNames[0].split(' ')[0]},`
+          : `Hi there,`;
+        
+        emailDraft = `Subject: ${emailSubject}\n\n`;
+        emailDraft += `${greeting}\n\n`;
+        emailDraft += `I hope this email finds you well. I'm reaching out to explore potential speaking/partnership opportunities at ${searchTarget}.\n\n`;
         emailDraft += `We'd love to feature at your events and contribute valuable content to your community. `;
+          .trim();
+        
+        // Use contact name if found
+        const greeting = contactInfo.contactNames && contactInfo.contactNames.length > 0
+          ? `Hi ${contactInfo.contactNames[0].split(' ')[0]},`
+          : `Hi there,`;
+        
+        emailDraft = `Subject: ${emailSubject}\n\n`;
+        emailDraft += `${greeting}\n\n`;
+        emailDraft += `I hope this email finds you well. I'm reaching out to explore potential speaking/partnership opportunities at ${searchTarget}.\n\n`;
         
         if (cleanIntent && cleanIntent.length > 10) {
           emailDraft += `Specifically, we're interested in ${cleanIntent}. `;
