@@ -1866,9 +1866,9 @@ app.get('/collaborate', (c) => {
 
         <script src="/static/collaboration.js?v=20260124-2"></script>
         
-        <!-- 🌌 YEAR 2070 NEURAL AI ASSISTANT -->
-        <link rel="stylesheet" href="/static/neural-assistant.css?v=2070">
-        <script src="/static/neural-assistant.js?v=2070"></script>
+        <!-- 🌟 NOVA - AI Entity (Year 2070) -->
+        <link rel="stylesheet" href="/static/nova-ai.css?v=2070">
+        <script src="/static/nova-ai.js?v=2070"></script>
     </body>
     </html>
   `);
