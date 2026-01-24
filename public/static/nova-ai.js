@@ -643,15 +643,16 @@
         if (emailTasks.length > 0) {
           // CREATE SMART EMAIL TASK INSIGHT
           emailTasks.forEach(emailTask => {
-            const recipientMatch = emailTask.text.match(/email\s+([A-Za-z]+)|contact\s+([A-Za-z]+)|reach out to\s+([A-Za-z]+)/i);
-            const recipient = recipientMatch ? (recipientMatch[1] || recipientMatch[2] || recipientMatch[3]) : 'recipient';
+            // Use SMART extraction (check for domain first)
+            const domainMatch = emailTask.text.match(/([a-z0-9-]+\.[a-z]{2,})/i);
+            const recipient = domainMatch ? domainMatch[1] : 'recipient';
             
             insights.push({
               type: 'smart-email-task',
               priority: 'urgent',
               icon: '📨',
               title: `🔥 Need to email ${recipient}!`,
-              subtitle: `From: "${meeting.title}"\n💡 I can help you find ${recipient}'s contact and draft the email`,
+              subtitle: `From: "${meeting.title}"\n💡 I'll search for real contact info and draft the email`,
               action: () => handleSmartEmailTask(emailTask, meeting, recipient),
               data: { task: emailTask, meeting, recipient }
             });
@@ -944,6 +945,9 @@
       const contactInfo = await searchRes.json();
       
       console.log('🔍 Search results:', contactInfo);
+      console.log('🔍 Query used:', searchQuery);
+      console.log('🔍 Company domain:', companyDomain);
+      console.log('🔍 Search target:', searchTarget);
       
       // Show search summary if we got one
       if (contactInfo.abstract) {
@@ -961,26 +965,61 @@
       
       
       // Draft email based on ACTUAL meeting goal/context
-      const meetingGoal = meeting.summary?.match(/Goal:\s*(.+?)(?:\n|$)/i)?.[1] || task.text;
+      // Extract goal - support multiple formats
+      let meetingGoal = task.text; // Default to the task text itself
+      
+      if (meeting.summary) {
+        // Try to extract "Goal: ..." (can be multiple lines)
+        const goalMatch = meeting.summary.match(/Goal:\s*(.+?)(?:\n\n|\n[A-Z]|$)/is);
+        if (goalMatch) {
+          meetingGoal = goalMatch[1].trim();
+          console.log('📝 Extracted goal:', meetingGoal);
+        }
+      }
+      
       const meetingTopic = meeting.title || 'recent discussion';
       
+      // Determine email type from goal
+      const isPartnershipRequest = 
+        meetingGoal.toLowerCase().includes('partner') ||
+        meetingGoal.toLowerCase().includes('feature') ||
+        meetingGoal.toLowerCase().includes('event') ||
+        meetingGoal.toLowerCase().includes('speak') ||
+        meetingGoal.toLowerCase().includes('collaborate');
+      
       // Smart email drafting based on context
-      let emailDraft = `Subject: Partnership Opportunity - ${meetingTopic}\n\n`;
-      emailDraft += `Hi there,\n\n`;
+      let emailSubject = isPartnershipRequest 
+        ? `Partnership Opportunity - Feature at ${searchTarget}` 
+        : `Following up from ${meetingTopic}`;
+      
+      let emailDraft = `Subject: ${emailSubject}\n\n`;
+      emailDraft += `Hi ${searchTarget} team,\n\n`;
       emailDraft += `I hope this email finds you well. `;
       
       // Add context from the goal
-      if (meetingGoal.toLowerCase().includes('feature') || meetingGoal.toLowerCase().includes('event')) {
+      if (isPartnershipRequest) {
         emailDraft += `I'm reaching out regarding a potential partnership opportunity.\n\n`;
-        emailDraft += `${meetingGoal}\n\n`;
-        emailDraft += `We believe this could be mutually beneficial and would love to explore how we can collaborate.\n\n`;
+        
+        // Clean up the goal text (remove "Email someone at" prefix)
+        const cleanedGoal = meetingGoal
+          .replace(/^email\s+someone\s+at\s+[a-z0-9.-]+\s+(so that|to|because)/i, '')
+          .replace(/^(so that|to|because)\s+/i, '')
+          .trim();
+        
+        if (cleanedGoal) {
+          emailDraft += `We'd love to explore the possibility of ${cleanedGoal}. `;
+        }
+        
+        emailDraft += `We believe this could be mutually beneficial and would create value for both our audiences.\n\n`;
+        emailDraft += `Would you be available for a brief call to discuss potential collaboration opportunities?\n\n`;
       } else {
         emailDraft += `I wanted to reach out regarding: ${meetingGoal}\n\n`;
+        emailDraft += `Would you be available for a brief call to discuss this further?\n\n`;
       }
       
-      emailDraft += `Would you be available for a brief call to discuss this further?\n\n`;
       emailDraft += `Looking forward to hearing from you.\n\n`;
       emailDraft += `Best regards`;
+      
       
       addChatMessage('nova', `📝 **EMAIL DRAFT FOR YOU:**\n\n\`\`\`\n${emailDraft}\n\`\`\``);
       
@@ -1201,37 +1240,47 @@ ${meeting.summary?.substring(0, 500)}`;
     // Add handlers
     document.getElementById('create-all-tasks').addEventListener('click', async () => {
       setNovaMood(NOVA_STATES.WORKING);
-      novaSpeak("Creating tasks from action items... ⚡");
+      novaSpeak("Creating tasks with AI assistance... ⚡");
       
       try {
         const token = localStorage.getItem('auth_token');
         let created = 0;
         
         for (const item of items) {
-          // INTELLIGENT PROCESSING
-          const enrichedItem = await enrichActionItem(item, meeting);
+          const text = item.text.toLowerCase();
+          const isEmailTask = text.includes('email') || text.includes('contact') || text.includes('reach out');
           
-          const res = await fetch(`${API_BASE}/tasks`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              title: enrichedItem.title || item.text.substring(0, 200),
-              description: enrichedItem.description || `From meeting: ${meeting.title}`,
-              priority: enrichedItem.priority || 'medium',
-              category: 'meeting-action',
-              meetingId: meeting.id
-            })
-          });
-          
-          if (res.ok) {
-            created++;
+          if (isEmailTask) {
+            // For EMAIL tasks, use handleSmartEmailTask which does web search
+            const domainMatch = item.text.match(/([a-z0-9-]+\.[a-z]{2,})/i);
+            const recipient = domainMatch ? domainMatch[1] : 'recipient';
             
-            // If it's an email task, show draft email suggestion
-            if (enrichedItem.isEmailTask && enrichedItem.recipient) {
-              novaSpeak(`💡 I can help you draft an email to ${enrichedItem.recipient}! Want me to?`);
+            novaSpeak(`🔍 Searching web for ${recipient} contact info...`);
+            
+            // Call the smart handler (it creates the task with search results)
+            await handleSmartEmailTask(item, meeting, recipient);
+            created++;
+          } else {
+            // For regular tasks, use enrichment
+            const enrichedItem = await enrichActionItem(item, meeting);
+            
+            const res = await fetch(`${API_BASE}/tasks`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                title: enrichedItem.title || item.text.substring(0, 200),
+                description: enrichedItem.description || `From meeting: ${meeting.title}`,
+                priority: enrichedItem.priority || 'medium',
+                category: 'meeting-action',
+                source_id: meeting.id
+              })
+            });
+            
+            if (res.ok) {
+              created++;
             }
           }
         }
@@ -1240,11 +1289,11 @@ ${meeting.summary?.substring(0, 500)}`;
         await loadTasks(token);
         
         setNovaMood(NOVA_STATES.CELEBRATING);
-        novaSpeak(`Done! Created ${created} tasks! 🎉`);
+        novaSpeak(`Done! Created ${created} tasks with full context! 🎉`);
         
         // Switch to a success view
         switchTab('chat');
-        addChatMessage('nova', `✅ Successfully created ${created} tasks from "${meeting.title}"! Check your tasks view to see them.`);
+        addChatMessage('nova', `✅ Successfully created ${created} tasks from "${meeting.title}"!\n\n💡 Email tasks include:\n• Real contact info from web search\n• Context-aware draft emails\n• Verification links\n\nCheck your Tasks view!`);
       } catch (error) {
         console.error('Error creating tasks:', error);
         setNovaMood(NOVA_STATES.CONCERNED);
