@@ -505,7 +505,9 @@ window.addEventListener('DOMContentLoaded', function() {
           
           // Load Tasks data
           if (view === 'tasks') {
-            const tasksRes = await fetch(`/api/tasks?user=${user}`);
+            const tasksRes = await fetch(`/api/tasks?user=${user}`, {
+              headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+            });
             const tasksData = await tasksRes.json();
             setTasks(tasksData.tasks || []);
           }
@@ -1216,7 +1218,10 @@ window.addEventListener('DOMContentLoaded', function() {
         try {
           const res = await fetch('/api/tasks', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+            },
             body: JSON.stringify({
               userEmail: user,
               title: newTaskTitle,
@@ -1247,7 +1252,10 @@ window.addEventListener('DOMContentLoaded', function() {
           const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
           const res = await fetch(`/api/tasks/${taskId}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+            },
             body: JSON.stringify({ status: newStatus })
           });
           const result = await res.json();
@@ -1263,7 +1271,10 @@ window.addEventListener('DOMContentLoaded', function() {
         if (!confirm('🗑️ Delete this task?')) return;
         try {
           const res = await fetch(`/api/tasks/${taskId}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+            }
           });
           const result = await res.json();
           if (result.success) {
@@ -1279,7 +1290,10 @@ window.addEventListener('DOMContentLoaded', function() {
         try {
           const res = await fetch('/api/tasks/from-email', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+            },
             body: JSON.stringify({
               emailId: email.id,
               userEmail: user,
