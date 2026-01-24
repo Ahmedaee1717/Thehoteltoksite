@@ -570,95 +570,93 @@ meetings.post('/parse-pdf', async (c) => {
       return c.json({ error: 'No PDF file provided' }, 400)
     }
     
-    // Get PDF as ArrayBuffer
-    const arrayBuffer = await pdfFile.arrayBuffer()
-    const pdfBytes = new Uint8Array(arrayBuffer)
+    // Save PDF temporarily
+    const pdfBytes = await pdfFile.arrayBuffer()
+    const tempPath = `/tmp/upload_${Date.now()}.pdf`
     
-    // Convert to text (simple extraction)
-    // Note: This is a basic text extraction. For production, use a proper PDF parsing library
-    let text = ''
+    // Use Python script to extract PDF (better than manual parsing)
+    // For now, do basic extraction as Python execution in Workers is complex
+    
     try {
-      // Convert bytes to string (basic approach)
+      // Convert bytes to text (basic extraction)
       const decoder = new TextDecoder('utf-8', { fatal: false })
-      text = decoder.decode(pdfBytes)
+      let text = decoder.decode(pdfBytes)
       
-      // Clean up text - remove binary data, keep readable text
+      // Clean up text
       text = text
-        .replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, ' ') // Remove control chars
-        .replace(/\s+/g, ' ') // Normalize whitespace
+        .replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, ' ')
+        .replace(/\s+/g, ' ')
         .trim()
       
-      // Extract title (look for common patterns)
-      let title = pdfFile.name.replace('.pdf', '')
-      const titleMatch = text.match(/##\s*([^\n]{5,100})/i) || text.match(/^([^\n]{5,100})/i)
+      // If text is garbled (binary), return error
+      if (text.length < 100 || text.includes('%PDF')) {
+        return c.json({
+          success: false,
+          error: 'PDF contains binary data that cannot be extracted directly. Please copy and paste the text manually.',
+          message: 'PDF parsing failed - please use manual entry'
+        }, 200)
+      }
+      
+      // Extract title
+      let title = pdfFile.name.replace('.pdf', '').replace(/_/g, ' ')
+      const titleMatch = text.match(/([A-Z][\w\s]{5,80}?)(?:\n|Mon,|Tue,|Wed,|Thu,|Fri,)/i)
       if (titleMatch) {
         title = titleMatch[1].trim()
       }
       
       // Extract date
       let date = ''
-      const dateMatch = text.match(/\w+,\s+\w+\s+\d{1,2},\s+\d{4}\s+\d{1,2}:\d{2}[AP]M/i)
+      const dateMatch = text.match(/(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+\w+\s+\d{1,2},\s+\d{4}\s+\d{1,2}:\d{2}[AP]M/i)
       if (dateMatch) {
         try {
           const parsedDate = new Date(dateMatch[0])
           if (!isNaN(parsedDate.getTime())) {
             date = parsedDate.toISOString().slice(0, 16)
           }
-        } catch (e) {
-          console.error('Date parse error:', e)
-        }
+        } catch (e) {}
       }
       
-      // Extract summary (look for SUMMARY section)
+      // Extract summary
       let summary = ''
-      const summaryMatch = text.match(/SUMMARY[:\s]*([\s\S]{50,1000}?)(?:KEYWORDS|SPEAKERS|$)/i)
+      const summaryMatch = text.match(/SUMMARY[:\s]*KEYWORDS([\s\S]{50,1000}?)(?:SPEAKERS|$)/i)
       if (summaryMatch) {
-        summary = summaryMatch[1].trim()
+        summary = summaryMatch[1].trim().replace(/\s+/g, ' ')
       }
       
-      // Extract speakers/owner
+      // Extract speakers
       let owner = ''
-      const speakersMatch = text.match(/SPEAKERS[:\s]*([\s\S]{10,200}?)(?:\n\n|##|$)/i)
+      const speakersMatch = text.match(/SPEAKERS([\s\S]{10,200}?)(?:\n\n|##|$)/i)
       if (speakersMatch) {
-        const speakers = speakersMatch[1].trim().split(/[,\n]/)
+        const speakers = speakersMatch[1].split(/[,\n]/).map(s => s.trim()).filter(s => s && s.length > 2)
         if (speakers.length > 0) {
-          owner = speakers[0].trim()
+          owner = speakers[0]
         }
       }
-      
-      // Extract full transcript (everything after headers)
-      let transcript = text
-      
-      // Clean up transcript
-      transcript = transcript
-        .replace(/[^\x20-\x7E\n\r\t]/g, '') // Keep only printable ASCII
-        .replace(/\n{3,}/g, '\n\n') // Max 2 consecutive newlines
-        .trim()
       
       return c.json({
         success: true,
         title: title.substring(0, 200),
-        transcript: transcript.substring(0, 50000), // Limit size
+        transcript: text.substring(0, 100000),
         summary: summary.substring(0, 2000),
         owner: owner.substring(0, 100),
         date: date,
-        message: 'PDF parsed successfully'
+        message: 'PDF text extracted. Please review and edit before uploading.'
       })
       
     } catch (parseError: any) {
       console.error('PDF parse error:', parseError)
       return c.json({
         success: false,
-        error: 'Failed to parse PDF content',
+        error: 'Failed to parse PDF. Please copy and paste the text manually.',
         details: parseError.message
-      }, 500)
+      }, 200)
     }
     
   } catch (error: any) {
     console.error('PDF upload error:', error)
     return c.json({
       success: false,
-      error: 'Failed to process PDF',
+      error: 'Failed to process PDF file',
       details: error.message
     }, 500)
   }
