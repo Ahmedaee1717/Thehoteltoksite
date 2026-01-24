@@ -136,6 +136,9 @@ function switchView(view) {
     case 'meetings':
       loadMeetings();
       break;
+    case 'tasks':
+      loadTasks();
+      break;
     case 'activity':
       loadActivity();
       break;
@@ -2415,20 +2418,32 @@ let allTasks = [];
 let currentTaskFilter = 'all';
 
 async function loadTasks() {
+  console.log('📋 Loading tasks...');
   try {
     const token = localStorage.getItem('auth_token');
+    console.log('🔑 Token:', token ? 'Found' : 'Missing');
+    
     const res = await fetch('/api/tasks', {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     
+    console.log('📊 Tasks API response:', res.status);
+    
     if (res.ok) {
       const data = await res.json();
+      console.log('✅ Tasks loaded:', data.tasks?.length || 0);
       allTasks = data.tasks || [];
-      document.getElementById('tasks-count').textContent = allTasks.filter(t => t.status !== 'completed').length;
+      const tasksCountEl = document.getElementById('tasks-count');
+      if (tasksCountEl) {
+        tasksCountEl.textContent = allTasks.filter(t => t.status !== 'completed').length;
+      }
       renderTasks();
+    } else {
+      const error = await res.text();
+      console.error('❌ Tasks API error:', res.status, error);
     }
   } catch (error) {
-    console.error('Error loading tasks:', error);
+    console.error('❌ Error loading tasks:', error);
   }
 }
 
@@ -2517,17 +2532,16 @@ async function deleteTask(id) {
 }
 
 // Filter buttons
-document.querySelectorAll('.filter-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentTaskFilter = btn.dataset.filter;
-    renderTasks();
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentTaskFilter = btn.dataset.filter;
+      renderTasks();
+    });
   });
 });
-
-// Load tasks when tasks view is shown
-document.querySelector('[data-view="tasks"]')?.addEventListener('click', loadTasks);
 
 // Make functions global
 window.toggleTask = toggleTask;
