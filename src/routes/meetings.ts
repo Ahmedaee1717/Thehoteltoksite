@@ -368,6 +368,63 @@ meetings.get('/calendar/summary', async (c) => {
 
 // ===== ZAPIER WEBHOOK RECEIVER (Real-time Otter.ai → Zapier → Cloudflare) =====
 
+// Helper function to extract speakers from transcript
+function extractSpeakers(transcript: string): any[] {
+  const speakers: Set<string> = new Set()
+  
+  // Pattern 1: "Speaker Name  00:00" format (Otter.ai style)
+  const pattern1 = /^([A-Za-z][A-Za-z\s]+?)\s+\d{1,2}:\d{2}/gm
+  let match
+  while ((match = pattern1.exec(transcript)) !== null) {
+    const name = match[1].trim()
+    if (name.length > 1 && name.length < 50) {
+      speakers.add(name)
+    }
+  }
+  
+  // Pattern 2: "Speaker Name:" format
+  const pattern2 = /^([A-Za-z][A-Za-z\s]+?):/gm
+  while ((match = pattern2.exec(transcript)) !== null) {
+    const name = match[1].trim()
+    if (name.length > 1 && name.length < 50 && !name.match(/^(SUMMARY|SPEAKERS|TRANSCRIPT|KEYWORDS)/i)) {
+      speakers.add(name)
+    }
+  }
+  
+  // Pattern 3: Extract from "SPEAKERS" section
+  const speakersSection = transcript.match(/SPEAKERS\s*[:\n]+(.*?)(?=\n\n|TRANSCRIPT|##|$)/is)
+  if (speakersSection) {
+    const speakerNames = speakersSection[1].split(/[,\n]/).map(s => s.trim()).filter(s => s && s.length > 1 && s.length < 50)
+    speakerNames.forEach(name => speakers.add(name))
+  }
+  
+  return Array.from(speakers).map(name => ({ name }))
+}
+
+// Helper function to generate AI summary (simplified - can be enhanced with actual AI later)
+function generateSummary(transcript: string, existingSummary: string): string {
+  if (existingSummary && existingSummary.length > 10) {
+    return existingSummary
+  }
+  
+  // Extract keywords section if available
+  const keywordsMatch = transcript.match(/SUMMARY\s*[:\n]*KEYWORDS\s*[:\n]+(.*?)(?=\n\n|SPEAKERS|$)/is)
+  if (keywordsMatch) {
+    return keywordsMatch[1].trim().replace(/\s+/g, ' ').substring(0, 2000)
+  }
+  
+  // Fallback: Extract first 200 characters of actual transcript content
+  const transcriptStart = transcript.indexOf('TRANSCRIPT')
+  if (transcriptStart !== -1) {
+    const content = transcript.substring(transcriptStart + 10).trim()
+    const firstSentences = content.substring(0, 500).replace(/\s+/g, ' ')
+    return `Meeting discussion covering: ${firstSentences.substring(0, 200)}...`
+  }
+  
+  // Final fallback
+  return transcript.substring(0, 200).replace(/\s+/g, ' ') + '...'
+}
+
 // Webhook endpoint to receive new meetings from Zapier in real-time
 meetings.post('/webhook/zapier', async (c) => {
   try {
@@ -380,12 +437,25 @@ meetings.post('/webhook/zapier', async (c) => {
     const recordId = data.id || `zapier_${Date.now()}`
     const title = data.title || data.f1 || 'Untitled Meeting'
     const transcript = data.transcript || data.f2 || ''
-    const summary = data.summary || data.f3 || ''
+    let summary = data.summary || data.f3 || ''
     const meetingUrl = data.meeting_url || data.f4 || ''
     const ownerName = data.owner_name || data.f5 || ''
     const dateCreated = data.date_created || data.f6 || data.created_at || new Date().toISOString()
     
     console.log(`📝 Processing meeting: "${title}"`)
+    
+    // Extract speakers from transcript
+    const speakers = extractSpeakers(transcript)
+    console.log(`🎤 Extracted ${speakers.length} speakers:`, speakers.map(s => s.name).join(', '))
+    
+    // If no speakers found, fall back to owner
+    if (speakers.length === 0 && ownerName) {
+      speakers.push({ name: ownerName })
+    }
+    
+    // Generate summary if not provided
+    summary = generateSummary(transcript, summary)
+    console.log(`📄 Summary: ${summary.substring(0, 100)}...`)
     
     // Check if already exists
     const existing = await c.env.DB.prepare(`
@@ -407,7 +477,7 @@ meetings.post('/webhook/zapier', async (c) => {
         dateCreated,
         dateCreated, // Use same date for end if not provided
         transcript,
-        JSON.stringify([{ name: ownerName }]), // Store owner as speaker
+        JSON.stringify(speakers),
         0, // Duration not available from Zapier
         meetingUrl
       ).run()
@@ -418,19 +488,22 @@ meetings.post('/webhook/zapier', async (c) => {
         success: true, 
         message: 'Meeting transcript saved successfully',
         id: result.meta.last_row_id,
-        title: title
+        title: title,
+        speakers: speakers,
+        summary: summary
       })
     } else {
       // Update existing transcript
       await c.env.DB.prepare(`
         UPDATE otter_transcripts 
         SET title = ?, summary = ?, transcript_text = ?, 
-            meeting_url = ?, updated_at = CURRENT_TIMESTAMP
+            speakers = ?, meeting_url = ?, updated_at = CURRENT_TIMESTAMP
         WHERE otter_id = ?
       `).bind(
         title,
         summary,
         transcript,
+        JSON.stringify(speakers),
         meetingUrl,
         recordId
       ).run()
@@ -440,7 +513,9 @@ meetings.post('/webhook/zapier', async (c) => {
       return c.json({ 
         success: true, 
         message: 'Meeting transcript updated successfully',
-        title: title
+        title: title,
+        speakers: speakers,
+        summary: summary
       })
     }
   } catch (error: any) {
