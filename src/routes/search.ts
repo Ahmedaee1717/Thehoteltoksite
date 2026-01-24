@@ -262,44 +262,54 @@ search.get('/contact', async (c) => {
       }
     }
     
-    // STEP 2.5: If still no emails found, use Google Search as fallback
-    // This handles JavaScript-rendered websites where HTML scraping fails
-    if (emailsWithSources.length === 0 && domain) {
+    // STEP 2.5: GOOGLE SEARCH FALLBACK - Use company name, not just domain!
+    // This is CRITICAL for finding the right company and emails
+    if (emailsWithSources.length === 0) {
       console.log('⚠️ No emails from HTML scraping, trying Google Search fallback...')
       
       try {
-        // Search Google for company contact email
-        const googleQuery = `${domain} contact email address`
-        console.log(`🔍 Google search query: "${googleQuery}"`)
+        // Extract company name from ORIGINAL QUERY (NOT domain!)
+        const companyNameMatch = query.match(/^(.+?)\s+(?:contact|email)/i)
+        const companyName = companyNameMatch ? companyNameMatch[1].trim() : query.split(' contact')[0].trim()
         
-        // Use web_search tool through HTTP (note: this is a workaround since we can't call tools directly)
-        // Instead, we'll use a simpler approach: DuckDuckGo HTML search
+        // Search using COMPANY NAME to find official contact info
+        const googleQuery = `${companyName} official contact email address`
+        console.log(`🔍 Google search query: "${googleQuery}"`)
+        console.log(`📝 Company name extracted: "${companyName}"`)
+        
+        // Use DuckDuckGo HTML search
         const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(googleQuery)}`
         const searchResponse = await fetch(searchUrl, {
-          headers: { 'User-Agent': 'Mozilla/5.0' }
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
         })
         
         if (searchResponse.ok) {
           const searchHtml = await searchResponse.text()
+          console.log(`✅ Got search results HTML (${searchHtml.length} chars)`)
           
-          // Extract emails from search results
+          // Extract ALL emails from search results
           const emailRegex = /\b([A-Za-z0-9][A-Za-z0-9._-]*[A-Za-z0-9])@([A-Za-z0-9][A-Za-z0-9.-]*\.[A-Za-z]{2,})\b/g
           const searchMatches = [...searchHtml.matchAll(emailRegex)]
-          const searchEmails = searchMatches.map(m => m[0]) || []
+          const allFoundEmails = searchMatches.map(m => m[0]) || []
+          console.log(`📧 Found ${allFoundEmails.length} total emails in search results`)
           
-          // Filter to only emails from the target domain
-          const domainEmails = searchEmails.filter(email => {
-            const emailDomain = email.split('@')[1].toLowerCase()
-            return emailDomain === domain.toLowerCase()
+          // SMART FILTERING: Look for emails that match the company name
+          const companyNameLower = companyName.toLowerCase().replace(/\s+/g, '')
+          const relevantEmails = allFoundEmails.filter(email => {
+            const emailDomain = email.split('@')[1].toLowerCase().replace(/\./g, '')
+            // Check if domain contains company name (e.g., bosonprotocol.io contains "boson")
+            return emailDomain.includes(companyNameLower.substring(0, Math.max(5, companyNameLower.length - 3)))
           })
           
+          console.log(`🎯 Filtered to ${relevantEmails.length} relevant emails:`, relevantEmails)
+          
           // Add unique emails with source
-          const uniqueSearchEmails = Array.from(new Set(domainEmails))
+          const uniqueSearchEmails = Array.from(new Set(relevantEmails))
           uniqueSearchEmails.forEach(email => {
             if (!emailsWithSources.find(e => e.email === email)) {
               emailsWithSources.push({ 
                 email, 
-                source: `Found via Google Search for "${googleQuery}"` 
+                source: `Found via Google Search: "${googleQuery}"` 
               })
             }
           })
@@ -307,11 +317,13 @@ search.get('/contact', async (c) => {
           if (uniqueSearchEmails.length > 0) {
             console.log(`✅ Found ${uniqueSearchEmails.length} emails via Google Search:`, uniqueSearchEmails)
           } else {
-            console.log('❌ No emails found in Google Search results')
+            console.log('❌ No relevant emails found in Google Search results')
           }
+        } else {
+          console.error(`❌ Search request failed: ${searchResponse.status}`)
         }
       } catch (searchError) {
-        console.error('Google Search fallback failed:', searchError)
+        console.error('❌ Google Search fallback failed:', searchError)
       }
     }
 
