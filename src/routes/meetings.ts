@@ -402,6 +402,57 @@ function extractSpeakers(transcript: string): any[] {
 }
 
 // Helper function to generate AI summary (simplified - can be enhanced with actual AI later)
+/**
+ * Generate AI-powered summary using OpenAI GPT-4
+ */
+async function generateAISummary(transcript: string, apiKey?: string): Promise<string> {
+  if (!apiKey) {
+    console.warn('⚠️ OPENAI_API_KEY not configured - using fallback summary')
+    return transcript.substring(0, 200).replace(/\s+/g, ' ') + '...'
+  }
+
+  try {
+    // Limit transcript to 8000 characters for API
+    const truncatedTranscript = transcript.substring(0, 8000)
+    
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert meeting analyst. Generate concise, professional meeting summaries that capture key points, decisions, and action items.'
+          },
+          {
+            role: 'user',
+            content: `Please generate a 2-3 sentence summary of this meeting transcript:\n\n${truncatedTranscript}`
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 200,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    const summary = data.choices[0].message.content.trim()
+    console.log('✨ AI-generated summary:', summary.substring(0, 100) + '...')
+    return summary
+  } catch (error: any) {
+    console.error('❌ Error generating AI summary:', error.message)
+    // Fallback to first 200 chars
+    return transcript.substring(0, 200).replace(/\s+/g, ' ') + '...'
+  }
+}
+
 function generateSummary(transcript: string, existingSummary: string): string {
   if (existingSummary && existingSummary.length > 10) {
     return existingSummary
@@ -453,8 +504,10 @@ meetings.post('/webhook/zapier', async (c) => {
       speakers.push({ name: ownerName })
     }
     
-    // Generate summary if not provided
-    summary = generateSummary(transcript, summary)
+    // Generate AI summary if not provided
+    if (!summary || summary.length < 10) {
+      summary = await generateAISummary(transcript, c.env.OPENAI_API_KEY)
+    }
     console.log(`📄 Summary: ${summary.substring(0, 100)}...`)
     
     // Check if already exists
@@ -808,11 +861,14 @@ meetings.post('/parse-file', async (c) => {
       } catch (e) {}
     }
     
-    // Extract summary
+    // Extract summary (or generate with AI if not present)
     let summary = ''
     const summaryMatch = text.match(/SUMMARY\s*[:\n]*KEYWORDS\s*[:\n]+(.*?)(?=\n\n|SPEAKERS|$)/is)
     if (summaryMatch) {
       summary = summaryMatch[1].trim().replace(/\s+/g, ' ')
+    } else {
+      // Generate AI summary if none found in the file
+      summary = await generateAISummary(text, c.env.OPENAI_API_KEY)
     }
     
     // Extract speakers/owner

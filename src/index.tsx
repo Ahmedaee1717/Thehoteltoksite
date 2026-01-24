@@ -1648,9 +1648,9 @@ app.get('/collaborate', (c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Collaboration Center - Investay Capital</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="/static/styles.css">
-        <link rel="stylesheet" href="/static/admin.css">
-        <link rel="stylesheet" href="/static/collaboration.css">
+        <link rel="stylesheet" href="/static/styles.css?v=20260124-2">
+        <link rel="stylesheet" href="/static/admin.css?v=20260124-2">
+        <link rel="stylesheet" href="/static/collaboration.css?v=20260124-2">
     </head>
     <body class="collab-body">
         <div class="collab-container">
@@ -1864,7 +1864,7 @@ app.get('/collaborate', (c) => {
             </main>
         </div>
 
-        <script src="/static/collaboration.js"></script>
+        <script src="/static/collaboration.js?v=20260124-2"></script>
     </body>
     </html>
   `);
