@@ -25,6 +25,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupNavigation();
   setupBackButton();
   await loadInitialData();
+  
+  // Handle hash navigation (e.g., /collaborate#tasks)
+  if (window.location.hash) {
+    const view = window.location.hash.replace('#', '');
+    if (view) {
+      console.log(`🔗 Switching to view from hash: ${view}`);
+      switchView(view);
+      
+      // Update active nav item
+      document.querySelectorAll('.collab-nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.view === view) {
+          item.classList.add('active');
+        }
+      });
+    }
+  }
 });
 
 // 👤 LOAD USER INFO

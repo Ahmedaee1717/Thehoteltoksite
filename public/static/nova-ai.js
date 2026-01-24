@@ -673,7 +673,18 @@
         icon: '🚨',
         title: `${overdue.length} tasks are overdue!`,
         subtitle: overdue.slice(0, 2).map(t => `• ${t.title}`).join('\n'),
-        action: () => window.location.href = '/tasks?filter=overdue',
+        action: () => {
+          // Check if we're already in collaboration center
+          if (window.location.pathname === '/collaborate') {
+            // Switch to tasks view
+            if (window.switchView) {
+              window.switchView('tasks');
+            }
+          } else {
+            // Go to collaboration center tasks view
+            window.location.href = '/collaborate#tasks';
+          }
+        },
         data: { tasks: overdue }
       });
     }
