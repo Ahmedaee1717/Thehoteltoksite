@@ -966,11 +966,15 @@
     // Extract company domain if present - try multiple patterns
     let companyDomain = null;
     
-    // Pattern 1: domain.com or domain.io
+    // Pattern 1: domain.com or domain.io (skip if it's a common word)
     const domainMatch1 = task.text.match(/([a-z0-9-]+\.[a-z]{2,})/i);
     if (domainMatch1) {
-      companyDomain = domainMatch1[1];
-      console.log('✅ Domain found (pattern 1):', companyDomain);
+      const potentialDomain = domainMatch1[1].toLowerCase();
+      // Skip common words that might accidentally match
+      if (!['find.com', 'email.com', 'contact.com', 'get.com', 'reach.com'].includes(potentialDomain)) {
+        companyDomain = potentialDomain;
+        console.log('✅ Domain found (pattern 1):', companyDomain);
+      }
     }
     
     // Pattern 2: "someone at domain.com" or "contact at domain.com"
@@ -984,10 +988,16 @@
       }
     }
     
-    // If recipient is already a domain, use it
+    // Pattern 3: If recipient is already a domain, use it
     if (!companyDomain && recipient && recipient.includes('.')) {
       companyDomain = recipient;
       console.log('✅ Using recipient as domain:', companyDomain);
+    }
+    
+    // Pattern 4: If no domain found, try to add .com to recipient
+    if (!companyDomain && recipient && !recipient.includes('.')) {
+      companyDomain = `${recipient.toLowerCase()}.com`;
+      console.log('✅ Added .com to recipient:', companyDomain);
     }
     
     const searchTarget = companyDomain || recipient;
