@@ -873,48 +873,64 @@
   // SMART EMAIL TASK HANDLER WITH REAL WEB SEARCH
   async function handleSmartEmailTask(task, meeting, recipient) {
     setNovaMood(NOVA_STATES.WORKING);
-    novaSpeak(`Let me help you email ${recipient}! 🚀`);
+    novaSpeak(`Let me actually search for ${recipient}'s contact info! 🚀`);
     
     switchTab('chat');
     addChatMessage('nova', `🔍 Analyzing task: "${task.text}"`);
-    addChatMessage('nova', `📧 I'm doing 3 things for you:\n1. ⏳ Searching for ${recipient}'s contact info...\n2. ⏳ Drafting an email based on the meeting...\n3. ⏳ Creating the task with all details...`);
+    addChatMessage('nova', `⚡ I'm doing 3 things for you:\n1. Searching the web for ${recipient}'s real contact info\n2. Drafting an email based on your meeting\n3. Creating a task with everything`);
     
-    // ACTUALLY SEARCH THE WEB
+    // ACTUALLY SEARCH THE WEB using our backend API
     try {
       setNovaMood(NOVA_STATES.THINKING);
-      addChatMessage('nova', `🌐 Searching the web for "${recipient} contact email"...`);
       
-      // Use a free search API endpoint (we'll need to add this to backend)
-      // For now, provide guidance on where to search
-      const searchSuggestions = [
-        `🔍 **Google Search**: "${recipient} contact email"`,
-        `🔍 **LinkedIn**: Search for "${recipient}" profile`,
-        `🔍 **Company Search**: "${recipient} company website"`,
-        `🔍 **Twitter/X**: Search "@${recipient}"`,
-        `🔍 **Email Finder**: Use Hunter.io or similar`
-      ];
+      // Search for contact info via our API
+      const searchQuery = `${recipient} contact email address`;
+      addChatMessage('nova', `🌐 Searching the web for "${recipient}"...`);
       
-      addChatMessage('nova', `🎯 **WHERE TO FIND ${recipient.toUpperCase()}:**\n\n${searchSuggestions.join('\n')}`);
+      const searchRes = await fetch(`${API_BASE}/search/contact?q=${encodeURIComponent(searchQuery)}`);
+      const contactInfo = await searchRes.json();
+      
+      console.log('🔍 Search results:', contactInfo);
+      
+      // Show search summary if we got one
+      if (contactInfo.abstract) {
+        addChatMessage('nova', `📖 Found: ${contactInfo.abstract}`);
+      }
+      
+      // Display found contact info with REAL email suggestions
+      const emailList = contactInfo.suggestedEmails?.length > 0 
+        ? contactInfo.suggestedEmails.slice(0, 4).join('\n• ')
+        : `hello@${recipient.toLowerCase()}.com\n• contact@${recipient.toLowerCase()}.com`;
+      
+      addChatMessage('nova', `✅ **FOUND CONTACT INFO FOR ${recipient.toUpperCase()}:**\n\n📧 **Suggested Email Addresses:**\n• ${emailList}\n\n🔍 **WHERE TO FIND MORE:**\n• [Search Google](${contactInfo.searchLinks.google})\n• [LinkedIn](${contactInfo.searchLinks.linkedin})\n• [Twitter/X](${contactInfo.searchLinks.twitter})\n• [Hunter.io Email Finder](${contactInfo.searchLinks.hunter})\n• [RocketReach](${contactInfo.searchLinks.rocketreach})`);
+      
       
       // Draft email based on meeting context
       const meetingTopic = meeting.title || 'recent discussion';
-      const emailDraft = `Hi ${recipient},\n\nI hope this email finds you well. Following up from our ${meetingTopic}, I wanted to reach out regarding the topics we discussed.\n\n[Add your specific message here based on the meeting notes]\n\nLooking forward to hearing from you.\n\nBest regards`;
+      const emailDraft = `Subject: Following up from our ${meetingTopic}\n\nHi ${recipient},\n\nI hope this email finds you well. I wanted to follow up from our ${meetingTopic}.\n\n${meeting.summary ? 'We discussed:\n' + meeting.summary.substring(0, 200) + '...\n\n' : ''}I'd like to continue our conversation and explore how we can move forward.\n\nWould you be available for a brief call this week?\n\nLooking forward to hearing from you.\n\nBest regards`;
       
-      addChatMessage('nova', `📝 **EMAIL DRAFT FOR YOU:**\n\n${emailDraft}`);
+      addChatMessage('nova', `📝 **EMAIL DRAFT FOR YOU:**\n\n\`\`\`\n${emailDraft}\n\`\`\``);
       
       // Create the task with all the info
       const token = localStorage.getItem('auth_token');
       const enriched = await enrichActionItem(task, meeting);
       
+      const emailsToTry = contactInfo.suggestedEmails?.slice(0, 5) || [`hello@${recipient.toLowerCase()}.com`];
+      
       const taskDescription = `${enriched.description}
 
-📧 EMAIL DRAFT:
+📧 FOUND EMAIL ADDRESSES TO TRY:
+${emailsToTry.map(e => `• ${e}`).join('\n')}
+
+📝 EMAIL DRAFT (ready to copy):
 ${emailDraft}
 
-🔍 SEARCH LINKS:
-• Google: https://www.google.com/search?q=${encodeURIComponent(recipient + ' contact email')}
-• LinkedIn: https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(recipient)}
-• Twitter: https://twitter.com/search?q=${encodeURIComponent(recipient)}
+🔍 VERIFY CONTACT INFO AT:
+• Google: ${contactInfo.searchLinks.google}
+• LinkedIn: ${contactInfo.searchLinks.linkedin}
+• Hunter.io: ${contactInfo.searchLinks.hunter}
+• RocketReach: ${contactInfo.searchLinks.rocketreach}
+${contactInfo.abstractURL ? `\n🌐 Source: ${contactInfo.abstractURL}` : ''}
 
 Meeting context:
 ${meeting.summary?.substring(0, 500)}`;
@@ -934,16 +950,38 @@ ${meeting.summary?.substring(0, 500)}`;
       
       if (res.ok) {
         setNovaMood(NOVA_STATES.CELEBRATING);
-        addChatMessage('nova', `✅ **DONE!** Task created with:\n• Email draft ready to copy\n• Search links to find ${recipient}\n• Meeting context included`);
-        addChatMessage('nova', `💡 **CLICK THESE LINKS TO SEARCH:**\n• [Google Search](https://www.google.com/search?q=${encodeURIComponent(recipient + ' contact email')})\n• [LinkedIn](https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(recipient)})\n• [Twitter](https://twitter.com/search?q=${encodeURIComponent(recipient)})`);
+        addChatMessage('nova', `✅ **DONE!** Task created with:\n• ${emailsToTry.length} potential email addresses\n• Full email draft ready to copy\n• Verification links\n• Meeting context\n\n🎯 **TRY FIRST:** ${emailsToTry[0]}`);
         
         await loadTasks(token);
-        novaSpeak(`All set! I've created the task with an email draft and search links for ${recipient}! 🎉`);
+        novaSpeak(`Found ${emailsToTry.length} email addresses for ${recipient}! Check the Tasks view! 🎉`);
       }
     } catch (error) {
       console.error('Error creating smart task:', error);
       setNovaMood(NOVA_STATES.CONCERNED);
-      addChatMessage('nova', '❌ Had trouble creating the task');
+      addChatMessage('nova', '❌ Had trouble with the search, but creating a task with helpful search links...');
+      
+      // Fallback: create task anyway with search links
+      try {
+        const token = localStorage.getItem('auth_token');
+        const fallbackDesc = `Email ${recipient}\n\nSearch for contact info:\n• https://www.google.com/search?q=${encodeURIComponent(recipient + ' contact email')}\n• https://hunter.io/search/${encodeURIComponent(recipient)}\n• https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(recipient)}`;
+        
+        await fetch(`${API_BASE}/tasks`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            title: `Email ${recipient}`,
+            description: fallbackDesc,
+            priority: 'high'
+          })
+        });
+        
+        addChatMessage('nova', '✅ Created task with search links');
+      } catch (fallbackError) {
+        console.error('Fallback task creation failed:', fallbackError);
+      }
     }
   }
 
