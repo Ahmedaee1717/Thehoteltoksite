@@ -917,17 +917,27 @@
 
   // SMART RECIPIENT EXTRACTION - Reusable function
   function extractRecipientFromText(text) {
-    // Pattern 1: Domain with TLD (e.g., "rawsummit.io", "azqira.com")
+    console.log('🔍 Extracting recipient from:', text);
+    
+    // Pattern 0: Company name BEFORE "contact" or "information" (highest priority)
+    // e.g., "Find Mattereum contact information" → "Mattereum"
+    const beforeContactMatch = text.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:contact|information|details|email)/i);
+    if (beforeContactMatch && !['Find', 'Email', 'Contact', 'Reach', 'Get'].includes(beforeContactMatch[1])) {
+      console.log('✅ Recipient found (before contact/information):', beforeContactMatch[1]);
+      return beforeContactMatch[1];
+    }
+    
+    // Pattern 1: Domain with TLD (e.g., "rawsummit.io", "mattereum.com")
     const domainMatch1 = text.match(/([a-z0-9-]+\.[a-z]{2,})/i);
     if (domainMatch1) {
       console.log('✅ Recipient found (domain with TLD):', domainMatch1[1]);
       return domainMatch1[1];
     }
     
-    // Pattern 2: "contact/email/reach out to NAME" (e.g., "Find a contact at rawsummit")
-    const nameMatch = text.match(/(?:contact|email|reach out to|find a contact at)\s+([A-Z][a-z]+)/i);
-    if (nameMatch) {
-      console.log('✅ Recipient found (name):', nameMatch[1]);
+    // Pattern 2: "contact/email/reach out to NAME" (e.g., "Find a contact at Mattereum")
+    const nameMatch = text.match(/(?:contact|email|reach out to|find)\s+(?:a\s+)?(?:contact\s+at\s+)?([A-Z][a-z]+)/i);
+    if (nameMatch && !['Find', 'Email', 'Contact', 'Reach', 'Information', 'Details'].includes(nameMatch[1])) {
+      console.log('✅ Recipient found (contact at NAME):', nameMatch[1]);
       return nameMatch[1];
     }
     
@@ -940,7 +950,7 @@
     
     // Pattern 4: Just a capitalized name anywhere (last resort)
     const anyNameMatch = text.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b/);
-    if (anyNameMatch && !['Email', 'Find', 'Contact', 'Reach'].includes(anyNameMatch[1])) {
+    if (anyNameMatch && !['Email', 'Find', 'Contact', 'Reach', 'Information', 'Details', 'Get', 'Set'].includes(anyNameMatch[1])) {
       console.log('✅ Recipient found (any name):', anyNameMatch[1]);
       return anyNameMatch[1];
     }
