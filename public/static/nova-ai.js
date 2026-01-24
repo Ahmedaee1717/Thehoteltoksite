@@ -996,8 +996,11 @@
     
     // Pattern 4: If no domain found, try to add .com to recipient
     if (!companyDomain && recipient && !recipient.includes('.')) {
-      companyDomain = `${recipient.toLowerCase()}.com`;
+      // Clean up recipient: remove spaces, convert to lowercase
+      const cleanRecipient = recipient.toLowerCase().replace(/\s+/g, '');
+      companyDomain = `${cleanRecipient}.com`;
       console.log('✅ Added .com to recipient:', companyDomain);
+      console.log('   (cleaned from:', recipient, ')');
     }
     
     const searchTarget = companyDomain || recipient;
@@ -1023,13 +1026,44 @@
       
       addChatMessage('nova', `🌐 Searching the web for "${searchTarget}"...`);
       
-      const searchRes = await fetch(`${API_BASE}/search/contact?q=${encodeURIComponent(searchQuery)}`);
-      const contactInfo = await searchRes.json();
+      let contactInfo;
+      let searchSuccess = false;
       
-      console.log('🔍 Search results:', contactInfo);
-      console.log('🔍 Query used:', searchQuery);
-      console.log('🔍 Company domain:', companyDomain);
-      console.log('🔍 Search target:', searchTarget);
+      try {
+        const searchRes = await fetch(`${API_BASE}/search/contact?q=${encodeURIComponent(searchQuery)}`);
+        
+        if (!searchRes.ok) {
+          throw new Error(`API returned ${searchRes.status}`);
+        }
+        
+        contactInfo = await searchRes.json();
+        searchSuccess = true;
+        
+        console.log('✅ Search API success');
+        console.log('🔍 Search results:', contactInfo);
+        console.log('🔍 Query used:', searchQuery);
+        console.log('🔍 Company domain:', companyDomain);
+        console.log('🔍 Search target:', searchTarget);
+      } catch (searchError) {
+        console.error('❌ Search API failed:', searchError);
+        console.error('   Query was:', searchQuery);
+        
+        // Fallback to empty results
+        contactInfo = {
+          suggestedEmails: [],
+          contactNames: [],
+          scrapedEmails: 0,
+          scrapedNames: 0,
+          abstract: '',
+          searchLinks: {
+            google: `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`,
+            linkedin: `https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(recipient)}`,
+            hunter: companyDomain ? `https://hunter.io/search/${companyDomain}` : `https://hunter.io/search/${encodeURIComponent(recipient)}`
+          }
+        };
+        
+        addChatMessage('nova', `⚠️ Search had issues, but I'll create a task with helpful links!`);
+      }
       
       // Show search summary if we got one
       if (contactInfo.abstract) {
@@ -1037,11 +1071,12 @@
       }
       
       // Display found contact info with REAL emails and names
+      const cleanRecipient = recipient.toLowerCase().replace(/\s+/g, '');
       const emailList = contactInfo.suggestedEmails?.length > 0 
         ? contactInfo.suggestedEmails.slice(0, 4).join('\n• ')
         : companyDomain 
           ? `hello@${companyDomain}\n• contact@${companyDomain}\n• info@${companyDomain}`
-          : `hello@${recipient.toLowerCase()}.com\n• contact@${recipient.toLowerCase()}.com`;
+          : `hello@${cleanRecipient}.com\n• contact@${cleanRecipient}.com`;
       
       const contactNamesList = contactInfo.contactNames?.length > 0
         ? contactInfo.contactNames.slice(0, 3).join(', ')
