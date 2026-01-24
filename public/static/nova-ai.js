@@ -920,9 +920,38 @@
   async function handleSmartEmailTask(task, meeting, recipient) {
     setNovaMood(NOVA_STATES.WORKING);
     
-    // Extract company domain if present
-    const companyDomain = task.text.match(/([a-z0-9-]+\.[a-z]{2,})/i)?.[1] || null;
+    // Extract company domain if present - try multiple patterns
+    let companyDomain = null;
+    
+    // Pattern 1: domain.com or domain.io
+    const domainMatch1 = task.text.match(/([a-z0-9-]+\.[a-z]{2,})/i);
+    if (domainMatch1) {
+      companyDomain = domainMatch1[1];
+      console.log('✅ Domain found (pattern 1):', companyDomain);
+    }
+    
+    // Pattern 2: "someone at domain.com" or "contact at domain.com"
+    if (!companyDomain) {
+      const domainMatch2 = task.text.match(/(?:someone|contact|person|team)\s+at\s+([a-z0-9-]+(?:\.[a-z]{2,})?)/i);
+      if (domainMatch2) {
+        const extracted = domainMatch2[1];
+        // If it doesn't have a TLD, add .com
+        companyDomain = extracted.includes('.') ? extracted : `${extracted}.com`;
+        console.log('✅ Domain found (pattern 2):', companyDomain);
+      }
+    }
+    
+    // If recipient is already a domain, use it
+    if (!companyDomain && recipient && recipient.includes('.')) {
+      companyDomain = recipient;
+      console.log('✅ Using recipient as domain:', companyDomain);
+    }
+    
     const searchTarget = companyDomain || recipient;
+    
+    console.log('🎯 Final search target:', searchTarget);
+    console.log('📝 Task text:', task.text);
+    console.log('👤 Recipient param:', recipient);
     
     novaSpeak(`Let me find contact info for ${searchTarget}! 🚀`);
     
@@ -961,6 +990,9 @@
           ? `hello@${companyDomain}\n• contact@${companyDomain}\n• info@${companyDomain}`
           : `hello@${recipient.toLowerCase()}.com\n• contact@${recipient.toLowerCase()}.com`;
       
+      console.log('📧 Suggested emails from API:', contactInfo.suggestedEmails);
+      console.log('📧 Email list for display:', emailList);
+      
       addChatMessage('nova', `✅ **FOUND CONTACT INFO FOR ${searchTarget.toUpperCase()}:**\n\n📧 **Suggested Email Addresses:**\n• ${emailList}\n\n🔍 **WHERE TO FIND MORE:**\n• [Search Google](${contactInfo.searchLinks.google})\n• [LinkedIn](${contactInfo.searchLinks.linkedin})\n• [Hunter.io Email Finder](${contactInfo.searchLinks.hunter})`);
       
       
@@ -989,11 +1021,11 @@
       
       // Smart email drafting based on context
       let emailSubject = isPartnershipRequest 
-        ? `Partnership Opportunity - Feature at ${searchTarget}` 
+        ? `Partnership Opportunity - ${searchTarget}` 
         : `Following up from ${meetingTopic}`;
       
       let emailDraft = `Subject: ${emailSubject}\n\n`;
-      emailDraft += `Hi ${searchTarget} team,\n\n`;
+      emailDraft += `Hi there,\n\n`;
       emailDraft += `I hope this email finds you well. `;
       
       // Add context from the goal
