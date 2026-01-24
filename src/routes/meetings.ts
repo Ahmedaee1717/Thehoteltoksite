@@ -662,6 +662,114 @@ meetings.post('/parse-pdf', async (c) => {
   }
 })
 
+// ===== UNIVERSAL FILE PARSING (TXT, DOCX, PDF) =====
+
+// Parse transcript file and extract meeting details
+meetings.post('/parse-file', async (c) => {
+  try {
+    const formData = await c.req.formData()
+    const file = formData.get('file')
+    
+    if (!file || !(file instanceof File)) {
+      return c.json({ error: 'No file provided' }, 400)
+    }
+    
+    const fileName = file.name.toLowerCase()
+    let text = ''
+    
+    // TXT file - direct text reading
+    if (fileName.endsWith('.txt')) {
+      text = await file.text()
+    }
+    // DOCX file - needs parsing (simplified - return error for now)
+    else if (fileName.endsWith('.docx')) {
+      return c.json({
+        success: false,
+        error: 'DOCX parsing requires backend processing. Please convert to TXT or copy/paste manually.',
+        message: 'DOCX not supported yet - use TXT or manual entry'
+      }, 200)
+    }
+    // PDF file - basic extraction
+    else if (fileName.endsWith('.pdf')) {
+      const pdfBytes = await file.arrayBuffer()
+      const decoder = new TextDecoder('utf-8', { fatal: false })
+      text = decoder.decode(pdfBytes)
+      
+      // Clean up PDF text
+      text = text
+        .replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+      
+      // If text is garbled (binary), return error
+      if (text.length < 100 || text.includes('%PDF')) {
+        return c.json({
+          success: false,
+          error: 'PDF contains binary data that cannot be extracted directly. Please copy and paste the text manually.',
+          message: 'PDF parsing failed - please use manual entry'
+        }, 200)
+      }
+    }
+    else {
+      return c.json({ error: 'Unsupported file type. Please use TXT, DOCX, or PDF.' }, 400)
+    }
+    
+    // Extract metadata from text
+    let title = file.name.replace(/\.(txt|docx|pdf)$/i, '').replace(/_/g, ' ')
+    const titleMatch = text.match(/([A-Z][\w\s&]{5,80}?)(?:\n|Mon,|Tue,|Wed,|Thu,|Fri,)/i)
+    if (titleMatch) {
+      title = titleMatch[1].trim()
+    }
+    
+    // Extract date
+    let date = ''
+    const dateMatch = text.match(/(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+\w+\s+\d{1,2},\s+\d{4}\s+\d{1,2}:\d{2}\s*[AP]M/i)
+    if (dateMatch) {
+      try {
+        const parsedDate = new Date(dateMatch[0])
+        if (!isNaN(parsedDate.getTime())) {
+          date = parsedDate.toISOString().slice(0, 16)
+        }
+      } catch (e) {}
+    }
+    
+    // Extract summary
+    let summary = ''
+    const summaryMatch = text.match(/SUMMARY\s*[:\n]*KEYWORDS\s*[:\n]+(.*?)(?=\n\n|SPEAKERS|$)/is)
+    if (summaryMatch) {
+      summary = summaryMatch[1].trim().replace(/\s+/g, ' ')
+    }
+    
+    // Extract speakers/owner
+    let owner = ''
+    const speakersMatch = text.match(/SPEAKERS\s*[:\n]+(.*?)(?=\n\n|TRANSCRIPT|##|$)/is)
+    if (speakersMatch) {
+      const speakers = speakersMatch[1].split(/[,\n]/).map(s => s.trim()).filter(s => s && s.length > 2 && s.length < 50)
+      if (speakers.length > 0) {
+        owner = speakers[0]
+      }
+    }
+    
+    return c.json({
+      success: true,
+      title: title.substring(0, 200),
+      transcript: text.substring(0, 100000),
+      summary: summary.substring(0, 2000),
+      owner: owner.substring(0, 100),
+      date: date,
+      message: 'File text extracted. Please review and edit before uploading.'
+    })
+    
+  } catch (error: any) {
+    console.error('File upload error:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to process file',
+      details: error.message
+    }, 500)
+  }
+})
+
 // Get all Otter transcripts
 meetings.get('/otter/transcripts', async (c) => {
   const limit = parseInt(c.req.query('limit') || '50')

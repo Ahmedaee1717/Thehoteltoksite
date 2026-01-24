@@ -1795,29 +1795,30 @@ window.showManualUploadModal = function() {
         
         <div class="collab-email-modal-body" style="max-height: 70vh; overflow-y: auto;">
           <div class="info-box" style="margin-bottom: 20px; padding: 12px; background: rgba(201, 169, 98, 0.1); border-radius: 8px; color: rgba(255,255,255,0.8); font-size: 13px;">
-            <p><strong>ℹ️ Two Ways to Upload:</strong></p>
+            <p><strong>ℹ️ Three Ways to Upload:</strong></p>
             <ol style="margin: 8px 0 0 20px; padding: 0;">
-              <li><strong>Upload PDF</strong> - Drag & drop or select your Otter.ai transcript PDF (auto-extracts text)</li>
+              <li><strong>Upload TXT/DOCX</strong> - Drag & drop or select your transcript file (✅ Recommended - easiest)</li>
+              <li><strong>Upload PDF</strong> - PDF support (may have formatting issues)</li>
               <li><strong>Manual Entry</strong> - Copy/paste text manually into the form below</li>
             </ol>
           </div>
           
-          <!-- PDF Upload Section -->
-          <div class="pdf-upload-section" style="margin-bottom: 24px;">
-            <div class="pdf-dropzone" id="pdf-dropzone">
-              <div class="pdf-dropzone-content">
+          <!-- File Upload Section -->
+          <div class="file-upload-section" style="margin-bottom: 24px;">
+            <div class="file-dropzone" id="file-dropzone">
+              <div class="file-dropzone-content">
                 <span style="font-size: 48px; margin-bottom: 12px;">📄</span>
-                <h3 style="margin: 0 0 8px 0; color: #fff;">Drop PDF Here</h3>
+                <h3 style="margin: 0 0 8px 0; color: #fff;">Drop File Here</h3>
                 <p style="margin: 0 0 12px 0; color: rgba(255,255,255,0.6); font-size: 14px;">
-                  or click to browse
+                  Supports: TXT, DOCX, PDF
                 </p>
-                <input type="file" id="pdf-file-input" accept=".pdf" style="display: none;">
-                <button type="button" class="quantum-btn" onclick="document.getElementById('pdf-file-input').click()">
-                  Choose PDF File
+                <input type="file" id="file-input" accept=".txt,.docx,.pdf" style="display: none;">
+                <button type="button" class="quantum-btn" onclick="document.getElementById('file-input').click()">
+                  Choose File
                 </button>
               </div>
             </div>
-            <div id="pdf-upload-status" style="margin-top: 12px; display: none;"></div>
+            <div id="file-upload-status" style="margin-top: 12px; display: none;"></div>
           </div>
           
           <div style="text-align: center; margin: 20px 0; color: rgba(255,255,255,0.4); font-size: 13px;">
@@ -1882,16 +1883,18 @@ window.showManualUploadModal = function() {
   }
   
   // Setup PDF upload handlers
-  setupPDFUpload();
+  setupFileUpload();
   
   setTimeout(() => {
     document.getElementById('manual-title').focus();
   }, 100);
 };
 
-function setupPDFUpload() {
-  const dropzone = document.getElementById('pdf-dropzone');
-  const fileInput = document.getElementById('pdf-file-input');
+function setupFileUpload() {
+  const dropzone = document.getElementById('file-dropzone');
+  const fileInput = document.getElementById('file-input');
+  
+  if (!dropzone || !fileInput) return;
   
   // Drag & Drop handlers
   dropzone.addEventListener('dragover', (e) => {
@@ -1913,7 +1916,7 @@ function setupPDFUpload() {
     
     const files = e.dataTransfer.files;
     if (files.length > 0) {
-      handlePDFUpload(files[0]);
+      handleFileUpload(files[0]);
     }
   });
   
@@ -1921,40 +1924,96 @@ function setupPDFUpload() {
   fileInput.addEventListener('change', (e) => {
     const files = e.target.files;
     if (files.length > 0) {
-      handlePDFUpload(files[0]);
+      handleFileUpload(files[0]);
     }
   });
   
   // Click to open file picker
   dropzone.addEventListener('click', (e) => {
-    if (e.target === dropzone || e.target.closest('.pdf-dropzone-content')) {
+    if (e.target === dropzone || e.target.closest('.file-dropzone-content')) {
       fileInput.click();
     }
   });
 }
 
-async function handlePDFUpload(file) {
-  if (file.type !== 'application/pdf') {
-    showNotification('❌ Please upload a PDF file', 'error');
+async function handleFileUpload(file) {
+  const allowedTypes = [
+    'text/plain',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/pdf'
+  ];
+  
+  const allowedExtensions = ['.txt', '.docx', '.pdf'];
+  const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+  
+  if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+    showNotification('❌ Please upload a TXT, DOCX, or PDF file', 'error');
     return;
   }
   
-  const statusDiv = document.getElementById('pdf-upload-status');
+  const statusDiv = document.getElementById('file-upload-status');
   statusDiv.style.display = 'block';
+  
+  const fileType = fileExtension === '.txt' ? 'TXT' : 
+                   fileExtension === '.docx' ? 'DOCX' : 'PDF';
+  
   statusDiv.innerHTML = `
     <div style="padding: 12px; background: rgba(201, 169, 98, 0.1); border-radius: 8px; color: #fff;">
       <strong>📄 ${file.name}</strong> (${(file.size / 1024).toFixed(0)} KB)<br>
-      <small style="color: rgba(255,255,255,0.7);">🔄 Extracting text from PDF...</small>
+      <small style="color: rgba(255,255,255,0.7);">🔄 Extracting text from ${fileType}...</small>
     </div>
   `;
   
   try {
-    // Create FormData to upload PDF
+    // Handle TXT files directly in browser
+    if (fileExtension === '.txt') {
+      const text = await file.text();
+      
+      // Auto-fill form
+      const title = file.name.replace('.txt', '');
+      document.getElementById('manual-title').value = title;
+      document.getElementById('manual-transcript').value = text;
+      
+      // Try to extract summary if present
+      const summaryMatch = text.match(/SUMMARY\s*[:\n]+(.*?)(?=\n\n|SPEAKERS|$)/is);
+      if (summaryMatch) {
+        document.getElementById('manual-summary').value = summaryMatch[1].trim();
+      }
+      
+      // Try to extract date
+      const dateMatch = text.match(/(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+(\w+\s+\d+,\s+\d{4}\s+\d+:\d+\s*[AP]M)/i);
+      if (dateMatch) {
+        const dateStr = new Date(dateMatch[0]).toISOString().slice(0, 16);
+        document.getElementById('manual-date').value = dateStr;
+      }
+      
+      // Try to extract owner/speakers
+      const speakersMatch = text.match(/SPEAKERS\s*[:\n]+(.*?)(?=\n\n|TRANSCRIPT|$)/is);
+      if (speakersMatch) {
+        const speakers = speakersMatch[1].trim().split(/,\s*/);
+        if (speakers.length > 0) {
+          document.getElementById('manual-owner').value = speakers[0].trim();
+        }
+      }
+      
+      statusDiv.innerHTML = `
+        <div style="padding: 12px; background: rgba(67, 233, 123, 0.1); border-radius: 8px; color: #43e97b;">
+          <strong>✅ TXT File Loaded Successfully!</strong><br>
+          <small style="color: rgba(255,255,255,0.7);">
+            Fields auto-filled. Review and upload!
+          </small>
+        </div>
+      `;
+      
+      return;
+    }
+    
+    // For DOCX and PDF, send to backend
     const formData = new FormData();
-    formData.append('pdf', file);
+    formData.append('file', file);
     
     const token = localStorage.getItem('auth_token');
-    const response = await fetch('/api/meetings/parse-pdf', {
+    const response = await fetch('/api/meetings/parse-file', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -1966,7 +2025,7 @@ async function handlePDFUpload(file) {
     
     if (data.success) {
       // Auto-fill form with extracted data
-      document.getElementById('manual-title').value = data.title || file.name.replace('.pdf', '');
+      document.getElementById('manual-title').value = data.title || file.name.replace(/\.(docx|pdf)$/, '');
       document.getElementById('manual-transcript').value = data.transcript || '';
       document.getElementById('manual-summary').value = data.summary || '';
       
@@ -1980,7 +2039,7 @@ async function handlePDFUpload(file) {
       
       statusDiv.innerHTML = `
         <div style="padding: 12px; background: rgba(67, 233, 123, 0.1); border-radius: 8px; color: #43e97b;">
-          <strong>✅ PDF Extracted Successfully!</strong><br>
+          <strong>✅ ${fileType} Extracted Successfully!</strong><br>
           <small style="color: rgba(255,255,255,0.7);">
             Title, transcript, and other fields have been auto-filled. Review and upload!
           </small>
