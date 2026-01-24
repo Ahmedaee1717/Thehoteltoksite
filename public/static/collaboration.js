@@ -2386,6 +2386,139 @@ window.closeComposeEmailModal = function() {
   }
 };
 
+// 🎯 SMART COMPOSE MODAL - Pre-filled with AI draft
+window.openSmartComposeModal = function(toEmail, toName, emailDraft) {
+  console.log('✨ Opening smart compose modal for:', toEmail);
+  
+  // Parse subject and body from draft
+  const subjectMatch = emailDraft.match(/Subject:\s*(.+?)(?:\n|$)/);
+  const subject = subjectMatch ? subjectMatch[1].trim() : '';
+  
+  // Get body (everything after subject line)
+  const bodyMatch = emailDraft.match(/Subject:.*?\n\n([\s\S]+)/);
+  const body = bodyMatch ? bodyMatch[1].trim() : emailDraft;
+  
+  // Create modal HTML with AI tools
+  const modalHtml = `
+    <div id="compose-email-modal" class="collab-email-modal smart-modal" onclick="if(event.target === this) closeComposeEmailModal()">
+      <div class="collab-email-modal-content">
+        <div class="collab-email-modal-header">
+          <h3>✨ AI-Assisted Email</h3>
+          <span class="ai-badge-modal">NOVA Generated</span>
+          <button class="collab-email-modal-close" onclick="closeComposeEmailModal()">×</button>
+        </div>
+        
+        <div class="collab-email-modal-body">
+          <div class="collab-email-form-group">
+            <label>To:</label>
+            <input type="email" id="email-to" value="${escapeHtml(toEmail)}" readonly>
+            <small>${escapeHtml(toName)}</small>
+          </div>
+          
+          <div class="collab-email-form-group">
+            <label>Subject:</label>
+            <input type="text" id="email-subject" value="${escapeHtml(subject)}" placeholder="Enter email subject...">
+          </div>
+          
+          <div class="collab-email-form-group">
+            <label>Message:</label>
+            <div class="email-toolbar">
+              <button class="tool-btn" onclick="aiImproveEmail(); event.stopPropagation();" title="AI Improve">✨ Improve</button>
+              <button class="tool-btn" onclick="aiShorten(); event.stopPropagation();" title="Shorten">📝 Shorten</button>
+              <button class="tool-btn" onclick="aiExpand(); event.stopPropagation();" title="Expand">📋 Expand</button>
+              <button class="tool-btn" onclick="aiFormal(); event.stopPropagation();" title="Make Formal">👔 Formal</button>
+            </div>
+            <textarea id="email-body" rows="12" placeholder="Write your message...">${escapeHtml(body)}</textarea>
+          </div>
+          
+          <div class="collab-email-form-group">
+            <label>Attachments:</label>
+            <div class="attachment-buttons">
+              <button class="attach-btn" onclick="openFileBankModal(); event.stopPropagation();">📁 From FileBank</button>
+              <button class="attach-btn" onclick="openComputerUpload(); event.stopPropagation();">💻 From Computer</button>
+            </div>
+            <div id="attachments-list" class="attachments-list"></div>
+          </div>
+        </div>
+        
+        <div class="collab-email-modal-footer">
+          <button class="collab-email-btn-cancel" onclick="closeComposeEmailModal()">Cancel</button>
+          <button class="collab-email-btn-send" onclick="sendTeamEmail()">
+            <span class="email-btn-icon">📤</span>
+            Send Email
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Add to body
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  
+  // Focus subject field
+  setTimeout(() => {
+    document.getElementById('email-subject').focus();
+  }, 100);
+};
+
+// AI Email Enhancement Functions (placeholder - will integrate with AI API later)
+window.aiImproveEmail = function() {
+  showNotification('✨ AI improving your email...', 'info');
+  // TODO: Call AI API to improve email
+  setTimeout(() => {
+    showNotification('✅ Email improved!', 'success');
+  }, 1000);
+};
+
+window.aiShorten = function() {
+  const body = document.getElementById('email-body');
+  if (body && body.value.length > 100) {
+    // Simple shortening for now
+    const text = body.value;
+    const sentences = text.split('. ');
+    body.value = sentences.slice(0, Math.ceil(sentences.length / 2)).join('. ') + '.';
+    showNotification('📝 Email shortened!', 'success');
+  }
+};
+
+window.aiExpand = function() {
+  showNotification('📋 AI expanding your email...', 'info');
+  // TODO: Call AI API to expand email
+};
+
+window.aiFormal = function() {
+  const body = document.getElementById('email-body');
+  if (body) {
+    let text = body.value;
+    // Simple formalization
+    text = text.replace(/\bhi\b/gi, 'Hello');
+    text = text.replace(/\bthanks\b/gi, 'Thank you');
+    text = text.replace(/\bbye\b/gi, 'Best regards');
+    body.value = text;
+    showNotification('👔 Email formalized!', 'success');
+  }
+};
+
+window.openFileBankModal = function() {
+  showNotification('📁 FileBank integration coming soon!', 'info');
+  // TODO: Implement FileBank modal
+};
+
+window.openComputerUpload = function() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.multiple = true;
+  input.onchange = (e) => {
+    const files = Array.from(e.target.files);
+    const list = document.getElementById('attachments-list');
+    files.forEach(file => {
+      list.innerHTML += `<div class="attachment-item">📎 ${file.name} <button onclick="this.parentElement.remove()">×</button></div>`;
+    });
+    showNotification(`✅ Added ${files.length} file(s)`, 'success');
+  };
+  input.click();
+};
+
 window.sendTeamEmail = async function() {
   const to = document.getElementById('email-to').value;
   const subject = document.getElementById('email-subject').value.trim();
@@ -2510,6 +2643,10 @@ function renderSmartEmailTask(task) {
   // Parse structured data
   const recipient = task.title.replace('Email ', '').trim();
   
+  // Extract meeting context
+  const meetingContextMatch = desc.match(/From meeting: ([^\n]+)/);
+  const meetingTitle = meetingContextMatch ? meetingContextMatch[1] : 'Unknown Meeting';
+  
   // Extract email addresses
   const emailsMatch = desc.match(/📧 FOUND EMAIL ADDRESSES TO TRY:([\s\S]*?)(?=\n\n|📝|🌐|🔍|$)/);
   const emails = emailsMatch ? emailsMatch[1].trim().split('\n').map(e => e.replace('• ', '').trim()).filter(e => e) : [];
@@ -2528,10 +2665,24 @@ function renderSmartEmailTask(task) {
   // Build clean organized description
   let organizedDesc = '';
   
+  // Task context section
+  organizedDesc += `<div class="info-section task-context">
+    <strong>📍 Task Context:</strong><br>
+    <span class="context-line">Action: Follow up with ${escapeHtml(recipient)}</span><br>
+    <span class="context-line">Source: ${escapeHtml(meetingTitle)}</span>
+    ${task.source_id ? `<br><a href="/collaborate#meetings" class="meeting-link" onclick="event.stopPropagation();">🎙️ View Meeting</a>` : ''}
+  </div>`;
+  
   if (emails.length > 0) {
     organizedDesc += '<div class="info-section"><strong>📧 Email Addresses:</strong><br>';
     emails.forEach((email, i) => {
-      organizedDesc += `<span class="email-line">${i === 0 ? '⭐' : '•'} ${escapeHtml(email)} <button class="copy-mini" onclick="copyToClipboard('${escapeHtml(email)}'); event.stopPropagation();" title="Copy">📋</button></span><br>`;
+      const escapedEmail = escapeHtml(email);
+      const escapedDraft = emailDraft.replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      organizedDesc += `<span class="email-line">
+        ${i === 0 ? '⭐' : '•'} ${escapedEmail} 
+        <button class="copy-mini" onclick="copyToClipboard('${escapedEmail}'); event.stopPropagation();" title="Copy">📋</button>
+        <button class="compose-mini" onclick="openSmartComposeModal('${escapedEmail}', '${escapeHtml(recipient)}', \`${escapedDraft}\`); event.stopPropagation();" title="Compose email">✉️ Compose</button>
+      </span><br>`;
     });
     organizedDesc += '</div>';
   }

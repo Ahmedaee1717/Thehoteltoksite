@@ -2665,3 +2665,171 @@ trix-toolbar .trix-button.trix-active {
     font-size: 12px;
   }
 }
+
+/* 🎯 Smart Email Compose Enhancements */
+
+.task-context {
+  background: rgba(102, 126, 234, 0.1);
+  border-left: 3px solid #667eea;
+  padding: 12px !important;
+}
+
+.context-line {
+  display: block;
+  color: #cbd5e0;
+  font-size: 13px;
+  padding: 2px 0;
+}
+
+.meeting-link {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 4px 10px;
+  background: rgba(102, 126, 234, 0.2);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  color: #a78bfa;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.meeting-link:hover {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.compose-mini {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border: none;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 6px;
+  transition: all 0.2s;
+}
+
+.compose-mini:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* Smart Modal Enhancements */
+
+.ai-badge-modal {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: 12px;
+}
+
+.email-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
+
+.tool-btn {
+  background: rgba(102, 126, 234, 0.2);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  color: #a78bfa;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tool-btn:hover {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+  transform: translateY(-1px);
+}
+
+.attachment-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.attach-btn {
+  background: rgba(102, 126, 234, 0.15);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  color: #a78bfa;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.attach-btn:hover {
+  background: rgba(102, 126, 234, 0.3);
+  border-color: #667eea;
+  transform: translateX(2px);
+}
+
+.attachments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  font-size: 12px;
+  color: #e2e8f0;
+}
+
+.attachment-item button {
+  background: rgba(239, 68, 68, 0.2);
+  border: none;
+  color: #f87171;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.attachment-item button:hover {
+  background: #ef4444;
+  color: white;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .email-toolbar {
+    flex-wrap: wrap;
+  }
+  
+  .tool-btn {
+    flex: 1;
+    min-width: 80px;
+  }
+  
+  .attachment-buttons {
+    flex-direction: column;
+  }
+}
