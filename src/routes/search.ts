@@ -26,7 +26,10 @@ search.get('/contact', async (c) => {
       'neos legal uae': 'neoslegal.co',
       'mattereum': 'mattereum.com',
       'rawsummit': 'rawsummit.io',
-      'raw summit': 'rawsummit.io'
+      'raw summit': 'rawsummit.io',
+      'getstake': 'getstake.com',
+      'get stake': 'getstake.com',
+      'stake dubai': 'getstake.com'
     }
     
     // Check if query matches a known company
@@ -218,10 +221,18 @@ search.get('/contact', async (c) => {
         console.error('Website fetch failed:', websiteError)
       }
       
-      // STEP 2: Try to scrape the /contact or /about page
+      // STEP 2: Try to scrape the /contact, /about, /team, and /legal pages
       if (contactNames.length === 0 || realEmails.length === 0) {
         try {
-          const contactPages = [`https://${domain}/contact`, `https://${domain}/about`, `https://${domain}/team`]
+          const contactPages = [
+            `https://${domain}/contact`,
+            `https://${domain}/about`,
+            `https://${domain}/team`,
+            `https://${domain}/legal/terms-of-use`,
+            `https://${domain}/legal/privacy-policy`,
+            `https://${domain}/terms`,
+            `https://${domain}/privacy`
+          ]
           
           for (const pageUrl of contactPages) {
             try {
@@ -279,14 +290,17 @@ search.get('/contact', async (c) => {
       console.error('DuckDuckGo fetch failed:', ddgError)
     }
 
-    // STEP 4: Build final email list with smart patterns
+    // STEP 4: Build final email list with SMART PRIORITIZATION
     let suggestedEmails: string[] = []
     
     if (realEmails.length > 0) {
-      suggestedEmails = realEmails.slice(0, 8)
+      // REAL SCRAPED EMAILS FIRST (highest priority)
+      suggestedEmails = [...realEmails.slice(0, 8)]
       console.log('🎯 Using REAL scraped emails:', suggestedEmails)
+      console.log(`✅ ${realEmails.length} emails found from website scraping`)
     } else {
-      console.log('⚠️ No real emails found, generating patterns')
+      // Only generate patterns if NO real emails found
+      console.log('⚠️ No real emails found, generating common patterns')
       suggestedEmails = generateEmailSuggestions(query, domain)
     }
 
