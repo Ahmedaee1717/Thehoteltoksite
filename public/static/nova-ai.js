@@ -223,65 +223,66 @@
     }
   }
 
-  // Make NOVA draggable (FIXED - proper offset calculation)
+  // Make NOVA draggable (COMPLETELY REWRITTEN - PROPER FIX)
   function makeNovaDraggable(container) {
     const entity = container.querySelector('#nova-entity');
     let isDragging = false;
-    let startX, startY, initialX = 0, initialY = 0;
+    let currentX = 0;
+    let currentY = 0;
+    let initialMouseX = 0;
+    let initialMouseY = 0;
 
-    entity.addEventListener('mousedown', dragStart);
-    document.addEventListener('mousemove', drag);
-    document.addEventListener('mouseup', dragEnd);
-
-    function dragStart(e) {
-      isDragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      
-      // Get current transform values
+    // Get current position from transform
+    function getCurrentPosition() {
       const transform = window.getComputedStyle(container).transform;
       if (transform && transform !== 'none') {
-        const matrix = transform.match(/matrix\((.+)\)/);
-        if (matrix) {
-          const values = matrix[1].split(', ');
-          initialX = parseFloat(values[4]) || 0;
-          initialY = parseFloat(values[5]) || 0;
-        }
+        const matrix = new DOMMatrix(transform);
+        return { x: matrix.m41, y: matrix.m42 };
       }
+      return { x: 0, y: 0 };
+    }
+
+    entity.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      
+      // Get current position
+      const pos = getCurrentPosition();
+      currentX = pos.x;
+      currentY = pos.y;
+      
+      // Store initial mouse position
+      initialMouseX = e.clientX;
+      initialMouseY = e.clientY;
       
       container.classList.add('dragging');
       setNovaMood(NOVA_STATES.WORKING);
       e.preventDefault();
-    }
+      e.stopPropagation();
+    });
 
-    function drag(e) {
+    document.addEventListener('mousemove', (e) => {
       if (!isDragging) return;
       
       e.preventDefault();
       
-      const deltaX = e.clientX - startX;
-      const deltaY = e.clientY - startY;
+      // Calculate how far the mouse has moved
+      const deltaX = e.clientX - initialMouseX;
+      const deltaY = e.clientY - initialMouseY;
       
-      const newX = initialX + deltaX;
-      const newY = initialY + deltaY;
+      // Apply the movement to the current position
+      const newX = currentX + deltaX;
+      const newY = currentY + deltaY;
       
       container.style.transform = `translate3d(${newX}px, ${newY}px, 0)`;
-    }
+    });
 
-    function dragEnd(e) {
+    document.addEventListener('mouseup', () => {
       if (!isDragging) return;
       
       isDragging = false;
-      
-      // Update initial position for next drag
-      const deltaX = e.clientX - startX;
-      const deltaY = e.clientY - startY;
-      initialX += deltaX;
-      initialY += deltaY;
-      
       container.classList.remove('dragging');
       setNovaMood(NOVA_STATES.IDLE);
-    }
+    });
   }
 
   // Setup all interactions
