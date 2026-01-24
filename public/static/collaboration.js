@@ -2503,7 +2503,7 @@ function renderSmartTaskCard(task) {
   `;
 }
 
-// 🎯 BEAUTIFUL SMART EMAIL TASK CARD
+// 🎯 SIMPLE ORGANIZED SMART EMAIL TASK CARD
 function renderSmartEmailTask(task) {
   const desc = task.description || '';
   
@@ -2525,13 +2525,32 @@ function renderSmartEmailTask(task) {
     return match ? { name: match[1], url: match[2] } : null;
   }).filter(l => l) : [];
   
-  // Extract meeting context
-  const contextMatch = desc.match(/Meeting context:\n([\s\S]*?)$/);
-  const meetingContext = contextMatch ? contextMatch[1].trim().substring(0, 200) + '...' : '';
+  // Build clean organized description
+  let organizedDesc = '';
   
+  if (emails.length > 0) {
+    organizedDesc += '<div class="info-section"><strong>📧 Email Addresses:</strong><br>';
+    emails.forEach((email, i) => {
+      organizedDesc += `<span class="email-line">${i === 0 ? '⭐' : '•'} ${escapeHtml(email)} <button class="copy-mini" onclick="copyToClipboard('${escapeHtml(email)}'); event.stopPropagation();" title="Copy">📋</button></span><br>`;
+    });
+    organizedDesc += '</div>';
+  }
+  
+  if (emailDraft) {
+    organizedDesc += '<div class="info-section"><strong>📝 Email Draft:</strong> <button class="copy-mini" onclick="copyToClipboard(\`' + emailDraft.replace(/`/g, '\\`').replace(/\$/g, '\\$') + '\`); event.stopPropagation();" title="Copy draft">📋 Copy All</button><br><pre class="draft-preview">' + escapeHtml(emailDraft) + '</pre></div>';
+  }
+  
+  if (links.length > 0) {
+    organizedDesc += '<div class="info-section"><strong>🔍 Verify Contact:</strong><br>';
+    links.forEach(link => {
+      organizedDesc += `<a href="${link.url}" target="_blank" rel="noopener" class="verify-mini" onclick="event.stopPropagation();">🔗 ${escapeHtml(link.name)}</a> `;
+    });
+    organizedDesc += '</div>';
+  }
+  
+  // Use SAME card design as regular tasks
   return `
-    <div class="task-card smart-email-task ${task.status}" data-id="${task.id}">
-      <!-- Header with checkbox and title -->
+    <div class="task-card ${task.status}" data-id="${task.id}">
       <div class="task-header">
         <input 
           type="checkbox" 
@@ -2539,81 +2558,30 @@ function renderSmartEmailTask(task) {
           ${task.status === 'completed' ? 'checked' : ''}
           onchange="toggleTask(${task.id}, this.checked)"
         />
-        <div class="task-header-content">
-          <h3 class="task-title ${task.status === 'completed' ? 'completed' : ''}">
-            📨 ${escapeHtml(task.title)}
-          </h3>
-          <span class="smart-badge">✨ AI Assisted</span>
-        </div>
+        <h3 class="task-title ${task.status === 'completed' ? 'completed' : ''}">${escapeHtml(task.title)} <span class="ai-badge">✨ AI</span></h3>
       </div>
-      
-      <!-- Smart Email Content -->
-      <div class="smart-task-content">
-        
-        <!-- Email Addresses Section -->
-        ${emails.length > 0 ? `
-        <div class="smart-section">
-          <div class="section-header">
-            <span class="section-icon">📧</span>
-            <h4>Suggested Email Addresses</h4>
-          </div>
-          <div class="email-chips">
-            ${emails.map((email, i) => `
-              <div class="email-chip ${i === 0 ? 'primary' : ''}">
-                <span class="email-text">${escapeHtml(email)}</span>
-                <button class="copy-btn" onclick="copyToClipboard('${escapeHtml(email)}')" title="Copy email">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                  </svg>
-                </button>
-              </div>
-            `).join('')}
-          </div>
-          ${emails.length > 0 ? `<p class="hint-text">💡 Try <strong>${escapeHtml(emails[0])}</strong> first</p>` : ''}
-        </div>
-        ` : ''}
-        
-        <!-- Email Draft Section -->
-        ${emailDraft ? `
-        <div class="smart-section">
-          <div class="section-header">
-            <span class="section-icon">📝</span>
-            <h4>Email Draft</h4>
-            <button class="copy-btn-header" onclick="copyToClipboard(\`${emailDraft.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" title="Copy draft">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-              </svg>
-              Copy
-            </button>
-          </div>
-          <div class="email-draft">
-            <pre>${escapeHtml(emailDraft)}</pre>
-          </div>
-        </div>
-        ` : ''}
-        
-        <!-- Verification Links Section -->
-        ${links.length > 0 ? `
-        <div class="smart-section">
-          <div class="section-header">
-            <span class="section-icon">🔍</span>
-            <h4>Verify Contact Info</h4>
-          </div>
-          <div class="verify-links">
-            ${links.map(link => `
-              <a href="${link.url}" target="_blank" rel="noopener" class="verify-link">
-                <span class="link-icon">🔗</span>
-                <span class="link-name">${escapeHtml(link.name)}</span>
-                <span class="link-arrow">→</span>
-              </a>
-            `).join('')}
-          </div>
-        </div>
-        ` : ''}
-        
-        <!-- Meeting Context (collapsed by default) -->
+      <div class="task-description organized-info">
+        ${organizedDesc}
+      </div>
+      <div class="task-meta">
+        <span class="priority-badge priority-${task.priority}">${task.priority}</span>
+        ${task.due_date ? `<span class="due-date">📅 ${new Date(task.due_date).toLocaleDateString()}</span>` : ''}
+        ${task.source_type === 'meeting' ? '<span class="source-badge">🎙️ From Meeting</span>' : ''}
+      </div>
+      <div class="task-actions">
+        <button class="task-btn-delete" onclick="deleteTask(${task.id})">Delete</button>
+      </div>
+    </div>
+  `;
+}
+
+// Keep the old function for context section but don't use it
+function renderOldSmartEmailTask_UNUSED(task) {
+  // Old complex version - not used anymore
+  return '';
+}
+
+// Simpler continuation -->
         ${meetingContext ? `
         <div class="smart-section collapsible">
           <details>
