@@ -1355,17 +1355,24 @@
       // Extract email addresses (handle both old and new format)
       let emailsToTry = [];
       if (contactInfo.suggestedEmails?.length > 0) {
-        if (typeof contactInfo.suggestedEmails[0] === 'object') {
+        console.log('📧 RAW suggestedEmails:', contactInfo.suggestedEmails);
+        console.log('📧 First email type:', typeof contactInfo.suggestedEmails[0]);
+        console.log('📧 First email value:', contactInfo.suggestedEmails[0]);
+        
+        if (typeof contactInfo.suggestedEmails[0] === 'object' && contactInfo.suggestedEmails[0].email) {
           // New format with sources
           emailsToTry = contactInfo.suggestedEmails.slice(0, 5);
+          console.log('✅ Using NEW format (with sources):', emailsToTry);
         } else {
           // Old format (just strings)
           emailsToTry = contactInfo.suggestedEmails.slice(0, 5).map(email => ({
             email,
             source: 'Unknown'
           }));
+          console.log('⚠️ Using OLD format (strings only):', emailsToTry);
         }
       } else {
+        console.log('❌ No suggestedEmails found, using fallback');
         // Fallback patterns
         const fallbackEmails = companyDomain 
           ? [`hello@${companyDomain}`, `contact@${companyDomain}`, `info@${companyDomain}`]
@@ -1374,7 +1381,11 @@
           email,
           source: 'Generated pattern (not verified)'
         }));
+        console.log('🔄 Generated fallback emails:', emailsToTry);
       }
+      
+      console.log('📧 FINAL emailsToTry:', emailsToTry);
+      console.log('📧 emailsToTry length:', emailsToTry.length);
       
       const taskDescription = `${enriched.description}
 
@@ -1393,6 +1404,9 @@ ${contactInfo.abstractURL ? `\n🌐 Source: ${contactInfo.abstractURL}` : ''}
 
 Meeting context:
 ${meeting.summary?.substring(0, 500)}`;
+
+      console.log('📝 FINAL TASK DESCRIPTION:');
+      console.log(taskDescription);
       
       const res = await fetch(`${API_BASE}/tasks`, {
         method: 'POST',
