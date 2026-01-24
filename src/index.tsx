@@ -1865,6 +1865,10 @@ app.get('/collaborate', (c) => {
         </div>
 
         <script src="/static/collaboration.js?v=20260124-2"></script>
+        
+        <!-- 🤖 AI ASSISTANT -->
+        <link rel="stylesheet" href="/static/ai-assistant.css?v=1">
+        <script src="/static/ai-assistant.js?v=1"></script>
     </body>
     </html>
   `);
