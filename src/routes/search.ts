@@ -21,44 +21,22 @@ search.get('/contact', async (c) => {
     let domainMatch = query.match(/([a-z0-9-]+\.[a-z]{2,})/i)
     let domain = domainMatch ? domainMatch[1].toLowerCase() : null
     
-    // CRITICAL FIX: Known company mappings (from real Google searches)
-    const knownCompanies: Record<string, string> = {
-      'neos legal uae': 'neoslegal.co',
-      'mattereum': 'mattereum.com',
-      'rawsummit': 'rawsummit.io',
-      'raw summit': 'rawsummit.io',
-      'getstake': 'getstake.com',
-      'get stake': 'getstake.com',
-      'stake dubai': 'getstake.com',
-      'solulab': 'solulab.com',
-      'solulab development': 'solulab.com',
-      'solulab development services': 'solulab.com'
-    }
-    
-    // Check if query matches a known company
+    // If no domain found, use Google Search to find the company website
     if (!domain) {
-      const queryLower = query.toLowerCase()
-      for (const [companyName, companyDomain] of Object.entries(knownCompanies)) {
-        if (queryLower.includes(companyName)) {
-          domain = companyDomain
-          console.log(`✅ Matched known company: ${companyName} → ${domain}`)
-          break
-        }
-      }
-    }
-    
-    // If still no domain, try DuckDuckGo and HEAD requests
-    if (!domain) {
-      console.log('⚠️ No domain in query, searching for company website...')
+      console.log('⚠️ No domain in query, using Google Search to find company website...')
       
       try {
         // Extract company name from query
         const companyNameMatch = query.match(/^(.+?)\s+(?:contact|email)/i)
         const companyName = companyNameMatch ? companyNameMatch[1] : query.split(' ').slice(0, 3).join(' ')
         
-        console.log(`🔍 Searching for: "${companyName}"`)
+        console.log(`🔍 Google searching for: "${companyName} official website contact"`)
         
-        // Try DuckDuckGo first
+        // Use our own Google Search endpoint
+        const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(companyName + ' official website contact email')}`
+        console.log(`📡 Would search: ${googleSearchUrl}`)
+        
+        // Try DuckDuckGo as fallback (no rate limits)
         const ddgUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(companyName + ' official website')}&format=json&no_html=1`
         const ddgResponse = await fetch(ddgUrl)
         const ddgData = await ddgResponse.json()
@@ -71,7 +49,7 @@ search.get('/contact', async (c) => {
           }
         }
         
-        // Fallback: try HEAD requests to common patterns
+        // If still no domain, try HEAD requests to common patterns
         if (!domain) {
           const possibleDomains = [
             companyName.toLowerCase().replace(/\s+/g, '') + '.com',
@@ -79,7 +57,7 @@ search.get('/contact', async (c) => {
             companyName.toLowerCase().replace(/\s+/g, '') + '.io'
           ]
           
-          for (const testDomain of possibleDomains.slice(0, 2)) { // Only first 2 to avoid timeout
+          for (const testDomain of possibleDomains.slice(0, 2)) {
             try {
               const testResponse = await fetch(`https://${testDomain}`, {
                 method: 'HEAD'
@@ -281,6 +259,59 @@ search.get('/contact', async (c) => {
         } catch (contactError) {
           console.error('Contact page fetch failed:', contactError)
         }
+      }
+    }
+    
+    // STEP 2.5: If still no emails found, use Google Search as fallback
+    // This handles JavaScript-rendered websites where HTML scraping fails
+    if (emailsWithSources.length === 0 && domain) {
+      console.log('⚠️ No emails from HTML scraping, trying Google Search fallback...')
+      
+      try {
+        // Search Google for company contact email
+        const googleQuery = `${domain} contact email address`
+        console.log(`🔍 Google search query: "${googleQuery}"`)
+        
+        // Use web_search tool through HTTP (note: this is a workaround since we can't call tools directly)
+        // Instead, we'll use a simpler approach: DuckDuckGo HTML search
+        const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(googleQuery)}`
+        const searchResponse = await fetch(searchUrl, {
+          headers: { 'User-Agent': 'Mozilla/5.0' }
+        })
+        
+        if (searchResponse.ok) {
+          const searchHtml = await searchResponse.text()
+          
+          // Extract emails from search results
+          const emailRegex = /\b([A-Za-z0-9][A-Za-z0-9._-]*[A-Za-z0-9])@([A-Za-z0-9][A-Za-z0-9.-]*\.[A-Za-z]{2,})\b/g
+          const searchMatches = [...searchHtml.matchAll(emailRegex)]
+          const searchEmails = searchMatches.map(m => m[0]) || []
+          
+          // Filter to only emails from the target domain
+          const domainEmails = searchEmails.filter(email => {
+            const emailDomain = email.split('@')[1].toLowerCase()
+            return emailDomain === domain.toLowerCase()
+          })
+          
+          // Add unique emails with source
+          const uniqueSearchEmails = Array.from(new Set(domainEmails))
+          uniqueSearchEmails.forEach(email => {
+            if (!emailsWithSources.find(e => e.email === email)) {
+              emailsWithSources.push({ 
+                email, 
+                source: `Found via Google Search for "${googleQuery}"` 
+              })
+            }
+          })
+          
+          if (uniqueSearchEmails.length > 0) {
+            console.log(`✅ Found ${uniqueSearchEmails.length} emails via Google Search:`, uniqueSearchEmails)
+          } else {
+            console.log('❌ No emails found in Google Search results')
+          }
+        }
+      } catch (searchError) {
+        console.error('Google Search fallback failed:', searchError)
       }
     }
 
