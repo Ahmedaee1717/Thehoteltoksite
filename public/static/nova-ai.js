@@ -643,9 +643,8 @@
         if (emailTasks.length > 0) {
           // CREATE SMART EMAIL TASK INSIGHT
           emailTasks.forEach(emailTask => {
-            // Use SMART extraction (check for domain first)
-            const domainMatch = emailTask.text.match(/([a-z0-9-]+\.[a-z]{2,})/i);
-            const recipient = domainMatch ? domainMatch[1] : 'recipient';
+            // Use SMART extraction function
+            const recipient = extractRecipientFromText(emailTask.text);
             
             insights.push({
               type: 'smart-email-task',
@@ -914,6 +913,40 @@
     }
 
     return enriched;
+  }
+
+  // SMART RECIPIENT EXTRACTION - Reusable function
+  function extractRecipientFromText(text) {
+    // Pattern 1: Domain with TLD (e.g., "rawsummit.io", "azqira.com")
+    const domainMatch1 = text.match(/([a-z0-9-]+\.[a-z]{2,})/i);
+    if (domainMatch1) {
+      console.log('✅ Recipient found (domain with TLD):', domainMatch1[1]);
+      return domainMatch1[1];
+    }
+    
+    // Pattern 2: "contact/email/reach out to NAME" (e.g., "Find a contact at rawsummit")
+    const nameMatch = text.match(/(?:contact|email|reach out to|find a contact at)\s+([A-Z][a-z]+)/i);
+    if (nameMatch) {
+      console.log('✅ Recipient found (name):', nameMatch[1]);
+      return nameMatch[1];
+    }
+    
+    // Pattern 3: "Email NAME" at start (e.g., "Email Azqira")
+    const emailNameMatch = text.match(/^Email\s+([A-Z][a-z]+)/i);
+    if (emailNameMatch) {
+      console.log('✅ Recipient found (Email NAME):', emailNameMatch[1]);
+      return emailNameMatch[1];
+    }
+    
+    // Pattern 4: Just a capitalized name anywhere (last resort)
+    const anyNameMatch = text.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b/);
+    if (anyNameMatch && !['Email', 'Find', 'Contact', 'Reach'].includes(anyNameMatch[1])) {
+      console.log('✅ Recipient found (any name):', anyNameMatch[1]);
+      return anyNameMatch[1];
+    }
+    
+    console.warn('⚠️ No recipient found, using default');
+    return 'recipient';
   }
 
   // SMART EMAIL TASK HANDLER WITH REAL WEB SEARCH
@@ -1284,8 +1317,7 @@ ${meeting.summary?.substring(0, 500)}`;
           
           if (isEmailTask) {
             // For EMAIL tasks, use handleSmartEmailTask which does web search
-            const domainMatch = item.text.match(/([a-z0-9-]+\.[a-z]{2,})/i);
-            const recipient = domainMatch ? domainMatch[1] : 'recipient';
+            const recipient = extractRecipientFromText(item.text);
             
             novaSpeak(`🔍 Searching web for ${recipient} contact info...`);
             
