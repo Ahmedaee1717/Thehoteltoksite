@@ -2647,9 +2647,31 @@ function renderSmartEmailTask(task) {
   const meetingContextMatch = desc.match(/From meeting: ([^\n]+)/);
   const meetingTitle = meetingContextMatch ? meetingContextMatch[1] : 'Unknown Meeting';
   
-  // Extract email addresses
-  const emailsMatch = desc.match(/📧 FOUND EMAIL ADDRESSES TO TRY:([\s\S]*?)(?=\n\n|📝|🌐|🔍|$)/);
-  const emails = emailsMatch ? emailsMatch[1].trim().split('\n').map(e => e.replace('• ', '').trim()).filter(e => e) : [];
+  // Extract email addresses (support both old and new format)
+  const emailsMatch = desc.match(/📧 FOUND EMAIL ADDRESSES (?:TO TRY|WITH SOURCES)?:([\s\S]*?)(?=\n\n|📝|🌐|🔍|$)/);
+  
+  let emails = [];
+  if (emailsMatch) {
+    const emailSection = emailsMatch[1].trim();
+    // Parse emails with source URLs (new format)
+    // Format: • email\n  📍 source
+    const lines = emailSection.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.startsWith('•')) {
+        const email = line.replace('• ', '').trim();
+        // Check if next line has source
+        const nextLine = lines[i + 1]?.trim();
+        if (nextLine && nextLine.startsWith('📍')) {
+          const source = nextLine.replace('📍 ', '').replace('Source: ', '').trim();
+          emails.push({ email, source });
+          i++; // Skip the source line
+        } else {
+          emails.push({ email, source: null });
+        }
+      }
+    }
+  }
   
   // Extract email draft
   const draftMatch = desc.match(/📝 EMAIL DRAFT \(ready to copy\):([\s\S]*?)(?=\n\n🔍|$)/);
@@ -2675,14 +2697,24 @@ function renderSmartEmailTask(task) {
   
   if (emails.length > 0) {
     organizedDesc += '<div class="info-section"><strong>📧 Email Addresses:</strong><br>';
-    emails.forEach((email, i) => {
+    emails.forEach((item, i) => {
+      const email = typeof item === 'object' ? item.email : item;
+      const source = typeof item === 'object' ? item.source : null;
+      
       const escapedEmail = escapeHtml(email);
       const escapedDraft = emailDraft.replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      
       organizedDesc += `<span class="email-line">
-        ${i === 0 ? '⭐' : '•'} ${escapedEmail} 
+        ${i === 0 ? '⭐' : '•'} <strong>${escapedEmail}</strong> 
         <button class="copy-mini" onclick="copyToClipboard('${escapedEmail}'); event.stopPropagation();" title="Copy">📋</button>
         <button class="compose-mini" onclick="openSmartComposeModal('${escapedEmail}', '${escapeHtml(recipient)}', \`${escapedDraft}\`); event.stopPropagation();" title="Compose email">✉️ Compose</button>
-      </span><br>`;
+      </span>`;
+      
+      if (source) {
+        organizedDesc += `<br><span class="email-source" style="margin-left: 20px; font-size: 0.9em; color: #888;">📍 <a href="${source}" target="_blank" rel="noopener" onclick="event.stopPropagation();" style="color: #4a9eff;">${escapeHtml(source)}</a></span>`;
+      }
+      
+      organizedDesc += '<br>';
     });
     organizedDesc += '</div>';
   }
