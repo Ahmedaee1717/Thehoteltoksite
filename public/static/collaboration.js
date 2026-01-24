@@ -1613,13 +1613,25 @@ function createMeetingCard(meeting) {
   const speakers = meeting.speakers ? JSON.parse(meeting.speakers) : [];
   const speakerCount = speakers.length;
   
+  // Sanitize title to remove any corrupt characters
+  let safeTitle = meeting.title || 'Untitled Meeting';
+  // Remove non-printable characters and control characters
+  safeTitle = safeTitle.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+  // If title is empty or only has special chars, use fallback
+  if (safeTitle.trim().length === 0) {
+    safeTitle = 'Corrupted Meeting Title';
+  }
+  
+  // Create a safe version for onclick attribute (escape quotes and encode)
+  const safeTitleForAttr = escapeHtml(safeTitle).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+  
   return `
     <div class="meeting-card">
-      <div class="meeting-card-content" onclick="openMeetingTranscript('${meeting.id}')">
+      <div class="meeting-card-content" onclick="openMeetingTranscript(${meeting.id})">
         <div class="meeting-header">
           <div class="meeting-icon">🎙️</div>
           <div class="meeting-info">
-            <h3 class="meeting-title">${escapeHtml(meeting.title)}</h3>
+            <h3 class="meeting-title">${escapeHtml(safeTitle)}</h3>
             <div class="meeting-meta">
               <span>📅 ${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
               <span>⏱️ ${duration} min</span>
@@ -1645,7 +1657,7 @@ function createMeetingCard(meeting) {
       </div>
       
       <div class="meeting-card-actions">
-        <button class="meeting-delete-btn" onclick="event.stopPropagation(); deleteMeeting('${meeting.id}', '${escapeHtml(meeting.title).replace(/'/g, "\\'")}');" title="Delete meeting">
+        <button class="meeting-delete-btn" onclick="event.stopPropagation(); deleteMeeting(${meeting.id}, '${safeTitleForAttr}');" title="Delete meeting">
           <span class="delete-icon">🗑️</span>
         </button>
       </div>
@@ -1675,12 +1687,20 @@ function showMeetingModal(meeting) {
   const startDate = new Date(meeting.start_time);
   const speakers = meeting.speakers ? JSON.parse(meeting.speakers) : [];
   
+  // Sanitize title to remove any corrupt characters
+  let safeTitle = meeting.title || 'Untitled Meeting';
+  safeTitle = safeTitle.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+  if (safeTitle.trim().length === 0) {
+    safeTitle = 'Corrupted Meeting Title';
+  }
+  const safeTitleForAttr = escapeHtml(safeTitle).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+  
   const modalHtml = `
     <div id="meeting-transcript-modal" class="collab-email-modal" onclick="if(event.target === this) closeMeetingModal()">
       <div class="meeting-modal-content">
         <div class="meeting-modal-header">
           <div>
-            <h2>🎙️ ${escapeHtml(meeting.title)}</h2>
+            <h2>🎙️ ${escapeHtml(safeTitle)}</h2>
             <div class="meeting-meta">
               <span>📅 ${startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
               <span>⏱️ ${Math.round(meeting.duration_seconds / 60)} minutes</span>
@@ -1723,7 +1743,7 @@ function showMeetingModal(meeting) {
             </a>
           ` : ''}
           <button class="collab-email-btn-cancel" onclick="closeMeetingModal()">Close</button>
-          <button class="meeting-delete-btn-modal" onclick="deleteMeeting('${meeting.id}', '${escapeHtml(meeting.title).replace(/'/g, "\\'")}');" title="Delete meeting">
+          <button class="meeting-delete-btn-modal" onclick="deleteMeeting(${meeting.id}, '${safeTitleForAttr}');" title="Delete meeting">
             <span class="delete-icon">🗑️</span>
             Delete
           </button>
@@ -1744,8 +1764,11 @@ window.closeMeetingModal = function() {
 
 // 🗑️ DELETE MEETING
 window.deleteMeeting = async function(meetingId, meetingTitle) {
+  // Decode HTML entities if present
+  const titleText = meetingTitle ? meetingTitle.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&') : 'this meeting';
+  
   // Confirm deletion
-  const confirmed = confirm(`Are you sure you want to delete this meeting?\n\n"${meetingTitle}"\n\nThis action cannot be undone.`);
+  const confirmed = confirm(`Are you sure you want to delete this meeting?\n\n"${titleText}"\n\nThis action cannot be undone.`);
   
   if (!confirmed) {
     return;
@@ -1765,7 +1788,7 @@ window.deleteMeeting = async function(meetingId, meetingTitle) {
     const data = await response.json();
     
     if (data.success) {
-      showNotification(`✅ Meeting "${meetingTitle}" deleted successfully!`, 'success');
+      showNotification(`✅ Meeting deleted successfully!`, 'success');
       
       // Close modal if open
       closeMeetingModal();
