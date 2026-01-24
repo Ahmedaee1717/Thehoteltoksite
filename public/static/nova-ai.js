@@ -1159,16 +1159,6 @@
         emailDraft += `${greeting}\n\n`;
         emailDraft += `I hope this email finds you well. I'm reaching out to explore potential speaking/partnership opportunities at ${searchTarget}.\n\n`;
         emailDraft += `We'd love to feature at your events and contribute valuable content to your community. `;
-          .trim();
-        
-        // Use contact name if found
-        const greeting = contactInfo.contactNames && contactInfo.contactNames.length > 0
-          ? `Hi ${contactInfo.contactNames[0].split(' ')[0]},`
-          : `Hi there,`;
-        
-        emailDraft = `Subject: ${emailSubject}\n\n`;
-        emailDraft += `${greeting}\n\n`;
-        emailDraft += `I hope this email finds you well. I'm reaching out to explore potential speaking/partnership opportunities at ${searchTarget}.\n\n`;
         
         if (cleanIntent && cleanIntent.length > 10) {
           emailDraft += `Specifically, we're interested in ${cleanIntent}. `;
