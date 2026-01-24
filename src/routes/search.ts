@@ -31,6 +31,28 @@ search.get('/contact', async (c) => {
       website: domain ? `https://${domain}` : null
     }
 
+    // VALIDATION HELPER - Define outside so it's reusable
+    const skipWords = ['Jetpack', 'WordPress', 'Connect With', 'Follow Us', 'Contact Us', 'About Us', 
+                      'Privacy Policy', 'Terms Of', 'All Rights', 'Copyright Notice', 'Verification Tags',
+                      'Youtube Become', 'Twitter', 'Facebook', 'LinkedIn', 'Instagram']
+    
+    const isValidName = (name: string) => {
+      // Must be exactly 2 words (First Last)
+      const words = name.trim().split(/\s+/)
+      if (words.length !== 2) return false
+      
+      // Each word must start with capital and have lowercase letters
+      if (!words.every(w => /^[A-Z][a-z]{1,}$/.test(w))) return false
+      
+      // No skip words
+      if (skipWords.some(skip => name.includes(skip))) return false
+      
+      // Each word must be at least 2 chars
+      if (words.some(w => w.length < 2)) return false
+      
+      return true
+    }
+
     // STEP 1: Scrape the company website for emails AND contact names
     if (domain) {
       try {
@@ -44,51 +66,69 @@ search.get('/contact', async (c) => {
         if (websiteResponse.ok) {
           const html = await websiteResponse.text()
           
-          // Extract emails from HTML
+          // Extract emails from HTML with STRICT validation
           const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g
           const foundEmails = html.match(emailRegex) || []
           
-          // Filter out false positives
+          // Filter out false positives with STRICT rules
           const validEmails = foundEmails.filter(email => {
             const lower = email.toLowerCase()
-            return !lower.includes('example.com') &&
-                   !lower.includes('sentry.io') &&
-                   !lower.includes('wordpress.org') &&
-                   !lower.includes('schema.org') &&
-                   !lower.includes('w3.org') &&
-                   email.includes(domain.split('.')[0])
+            
+            // Must contain the domain name
+            if (!email.includes(domain.split('.')[0])) return false
+            
+            // Block common false positives
+            if (lower.includes('example.com') ||
+                lower.includes('sentry.io') ||
+                lower.includes('wordpress.org') ||
+                lower.includes('schema.org') ||
+                lower.includes('w3.org')) return false
+            
+            // Block image files and assets (CRITICAL FIX)
+            if (lower.includes('.png') ||
+                lower.includes('.jpg') ||
+                lower.includes('.jpeg') ||
+                lower.includes('.gif') ||
+                lower.includes('.svg') ||
+                lower.includes('.webp') ||
+                lower.includes('.ico') ||
+                lower.includes('logo') ||
+                lower.includes('image') ||
+                lower.includes('gradient') ||
+                lower.includes('@2x') ||
+                lower.includes('@3x')) return false
+            
+            // Must have valid TLD
+            const tldMatch = email.match(/\.([a-z]{2,})$/i)
+            if (!tldMatch) return false
+            const tld = tldMatch[1].toLowerCase()
+            const validTLDs = ['com', 'org', 'net', 'io', 'co', 'uk', 'us', 'ca', 'au', 'de', 'fr', 'eu']
+            if (!validTLDs.includes(tld)) return false
+            
+            return true
           })
           
           realEmails = Array.from(new Set(validEmails))
           console.log(`✅ Found ${realEmails.length} real emails:`, realEmails)
           
-          // EXTRACT CONTACT NAMES from common patterns
-          // Pattern 1: "Contact: Name" or "Email: name@domain.com - Name"
-          const contactPattern1 = /(?:Contact|Email|Reach out to|Get in touch with).*?([A-Z][a-z]+\s+[A-Z][a-z]+)/g
-          const nameMatches1 = [...html.matchAll(contactPattern1)]
-          nameMatches1.forEach(match => {
-            if (match[1] && !contactNames.includes(match[1])) {
-              contactNames.push(match[1])
-            }
-          })
-          
-          // Pattern 2: Look for "Team" or "About Us" section with names
-          const teamSection = html.match(/<section[^>]*(?:team|about|contact)[^>]*>(.*?)<\/section>/is)
-          if (teamSection) {
-            const teamNames = teamSection[1].match(/\b([A-Z][a-z]+\s+[A-Z][a-z]+)\b/g) || []
-            teamNames.forEach(name => {
-              if (!contactNames.includes(name) && name.split(' ').length === 2) {
+          // EXTRACT CONTACT NAMES with STRICT validation
+          // Pattern 1: Look near email addresses for names (most reliable)
+          realEmails.forEach(email => {
+            const emailContext = html.substring(html.indexOf(email) - 150, html.indexOf(email) + 150)
+            const nearbyNames = emailContext.match(/\b([A-Z][a-z]+\s+[A-Z][a-z]+)\b/g) || []
+            nearbyNames.forEach(name => {
+              if (isValidName(name) && !contactNames.includes(name)) {
                 contactNames.push(name)
               }
             })
-          }
+          })
           
-          // Pattern 3: Look near email addresses for names
-          realEmails.forEach(email => {
-            const emailContext = html.substring(html.indexOf(email) - 100, html.indexOf(email) + 100)
-            const nearbyName = emailContext.match(/\b([A-Z][a-z]+\s+[A-Z][a-z]+)\b/)
-            if (nearbyName && !contactNames.includes(nearbyName[1])) {
-              contactNames.push(nearbyName[1])
+          // Pattern 2: Look for CEO, Founder, CTO, etc.
+          const titlePattern = /(?:CEO|CTO|CFO|Founder|Co-founder|Director|Manager|Head of)\s*[:\-–]?\s*([A-Z][a-z]+\s+[A-Z][a-z]+)/gi
+          const titleMatches = [...html.matchAll(titlePattern)]
+          titleMatches.forEach(match => {
+            if (match[1] && isValidName(match[1]) && !contactNames.includes(match[1])) {
+              contactNames.push(match[1])
             }
           })
           
@@ -127,10 +167,10 @@ search.get('/contact', async (c) => {
                   }
                 })
                 
-                // Extract more names
+                // Extract more names with validation
                 const moreNames = contactHtml.match(/\b([A-Z][a-z]+\s+[A-Z][a-z]+)\b/g) || []
-                moreNames.slice(0, 5).forEach(name => {
-                  if (!contactNames.includes(name) && name.split(' ').length === 2) {
+                moreNames.slice(0, 10).forEach(name => {
+                  if (isValidName(name) && !contactNames.includes(name)) {
                     contactNames.push(name)
                   }
                 })
