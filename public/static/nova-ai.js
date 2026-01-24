@@ -1088,13 +1088,25 @@
         addChatMessage('nova', `📖 Found: ${contactInfo.abstract}`);
       }
       
-      // Display found contact info with REAL emails and names
+      // Display found contact info with REAL emails WITH SOURCE LINKS
       const cleanRecipient = recipient.toLowerCase().replace(/\s+/g, '');
-      const emailList = contactInfo.suggestedEmails?.length > 0 
-        ? contactInfo.suggestedEmails.slice(0, 4).join('\n• ')
-        : companyDomain 
+      
+      let emailList = '';
+      if (contactInfo.suggestedEmails?.length > 0) {
+        // Check if emails have source URLs (new format)
+        if (typeof contactInfo.suggestedEmails[0] === 'object') {
+          emailList = contactInfo.suggestedEmails.slice(0, 4)
+            .map(item => `${item.email}\n  📍 Source: ${item.source}`)
+            .join('\n\n• ');
+        } else {
+          // Old format (just strings)
+          emailList = contactInfo.suggestedEmails.slice(0, 4).join('\n• ');
+        }
+      } else {
+        emailList = companyDomain 
           ? `hello@${companyDomain}\n• contact@${companyDomain}\n• info@${companyDomain}`
           : `hello@${cleanRecipient}.com\n• contact@${cleanRecipient}.com`;
+      }
       
       const contactNamesList = contactInfo.contactNames?.length > 0
         ? contactInfo.contactNames.slice(0, 3).join(', ')
@@ -1340,15 +1352,34 @@
       const token = localStorage.getItem('auth_token');
       const enriched = await enrichActionItem(task, meeting);
       
-      const emailsToTry = contactInfo.suggestedEmails?.slice(0, 5) || 
-        (companyDomain 
+      // Extract email addresses (handle both old and new format)
+      let emailsToTry = [];
+      if (contactInfo.suggestedEmails?.length > 0) {
+        if (typeof contactInfo.suggestedEmails[0] === 'object') {
+          // New format with sources
+          emailsToTry = contactInfo.suggestedEmails.slice(0, 5);
+        } else {
+          // Old format (just strings)
+          emailsToTry = contactInfo.suggestedEmails.slice(0, 5).map(email => ({
+            email,
+            source: 'Unknown'
+          }));
+        }
+      } else {
+        // Fallback patterns
+        const fallbackEmails = companyDomain 
           ? [`hello@${companyDomain}`, `contact@${companyDomain}`, `info@${companyDomain}`]
-          : [`hello@${recipient.toLowerCase()}.com`]);
+          : [`hello@${recipient.toLowerCase()}.com`];
+        emailsToTry = fallbackEmails.map(email => ({
+          email,
+          source: 'Generated pattern (not verified)'
+        }));
+      }
       
       const taskDescription = `${enriched.description}
 
-📧 FOUND EMAIL ADDRESSES TO TRY:
-${emailsToTry.map(e => `• ${e}`).join('\n')}
+📧 FOUND EMAIL ADDRESSES WITH SOURCES:
+${emailsToTry.map(item => `• ${item.email}\n  📍 ${item.source}`).join('\n\n')}
 
 📝 EMAIL DRAFT (ready to copy):
 ${emailDraft}
@@ -1379,7 +1410,12 @@ ${meeting.summary?.substring(0, 500)}`;
       
       if (res.ok) {
         setNovaMood(NOVA_STATES.CELEBRATING);
-        addChatMessage('nova', `✅ **DONE!** Task created with:\n• ${emailsToTry.length} potential email addresses\n• Email draft based on your meeting goal\n• Verification links\n• Full context\n\n🎯 **TRY FIRST:** ${emailsToTry[0]}`);
+        
+        const firstEmail = emailsToTry[0];
+        const firstEmailText = typeof firstEmail === 'object' ? firstEmail.email : firstEmail;
+        const firstEmailSource = typeof firstEmail === 'object' ? firstEmail.source : 'Unknown';
+        
+        addChatMessage('nova', `✅ **DONE!** Task created with:\n• ${emailsToTry.length} potential email addresses WITH SOURCE URLS\n• Email draft based on your meeting goal\n• Verification links\n• Full context\n\n🎯 **TRY FIRST:** ${firstEmailText}\n📍 **Found at:** ${firstEmailSource}`);
         
         await loadTasks(token);
         novaSpeak(`Found ${emailsToTry.length} email addresses for ${recipient}! Check the Tasks view! 🎉`);

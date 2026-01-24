@@ -97,7 +97,8 @@ search.get('/contact', async (c) => {
     
     console.log('🌐 Final domain:', domain)
 
-    let realEmails: string[] = []
+    // Store emails WITH their source URLs
+    let emailsWithSources: Array<{ email: string; source: string }> = []
     let contactNames: string[] = []
     let companyInfo = {
       abstract: '',
@@ -185,12 +186,18 @@ search.get('/contact', async (c) => {
             return true
           })
           
-          realEmails = Array.from(new Set(validEmails))
-          console.log(`✅ Found ${realEmails.length} real emails:`, realEmails)
+          // Add emails with source URL
+          const homepageUrl = `https://${domain}`
+          validEmails.forEach(email => {
+            if (!emailsWithSources.find(e => e.email === email)) {
+              emailsWithSources.push({ email, source: homepageUrl })
+            }
+          })
+          console.log(`✅ Found ${emailsWithSources.length} real emails from homepage:`, emailsWithSources)
           
           // EXTRACT CONTACT NAMES with STRICT validation
           // Pattern 1: Look near email addresses for names (most reliable)
-          realEmails.forEach(email => {
+          emailsWithSources.forEach(({ email }) => {
             const emailContext = html.substring(html.indexOf(email) - 150, html.indexOf(email) + 150)
             const nearbyNames = emailContext.match(/\b([A-Z][a-z]+\s+[A-Z][a-z]+)\b/g) || []
             nearbyNames.forEach(name => {
@@ -222,7 +229,7 @@ search.get('/contact', async (c) => {
       }
       
       // STEP 2: Try to scrape the /contact, /about, /team, and /legal pages
-      if (contactNames.length === 0 || realEmails.length === 0) {
+      if (contactNames.length === 0 || emailsWithSources.length === 0) {
         try {
           const contactPages = [
             `https://${domain}/contact`,
@@ -249,8 +256,8 @@ search.get('/contact', async (c) => {
                 const moreMatches = [...contactHtml.matchAll(emailRegex)]
                 const moreEmails = moreMatches.map(match => match[0]) || []
                 moreEmails.forEach(email => {
-                  if (!realEmails.includes(email) && email.includes(domain.split('.')[0])) {
-                    realEmails.push(email)
+                  if (!emailsWithSources.find(e => e.email === email) && email.includes(domain.split('.')[0])) {
+                    emailsWithSources.push({ email, source: pageUrl })
                   }
                 })
                 
@@ -262,7 +269,7 @@ search.get('/contact', async (c) => {
                   }
                 })
                 
-                console.log(`✅ Contact page found: ${realEmails.length} emails, ${contactNames.length} names`)
+                console.log(`✅ Contact page found: ${emailsWithSources.length} emails, ${contactNames.length} names`)
               }
             } catch (pageError) {
               // Try next page
@@ -290,18 +297,22 @@ search.get('/contact', async (c) => {
       console.error('DuckDuckGo fetch failed:', ddgError)
     }
 
-    // STEP 4: Build final email list with SMART PRIORITIZATION
-    let suggestedEmails: string[] = []
+    // STEP 4: Build final email list with SMART PRIORITIZATION and SOURCE ATTRIBUTION
+    let suggestedEmails: Array<{ email: string; source: string }> = []
     
-    if (realEmails.length > 0) {
-      // REAL SCRAPED EMAILS FIRST (highest priority)
-      suggestedEmails = [...realEmails.slice(0, 8)]
-      console.log('🎯 Using REAL scraped emails:', suggestedEmails)
-      console.log(`✅ ${realEmails.length} emails found from website scraping`)
+    if (emailsWithSources.length > 0) {
+      // REAL SCRAPED EMAILS FIRST (highest priority) with source URLs
+      suggestedEmails = emailsWithSources.slice(0, 8)
+      console.log('🎯 Using REAL scraped emails with sources:', suggestedEmails)
+      console.log(`✅ ${emailsWithSources.length} emails found from website scraping`)
     } else {
       // Only generate patterns if NO real emails found
       console.log('⚠️ No real emails found, generating common patterns')
-      suggestedEmails = generateEmailSuggestions(query, domain)
+      const patternEmails = generateEmailSuggestions(query, domain)
+      suggestedEmails = patternEmails.map(email => ({
+        email,
+        source: 'Generated pattern (not verified)'
+      }))
     }
 
     const result = {
@@ -310,9 +321,9 @@ search.get('/contact', async (c) => {
       abstract: companyInfo.abstract || 'No description available',
       abstractURL: companyInfo.abstractURL || (domain ? `https://${domain}` : ''),
       website: companyInfo.website,
-      suggestedEmails: suggestedEmails,
+      suggestedEmails: suggestedEmails, // NOW WITH SOURCE URLS!
       contactNames: contactNames.slice(0, 5), // Return up to 5 contact names
-      scrapedEmails: realEmails.length,
+      scrapedEmails: emailsWithSources.length,
       scrapedNames: contactNames.length,
       searchLinks: {
         google: `https://www.google.com/search?q=${encodeURIComponent(query)}`,
