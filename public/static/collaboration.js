@@ -1614,32 +1614,40 @@ function createMeetingCard(meeting) {
   const speakerCount = speakers.length;
   
   return `
-    <div class="meeting-card" onclick="openMeetingTranscript('${meeting.id}')">
-      <div class="meeting-header">
-        <div class="meeting-icon">🎙️</div>
-        <div class="meeting-info">
-          <h3 class="meeting-title">${escapeHtml(meeting.title)}</h3>
-          <div class="meeting-meta">
-            <span>📅 ${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-            <span>⏱️ ${duration} min</span>
-            <span>👥 ${speakerCount} speaker${speakerCount !== 1 ? 's' : ''}</span>
+    <div class="meeting-card">
+      <div class="meeting-card-content" onclick="openMeetingTranscript('${meeting.id}')">
+        <div class="meeting-header">
+          <div class="meeting-icon">🎙️</div>
+          <div class="meeting-info">
+            <h3 class="meeting-title">${escapeHtml(meeting.title)}</h3>
+            <div class="meeting-meta">
+              <span>📅 ${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+              <span>⏱️ ${duration} min</span>
+              <span>👥 ${speakerCount} speaker${speakerCount !== 1 ? 's' : ''}</span>
+            </div>
           </div>
+        </div>
+        
+        ${meeting.summary ? `
+          <div class="meeting-summary">
+            <p>${escapeHtml(meeting.summary.substring(0, 200))}${meeting.summary.length > 200 ? '...' : ''}</p>
+          </div>
+        ` : ''}
+        
+        <div class="meeting-footer">
+          <span class="meeting-length">${(meeting.transcript_length / 1000).toFixed(1)}k characters</span>
+          ${meeting.meeting_url ? `
+            <a href="${meeting.meeting_url}" target="_blank" class="meeting-link" onclick="event.stopPropagation()">
+              View in Otter.ai →
+            </a>
+          ` : ''}
         </div>
       </div>
       
-      ${meeting.summary ? `
-        <div class="meeting-summary">
-          <p>${escapeHtml(meeting.summary.substring(0, 200))}${meeting.summary.length > 200 ? '...' : ''}</p>
-        </div>
-      ` : ''}
-      
-      <div class="meeting-footer">
-        <span class="meeting-length">${(meeting.transcript_length / 1000).toFixed(1)}k characters</span>
-        ${meeting.meeting_url ? `
-          <a href="${meeting.meeting_url}" target="_blank" class="meeting-link" onclick="event.stopPropagation()">
-            View in Otter.ai →
-          </a>
-        ` : ''}
+      <div class="meeting-card-actions">
+        <button class="meeting-delete-btn" onclick="event.stopPropagation(); deleteMeeting('${meeting.id}', '${escapeHtml(meeting.title).replace(/'/g, "\\'")}');" title="Delete meeting">
+          <span class="delete-icon">🗑️</span>
+        </button>
       </div>
     </div>
   `;
@@ -1715,6 +1723,10 @@ function showMeetingModal(meeting) {
             </a>
           ` : ''}
           <button class="collab-email-btn-cancel" onclick="closeMeetingModal()">Close</button>
+          <button class="meeting-delete-btn-modal" onclick="deleteMeeting('${meeting.id}', '${escapeHtml(meeting.title).replace(/'/g, "\\'")}');" title="Delete meeting">
+            <span class="delete-icon">🗑️</span>
+            Delete
+          </button>
         </div>
       </div>
     </div>
@@ -1727,6 +1739,45 @@ window.closeMeetingModal = function() {
   const modal = document.getElementById('meeting-transcript-modal');
   if (modal) {
     modal.remove();
+  }
+};
+
+// 🗑️ DELETE MEETING
+window.deleteMeeting = async function(meetingId, meetingTitle) {
+  // Confirm deletion
+  const confirmed = confirm(`Are you sure you want to delete this meeting?\n\n"${meetingTitle}"\n\nThis action cannot be undone.`);
+  
+  if (!confirmed) {
+    return;
+  }
+  
+  try {
+    showNotification('🗑️ Deleting meeting...', 'info');
+    
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`/api/meetings/otter/transcripts/${meetingId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      showNotification(`✅ Meeting "${meetingTitle}" deleted successfully!`, 'success');
+      
+      // Close modal if open
+      closeMeetingModal();
+      
+      // Reload meetings list
+      loadMeetings();
+    } else {
+      showNotification(`❌ ${data.error || 'Failed to delete meeting'}`, 'error');
+    }
+  } catch (error) {
+    console.error('Error deleting meeting:', error);
+    showNotification('❌ Error deleting meeting', 'error');
   }
 };
 
