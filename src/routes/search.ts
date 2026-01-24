@@ -301,9 +301,34 @@ search.get('/contact', async (c) => {
     let suggestedEmails: Array<{ email: string; source: string }> = []
     
     if (emailsWithSources.length > 0) {
-      // REAL SCRAPED EMAILS FIRST (highest priority) with source URLs
-      suggestedEmails = emailsWithSources.slice(0, 8)
-      console.log('🎯 Using REAL scraped emails with sources:', suggestedEmails)
+      // SMART EMAIL PRIORITIZATION based on common patterns
+      const emailPriority = (email: string): number => {
+        const lower = email.toLowerCase()
+        const localPart = lower.split('@')[0]
+        
+        // Priority order (lower number = higher priority)
+        if (localPart === 'contact') return 1
+        if (localPart === 'hello') return 2
+        if (localPart === 'hi') return 3
+        if (localPart === 'info') return 4
+        if (localPart === 'support') return 5
+        if (localPart === 'help') return 6
+        if (localPart === 'sales') return 7
+        if (localPart === 'business') return 8
+        if (localPart === 'partnerships') return 9
+        if (localPart === 'team') return 10
+        return 99 // Everything else (personal emails, etc.)
+      }
+      
+      // Sort emails by priority
+      const sortedEmails = [...emailsWithSources].sort((a, b) => {
+        const priorityA = emailPriority(a.email)
+        const priorityB = emailPriority(b.email)
+        return priorityA - priorityB
+      })
+      
+      suggestedEmails = sortedEmails.slice(0, 8)
+      console.log('🎯 Using REAL scraped emails (sorted by priority):', suggestedEmails)
       console.log(`✅ ${emailsWithSources.length} emails found from website scraping`)
     } else {
       // Only generate patterns if NO real emails found
