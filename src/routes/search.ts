@@ -66,9 +66,12 @@ search.get('/contact', async (c) => {
         if (websiteResponse.ok) {
           const html = await websiteResponse.text()
           
-          // Extract emails from HTML with STRICT validation
-          const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g
-          const foundEmails = html.match(emailRegex) || []
+          // Extract emails from HTML with ULTRA STRICT validation
+          // Must be: letters/numbers/dots/underscores @ domain.tld
+          // Explicitly exclude file extensions and paths
+          const emailRegex = /\b([A-Za-z0-9][A-Za-z0-9._-]*[A-Za-z0-9])@([A-Za-z0-9][A-Za-z0-9.-]*\.[A-Za-z]{2,})\b/g
+          const matches = [...html.matchAll(emailRegex)]
+          const foundEmails = matches.map(m => m[0]) || []
           
           // Filter out false positives with STRICT rules
           const validEmails = foundEmails.filter(email => {
@@ -159,8 +162,10 @@ search.get('/contact', async (c) => {
               if (contactResponse.ok) {
                 const contactHtml = await contactResponse.text()
                 
-                // Extract more emails
-                const moreEmails = contactHtml.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g) || []
+                // Extract more emails with same strict regex
+                const emailRegex = /\b([A-Za-z0-9][A-Za-z0-9._-]*[A-Za-z0-9])@([A-Za-z0-9][A-Za-z0-9.-]*\.[A-Za-z]{2,})\b/g
+                const moreMatches = [...contactHtml.matchAll(emailRegex)]
+                const moreEmails = moreMatches.map(match => match[0]) || []
                 moreEmails.forEach(email => {
                   if (!realEmails.includes(email) && email.includes(domain.split('.')[0])) {
                     realEmails.push(email)
