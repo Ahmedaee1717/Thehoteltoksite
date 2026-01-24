@@ -721,6 +721,7 @@
       });
     }
 
+    novaState.currentInsights = insights;
     displayInsights(insights);
     setNovaMood(insights.length > 0 ? NOVA_STATES.EXCITED : NOVA_STATES.IDLE);
     
@@ -741,8 +742,24 @@
   function extractActionItemsFromMeeting(meeting) {
     const items = [];
     
-    // NEW: Extract from GPT-4 structured summary
-    if (meeting.summary && meeting.summary.includes('Action Items:')) {
+    // PRIORITY 1: Extract from "Goal:" format (simple summaries)
+    if (meeting.summary && meeting.summary.includes('Goal:')) {
+      const goalMatch = meeting.summary.match(/Goal:\s*(.+?)(?:\.|$)/i);
+      if (goalMatch) {
+        const goalText = goalMatch[1].trim();
+        if (goalText.length > 10) {
+          items.push({
+            text: goalText,
+            meetingId: meeting.id,
+            meetingTitle: meeting.title
+          });
+          console.log(`🎯 Found Goal: "${goalText}"`);
+        }
+      }
+    }
+    
+    // PRIORITY 2: Extract from GPT-4 structured summary
+    if (items.length === 0 && meeting.summary && meeting.summary.includes('Action Items:')) {
       const actionSection = meeting.summary.split('Action Items:')[1]?.split('Next Steps:')[0];
       if (actionSection) {
         const lines = actionSection.split('\n');
@@ -935,8 +952,9 @@
       return;
     }
 
-    grid.innerHTML = insights.map(insight => `
-      <div class="insight-card priority-${insight.priority}" data-type="${insight.type}">
+    grid.innerHTML = insights.map((insight, index) => `
+      <div class="insight-card priority-${insight.priority}" data-type="${insight.type}" data-index="${index}">
+        <button class="insight-dismiss-btn" data-index="${index}" title="Dismiss">✕</button>
         <div class="card-glow"></div>
         <div class="insight-icon">${insight.icon}</div>
         <h4 class="insight-title">${insight.title}</h4>
@@ -944,6 +962,15 @@
         <button class="insight-action-btn">Take Action →</button>
       </div>
     `).join('');
+
+    // Add dismiss handlers
+    grid.querySelectorAll('.insight-dismiss-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Don't trigger card click
+        const index = parseInt(btn.dataset.index);
+        dismissInsight(index);
+      });
+    });
 
     // Add click handlers
     grid.querySelectorAll('.insight-card').forEach((card, index) => {
@@ -953,6 +980,15 @@
         }
       });
     });
+  }
+
+  // Dismiss an insight
+  function dismissInsight(index) {
+    if (novaState.currentInsights && novaState.currentInsights[index]) {
+      novaState.currentInsights.splice(index, 1);
+      displayInsights(novaState.currentInsights);
+      novaSpeak('Insight dismissed! ✓');
+    }
   }
 
   // Show action items

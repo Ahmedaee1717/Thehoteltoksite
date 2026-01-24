@@ -497,6 +497,32 @@
   transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
+.insight-dismiss-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.insight-dismiss-btn:hover {
+  background: rgba(239, 68, 68, 0.3);
+  border-color: var(--nova-danger);
+  color: var(--nova-danger);
+  transform: rotate(90deg) scale(1.1);
+}
+
 .insight-card:hover {
   background: rgba(255, 255, 255, 0.08);
   transform: translateX(8px) scale(1.02);
