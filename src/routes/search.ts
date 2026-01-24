@@ -54,7 +54,7 @@ search.get('/contact', async (c) => {
         
         // Try DuckDuckGo first
         const ddgUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(companyName + ' official website')}&format=json&no_html=1`
-        const ddgResponse = await fetch(ddgUrl, { signal: AbortSignal.timeout(5000) })
+        const ddgResponse = await fetch(ddgUrl)
         const ddgData = await ddgResponse.json()
         
         if (ddgData.AbstractURL) {
@@ -76,8 +76,7 @@ search.get('/contact', async (c) => {
           for (const testDomain of possibleDomains.slice(0, 2)) { // Only first 2 to avoid timeout
             try {
               const testResponse = await fetch(`https://${testDomain}`, {
-                method: 'HEAD',
-                signal: AbortSignal.timeout(3000)
+                method: 'HEAD'
               })
               
               if (testResponse.ok) {
