@@ -29,7 +29,10 @@ search.get('/contact', async (c) => {
       'raw summit': 'rawsummit.io',
       'getstake': 'getstake.com',
       'get stake': 'getstake.com',
-      'stake dubai': 'getstake.com'
+      'stake dubai': 'getstake.com',
+      'solulab': 'solulab.com',
+      'solulab development': 'solulab.com',
+      'solulab development services': 'solulab.com'
     }
     
     // Check if query matches a known company
