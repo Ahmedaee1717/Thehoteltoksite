@@ -634,15 +634,47 @@
     for (const meeting of novaState.data.meetings.slice(0, 3)) {
       const items = extractActionItemsFromMeeting(meeting);
       if (items.length > 0) {
-        insights.push({
-          type: 'action-items',
-          priority: 'high',
-          icon: '⚡',
-          title: `Found ${items.length} action items in "${meeting.title}"`,
-          subtitle: items.slice(0, 2).map(i => `• ${i.text.substring(0, 50)}...`).join('\n'),
-          action: () => showActionItems(items, meeting),
-          data: { items, meeting }
+        // Check for EMAIL tasks specifically
+        const emailTasks = items.filter(item => {
+          const text = item.text.toLowerCase();
+          return text.includes('email') || text.includes('contact') || text.includes('reach out');
         });
+        
+        if (emailTasks.length > 0) {
+          // CREATE SMART EMAIL TASK INSIGHT
+          emailTasks.forEach(emailTask => {
+            const recipientMatch = emailTask.text.match(/email\s+([A-Za-z]+)|contact\s+([A-Za-z]+)|reach out to\s+([A-Za-z]+)/i);
+            const recipient = recipientMatch ? (recipientMatch[1] || recipientMatch[2] || recipientMatch[3]) : 'recipient';
+            
+            insights.push({
+              type: 'smart-email-task',
+              priority: 'urgent',
+              icon: '📨',
+              title: `🔥 Need to email ${recipient}!`,
+              subtitle: `From: "${meeting.title}"\n💡 I can help you find ${recipient}'s contact and draft the email`,
+              action: () => handleSmartEmailTask(emailTask, meeting, recipient),
+              data: { task: emailTask, meeting, recipient }
+            });
+          });
+        }
+        
+        // Show other action items
+        const otherItems = items.filter(item => {
+          const text = item.text.toLowerCase();
+          return !(text.includes('email') || text.includes('contact') || text.includes('reach out'));
+        });
+        
+        if (otherItems.length > 0) {
+          insights.push({
+            type: 'action-items',
+            priority: 'high',
+            icon: '⚡',
+            title: `Found ${otherItems.length} action items in "${meeting.title}"`,
+            subtitle: otherItems.slice(0, 2).map(i => `• ${i.text.substring(0, 50)}...`).join('\n'),
+            action: () => showActionItems(otherItems, meeting),
+            data: { items: otherItems, meeting }
+          });
+        }
       }
     }
 
@@ -762,6 +794,107 @@
     return items.slice(0, 10);
   }
 
+  // INTELLIGENT ACTION ITEM ENRICHMENT
+  async function enrichActionItem(item, meeting) {
+    const text = item.text.toLowerCase();
+    const enriched = {
+      title: item.text,
+      description: `From meeting: ${meeting.title}\n\n`,
+      priority: 'medium',
+      isEmailTask: false,
+      recipient: null,
+      suggestions: []
+    };
+
+    // Detect EMAIL tasks
+    const emailPatterns = ['email', 'send email', 'reach out', 'contact', 'write to'];
+    const isEmail = emailPatterns.some(p => text.includes(p));
+    
+    if (isEmail) {
+      enriched.isEmailTask = true;
+      enriched.priority = 'high';
+      
+      // Extract recipient name
+      const nameMatch = text.match(/email\s+([A-Za-z]+)|contact\s+([A-Za-z]+)|reach out to\s+([A-Za-z]+)/i);
+      if (nameMatch) {
+        enriched.recipient = nameMatch[1] || nameMatch[2] || nameMatch[3];
+        enriched.title = `Email ${enriched.recipient}`;
+        enriched.description += `\n🎯 RECIPIENT: ${enriched.recipient}`;
+        enriched.description += `\n\n💡 NOVA SUGGESTIONS:`;
+        enriched.description += `\n• Search for ${enriched.recipient}'s contact info`;
+        enriched.description += `\n• Draft email based on meeting context`;
+        enriched.description += `\n• Review and send`;
+        
+        console.log(`🔍 Detected email task to: ${enriched.recipient}`);
+      }
+    }
+
+    // Detect MEETING/CALL tasks
+    const meetingPatterns = ['schedule', 'arrange meeting', 'set up call', 'book time'];
+    const isMeeting = meetingPatterns.some(p => text.includes(p));
+    
+    if (isMeeting) {
+      enriched.priority = 'high';
+      enriched.description += `\n📅 This is a scheduling task`;
+      enriched.suggestions.push('Check calendar availability');
+      enriched.suggestions.push('Send meeting invite');
+    }
+
+    // Detect RESEARCH tasks
+    const researchPatterns = ['find out', 'research', 'look up', 'investigate', 'check'];
+    const isResearch = researchPatterns.some(p => text.includes(p));
+    
+    if (isResearch) {
+      enriched.description += `\n🔍 This requires research`;
+      enriched.suggestions.push('Search online for information');
+      enriched.suggestions.push('Compile findings');
+    }
+
+    return enriched;
+  }
+
+  // SMART EMAIL TASK HANDLER
+  async function handleSmartEmailTask(task, meeting, recipient) {
+    setNovaMood(NOVA_STATES.WORKING);
+    novaSpeak(`Let me help you email ${recipient}! 🚀`);
+    
+    switchTab('chat');
+    addChatMessage('nova', `🔍 Analyzing task: "${task.text}"`);
+    addChatMessage('nova', `📧 I'll help you with 3 things:\n1. Find ${recipient}'s contact info\n2. Draft an email based on the meeting\n3. Create the task for you`);
+    
+    // Create the task
+    try {
+      const token = localStorage.getItem('auth_token');
+      const enriched = await enrichActionItem(task, meeting);
+      
+      const res = await fetch(`${API_BASE}/tasks`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          title: `Email ${recipient}`,
+          description: `${enriched.description}\n\nMeeting context:\n${meeting.summary?.substring(0, 500)}`,
+          priority: 'high'
+        })
+      });
+      
+      if (res.ok) {
+        setNovaMood(NOVA_STATES.CELEBRATING);
+        addChatMessage('nova', `✅ Task created: "Email ${recipient}"`);
+        addChatMessage('nova', `\n💡 NEXT STEPS:\n• Search: "${recipient} contact email"\n• Check: Company website, LinkedIn, Twitter\n• Draft: Professional introduction referencing the meeting`);
+        addChatMessage('nova', `\n📝 SUGGESTED EMAIL OPENER:\n"Hi ${recipient},\n\nFollowing up from our recent discussion about [meeting topic]. I wanted to reach out regarding..."`);
+        
+        await loadTasks(token);
+      }
+    } catch (error) {
+      console.error('Error creating smart task:', error);
+      setNovaMood(NOVA_STATES.CONCERNED);
+      addChatMessage('nova', '❌ Had trouble creating the task');
+    }
+  }
+
   // Find commitments in email
   function findCommitments(email) {
     const body = (email.body || '').toLowerCase();
@@ -859,6 +992,9 @@
         let created = 0;
         
         for (const item of items) {
+          // INTELLIGENT PROCESSING
+          const enrichedItem = await enrichActionItem(item, meeting);
+          
           const res = await fetch(`${API_BASE}/tasks`, {
             method: 'POST',
             headers: {
@@ -866,9 +1002,9 @@
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              title: item.text.substring(0, 200),
-              description: `From meeting: ${meeting.title}`,
-              priority: 'medium',
+              title: enrichedItem.title || item.text.substring(0, 200),
+              description: enrichedItem.description || `From meeting: ${meeting.title}`,
+              priority: enrichedItem.priority || 'medium',
               category: 'meeting-action',
               meetingId: meeting.id
             })
@@ -876,6 +1012,11 @@
           
           if (res.ok) {
             created++;
+            
+            // If it's an email task, show draft email suggestion
+            if (enrichedItem.isEmailTask && enrichedItem.recipient) {
+              novaSpeak(`💡 I can help you draft an email to ${enrichedItem.recipient}! Want me to?`);
+            }
           }
         }
         
