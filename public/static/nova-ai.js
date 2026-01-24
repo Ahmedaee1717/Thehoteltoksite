@@ -826,7 +826,7 @@
       suggestions: []
     };
 
-    // Detect EMAIL tasks
+    // Detect EMAIL tasks with smart extraction
     const emailPatterns = ['email', 'send email', 'reach out', 'contact', 'write to'];
     const isEmail = emailPatterns.some(p => text.includes(p));
     
@@ -834,19 +834,61 @@
       enriched.isEmailTask = true;
       enriched.priority = 'high';
       
-      // Extract recipient name
-      const nameMatch = text.match(/email\s+([A-Za-z]+)|contact\s+([A-Za-z]+)|reach out to\s+([A-Za-z]+)/i);
-      if (nameMatch) {
-        enriched.recipient = nameMatch[1] || nameMatch[2] || nameMatch[3];
-        enriched.title = `Email ${enriched.recipient}`;
-        enriched.description += `\n🎯 RECIPIENT: ${enriched.recipient}`;
-        enriched.description += `\n\n💡 NOVA SUGGESTIONS:`;
-        enriched.description += `\n• Search for ${enriched.recipient}'s contact info`;
-        enriched.description += `\n• Draft email based on meeting context`;
-        enriched.description += `\n• Review and send`;
-        
-        console.log(`🔍 Detected email task to: ${enriched.recipient}`);
+      // SMART EXTRACTION: Handle different formats
+      let recipient = null;
+      let companyDomain = null;
+      let emailContext = item.text; // Full context
+      
+      // 1. Extract domain/company (e.g., "rawsummit.io", "example.com")
+      const domainMatch = text.match(/(?:@|at\s+)?([a-z0-9-]+\.[a-z]{2,})/i);
+      if (domainMatch) {
+        companyDomain = domainMatch[1];
+        recipient = companyDomain.split('.')[0]; // Use company name as recipient
+        console.log(`🌐 Found domain: ${companyDomain}`);
       }
+      
+      // 2. Extract person name (but avoid common words like "at", "someone")
+      if (!recipient) {
+        const skipWords = ['at', 'someone', 'them', 'him', 'her', 'the', 'a', 'an', 'and', 'or'];
+        const nameMatch = text.match(/(?:email|contact|reach out to)\s+(?:someone\s+at\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/);
+        if (nameMatch && !skipWords.includes(nameMatch[1].toLowerCase())) {
+          recipient = nameMatch[1];
+          console.log(`👤 Found person: ${recipient}`);
+        }
+      }
+      
+      // 3. Fallback: Use company/domain name
+      if (!recipient && companyDomain) {
+        recipient = companyDomain;
+      }
+      
+      // 4. Last resort: Generic "contact"
+      if (!recipient) {
+        recipient = 'contact';
+        console.log(`⚠️ No specific recipient found, using generic`);
+      }
+      
+      enriched.recipient = recipient;
+      enriched.companyDomain = companyDomain;
+      enriched.title = companyDomain ? `Email ${companyDomain}` : `Email ${recipient}`;
+      enriched.description += `\n🎯 TARGET: ${companyDomain || recipient}`;
+      enriched.description += `\n📝 CONTEXT: ${emailContext}`;
+      
+      // Add meeting summary/goal for better context
+      if (meeting.summary) {
+        const goalMatch = meeting.summary.match(/Goal:\s*(.+?)(?:\n|$)/i);
+        if (goalMatch) {
+          enriched.description += `\n\n🎯 MEETING GOAL:\n${goalMatch[1]}`;
+        }
+      }
+      
+      enriched.description += `\n\n💡 NOVA SUGGESTIONS:`;
+      enriched.description += `\n• Search for ${companyDomain || recipient} contact info`;
+      enriched.description += `\n• Find the right person to email`;
+      enriched.description += `\n• Draft email with meeting context`;
+      enriched.description += `\n• Review and send`;
+      
+      console.log(`🔍 Detected email task to: ${recipient} (${companyDomain || 'no domain'})`);
     }
 
     // Detect MEETING/CALL tasks
@@ -876,19 +918,27 @@
   // SMART EMAIL TASK HANDLER WITH REAL WEB SEARCH
   async function handleSmartEmailTask(task, meeting, recipient) {
     setNovaMood(NOVA_STATES.WORKING);
-    novaSpeak(`Let me actually search for ${recipient}'s contact info! 🚀`);
+    
+    // Extract company domain if present
+    const companyDomain = task.text.match(/([a-z0-9-]+\.[a-z]{2,})/i)?.[1] || null;
+    const searchTarget = companyDomain || recipient;
+    
+    novaSpeak(`Let me find contact info for ${searchTarget}! 🚀`);
     
     switchTab('chat');
     addChatMessage('nova', `🔍 Analyzing task: "${task.text}"`);
-    addChatMessage('nova', `⚡ I'm doing 3 things for you:\n1. Searching the web for ${recipient}'s real contact info\n2. Drafting an email based on your meeting\n3. Creating a task with everything`);
+    addChatMessage('nova', `⚡ I'm doing 3 things for you:\n1. Searching for ${searchTarget} contact info\n2. Drafting an email based on your meeting goal\n3. Creating a task with everything`);
     
     // ACTUALLY SEARCH THE WEB using our backend API
     try {
       setNovaMood(NOVA_STATES.THINKING);
       
       // Search for contact info via our API
-      const searchQuery = `${recipient} contact email address`;
-      addChatMessage('nova', `🌐 Searching the web for "${recipient}"...`);
+      const searchQuery = companyDomain 
+        ? `${companyDomain} contact email address`
+        : `${recipient} contact email address`;
+      
+      addChatMessage('nova', `🌐 Searching the web for "${searchTarget}"...`);
       
       const searchRes = await fetch(`${API_BASE}/search/contact?q=${encodeURIComponent(searchQuery)}`);
       const contactInfo = await searchRes.json();
@@ -903,14 +953,34 @@
       // Display found contact info with REAL email suggestions
       const emailList = contactInfo.suggestedEmails?.length > 0 
         ? contactInfo.suggestedEmails.slice(0, 4).join('\n• ')
-        : `hello@${recipient.toLowerCase()}.com\n• contact@${recipient.toLowerCase()}.com`;
+        : companyDomain 
+          ? `hello@${companyDomain}\n• contact@${companyDomain}\n• info@${companyDomain}`
+          : `hello@${recipient.toLowerCase()}.com\n• contact@${recipient.toLowerCase()}.com`;
       
-      addChatMessage('nova', `✅ **FOUND CONTACT INFO FOR ${recipient.toUpperCase()}:**\n\n📧 **Suggested Email Addresses:**\n• ${emailList}\n\n🔍 **WHERE TO FIND MORE:**\n• [Search Google](${contactInfo.searchLinks.google})\n• [LinkedIn](${contactInfo.searchLinks.linkedin})\n• [Twitter/X](${contactInfo.searchLinks.twitter})\n• [Hunter.io Email Finder](${contactInfo.searchLinks.hunter})\n• [RocketReach](${contactInfo.searchLinks.rocketreach})`);
+      addChatMessage('nova', `✅ **FOUND CONTACT INFO FOR ${searchTarget.toUpperCase()}:**\n\n📧 **Suggested Email Addresses:**\n• ${emailList}\n\n🔍 **WHERE TO FIND MORE:**\n• [Search Google](${contactInfo.searchLinks.google})\n• [LinkedIn](${contactInfo.searchLinks.linkedin})\n• [Hunter.io Email Finder](${contactInfo.searchLinks.hunter})`);
       
       
-      // Draft email based on meeting context
+      // Draft email based on ACTUAL meeting goal/context
+      const meetingGoal = meeting.summary?.match(/Goal:\s*(.+?)(?:\n|$)/i)?.[1] || task.text;
       const meetingTopic = meeting.title || 'recent discussion';
-      const emailDraft = `Subject: Following up from our ${meetingTopic}\n\nHi ${recipient},\n\nI hope this email finds you well. I wanted to follow up from our ${meetingTopic}.\n\n${meeting.summary ? 'We discussed:\n' + meeting.summary.substring(0, 200) + '...\n\n' : ''}I'd like to continue our conversation and explore how we can move forward.\n\nWould you be available for a brief call this week?\n\nLooking forward to hearing from you.\n\nBest regards`;
+      
+      // Smart email drafting based on context
+      let emailDraft = `Subject: Partnership Opportunity - ${meetingTopic}\n\n`;
+      emailDraft += `Hi there,\n\n`;
+      emailDraft += `I hope this email finds you well. `;
+      
+      // Add context from the goal
+      if (meetingGoal.toLowerCase().includes('feature') || meetingGoal.toLowerCase().includes('event')) {
+        emailDraft += `I'm reaching out regarding a potential partnership opportunity.\n\n`;
+        emailDraft += `${meetingGoal}\n\n`;
+        emailDraft += `We believe this could be mutually beneficial and would love to explore how we can collaborate.\n\n`;
+      } else {
+        emailDraft += `I wanted to reach out regarding: ${meetingGoal}\n\n`;
+      }
+      
+      emailDraft += `Would you be available for a brief call to discuss this further?\n\n`;
+      emailDraft += `Looking forward to hearing from you.\n\n`;
+      emailDraft += `Best regards`;
       
       addChatMessage('nova', `📝 **EMAIL DRAFT FOR YOU:**\n\n\`\`\`\n${emailDraft}\n\`\`\``);
       
@@ -918,7 +988,10 @@
       const token = localStorage.getItem('auth_token');
       const enriched = await enrichActionItem(task, meeting);
       
-      const emailsToTry = contactInfo.suggestedEmails?.slice(0, 5) || [`hello@${recipient.toLowerCase()}.com`];
+      const emailsToTry = contactInfo.suggestedEmails?.slice(0, 5) || 
+        (companyDomain 
+          ? [`hello@${companyDomain}`, `contact@${companyDomain}`, `info@${companyDomain}`]
+          : [`hello@${recipient.toLowerCase()}.com`]);
       
       const taskDescription = `${enriched.description}
 
@@ -945,15 +1018,16 @@ ${meeting.summary?.substring(0, 500)}`;
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          title: `Email ${recipient}`,
+          title: companyDomain ? `Email ${companyDomain}` : `Email ${recipient}`,
           description: taskDescription,
-          priority: 'high'
+          priority: 'high',
+          source_id: meeting.id
         })
       });
       
       if (res.ok) {
         setNovaMood(NOVA_STATES.CELEBRATING);
-        addChatMessage('nova', `✅ **DONE!** Task created with:\n• ${emailsToTry.length} potential email addresses\n• Full email draft ready to copy\n• Verification links\n• Meeting context\n\n🎯 **TRY FIRST:** ${emailsToTry[0]}`);
+        addChatMessage('nova', `✅ **DONE!** Task created with:\n• ${emailsToTry.length} potential email addresses\n• Email draft based on your meeting goal\n• Verification links\n• Full context\n\n🎯 **TRY FIRST:** ${emailsToTry[0]}`);
         
         await loadTasks(token);
         novaSpeak(`Found ${emailsToTry.length} email addresses for ${recipient}! Check the Tasks view! 🎉`);

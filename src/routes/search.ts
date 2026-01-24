@@ -73,12 +73,29 @@ search.get('/contact', async (c) => {
 
 // Helper function to generate likely email addresses
 function generateEmailSuggestions(query: string): string[] {
+  const suggestions: string[] = []
+  
+  // Check if query contains a domain (e.g., "rawsummit.io")
+  const domainMatch = query.match(/([a-z0-9-]+\.[a-z]{2,})/i)
+  
+  if (domainMatch) {
+    // We have a domain! Use it directly
+    const domain = domainMatch[1].toLowerCase()
+    
+    suggestions.push(`hello@${domain}`)
+    suggestions.push(`contact@${domain}`)
+    suggestions.push(`info@${domain}`)
+    suggestions.push(`support@${domain}`)
+    suggestions.push(`partnerships@${domain}`)
+    suggestions.push(`events@${domain}`)
+    
+    return suggestions
+  }
+  
   // Extract name/company from query
   const words = query.toLowerCase().split(' ').filter(w => 
-    !['contact', 'email', 'address', 'phone', 'info'].includes(w)
+    !['contact', 'email', 'address', 'phone', 'info', 'the', 'at'].includes(w)
   )
-  
-  const suggestions: string[] = []
   
   if (words.length > 0) {
     const mainWord = words[0]
