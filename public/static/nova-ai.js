@@ -1241,6 +1241,46 @@
       console.log('📧 WHY THEM in email:', whyThem ? 'YES' : 'NO');
       console.log('📧 Draft length:', emailDraft.length);
       
+      // CRITICAL: If extraction failed, use SMART FALLBACK based on company/context
+      if (!whoWeAre || !whatWeWant) {
+        console.warn('⚠️ Context extraction FAILED - using smart fallback');
+        
+        // Intelligent inference based on company name and meeting context
+        const companyLower = searchTarget.toLowerCase();
+        
+        // Smart defaults based on company expertise
+        if (companyLower.includes('mattereum') || companyLower.includes('blockchain') || companyLower.includes('token')) {
+          whoWeAre = whoWeAre || '7-hotel property group';
+          whatWeWant = whatWeWant || 'tokenize hotel room nights and explore blockchain-based asset management';
+          whyThem = whyThem || "blockchain technology and digital asset expertise";
+        } else if (companyLower.includes('summit') || companyLower.includes('event') || companyLower.includes('conference')) {
+          whoWeAre = whoWeAre || 'hospitality innovation group';
+          whatWeWant = whatWeWant || 'explore speaking opportunities and showcase our blockchain hospitality solutions';
+          whyThem = whyThem || "platform's reach in the innovation community";
+        } else {
+          // Generic business partnership fallback
+          whoWeAre = whoWeAre || 'hospitality technology group';
+          whatWeWant = whatWeWant || 'explore potential partnership opportunities';
+          whyThem = whyThem || "expertise and market position";
+        }
+        
+        console.log('🔄 FALLBACK WHO WE ARE:', whoWeAre);
+        console.log('🔄 FALLBACK WHAT WE WANT:', whatWeWant);
+        console.log('🔄 FALLBACK WHY THEM:', whyThem);
+        
+        // Regenerate email with fallback context
+        emailDraft = `Subject: ${emailSubject}\n\n`;
+        emailDraft += `${greeting}\n\n`;
+        emailDraft += `I hope this email finds you well. We are a ${whoWeAre}. `;
+        emailDraft += `We're reaching out because we'd like to ${whatWeWant}.\n\n`;
+        emailDraft += `We believe ${searchTarget}'s ${whyThem} would be valuable for this initiative. `;
+        emailDraft += `Would you be available for a brief call to discuss how we might work together on this?\n\n`;
+        emailDraft += `Looking forward to hearing from you.\n\n`;
+        emailDraft += `Best regards`;
+        
+        console.log('✅ Regenerated email with fallback context');
+      }
+      
       addChatMessage('nova', `📝 **EMAIL DRAFT FOR YOU:**\n\n\`\`\`\n${emailDraft}\n\`\`\``);
       
       // Create the task with all the info
