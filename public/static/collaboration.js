@@ -2464,6 +2464,196 @@ async function loadTasks() {
   }
 }
 
+// 🎨 SMART TASK CARD RENDERER - Beautiful, organized display
+function renderSmartTaskCard(task) {
+  const desc = task.description || '';
+  
+  // Check if this is a NOVA-generated smart task with structured data
+  const isSmartTask = desc.includes('📧 FOUND EMAIL ADDRESSES') || 
+                      desc.includes('📝 EMAIL DRAFT') ||
+                      desc.includes('🔍 VERIFY CONTACT INFO');
+  
+  if (isSmartTask) {
+    return renderSmartEmailTask(task);
+  }
+  
+  // Regular task rendering
+  return `
+    <div class="task-card ${task.status}" data-id="${task.id}">
+      <div class="task-header">
+        <input 
+          type="checkbox" 
+          class="task-checkbox" 
+          ${task.status === 'completed' ? 'checked' : ''}
+          onchange="toggleTask(${task.id}, this.checked)"
+        />
+        <h3 class="task-title ${task.status === 'completed' ? 'completed' : ''}">${escapeHtml(task.title)}</h3>
+      </div>
+      <p class="task-description">${escapeHtml(desc)}</p>
+      <div class="task-meta">
+        <span class="priority-badge priority-${task.priority}">${task.priority}</span>
+        ${task.due_date ? `<span class="due-date">📅 ${new Date(task.due_date).toLocaleDateString()}</span>` : ''}
+        ${task.source_type === 'meeting' ? '<span class="source-badge">🎙️ From Meeting</span>' : ''}
+      </div>
+      <div class="task-actions">
+        <button class="task-btn-edit" onclick="editTask(${task.id})">Edit</button>
+        <button class="task-btn-delete" onclick="deleteTask(${task.id})">Delete</button>
+      </div>
+    </div>
+  `;
+}
+
+// 🎯 BEAUTIFUL SMART EMAIL TASK CARD
+function renderSmartEmailTask(task) {
+  const desc = task.description || '';
+  
+  // Parse structured data
+  const recipient = task.title.replace('Email ', '').trim();
+  
+  // Extract email addresses
+  const emailsMatch = desc.match(/📧 FOUND EMAIL ADDRESSES TO TRY:([\s\S]*?)(?=\n\n|📝|🌐|🔍|$)/);
+  const emails = emailsMatch ? emailsMatch[1].trim().split('\n').map(e => e.replace('• ', '').trim()).filter(e => e) : [];
+  
+  // Extract email draft
+  const draftMatch = desc.match(/📝 EMAIL DRAFT \(ready to copy\):([\s\S]*?)(?=\n\n🔍|$)/);
+  const emailDraft = draftMatch ? draftMatch[1].trim() : '';
+  
+  // Extract verification links
+  const linksMatch = desc.match(/🔍 VERIFY CONTACT INFO AT:([\s\S]*?)(?=\n\n|Meeting context|$)/);
+  const links = linksMatch ? linksMatch[1].trim().split('\n').map(l => {
+    const match = l.match(/• ([^:]+): (.+)/);
+    return match ? { name: match[1], url: match[2] } : null;
+  }).filter(l => l) : [];
+  
+  // Extract meeting context
+  const contextMatch = desc.match(/Meeting context:\n([\s\S]*?)$/);
+  const meetingContext = contextMatch ? contextMatch[1].trim().substring(0, 200) + '...' : '';
+  
+  return `
+    <div class="task-card smart-email-task ${task.status}" data-id="${task.id}">
+      <!-- Header with checkbox and title -->
+      <div class="task-header">
+        <input 
+          type="checkbox" 
+          class="task-checkbox" 
+          ${task.status === 'completed' ? 'checked' : ''}
+          onchange="toggleTask(${task.id}, this.checked)"
+        />
+        <div class="task-header-content">
+          <h3 class="task-title ${task.status === 'completed' ? 'completed' : ''}">
+            📨 ${escapeHtml(task.title)}
+          </h3>
+          <span class="smart-badge">✨ AI Assisted</span>
+        </div>
+      </div>
+      
+      <!-- Smart Email Content -->
+      <div class="smart-task-content">
+        
+        <!-- Email Addresses Section -->
+        ${emails.length > 0 ? `
+        <div class="smart-section">
+          <div class="section-header">
+            <span class="section-icon">📧</span>
+            <h4>Suggested Email Addresses</h4>
+          </div>
+          <div class="email-chips">
+            ${emails.map((email, i) => `
+              <div class="email-chip ${i === 0 ? 'primary' : ''}">
+                <span class="email-text">${escapeHtml(email)}</span>
+                <button class="copy-btn" onclick="copyToClipboard('${escapeHtml(email)}')" title="Copy email">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                </button>
+              </div>
+            `).join('')}
+          </div>
+          ${emails.length > 0 ? `<p class="hint-text">💡 Try <strong>${escapeHtml(emails[0])}</strong> first</p>` : ''}
+        </div>
+        ` : ''}
+        
+        <!-- Email Draft Section -->
+        ${emailDraft ? `
+        <div class="smart-section">
+          <div class="section-header">
+            <span class="section-icon">📝</span>
+            <h4>Email Draft</h4>
+            <button class="copy-btn-header" onclick="copyToClipboard(\`${emailDraft.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" title="Copy draft">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              Copy
+            </button>
+          </div>
+          <div class="email-draft">
+            <pre>${escapeHtml(emailDraft)}</pre>
+          </div>
+        </div>
+        ` : ''}
+        
+        <!-- Verification Links Section -->
+        ${links.length > 0 ? `
+        <div class="smart-section">
+          <div class="section-header">
+            <span class="section-icon">🔍</span>
+            <h4>Verify Contact Info</h4>
+          </div>
+          <div class="verify-links">
+            ${links.map(link => `
+              <a href="${link.url}" target="_blank" rel="noopener" class="verify-link">
+                <span class="link-icon">🔗</span>
+                <span class="link-name">${escapeHtml(link.name)}</span>
+                <span class="link-arrow">→</span>
+              </a>
+            `).join('')}
+          </div>
+        </div>
+        ` : ''}
+        
+        <!-- Meeting Context (collapsed by default) -->
+        ${meetingContext ? `
+        <div class="smart-section collapsible">
+          <details>
+            <summary>
+              <span class="section-icon">💬</span>
+              <span>Meeting Context</span>
+            </summary>
+            <p class="context-text">${escapeHtml(meetingContext)}</p>
+          </details>
+        </div>
+        ` : ''}
+        
+      </div>
+      
+      <!-- Task Meta & Actions -->
+      <div class="task-footer">
+        <div class="task-meta">
+          <span class="priority-badge priority-${task.priority}">${task.priority}</span>
+          ${task.due_date ? `<span class="due-date">📅 ${new Date(task.due_date).toLocaleDateString()}</span>` : ''}
+          ${task.source_type === 'meeting' ? '<span class="source-badge">🎙️ From Meeting</span>' : ''}
+        </div>
+        <div class="task-actions">
+          <button class="task-btn-delete" onclick="deleteTask(${task.id})">Delete</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Copy to clipboard helper
+window.copyToClipboard = async function(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showNotification('✅ Copied to clipboard!', 'success');
+  } catch (err) {
+    console.error('Copy failed:', err);
+    showNotification('❌ Copy failed', 'error');
+  }
+}
+
 function renderTasks() {
   const container = document.getElementById('tasks-list');
   const filtered = currentTaskFilter === 'all' 
@@ -2481,29 +2671,7 @@ function renderTasks() {
     return;
   }
   
-  container.innerHTML = filtered.map(task => `
-    <div class="task-card ${task.status}" data-id="${task.id}">
-      <div class="task-header">
-        <input 
-          type="checkbox" 
-          class="task-checkbox" 
-          ${task.status === 'completed' ? 'checked' : ''}
-          onchange="toggleTask(${task.id}, this.checked)"
-        />
-        <h3 class="task-title ${task.status === 'completed' ? 'completed' : ''}">${task.title}</h3>
-      </div>
-      <p class="task-description">${task.description || ''}</p>
-      <div class="task-meta">
-        <span class="priority-badge priority-${task.priority}">${task.priority}</span>
-        ${task.due_date ? `<span class="due-date">📅 ${new Date(task.due_date).toLocaleDateString()}</span>` : ''}
-        ${task.source_type === 'meeting' ? '<span class="source-badge">🎙️ From Meeting</span>' : ''}
-      </div>
-      <div class="task-actions">
-        <button class="task-btn-edit" onclick="editTask(${task.id})">Edit</button>
-        <button class="task-btn-delete" onclick="deleteTask(${task.id})">Delete</button>
-      </div>
-    </div>
-  `).join('');
+  container.innerHTML = filtered.map(task => renderSmartTaskCard(task)).join('');
 }
 
 async function toggleTask(id, completed) {

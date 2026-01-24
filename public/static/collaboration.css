@@ -2557,3 +2557,327 @@ trix-toolbar .trix-button.trix-active {
 .filter-btn:hover:not(.active) {
   background: rgba(255, 255, 255, 0.1);
 }
+
+/* ✨ SMART EMAIL TASK CARDS - Beautiful & Organized */
+
+.smart-email-task {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.smart-email-task::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
+}
+
+.smart-email-task .task-header-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.smart-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(10px);
+}
+
+.smart-task-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 16px;
+}
+
+/* Section Styling */
+.smart-section {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+}
+
+.section-icon {
+  font-size: 18px;
+}
+
+.section-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #2d3748;
+  flex: 1;
+}
+
+.copy-btn-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.copy-btn-header:hover {
+  background: #5568d3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+/* Email Chips */
+.email-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.email-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #f7fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.email-chip.primary {
+  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+  border-color: #667eea;
+  font-weight: 600;
+}
+
+.email-chip:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+  transform: translateX(4px);
+}
+
+.email-text {
+  color: #2d3748;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.email-chip.primary .email-text {
+  color: #667eea;
+}
+
+.copy-btn {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  background: transparent;
+  border: none;
+  color: #718096;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.copy-btn:hover {
+  background: #667eea;
+  color: white;
+  transform: scale(1.1);
+}
+
+.hint-text {
+  margin: 8px 0 0 0;
+  font-size: 12px;
+  color: #718096;
+  font-style: italic;
+}
+
+/* Email Draft */
+.email-draft {
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.email-draft pre {
+  margin: 0;
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #2d3748;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Verification Links */
+.verify-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.verify-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #2d3748;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.verify-link:hover {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.link-icon {
+  font-size: 14px;
+}
+
+.link-name {
+  flex: 1;
+}
+
+.link-arrow {
+  opacity: 0.5;
+  transition: transform 0.2s;
+}
+
+.verify-link:hover .link-arrow {
+  transform: translateX(4px);
+  opacity: 1;
+}
+
+/* Collapsible Meeting Context */
+.smart-section.collapsible details {
+  cursor: pointer;
+}
+
+.smart-section.collapsible summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #2d3748;
+  list-style: none;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.smart-section.collapsible summary::-webkit-details-marker {
+  display: none;
+}
+
+.smart-section.collapsible summary:hover {
+  background: #f7fafc;
+}
+
+.context-text {
+  margin: 12px 0 0 0;
+  padding: 12px;
+  background: #f7fafc;
+  border-left: 3px solid #667eea;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #4a5568;
+}
+
+/* Task Footer */
+.task-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Override task meta colors for smart tasks */
+.smart-email-task .priority-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.smart-email-task .due-date,
+.smart-email-task .source-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Smooth scrollbar for email draft */
+.email-draft::-webkit-scrollbar {
+  width: 6px;
+}
+
+.email-draft::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 3px;
+}
+
+.email-draft::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 3px;
+}
+
+.email-draft::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .verify-links {
+    grid-template-columns: 1fr;
+  }
+  
+  .email-draft {
+    max-height: 200px;
+  }
+  
+  .task-footer {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+}
