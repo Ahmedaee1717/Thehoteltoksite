@@ -475,17 +475,7 @@ export const loginPage = `<!DOCTYPE html>
                     throw new Error(data.error || 'Login failed');
                 }
 
-                // Store user info in localStorage for the email app
-                if (data.user) {
-                    localStorage.setItem('userEmail', data.user.email);
-                    localStorage.setItem('userId', data.user.id);
-                    localStorage.setItem('displayName', data.user.displayName);
-                }
-                if (data.token) {
-                    localStorage.setItem('auth_token', data.token);
-                }
-
-                // Redirect to mail on success
+                // Redirect to mail on success (user info fetched from /api/auth/me)
                 window.location.href = '/mail';
 
             } catch (error) {
