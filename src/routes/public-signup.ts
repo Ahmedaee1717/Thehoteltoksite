@@ -17,9 +17,9 @@ const ALLOWED_DOMAINS = ['mattereum.com', 'sharmdreamsgroup.com', 'virgingates.c
 // Step 1: Request signup - sends verification email
 publicSignup.post('/request', async (c) => {
   try {
-    const { username, fullName, company } = await c.req.json()
+    const { username, fullName, company, verificationEmail } = await c.req.json()
     
-    if (!username || !fullName || !company) {
+    if (!username || !fullName || !company || !verificationEmail) {
       return c.json({ error: 'Missing required fields' }, 400)
     }
 
@@ -31,8 +31,15 @@ publicSignup.post('/request', async (c) => {
       }, 403)
     }
 
+    // Validate that verification email matches the company domain
+    const verificationEmailDomain = verificationEmail.toLowerCase().split('@')[1]
+    if (verificationEmailDomain !== domain) {
+      return c.json({ 
+        error: `Verification email must be from ${domain}` 
+      }, 400)
+    }
+
     const email = `${username}@investaycapital.com`
-    const verificationEmail = `${username.split('@')[0] || username}@${domain}`
 
     // Check if email already exists
     const existing = await c.env.DB.prepare(

@@ -3,7 +3,7 @@ export const signupPage = `<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up - iNVESTAY CAPITAL</title>
+    <title>Sign Up - Investay Capital</title>
     <style>
         * {
             margin: 0;
@@ -12,390 +12,221 @@ export const signupPage = `<!DOCTYPE html>
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
             background: #000000;
             color: #ffffff;
             min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        /* Animated background */
-        .bg-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            overflow: hidden;
-        }
-
-        .particle {
-            position: absolute;
-            width: 2px;
-            height: 2px;
-            background: #D4AF37;
-            border-radius: 50%;
-            animation: float 20s infinite;
-            opacity: 0.3;
-        }
-
-        @keyframes float {
-            0%, 100% {
-                transform: translate(0, 0);
-                opacity: 0;
-            }
-            10% {
-                opacity: 0.3;
-            }
-            90% {
-                opacity: 0.3;
-            }
-            100% {
-                transform: translate(var(--tx), var(--ty));
-                opacity: 0;
-            }
-        }
-
-        .glow-orb {
-            position: absolute;
-            width: 600px;
-            height: 600px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, transparent 70%);
-            filter: blur(60px);
-            animation: orbit 30s infinite ease-in-out;
-        }
-
-        .orb-1 {
-            top: -200px;
-            left: -200px;
-            animation-delay: 0s;
-        }
-
-        .orb-2 {
-            bottom: -200px;
-            right: -200px;
-            animation-delay: 15s;
-        }
-
-        @keyframes orbit {
-            0%, 100% {
-                transform: translate(0, 0) scale(1);
-            }
-            50% {
-                transform: translate(100px, 100px) scale(1.2);
-            }
-        }
-
-        /* Container */
-        .container {
-            position: relative;
-            z-index: 1;
-            max-width: 550px;
-            margin: 0 auto;
-            padding: 40px 20px;
-            min-height: 100vh;
             display: flex;
-            flex-direction: column;
+            align-items: center;
             justify-content: center;
+            padding: 20px;
         }
 
-        /* Logo */
-        .logo-container {
-            text-align: center;
-            margin-bottom: 50px;
-            animation: fadeInDown 1s ease-out;
+        .container {
+            width: 100%;
+            max-width: 440px;
         }
 
         .logo {
-            width: 300px;
-            height: auto;
-            filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.6));
-            animation: logoGlow 3s ease-in-out infinite;
-        }
-
-        @keyframes logoGlow {
-            0%, 100% {
-                filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.6));
-            }
-            50% {
-                filter: drop-shadow(0 0 50px rgba(212, 175, 55, 0.9));
-            }
-        }
-
-        @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Card */
-        .card {
-            background: linear-gradient(135deg, rgba(26, 26, 26, 0.95) 0%, rgba(0, 0, 0, 0.95) 100%);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(212, 175, 55, 0.2);
-            border-radius: 24px;
-            padding: 50px 40px;
-            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8),
-                        0 0 60px rgba(212, 175, 55, 0.1);
-            position: relative;
-            overflow: hidden;
-            animation: fadeInUp 1s ease-out 0.3s backwards;
-        }
-
-        .card::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(212, 175, 55, 0.05), transparent);
-            animation: shine 3s infinite;
-        }
-
-        @keyframes shine {
-            0% {
-                transform: translateX(-100%) translateY(-100%) rotate(45deg);
-            }
-            100% {
-                transform: translateX(100%) translateY(100%) rotate(45deg);
-            }
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Title */
-        .title {
-            font-size: 36px;
-            font-weight: 900;
             text-align: center;
-            margin-bottom: 15px;
-            background: linear-gradient(135deg, #D4AF37 0%, #F4E5B0 50%, #D4AF37 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: 3px;
-            position: relative;
-            z-index: 1;
+            margin-bottom: 60px;
+        }
+
+        .logo img {
+            height: 40px;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: #0a0a0a;
+            border: 1px solid #1a1a1a;
+            border-radius: 4px;
+            padding: 48px;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+            color: #ffffff;
         }
 
         .subtitle {
-            text-align: center;
-            color: #999;
-            margin-bottom: 40px;
             font-size: 14px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            position: relative;
-            z-index: 1;
+            color: #666;
+            margin-bottom: 40px;
+            font-weight: 400;
         }
 
-        /* Form */
         .form-group {
-            margin-bottom: 30px;
-            position: relative;
-            z-index: 1;
+            margin-bottom: 24px;
         }
 
         .form-label {
             display: block;
-            margin-bottom: 12px;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: #D4AF37;
-            font-weight: 600;
-        }
-
-        .input-wrapper {
-            position: relative;
-        }
-
-        .input-icon {
-            position: absolute;
-            left: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 18px;
-            color: #D4AF37;
-            z-index: 2;
+            font-size: 13px;
+            font-weight: 500;
+            color: #999;
+            margin-bottom: 8px;
         }
 
         .form-input {
             width: 100%;
-            padding: 18px 20px 18px 55px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 2px solid rgba(212, 175, 55, 0.2);
-            border-radius: 12px;
+            padding: 12px 14px;
+            background: #000000;
+            border: 1px solid #2a2a2a;
+            border-radius: 3px;
             color: #ffffff;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            position: relative;
-            z-index: 1;
+            font-size: 15px;
+            transition: border-color 0.2s;
+            font-family: inherit;
         }
 
         .form-input:focus {
             outline: none;
             border-color: #D4AF37;
-            background: rgba(0, 0, 0, 0.7);
-            box-shadow: 0 0 30px rgba(212, 175, 55, 0.2);
         }
 
-        .email-domain {
+        .form-input::placeholder {
+            color: #444;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-suffix {
             position: absolute;
-            right: 20px;
+            right: 14px;
             top: 50%;
             transform: translateY(-50%);
             color: #666;
-            font-size: 16px;
+            font-size: 15px;
             pointer-events: none;
-            z-index: 2;
         }
 
-        select.form-input {
-            padding-right: 40px;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23D4AF37' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 20px center;
-            cursor: pointer;
-        }
-
-        /* Button */
         .btn-primary {
             width: 100%;
-            padding: 20px;
-            background: linear-gradient(135deg, #D4AF37 0%, #F4E5B0 50%, #D4AF37 100%);
+            padding: 13px;
+            background: #D4AF37;
             border: none;
-            border-radius: 12px;
+            border-radius: 3px;
             color: #000000;
-            font-size: 16px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 3px;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 10px 40px rgba(212, 175, 55, 0.4);
+            transition: background 0.2s;
+            font-family: inherit;
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 50px rgba(212, 175, 55, 0.6);
+            background: #E5C047;
         }
 
         .btn-primary:active {
-            transform: translateY(0);
+            background: #C39F27;
         }
 
         .btn-primary:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
-            transform: none;
         }
 
-        /* Verification Step */
-        .verification-step {
+        .error-message {
+            background: #1a0505;
+            border: 1px solid #3a1010;
+            border-radius: 3px;
+            padding: 12px;
+            margin-bottom: 24px;
+            color: #ff6b6b;
+            font-size: 13px;
             display: none;
         }
 
-        .verification-step.active {
+        .error-message.active {
             display: block;
         }
 
-        .code-input-group {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            margin: 40px 0;
-        }
-
-        .code-digit {
-            width: 60px;
-            height: 70px;
-            text-align: center;
-            font-size: 32px;
-            font-weight: 700;
-            background: rgba(0, 0, 0, 0.5);
-            border: 2px solid rgba(212, 175, 55, 0.3);
-            border-radius: 12px;
-            color: #ffffff;
-            transition: all 0.3s ease;
-        }
-
-        .code-digit:focus {
-            outline: none;
-            border-color: #D4AF37;
-            background: rgba(0, 0, 0, 0.7);
-            box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
-            transform: scale(1.05);
-        }
-
-        .timer {
-            text-align: center;
-            margin: 20px 0;
-            font-size: 14px;
-            color: #999;
-        }
-
-        .timer.warning {
-            color: #ff6b6b;
-            font-weight: 600;
-        }
-
-        /* Success message */
         .success-message {
+            background: #051a05;
+            border: 1px solid #103a10;
+            border-radius: 3px;
+            padding: 12px;
+            margin-bottom: 24px;
+            color: #6bff6b;
+            font-size: 13px;
             display: none;
-            text-align: center;
-            padding: 40px;
         }
 
         .success-message.active {
             display: block;
         }
 
-        .success-icon {
-            font-size: 80px;
-            margin-bottom: 20px;
-            animation: successPop 0.6s ease-out;
+        .step {
+            display: none;
         }
 
-        @keyframes successPop {
-            0% {
-                transform: scale(0);
-                opacity: 0;
-            }
-            50% {
-                transform: scale(1.2);
-            }
-            100% {
-                transform: scale(1);
-                opacity: 1;
-            }
+        .step.active {
+            display: block;
         }
 
-        /* Loading */
+        .code-inputs {
+            display: flex;
+            gap: 12px;
+            margin: 32px 0;
+            justify-content: center;
+        }
+
+        .code-digit {
+            width: 52px;
+            height: 60px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 600;
+            background: #000000;
+            border: 1px solid #2a2a2a;
+            border-radius: 3px;
+            color: #ffffff;
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+        }
+
+        .code-digit:focus {
+            outline: none;
+            border-color: #D4AF37;
+        }
+
+        .timer {
+            text-align: center;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 32px;
+        }
+
+        .timer.warning {
+            color: #ff6b6b;
+        }
+
+        .link {
+            color: #D4AF37;
+            text-decoration: none;
+            font-size: 13px;
+        }
+
+        .link:hover {
+            text-decoration: underline;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-24 {
+            margin-top: 24px;
+        }
+
         .loading {
             display: none;
-            text-align: center;
-            padding: 20px;
         }
 
         .loading.active {
@@ -403,162 +234,106 @@ export const signupPage = `<!DOCTYPE html>
         }
 
         .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(212, 175, 55, 0.2);
+            width: 20px;
+            height: 20px;
+            border: 2px solid #2a2a2a;
             border-top-color: #D4AF37;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
         }
 
         @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+            to { transform: rotate(360deg); }
         }
 
-        /* Error message */
-        .error-message {
-            background: rgba(255, 107, 107, 0.1);
-            border: 1px solid rgba(255, 107, 107, 0.3);
-            border-radius: 12px;
-            padding: 15px 20px;
-            margin: 20px 0;
-            color: #ff6b6b;
-            font-size: 14px;
-            display: none;
+        .success-icon {
             text-align: center;
+            font-size: 48px;
+            margin-bottom: 24px;
         }
 
-        .error-message.active {
-            display: block;
-            animation: shake 0.5s ease-in-out;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
-        }
-
-        /* Info box */
-        .info-box {
-            background: rgba(212, 175, 55, 0.1);
-            border: 1px solid rgba(212, 175, 55, 0.3);
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 30px;
-            font-size: 13px;
-            color: #ccc;
-            line-height: 1.6;
-        }
-
-        .info-box strong {
-            color: #D4AF37;
-        }
-
-        /* Footer */
         .footer {
             text-align: center;
-            margin-top: 40px;
+            margin-top: 32px;
+            font-size: 13px;
             color: #666;
-            font-size: 12px;
         }
 
-        .footer a {
-            color: #D4AF37;
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        .footer a:hover {
-            color: #F4E5B0;
+        @media (max-width: 480px) {
+            .card {
+                padding: 32px 24px;
+            }
+            
+            .code-digit {
+                width: 44px;
+                height: 52px;
+                font-size: 20px;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Animated background -->
-    <div class="bg-animation">
-        <div class="glow-orb orb-1"></div>
-        <div class="glow-orb orb-2"></div>
-    </div>
-
     <div class="container">
-        <!-- Logo -->
-        <div class="logo-container">
-            <img src="https://www.investaycapital.com/static/investay-logo-full.png" alt="iNVESTAY CAPITAL" class="logo">
+        <div class="logo">
+            <img src="https://www.investaycapital.com/static/investay-logo-full.png" alt="Investay Capital">
         </div>
 
-        <!-- Signup Card -->
         <div class="card">
-            <div id="step1" class="signup-step active">
-                <h1 class="title">JOIN US</h1>
-                <p class="subtitle">Enterprise Email Platform</p>
+            <!-- Step 1: Request Verification -->
+            <div id="step1" class="step active">
+                <h1 class="title">Create Account</h1>
+                <p class="subtitle">Enterprise email platform</p>
 
                 <div class="error-message" id="error1"></div>
 
                 <form id="signupForm">
                     <div class="form-group">
-                        <label class="form-label">👤 Full Name</label>
-                        <div class="input-wrapper">
-                            <span class="input-icon">✨</span>
-                            <input type="text" class="form-input" id="fullName" placeholder="John Smith" required>
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-input" id="fullName" placeholder="John Smith" required autocomplete="name">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Company Email</label>
+                        <input type="email" class="form-input" id="companyEmail" placeholder="john@virgingates.com" required autocomplete="email">
+                        <div style="margin-top: 8px; font-size: 12px; color: #666;">
+                            Must be @mattereum.com, @sharmdreamsgroup.com, or @virgingates.com
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">📧 Email Username</label>
-                        <div class="input-wrapper">
-                            <span class="input-icon">@</span>
-                            <input type="text" class="form-input" id="username" placeholder="your.name" required>
-                            <span class="email-domain">@investaycapital.com</span>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">🏢 Company</label>
-                        <div class="input-wrapper">
-                            <span class="input-icon">🏛️</span>
-                            <select class="form-input" id="company" required>
-                                <option value="">Select your company</option>
-                                <option value="mattereum.com">Mattereum</option>
-                                <option value="sharmdreamsgroup.com">Sharm Dreams Group</option>
-                                <option value="virgingates.com">Virgin Gates</option>
-                            </select>
+                        <label class="form-label">Choose Username</label>
+                        <div class="input-group">
+                            <input type="text" class="form-input" id="username" placeholder="john.smith" required style="padding-right: 160px;" autocomplete="username">
+                            <span class="input-suffix">@investaycapital.com</span>
                         </div>
                     </div>
 
                     <div class="loading" id="loading1">
-                        <div class="spinner"></div>
-                        <p style="margin-top: 15px; color: #999;">Sending verification code...</p>
+                        <div style="text-align: center; padding: 12px; color: #666; font-size: 14px;">
+                            <div class="spinner"></div>
+                            Sending verification code...
+                        </div>
                     </div>
 
                     <button type="submit" class="btn-primary" id="submitBtn1">
-                        Request Verification Code
+                        Continue
                     </button>
                 </form>
-
-                <div class="info-box">
-                    <strong>🔒 Secure Signup Process</strong><br>
-                    Only employees of <strong>Mattereum</strong>, <strong>Sharm Dreams Group</strong>, and <strong>Virgin Gates</strong> can register.<br>
-                    A verification code will be sent to your company email.
-                </div>
             </div>
 
-            <!-- Step 2: Verification -->
-            <div id="step2" class="verification-step">
-                <h1 class="title">VERIFY</h1>
-                <p class="subtitle" id="verificationEmail">Check your email</p>
+            <!-- Step 2: Verify Code -->
+            <div id="step2" class="step">
+                <h1 class="title">Verify Email</h1>
+                <p class="subtitle" id="verificationEmailText">Enter the code sent to your email</p>
 
                 <div class="error-message" id="error2"></div>
-
-                <p style="text-align: center; color: #999; margin-bottom: 30px; font-size: 14px;">
-                    Enter the 6-digit code we sent to your email
-                </p>
+                <div class="success-message" id="success2"></div>
 
                 <form id="verifyForm">
-                    <div class="code-input-group">
+                    <div class="code-inputs">
                         <input type="text" class="code-digit" maxlength="1" id="digit1" data-index="0">
                         <input type="text" class="code-digit" maxlength="1" id="digit2" data-index="1">
                         <input type="text" class="code-digit" maxlength="1" id="digit3" data-index="2">
@@ -568,77 +343,55 @@ export const signupPage = `<!DOCTYPE html>
                     </div>
 
                     <div class="timer" id="timer">
-                        ⏱ Code expires in <span id="countdown">10:00</span>
+                        Code expires in <span id="countdown">10:00</span>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">🔐 Create Password</label>
-                        <div class="input-wrapper">
-                            <span class="input-icon">🔒</span>
-                            <input type="password" class="form-input" id="password" placeholder="Min. 8 characters" required minlength="8">
-                        </div>
+                        <label class="form-label">Create Password</label>
+                        <input type="password" class="form-input" id="password" placeholder="Minimum 8 characters" required minlength="8" autocomplete="new-password">
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">🔐 Confirm Password</label>
-                        <div class="input-wrapper">
-                            <span class="input-icon">✓</span>
-                            <input type="password" class="form-input" id="confirmPassword" placeholder="Re-enter password" required>
-                        </div>
+                        <label class="form-label">Confirm Password</label>
+                        <input type="password" class="form-input" id="confirmPassword" placeholder="Re-enter password" required autocomplete="new-password">
                     </div>
 
                     <div class="loading" id="loading2">
-                        <div class="spinner"></div>
-                        <p style="margin-top: 15px; color: #999;">Creating your account...</p>
+                        <div style="text-align: center; padding: 12px; color: #666; font-size: 14px;">
+                            <div class="spinner"></div>
+                            Creating account...
+                        </div>
                     </div>
 
                     <button type="submit" class="btn-primary" id="submitBtn2">
-                        Complete Signup
+                        Create Account
                     </button>
 
-                    <p style="text-align: center; margin-top: 20px;">
-                        <a href="#" id="resendCode" style="color: #D4AF37; text-decoration: none; font-size: 14px;">
-                            Didn't receive code? Resend
-                        </a>
-                    </p>
+                    <div class="text-center mt-24">
+                        <a href="#" class="link" id="resendCode">Resend code</a>
+                    </div>
                 </form>
             </div>
 
             <!-- Step 3: Success -->
-            <div id="step3" class="success-message">
-                <div class="success-icon">🎉</div>
-                <h1 class="title">WELCOME!</h1>
-                <p style="color: #999; margin: 20px 0 40px 0; font-size: 16px;">
-                    Your account has been created successfully
-                </p>
-                <a href="/mail" class="btn-primary" style="display: inline-block; text-decoration: none;">
-                    Access Your Inbox
+            <div id="step3" class="step">
+                <div class="success-icon">✓</div>
+                <h1 class="title text-center">Account Created</h1>
+                <p class="subtitle text-center">Welcome to Investay Capital</p>
+                
+                <a href="/mail" class="btn-primary" style="display: block; text-align: center; text-decoration: none; margin-top: 32px;">
+                    Go to Inbox
                 </a>
             </div>
         </div>
 
         <div class="footer">
-            <p>© 2026 iNVESTAY CAPITAL. All rights reserved.</p>
-            <p style="margin-top: 10px;">
-                Already have an account? <a href="/login">Sign in</a>
-            </p>
+            Already have an account? <a href="/login" class="link">Sign in</a>
         </div>
     </div>
 
     <script>
-        // Create animated particles
-        const bgAnimation = document.querySelector('.bg-animation');
-        for (let i = 0; i < 50; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'particle';
-            particle.style.left = Math.random() * 100 + '%';
-            particle.style.top = Math.random() * 100 + '%';
-            particle.style.setProperty('--tx', (Math.random() - 0.5) * 200 + 'px');
-            particle.style.setProperty('--ty', (Math.random() - 0.5) * 200 + 'px');
-            particle.style.animationDelay = Math.random() * 20 + 's';
-            bgAnimation.appendChild(particle);
-        }
-
+        const ALLOWED_DOMAINS = ['mattereum.com', 'sharmdreamsgroup.com', 'virgingates.com'];
         let signupData = {};
         let countdownInterval;
 
@@ -647,11 +400,18 @@ export const signupPage = `<!DOCTYPE html>
             e.preventDefault();
 
             const fullName = document.getElementById('fullName').value.trim();
+            const companyEmail = document.getElementById('companyEmail').value.trim().toLowerCase();
             const username = document.getElementById('username').value.trim().toLowerCase();
-            const company = document.getElementById('company').value;
 
-            if (!fullName || !username || !company) {
+            if (!fullName || !companyEmail || !username) {
                 showError('error1', 'Please fill in all fields');
+                return;
+            }
+
+            // Extract domain from company email
+            const emailDomain = companyEmail.split('@')[1];
+            if (!emailDomain || !ALLOWED_DOMAINS.includes(emailDomain)) {
+                showError('error1', 'Email must be from mattereum.com, sharmdreamsgroup.com, or virgingates.com');
                 return;
             }
 
@@ -661,7 +421,12 @@ export const signupPage = `<!DOCTYPE html>
                 return;
             }
 
-            signupData = { fullName, username, company };
+            signupData = {
+                fullName,
+                username,
+                company: emailDomain,
+                verificationEmail: companyEmail
+            };
 
             document.getElementById('loading1').classList.add('active');
             document.getElementById('submitBtn1').disabled = true;
@@ -680,14 +445,11 @@ export const signupPage = `<!DOCTYPE html>
                 }
 
                 // Move to verification step
-                document.getElementById('verificationEmail').textContent = \`Code sent to \${data.verificationEmail}\`;
+                document.getElementById('verificationEmailText').textContent = \`Code sent to \${companyEmail}\`;
                 document.getElementById('step1').classList.remove('active');
                 document.getElementById('step2').classList.add('active');
                 
-                // Start countdown
                 startCountdown(data.expiresIn || 600);
-                
-                // Focus first digit
                 document.getElementById('digit1').focus();
 
             } catch (error) {
@@ -702,7 +464,8 @@ export const signupPage = `<!DOCTYPE html>
         const codeDigits = document.querySelectorAll('.code-digit');
         codeDigits.forEach((digit, index) => {
             digit.addEventListener('input', (e) => {
-                if (e.target.value.length === 1 && index < 5) {
+                const value = e.target.value;
+                if (value && index < 5) {
                     codeDigits[index + 1].focus();
                 }
             });
@@ -770,7 +533,6 @@ export const signupPage = `<!DOCTYPE html>
                     throw new Error(data.error || 'Verification failed');
                 }
 
-                // Show success
                 clearInterval(countdownInterval);
                 document.getElementById('step2').classList.remove('active');
                 document.getElementById('step3').classList.add('active');
@@ -800,17 +562,15 @@ export const signupPage = `<!DOCTYPE html>
                     throw new Error(data.error || 'Failed to resend code');
                 }
 
-                // Reset countdown
                 clearInterval(countdownInterval);
                 startCountdown(data.expiresIn || 600);
                 
-                // Clear code inputs
                 codeDigits.forEach(d => d.value = '');
                 document.getElementById('digit1').focus();
 
-                showError('error2', '✅ New code sent!');
+                showSuccess('success2', 'New code sent to your email');
                 setTimeout(() => {
-                    document.getElementById('error2').classList.remove('active');
+                    document.getElementById('success2').classList.remove('active');
                 }, 3000);
 
             } catch (error) {
@@ -836,7 +596,7 @@ export const signupPage = `<!DOCTYPE html>
 
                 if (timeLeft <= 0) {
                     clearInterval(countdownInterval);
-                    showError('error2', 'Verification code expired. Please request a new one.');
+                    showError('error2', 'Code expired. Please request a new one.');
                 }
             }, 1000);
         }
@@ -848,6 +608,12 @@ export const signupPage = `<!DOCTYPE html>
             setTimeout(() => {
                 errorEl.classList.remove('active');
             }, 5000);
+        }
+
+        function showSuccess(elementId, message) {
+            const successEl = document.getElementById(elementId);
+            successEl.textContent = message;
+            successEl.classList.add('active');
         }
     </script>
 </body>
