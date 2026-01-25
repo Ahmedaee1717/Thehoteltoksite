@@ -1729,6 +1729,25 @@ window.closeMeetingModal = function() {
   }
 };
 
+// 🔍 EXTRACT SPEAKERS FROM TRANSCRIPT
+function extractSpeakersFromTranscript(transcript) {
+  if (!transcript) return [];
+  
+  // Match pattern: "Speaker Name 0:00" or "Speaker Name 0:00:00"
+  const speakerPattern = /^([^\d\n]+?)\s+\d+:\d+(?::\d+)?$/gm;
+  const speakers = new Set();
+  let match;
+  
+  while ((match = speakerPattern.exec(transcript)) !== null) {
+    const name = match[1].trim();
+    if (name && name.length > 1 && name.length < 50) {
+      speakers.add(name);
+    }
+  }
+  
+  return Array.from(speakers).map(name => ({ name }));
+}
+
 // ✏️ EDIT SPEAKERS
 window.editSpeakers = async function(meetingId) {
   try {
@@ -1754,52 +1773,76 @@ window.editSpeakers = async function(meetingId) {
       }
     }
     
+    // If no speakers or empty, extract from transcript
+    if (speakers.length === 0 || speakers.every(s => !s.name || s.name === 'Unknown')) {
+      const extractedSpeakers = extractSpeakersFromTranscript(meeting.transcript_text);
+      if (extractedSpeakers.length > 0) {
+        speakers = extractedSpeakers;
+      }
+    }
+    
     // Build editing UI
     const editModalHtml = `
       <div id="edit-speakers-modal" class="collab-email-modal" onclick="if(event.target === this) closeEditSpeakersModal()">
         <div class="collab-email-modal-content" style="max-width: 600px;">
           <div class="collab-email-modal-header">
-            <h3>✏️ Edit Speaker Names</h3>
+            <h3>✏️ Edit Unknown Speakers Only</h3>
             <button class="collab-email-modal-close" onclick="closeEditSpeakersModal()">×</button>
           </div>
           
           <div class="collab-email-modal-body">
             <p style="margin-bottom: 20px; color: #666;">
-              💡 <strong>Tip:</strong> Identify unknown speakers by editing their names below. 
-              Changes will update the meeting transcript.
+              💡 <strong>Tip:</strong> Identified speakers are locked. You can only edit "Unknown" speakers. 
+              The system auto-detects speakers from the transcript.
             </p>
             
             <div id="speakers-edit-list">
               ${speakers.map((speaker, idx) => {
                 const speakerName = speaker.name || speaker.speaker_name || 'Unknown';
-                const isUnknown = speakerName === 'Unknown';
+                const isUnknown = speakerName === 'Unknown' || speakerName.includes('Unknown');
                 return `
                   <div class="speaker-edit-row" data-speaker-index="${idx}">
                     <span class="speaker-number">Speaker ${idx + 1}:</span>
-                    <input 
-                      type="text" 
-                      class="speaker-name-input ${isUnknown ? 'unknown-speaker' : ''}" 
-                      value="${escapeHtml(speakerName)}"
-                      placeholder="Enter speaker name..."
-                      data-original="${escapeHtml(speakerName)}"
-                    />
-                    ${isUnknown ? '<span class="unknown-indicator">❓ Unknown - Please Identify</span>' : ''}
+                    ${isUnknown ? `
+                      <input 
+                        type="text" 
+                        class="speaker-name-input unknown-speaker" 
+                        value="${escapeHtml(speakerName)}"
+                        placeholder="Enter speaker name..."
+                        data-original="${escapeHtml(speakerName)}"
+                      />
+                      <span class="unknown-indicator">❓ Unknown - Please Identify</span>
+                    ` : `
+                      <input 
+                        type="text" 
+                        class="speaker-name-input locked-speaker" 
+                        value="${escapeHtml(speakerName)}"
+                        readonly
+                        disabled
+                        title="This speaker was auto-detected and is locked"
+                      />
+                      <span class="locked-indicator">🔒 Auto-Detected</span>
+                    `}
                   </div>
                 `;
               }).join('')}
             </div>
             
-            <button onclick="addNewSpeaker()" class="add-speaker-btn" style="margin-top: 15px;">
-              ➕ Add Another Speaker
-            </button>
+            ${speakers.filter(s => (s.name || 'Unknown') === 'Unknown').length > 0 ? '' : `
+              <div style="margin-top: 15px; padding: 12px; background: rgba(67, 233, 123, 0.1); border-radius: 8px; color: #43e97b;">
+                ✅ All speakers identified! No unknown speakers to edit.
+              </div>
+            `}
           </div>
           
           <div class="collab-email-modal-footer">
-            <button class="collab-email-btn-cancel" onclick="closeEditSpeakersModal()">Cancel</button>
-            <button class="collab-email-btn-send" onclick="saveSpeakers(${meetingId})">
-              <span class="email-btn-icon">💾</span>
-              Save Changes
-            </button>
+            <button class="collab-email-btn-cancel" onclick="closeEditSpeakersModal()">Close</button>
+            ${speakers.filter(s => (s.name || 'Unknown') === 'Unknown' || (s.name || '').includes('Unknown')).length > 0 ? `
+              <button class="collab-email-btn-send" onclick="saveSpeakers(${meetingId})">
+                <span class="email-btn-icon">💾</span>
+                Save Changes
+              </button>
+            ` : ''}
           </div>
         </div>
       </div>
@@ -1819,37 +1862,20 @@ window.closeEditSpeakersModal = function() {
   }
 };
 
-window.addNewSpeaker = function() {
-  const list = document.getElementById('speakers-edit-list');
-  const currentCount = list.querySelectorAll('.speaker-edit-row').length;
-  
-  const newRow = `
-    <div class="speaker-edit-row" data-speaker-index="${currentCount}">
-      <span class="speaker-number">Speaker ${currentCount + 1}:</span>
-      <input 
-        type="text" 
-        class="speaker-name-input" 
-        value=""
-        placeholder="Enter speaker name..."
-      />
-    </div>
-  `;
-  
-  list.insertAdjacentHTML('beforeend', newRow);
-};
-
 window.saveSpeakers = async function(meetingId) {
   try {
-    // Collect all speaker names
-    const inputs = document.querySelectorAll('#speakers-edit-list .speaker-name-input');
-    const speakers = Array.from(inputs)
-      .map(input => ({
-        name: input.value.trim()
-      }))
-      .filter(s => s.name); // Remove empty names
+    // Collect all speaker names (only non-disabled inputs)
+    const inputs = document.querySelectorAll('#speakers-edit-list .speaker-name-input:not([disabled])');
+    const allRows = document.querySelectorAll('#speakers-edit-list .speaker-edit-row');
+    
+    const speakers = Array.from(allRows).map((row, idx) => {
+      const input = row.querySelector('.speaker-name-input');
+      const name = input.value.trim();
+      return { name: name || 'Unknown' };
+    }).filter(s => s.name);
     
     if (speakers.length === 0) {
-      showNotification('⚠️ Please enter at least one speaker name', 'warning');
+      showNotification('⚠️ No speakers found', 'warning');
       return;
     }
     

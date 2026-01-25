@@ -1010,14 +1010,40 @@ meetings.post('/otter/transcripts', async (c) => {
     const wordCount = transcript_text.split(/\s+/).length
     const durationSeconds = Math.ceil((wordCount / 150) * 60)
     
-    // Try to extract speakers from transcript
-    let speakers = ''
-    const speakersMatch = transcript_text.match(/SPEAKERS\s*[:\n]+(.*?)(?=\n\n|TRANSCRIPT|$)/is)
-    if (speakersMatch) {
-      speakers = speakersMatch[1].trim()
-    } else if (owner_name && owner_name !== 'Unknown') {
-      speakers = owner_name
+    // Auto-extract speakers from transcript format: "Speaker Name 0:00"
+    const extractSpeakers = (text: string): string => {
+      const speakerPattern = /^([^\d\n]+?)\s+\d+:\d+(?::\d+)?$/gm
+      const speakersSet = new Set<string>()
+      let match
+      
+      while ((match = speakerPattern.exec(text)) !== null) {
+        const name = match[1].trim()
+        if (name && name.length > 1 && name.length < 50) {
+          speakersSet.add(name)
+        }
+      }
+      
+      if (speakersSet.size > 0) {
+        const speakersArray = Array.from(speakersSet).map(name => ({ name }))
+        return JSON.stringify(speakersArray)
+      }
+      
+      // Fallback: check for SPEAKERS section
+      const speakersMatch = text.match(/SPEAKERS\s*[:\n]+(.*?)(?=\n\n|TRANSCRIPT|$)/is)
+      if (speakersMatch) {
+        const names = speakersMatch[1].trim().split(/,\s*/)
+        return JSON.stringify(names.map(name => ({ name: name.trim() })))
+      }
+      
+      // Last fallback: owner_name
+      if (owner_name && owner_name !== 'Unknown') {
+        return JSON.stringify([{ name: owner_name }])
+      }
+      
+      return JSON.stringify([{ name: 'Unknown' }])
     }
+    
+    const speakers = extractSpeakers(transcript_text)
     
     // Insert into database (id is auto-increment INTEGER)
     const result = await c.env.DB.prepare(`
