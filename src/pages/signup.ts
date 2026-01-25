@@ -34,7 +34,22 @@ export const signupPage = `<!DOCTYPE html>
 
         .logo img {
             height: 40px;
-            opacity: 0.9;
+            opacity: 1;
+            background: #000000;
+            padding: 8px 16px;
+            border-radius: 2px;
+            animation: logoFade 2s ease-in-out infinite;
+        }
+
+        @keyframes logoFade {
+            0%, 100% {
+                opacity: 0.85;
+                transform: translateY(0px);
+            }
+            50% {
+                opacity: 1;
+                transform: translateY(-2px);
+            }
         }
 
         .card {
@@ -42,6 +57,18 @@ export const signupPage = `<!DOCTYPE html>
             border: 1px solid #1a1a1a;
             border-radius: 4px;
             padding: 48px;
+            animation: cardFadeIn 0.6s ease-out;
+        }
+
+        @keyframes cardFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .title {
@@ -116,16 +143,36 @@ export const signupPage = `<!DOCTYPE html>
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.2s ease;
             font-family: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
         }
 
         .btn-primary:hover {
             background: #E5C047;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
         }
 
         .btn-primary:active {
             background: #C39F27;
+            transform: translateY(0);
         }
 
         .btn-primary:disabled {
