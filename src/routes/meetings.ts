@@ -1010,16 +1010,37 @@ meetings.post('/otter/transcripts', async (c) => {
     const wordCount = transcript_text.split(/\s+/).length
     const durationSeconds = Math.ceil((wordCount / 150) * 60)
     
-    // Auto-extract speakers from transcript format: "Speaker Name 0:00"
+    // Auto-extract speakers from transcript format: "Speaker Name 0:00" OR "Speaker Name (Role):"
     const extractSpeakers = (text: string): string => {
-      const speakerPattern = /^([^\d\n]+?)\s+\d+:\d+(?::\d+)?$/gm
       const speakersSet = new Set<string>()
+      
+      // Pattern 1: "Speaker Name 0:00" or "Speaker Name 0:00:00"
+      const timestampPattern = /^([^\d\n]+?)\s+\d+:\d+(?::\d+)?$/gm
       let match
       
-      while ((match = speakerPattern.exec(text)) !== null) {
+      while ((match = timestampPattern.exec(text)) !== null) {
         const name = match[1].trim()
-        if (name && name.length > 1 && name.length < 50) {
-          speakersSet.add(name)
+        if (name && name.length > 1 && name.length < 100) {
+          // Remove role/title in parentheses if present
+          const cleanName = name.replace(/\s*\([^)]+\)\s*:?$/, '').trim()
+          if (cleanName.length > 1) {
+            speakersSet.add(cleanName)
+          }
+        }
+      }
+      
+      // Pattern 2: "Speaker Name (Role):" or "Speaker Name:"
+      const colonPattern = /^([A-Z][^\n:]+?)(?:\s*\([^)]+\))?\s*:/gm
+      
+      while ((match = colonPattern.exec(text)) !== null) {
+        const name = match[1].trim()
+        if (name && name.length > 1 && name.length < 100) {
+          // Remove role/title in parentheses if present
+          const cleanName = name.replace(/\s*\([^)]+\)\s*$/, '').trim()
+          // Exclude common headers
+          if (cleanName.length > 1 && !cleanName.match(/^(SPEAKERS?|TRANSCRIPT|SUMMARY|NOTE|MEETING)/i)) {
+            speakersSet.add(cleanName)
+          }
         }
       }
       

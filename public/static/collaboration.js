@@ -1733,15 +1733,34 @@ window.closeMeetingModal = function() {
 function extractSpeakersFromTranscript(transcript) {
   if (!transcript) return [];
   
-  // Match pattern: "Speaker Name 0:00" or "Speaker Name 0:00:00"
-  const speakerPattern = /^([^\d\n]+?)\s+\d+:\d+(?::\d+)?$/gm;
   const speakers = new Set();
+  
+  // Pattern 1: "Speaker Name 0:00" or "Speaker Name 0:00:00"
+  const timestampPattern = /^([^\d\n]+?)\s+\d+:\d+(?::\d+)?$/gm;
   let match;
   
-  while ((match = speakerPattern.exec(transcript)) !== null) {
+  while ((match = timestampPattern.exec(transcript)) !== null) {
     const name = match[1].trim();
-    if (name && name.length > 1 && name.length < 50) {
-      speakers.add(name);
+    if (name && name.length > 1 && name.length < 100) {
+      // Remove role/title in parentheses if present
+      const cleanName = name.replace(/\s*\([^)]+\)\s*:?$/, '').trim();
+      if (cleanName.length > 1) {
+        speakers.add(cleanName);
+      }
+    }
+  }
+  
+  // Pattern 2: "Speaker Name (Role):" or "Speaker Name:"
+  const colonPattern = /^([A-Z][^\n:]+?)(?:\s*\([^)]+\))?\s*:/gm;
+  
+  while ((match = colonPattern.exec(transcript)) !== null) {
+    const name = match[1].trim();
+    if (name && name.length > 1 && name.length < 100) {
+      // Remove role/title in parentheses if present
+      const cleanName = name.replace(/\s*\([^)]+\)\s*$/, '').trim();
+      if (cleanName.length > 1 && !cleanName.match(/^(SPEAKERS?|TRANSCRIPT|SUMMARY|NOTE|MEETING)/i)) {
+        speakers.add(cleanName);
+      }
     }
   }
   
