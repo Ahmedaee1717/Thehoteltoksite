@@ -1358,7 +1358,8 @@
       
       addChatMessage('nova', `📝 **EMAIL DRAFT FOR YOU:**\n\n\`\`\`\n${emailDraft}\n\`\`\``);
       
-      // Create the task with all the info      const enriched = await enrichActionItem(task, meeting);
+      // Create the task with all the info
+      const enriched = await enrichActionItem(task, meeting);
       
       // Extract email addresses (handle both old and new format)
       let emailsToTry = [];
@@ -1438,7 +1439,7 @@ ${meeting.summary?.substring(0, 500)}`;
         
         addChatMessage('nova', `✅ **DONE!** Task created with:\n• ${emailsToTry.length} potential email addresses WITH SOURCE URLS\n• Email draft based on your meeting goal\n• Verification links\n• Full context\n\n🎯 **TRY FIRST:** ${firstEmailText}\n📍 **Found at:** ${firstEmailSource}`);
         
-        await loadTasks(token);
+        await loadTasks();
         novaSpeak(`Found ${emailsToTry.length} email addresses for ${recipient}! Check the Tasks view! 🎉`);
       }
     } catch (error) {
@@ -1649,7 +1650,7 @@ ${meeting.summary?.substring(0, 500)}`;
         }
         
         // Reload tasks
-        await loadTasks(token);
+        await loadTasks();
         
         setNovaMood(NOVA_STATES.CELEBRATING);
         novaSpeak(`Done! Created ${created} tasks with full context! 🎉`);
@@ -1696,7 +1697,7 @@ ${meeting.summary?.substring(0, 500)}`;
             btn.style.opacity = '0.5';
             
             // Reload tasks
-            await loadTasks(token);
+            await loadTasks();
           } else {
             throw new Error('Failed to create task');
           }
