@@ -1,26 +1,44 @@
 import { Hono } from 'hono'
 import type { CloudflareBindings } from '../types/cloudflare'
+import { getCookie } from 'hono/cookie'
+import { verifyToken } from '../lib/auth'
 
 const tasks = new Hono<{ Bindings: CloudflareBindings }>()
+
+// Helper function to get user email from cookie
+async function getUserEmailFromCookie(c: any): Promise<string | null> {
+  try {
+    const token = getCookie(c, 'auth_token')
+    
+    if (!token) {
+      console.log('❌ No auth_token cookie found in tasks')
+      return null
+    }
+    
+    const secret = c.env.JWT_SECRET || 'default-secret-change-in-production'
+    const payload = await verifyToken(token, secret)
+    
+    if (!payload || !payload.email) {
+      console.log('❌ Tasks token verification failed')
+      return null
+    }
+    
+    console.log('✅ Tasks auth successful for:', payload.email)
+    return payload.email
+  } catch (error) {
+    console.error('Error extracting email from cookie in tasks:', error)
+    return null
+  }
+}
 
 // ===== TASK MANAGEMENT =====
 
 // Get all tasks for user
 tasks.get('/', async (c) => {
-  // Get auth token from header
-  const authHeader = c.req.header('Authorization')
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const userEmail = await getUserEmailFromCookie(c)
+  
+  if (!userEmail) {
     return c.json({ error: 'Unauthorized' }, 401)
-  }
-
-  // Decode JWT to get user email
-  const token = authHeader.replace('Bearer ', '')
-  let userEmail = 'admin@investaycapital.com'
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    userEmail = payload.email || userEmail
-  } catch (e) {
-    console.error('Error decoding token:', e)
   }
 
   const status = c.req.query('status') // all, pending, in_progress, completed
@@ -89,20 +107,10 @@ tasks.post('/from-email', async (c) => {
 
 // Create standalone task
 tasks.post('/', async (c) => {
-  // Get auth token from header
-  const authHeader = c.req.header('Authorization')
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const userEmail = await getUserEmailFromCookie(c)
+  
+  if (!userEmail) {
     return c.json({ error: 'Unauthorized' }, 401)
-  }
-
-  // Decode JWT to get user email
-  const token = authHeader.replace('Bearer ', '')
-  let userEmail = 'admin@investaycapital.com'
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    userEmail = payload.email || userEmail
-  } catch (e) {
-    console.error('Error decoding token:', e)
   }
 
   try {
@@ -139,6 +147,12 @@ tasks.post('/', async (c) => {
 
 // Update task
 tasks.put('/:id', async (c) => {
+  const userEmail = await getUserEmailFromCookie(c)
+  
+  if (!userEmail) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+  
   const taskId = c.req.param('id')
   
   try {
@@ -188,6 +202,12 @@ tasks.put('/:id', async (c) => {
 
 // Delete task
 tasks.delete('/:id', async (c) => {
+  const userEmail = await getUserEmailFromCookie(c)
+  
+  if (!userEmail) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+  
   const taskId = c.req.param('id')
   
   try {
