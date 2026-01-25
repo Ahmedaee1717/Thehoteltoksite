@@ -213,6 +213,11 @@ app.get('/mail', (c) => {
   `)
 })
 
+// Signup page - serve the static HTML file
+app.get('/signup', (c) => {
+  return c.redirect('/signup.html')
+})
+
 // Login page
 app.get('/login', (c) => {
   return c.html(`
