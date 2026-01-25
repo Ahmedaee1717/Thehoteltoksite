@@ -173,6 +173,126 @@ collaborationRoutes.get('/blog-posts', async (c) => {
   }
 });
 
+// ============================================
+// EMAIL COLLABORATION - COMMENTS & STATS
+// ============================================
+
+// Get comments for an email
+collaborationRoutes.get('/comments/:emailId', async (c) => {
+  const { DB } = c.env;
+  const emailId = c.req.param('emailId');
+  const userEmail = await getUserEmailFromCookie(c);
+  
+  if (!userEmail) {
+    return c.json({ success: false, error: 'Unauthorized' }, 401);
+  }
+  
+  try {
+    const comments = await DB.prepare(`
+      SELECT 
+        id,
+        email_id,
+        thread_id,
+        author_email,
+        author_name,
+        comment_text,
+        is_resolved,
+        created_at,
+        updated_at
+      FROM email_comments
+      WHERE email_id = ?
+      ORDER BY created_at ASC
+    `).bind(emailId).all();
+    
+    return c.json({ success: true, comments: comments.results || [] });
+  } catch (error: any) {
+    console.error('Error fetching comments:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Get collaboration stats for an email
+collaborationRoutes.get('/stats/:emailId', async (c) => {
+  const { DB } = c.env;
+  const emailId = c.req.param('emailId');
+  const userEmail = await getUserEmailFromCookie(c);
+  
+  if (!userEmail) {
+    return c.json({ success: false, error: 'Unauthorized' }, 401);
+  }
+  
+  try {
+    const stats = await DB.prepare(`
+      SELECT 
+        COUNT(*) as total_comments,
+        SUM(CASE WHEN is_resolved = 0 THEN 1 ELSE 0 END) as open_comments,
+        SUM(CASE WHEN is_resolved = 1 THEN 1 ELSE 0 END) as resolved_comments
+      FROM email_comments
+      WHERE email_id = ?
+    `).bind(emailId).first();
+    
+    return c.json({ success: true, stats: stats || { total_comments: 0, open_comments: 0, resolved_comments: 0 } });
+  } catch (error: any) {
+    console.error('Error fetching stats:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Create a comment on an email
+collaborationRoutes.post('/comments', async (c) => {
+  const { DB } = c.env;
+  const userEmail = await getUserEmailFromCookie(c);
+  
+  if (!userEmail) {
+    return c.json({ success: false, error: 'Unauthorized' }, 401);
+  }
+  
+  try {
+    const { email_id, thread_id, author_name, comment_text } = await c.req.json();
+    
+    if (!email_id || !comment_text) {
+      return c.json({ success: false, error: 'email_id and comment_text are required' }, 400);
+    }
+    
+    const commentId = generateId('cmt');
+    
+    await DB.prepare(`
+      INSERT INTO email_comments (
+        id, email_id, thread_id, author_email, author_name, comment_text, is_resolved, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `).bind(commentId, email_id, thread_id || null, userEmail, author_name || userEmail, comment_text).run();
+    
+    return c.json({ success: true, commentId, message: 'Comment added successfully' });
+  } catch (error: any) {
+    console.error('Error creating comment:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Resolve a comment
+collaborationRoutes.put('/comments/:id/resolve', async (c) => {
+  const { DB } = c.env;
+  const commentId = c.req.param('id');
+  const userEmail = await getUserEmailFromCookie(c);
+  
+  if (!userEmail) {
+    return c.json({ success: false, error: 'Unauthorized' }, 401);
+  }
+  
+  try {
+    await DB.prepare(`
+      UPDATE email_comments
+      SET is_resolved = 1, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(commentId).run();
+    
+    return c.json({ success: true, message: 'Comment resolved' });
+  } catch (error: any) {
+    console.error('Error resolving comment:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
 // Get activity log for collaboration center dashboard
 collaborationRoutes.get('/activity', async (c) => {
   const { DB } = c.env;
