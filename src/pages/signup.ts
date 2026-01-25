@@ -20,11 +20,30 @@ export const signupPage = `<!DOCTYPE html>
             align-items: center;
             justify-content: center;
             padding: 20px;
+            position: relative;
+        }
+
+        /* Subtle grid overlay - shows precision, not chaos */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
         }
 
         .container {
             width: 100%;
             max-width: 440px;
+            position: relative;
+            z-index: 1;
         }
 
         .logo {
@@ -33,16 +52,43 @@ export const signupPage = `<!DOCTYPE html>
         }
 
         .logo img {
-            height: 32px;
+            height: 48px;
             width: auto;
             display: inline-block;
+            filter: brightness(1.1) contrast(1.05);
         }
 
         .card {
-            background: #0a0a0a;
-            border: 1px solid #1a1a1a;
-            border-radius: 4px;
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(40px);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            border-radius: 1px;
             padding: 48px;
+            position: relative;
+        }
+
+        /* Smart corner accents - shows craftsmanship */
+        .card::before,
+        .card::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 1px solid rgba(212, 175, 55, 0.4);
+        }
+
+        .card::before {
+            top: -1px;
+            left: -1px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .card::after {
+            bottom: -1px;
+            right: -1px;
+            border-left: none;
+            border-top: none;
         }
 
         .title {
@@ -58,39 +104,63 @@ export const signupPage = `<!DOCTYPE html>
             color: #666;
             margin-bottom: 40px;
             font-weight: 400;
+            letter-spacing: 0.5px;
         }
 
         .form-group {
             margin-bottom: 24px;
+            position: relative;
         }
 
         .form-label {
             display: block;
-            font-size: 13px;
-            font-weight: 500;
+            font-size: 11px;
+            font-weight: 600;
             color: #999;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
         }
 
         .form-input {
             width: 100%;
-            padding: 12px 14px;
-            background: #000000;
-            border: 1px solid #2a2a2a;
-            border-radius: 3px;
+            padding: 14px 16px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 1px;
             color: #ffffff;
             font-size: 15px;
-            transition: border-color 0.2s;
+            transition: all 0.2s ease;
             font-family: inherit;
+            letter-spacing: 0.3px;
         }
 
         .form-input:focus {
             outline: none;
-            border-color: #D4AF37;
+            border-color: rgba(212, 175, 55, 0.5);
+            background: rgba(0, 0, 0, 0.8);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.08);
         }
 
         .form-input::placeholder {
             color: #444;
+        }
+
+        /* Smart input state indicator */
+        .form-group::after {
+            content: '';
+            position: absolute;
+            right: 16px;
+            top: 40px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: transparent;
+            transition: background 0.2s ease;
+        }
+
+        .form-group.valid::after {
+            background: rgba(107, 255, 107, 0.8);
         }
 
         .input-group {
@@ -99,50 +169,65 @@ export const signupPage = `<!DOCTYPE html>
 
         .input-suffix {
             position: absolute;
-            right: 14px;
+            right: 16px;
             top: 50%;
             transform: translateY(-50%);
             color: #666;
-            font-size: 15px;
+            font-size: 14px;
             pointer-events: none;
+            letter-spacing: 0.3px;
+        }
+
+        .input-helper {
+            margin-top: 8px;
+            font-size: 11px;
+            color: #555;
+            letter-spacing: 0.3px;
         }
 
         .btn-primary {
             width: 100%;
-            padding: 13px;
-            background: #D4AF37;
+            padding: 15px;
+            background: linear-gradient(135deg, #D4AF37 0%, #F4E5B0 100%);
             border: none;
-            border-radius: 3px;
+            border-radius: 1px;
             color: #000000;
-            font-size: 14px;
-            font-weight: 600;
+            font-size: 13px;
+            font-weight: 700;
             cursor: pointer;
-            transition: background 0.15s ease;
+            transition: all 0.2s ease;
             font-family: inherit;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
         }
 
         .btn-primary:hover {
-            background: #E5C047;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(212, 175, 55, 0.25);
         }
 
         .btn-primary:active {
-            background: #C39F27;
+            transform: translateY(0);
         }
 
         .btn-primary:disabled {
             opacity: 0.4;
             cursor: not-allowed;
+            transform: none;
         }
 
         .error-message {
-            background: #1a0505;
-            border: 1px solid #3a1010;
-            border-radius: 3px;
-            padding: 12px;
+            background: rgba(255, 107, 107, 0.08);
+            border: 1px solid rgba(255, 107, 107, 0.2);
+            border-radius: 1px;
+            padding: 12px 16px;
             margin-bottom: 24px;
             color: #ff6b6b;
-            font-size: 13px;
+            font-size: 12px;
             display: none;
+            letter-spacing: 0.3px;
         }
 
         .error-message.active {
@@ -150,14 +235,15 @@ export const signupPage = `<!DOCTYPE html>
         }
 
         .success-message {
-            background: #051a05;
-            border: 1px solid #103a10;
-            border-radius: 3px;
-            padding: 12px;
+            background: rgba(107, 255, 107, 0.08);
+            border: 1px solid rgba(107, 255, 107, 0.2);
+            border-radius: 1px;
+            padding: 12px 16px;
             margin-bottom: 24px;
             color: #6bff6b;
-            font-size: 13px;
+            font-size: 12px;
             display: none;
+            letter-spacing: 0.3px;
         }
 
         .success-message.active {
@@ -181,27 +267,33 @@ export const signupPage = `<!DOCTYPE html>
 
         .code-digit {
             width: 52px;
-            height: 60px;
+            height: 64px;
             text-align: center;
-            font-size: 24px;
+            font-size: 28px;
             font-weight: 600;
-            background: #000000;
-            border: 1px solid #2a2a2a;
-            border-radius: 3px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 1px;
             color: #ffffff;
             font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+            letter-spacing: 2px;
+            transition: all 0.2s ease;
         }
 
         .code-digit:focus {
             outline: none;
-            border-color: #D4AF37;
+            border-color: rgba(212, 175, 55, 0.5);
+            background: rgba(0, 0, 0, 0.8);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.08);
         }
 
         .timer {
             text-align: center;
-            font-size: 13px;
+            font-size: 12px;
             color: #666;
             margin-bottom: 32px;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            letter-spacing: 1px;
         }
 
         .timer.warning {
@@ -211,11 +303,13 @@ export const signupPage = `<!DOCTYPE html>
         .link {
             color: #D4AF37;
             text-decoration: none;
-            font-size: 13px;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+            transition: color 0.2s ease;
         }
 
         .link:hover {
-            text-decoration: underline;
+            color: #F4E5B0;
         }
 
         .text-center {
@@ -235,12 +329,12 @@ export const signupPage = `<!DOCTYPE html>
         }
 
         .spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid #2a2a2a;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(212, 175, 55, 0.2);
             border-top-color: #D4AF37;
             border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+            animation: spin 0.7s linear infinite;
             display: inline-block;
             vertical-align: middle;
             margin-right: 8px;
@@ -252,15 +346,58 @@ export const signupPage = `<!DOCTYPE html>
 
         .success-icon {
             text-align: center;
-            font-size: 48px;
+            font-size: 64px;
             margin-bottom: 24px;
+            line-height: 1;
         }
 
         .footer {
             text-align: center;
-            margin-top: 32px;
-            font-size: 13px;
-            color: #666;
+            margin-top: 40px;
+            font-size: 12px;
+            color: #555;
+            letter-spacing: 0.5px;
+        }
+
+        /* Smart password strength indicator */
+        .password-strength {
+            height: 3px;
+            background: rgba(255, 255, 255, 0.05);
+            margin-top: 8px;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .password-strength-bar {
+            height: 100%;
+            width: 0%;
+            background: #666;
+            transition: all 0.3s ease;
+        }
+
+        .password-strength-bar.weak {
+            width: 33%;
+            background: #ff6b6b;
+        }
+
+        .password-strength-bar.medium {
+            width: 66%;
+            background: #D4AF37;
+        }
+
+        .password-strength-bar.strong {
+            width: 100%;
+            background: #6bff6b;
+        }
+
+        /* Smart character counter */
+        .char-counter {
+            position: absolute;
+            right: 16px;
+            top: 8px;
+            font-size: 10px;
+            color: #555;
+            font-family: 'SF Mono', monospace;
         }
 
         @media (max-width: 480px) {
@@ -270,8 +407,8 @@ export const signupPage = `<!DOCTYPE html>
             
             .code-digit {
                 width: 44px;
-                height: 52px;
-                font-size: 20px;
+                height: 56px;
+                font-size: 24px;
             }
         }
     </style>
@@ -291,20 +428,20 @@ export const signupPage = `<!DOCTYPE html>
                 <div class="error-message" id="error1"></div>
 
                 <form id="signupForm">
-                    <div class="form-group">
+                    <div class="form-group" id="nameGroup">
                         <label class="form-label">Full Name</label>
                         <input type="text" class="form-input" id="fullName" placeholder="John Smith" required autocomplete="name">
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group" id="emailGroup">
                         <label class="form-label">Company Email</label>
                         <input type="email" class="form-input" id="companyEmail" placeholder="john@virgingates.com" required autocomplete="email">
-                        <div style="margin-top: 8px; font-size: 12px; color: #666;">
+                        <div class="input-helper">
                             Must be @mattereum.com, @sharmdreamsgroup.com, or @virgingates.com
                         </div>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group" id="usernameGroup">
                         <label class="form-label">Choose Username</label>
                         <div class="input-group">
                             <input type="text" class="form-input" id="username" placeholder="john.smith" required style="padding-right: 160px;" autocomplete="username">
@@ -313,9 +450,9 @@ export const signupPage = `<!DOCTYPE html>
                     </div>
 
                     <div class="loading" id="loading1">
-                        <div style="text-align: center; padding: 12px; color: #666; font-size: 14px;">
+                        <div style="text-align: center; padding: 12px; color: #666; font-size: 13px;">
                             <div class="spinner"></div>
-                            Sending verification code...
+                            Sending verification code
                         </div>
                     </div>
 
@@ -335,21 +472,25 @@ export const signupPage = `<!DOCTYPE html>
 
                 <form id="verifyForm">
                     <div class="code-inputs">
-                        <input type="text" class="code-digit" maxlength="1" id="digit1" data-index="0">
-                        <input type="text" class="code-digit" maxlength="1" id="digit2" data-index="1">
-                        <input type="text" class="code-digit" maxlength="1" id="digit3" data-index="2">
-                        <input type="text" class="code-digit" maxlength="1" id="digit4" data-index="3">
-                        <input type="text" class="code-digit" maxlength="1" id="digit5" data-index="4">
-                        <input type="text" class="code-digit" maxlength="1" id="digit6" data-index="5">
+                        <input type="text" class="code-digit" maxlength="1" id="digit1" data-index="0" inputmode="numeric" pattern="[0-9]">
+                        <input type="text" class="code-digit" maxlength="1" id="digit2" data-index="1" inputmode="numeric" pattern="[0-9]">
+                        <input type="text" class="code-digit" maxlength="1" id="digit3" data-index="2" inputmode="numeric" pattern="[0-9]">
+                        <input type="text" class="code-digit" maxlength="1" id="digit4" data-index="3" inputmode="numeric" pattern="[0-9]">
+                        <input type="text" class="code-digit" maxlength="1" id="digit5" data-index="4" inputmode="numeric" pattern="[0-9]">
+                        <input type="text" class="code-digit" maxlength="1" id="digit6" data-index="5" inputmode="numeric" pattern="[0-9]">
                     </div>
 
                     <div class="timer" id="timer">
                         Code expires in <span id="countdown">10:00</span>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group" style="position: relative;">
                         <label class="form-label">Create Password</label>
+                        <span class="char-counter" id="passCounter">0/8</span>
                         <input type="password" class="form-input" id="password" placeholder="Minimum 8 characters" required minlength="8" autocomplete="new-password">
+                        <div class="password-strength">
+                            <div class="password-strength-bar" id="strengthBar"></div>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -358,9 +499,9 @@ export const signupPage = `<!DOCTYPE html>
                     </div>
 
                     <div class="loading" id="loading2">
-                        <div style="text-align: center; padding: 12px; color: #666; font-size: 14px;">
+                        <div style="text-align: center; padding: 12px; color: #666; font-size: 13px;">
                             <div class="spinner"></div>
-                            Creating account...
+                            Creating account
                         </div>
                     </div>
 
@@ -396,6 +537,46 @@ export const signupPage = `<!DOCTYPE html>
         let signupData = {};
         let countdownInterval;
 
+        // Smart input validation with visual feedback
+        const validateInput = (input, validator) => {
+            const group = input.closest('.form-group');
+            if (validator(input.value)) {
+                group.classList.add('valid');
+            } else {
+                group.classList.remove('valid');
+            }
+        };
+
+        document.getElementById('fullName').addEventListener('input', (e) => {
+            validateInput(e.target, (v) => v.trim().length > 2);
+        });
+
+        document.getElementById('companyEmail').addEventListener('input', (e) => {
+            const domain = e.target.value.split('@')[1];
+            validateInput(e.target, (v) => domain && ALLOWED_DOMAINS.includes(domain));
+        });
+
+        document.getElementById('username').addEventListener('input', (e) => {
+            validateInput(e.target, (v) => /^[a-z0-9._-]+$/.test(v) && v.length >= 3);
+        });
+
+        // Smart password strength indicator
+        document.getElementById('password').addEventListener('input', (e) => {
+            const pass = e.target.value;
+            const counter = document.getElementById('passCounter');
+            const strengthBar = document.getElementById('strengthBar');
+            
+            counter.textContent = \`\${pass.length}/8\`;
+            
+            if (pass.length < 8) {
+                strengthBar.className = 'password-strength-bar weak';
+            } else if (pass.length < 12 || !/[A-Z]/.test(pass) || !/[0-9]/.test(pass)) {
+                strengthBar.className = 'password-strength-bar medium';
+            } else {
+                strengthBar.className = 'password-strength-bar strong';
+            }
+        });
+
         // Step 1: Request verification
         document.getElementById('signupForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -409,14 +590,12 @@ export const signupPage = `<!DOCTYPE html>
                 return;
             }
 
-            // Extract domain from company email
             const emailDomain = companyEmail.split('@')[1];
             if (!emailDomain || !ALLOWED_DOMAINS.includes(emailDomain)) {
                 showError('error1', 'Email must be from mattereum.com, sharmdreamsgroup.com, or virgingates.com');
                 return;
             }
 
-            // Validate username
             if (!/^[a-z0-9._-]+$/.test(username)) {
                 showError('error1', 'Username can only contain lowercase letters, numbers, dots, and hyphens');
                 return;
@@ -445,7 +624,6 @@ export const signupPage = `<!DOCTYPE html>
                     throw new Error(data.error || 'Signup failed');
                 }
 
-                // Move to verification step
                 document.getElementById('verificationEmailText').textContent = \`Code sent to \${companyEmail}\`;
                 document.getElementById('step1').classList.remove('active');
                 document.getElementById('step2').classList.add('active');
@@ -465,7 +643,8 @@ export const signupPage = `<!DOCTYPE html>
         const codeDigits = document.querySelectorAll('.code-digit');
         codeDigits.forEach((digit, index) => {
             digit.addEventListener('input', (e) => {
-                const value = e.target.value;
+                const value = e.target.value.replace(/[^0-9]/g, '');
+                e.target.value = value;
                 if (value && index < 5) {
                     codeDigits[index + 1].focus();
                 }
