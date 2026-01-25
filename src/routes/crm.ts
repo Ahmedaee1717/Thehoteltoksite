@@ -1,23 +1,32 @@
 import { Hono } from 'hono'
 import type { CloudflareBindings } from '../types/cloudflare'
-import { sign, verify } from 'hono/jwt'
+import { getCookie } from 'hono/cookie'
+import { verifyToken } from '../lib/auth'
 
 const crm = new Hono<{ Bindings: CloudflareBindings }>()
 
 // Helper function to get user email from cookie
-function getUserEmailFromCookie(c: any): string | null {
-  const authToken = c.req.raw.headers.get('cookie')?.split('; ').find(c => c.startsWith('auth_token='))?.split('=')[1]
-  
-  if (!authToken) {
-    return null
-  }
-  
+async function getUserEmailFromCookie(c: any): Promise<string | null> {
   try {
-    const JWT_SECRET = c.env.JWT_SECRET || 'default-secret-change-in-production'
-    const payload = verify(authToken, JWT_SECRET) as any
-    return payload.email || null
+    const token = getCookie(c, 'auth_token')
+    
+    if (!token) {
+      console.log('❌ No auth_token cookie found in CRM')
+      return null
+    }
+    
+    const secret = c.env.JWT_SECRET || 'default-secret-change-in-production'
+    const payload = await verifyToken(token, secret)
+    
+    if (!payload || !payload.email) {
+      console.log('❌ CRM token verification failed')
+      return null
+    }
+    
+    console.log('✅ CRM auth successful for:', payload.email)
+    return payload.email
   } catch (error) {
-    console.error('JWT verification failed:', error)
+    console.error('Error extracting email from cookie in CRM:', error)
     return null
   }
 }
@@ -26,7 +35,7 @@ function getUserEmailFromCookie(c: any): string | null {
 
 // Get all contacts
 crm.get('/contacts', async (c) => {
-  const userEmail = getUserEmailFromCookie(c)
+  const userEmail = await getUserEmailFromCookie(c)
   
   if (!userEmail) {
     return c.json({ error: 'Authentication required' }, 401)
@@ -71,7 +80,7 @@ crm.get('/contacts', async (c) => {
 
 // Get single contact with full details
 crm.get('/contacts/:id', async (c) => {
-  const userEmail = getUserEmailFromCookie(c)
+  const userEmail = await getUserEmailFromCookie(c)
   
   if (!userEmail) {
     return c.json({ error: 'Authentication required' }, 401)
@@ -127,7 +136,7 @@ crm.get('/contacts/:id', async (c) => {
 
 // Create contact
 crm.post('/contacts', async (c) => {
-  const userEmail = getUserEmailFromCookie(c)
+  const userEmail = await getUserEmailFromCookie(c)
   
   if (!userEmail) {
     return c.json({ error: 'Authentication required' }, 401)
@@ -166,7 +175,7 @@ crm.post('/contacts', async (c) => {
 
 // Update contact
 crm.put('/contacts/:id', async (c) => {
-  const userEmail = getUserEmailFromCookie(c)
+  const userEmail = await getUserEmailFromCookie(c)
   
   if (!userEmail) {
     return c.json({ error: 'Authentication required' }, 401)
@@ -209,7 +218,7 @@ crm.put('/contacts/:id', async (c) => {
 
 // Delete contact
 crm.delete('/contacts/:id', async (c) => {
-  const userEmail = getUserEmailFromCookie(c)
+  const userEmail = await getUserEmailFromCookie(c)
   
   if (!userEmail) {
     return c.json({ error: 'Authentication required' }, 401)
@@ -230,7 +239,7 @@ crm.delete('/contacts/:id', async (c) => {
 
 // Get all deals
 crm.get('/deals', async (c) => {
-  const userEmail = getUserEmailFromCookie(c)
+  const userEmail = await getUserEmailFromCookie(c)
   
   if (!userEmail) {
     return c.json({ error: 'Authentication required' }, 401)
@@ -265,7 +274,7 @@ crm.get('/deals', async (c) => {
 
 // Get deal pipeline stats
 crm.get('/deals/pipeline/stats', async (c) => {
-  const userEmail = getUserEmailFromCookie(c)
+  const userEmail = await getUserEmailFromCookie(c)
   
   if (!userEmail) {
     return c.json({ error: 'Authentication required' }, 401)
@@ -292,7 +301,7 @@ crm.get('/deals/pipeline/stats', async (c) => {
 
 // Create deal
 crm.post('/deals', async (c) => {
-  const userEmail = getUserEmailFromCookie(c)
+  const userEmail = await getUserEmailFromCookie(c)
   
   if (!userEmail) {
     return c.json({ error: 'Authentication required' }, 401)
@@ -331,7 +340,7 @@ crm.post('/deals', async (c) => {
 
 // Update deal
 crm.put('/deals/:id', async (c) => {
-  const userEmail = getUserEmailFromCookie(c)
+  const userEmail = await getUserEmailFromCookie(c)
   
   if (!userEmail) {
     return c.json({ error: 'Authentication required' }, 401)
@@ -376,7 +385,7 @@ crm.put('/deals/:id', async (c) => {
 
 // Log activity
 crm.post('/activities', async (c) => {
-  const userEmail = getUserEmailFromCookie(c)
+  const userEmail = await getUserEmailFromCookie(c)
   
   if (!userEmail) {
     return c.json({ error: 'Authentication required' }, 401)
