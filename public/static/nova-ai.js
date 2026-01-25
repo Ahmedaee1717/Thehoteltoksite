@@ -1742,28 +1742,228 @@ ${meeting.summary?.substring(0, 500)}`;
     history.scrollTop = history.scrollHeight;
   }
 
-  function processMessage(message) {
+  async function processMessage(message) {
     const lower = message.toLowerCase();
     
+    // SMART PROGRESS ANALYSIS
+    if (lower.includes('progress') || lower.includes('how are we doing') || lower.includes('what have we done') || lower.includes('overall')) {
+      setNovaMood(NOVA_STATES.THINKING);
+      addChatMessage('nova', '🔍 Analyzing ALL your meetings, tasks, and commitments... Give me a moment to do this properly.');
+      
+      setTimeout(async () => {
+        await analyzeOverallProgress();
+      }, 1000);
+      return;
+    }
+    
+    // TASK QUERIES
     if (lower.includes('task')) {
       const count = novaState.data.tasks.length;
       const active = novaState.data.tasks.filter(t => t.status !== 'completed').length;
+      const completed = novaState.data.tasks.filter(t => t.status === 'completed').length;
+      const overdue = novaState.data.tasks.filter(t => {
+        if (!t.due_date || t.status === 'completed') return false;
+        return new Date(t.due_date) < new Date();
+      }).length;
+      
       setNovaMood(NOVA_STATES.EXCITED);
-      addChatMessage('nova', `You have ${count} total tasks, ${active} are still active. Want me to show you the overdue ones?`);
-    } else if (lower.includes('email')) {
+      addChatMessage('nova', `📊 **Task Status:**\n• Total: ${count}\n• Active: ${active}\n• Completed: ${completed}\n• Overdue: ${overdue}\n\n${overdue > 0 ? '⚠️ You have overdue tasks that need attention!' : '✅ All tasks are on track!'}`);
+      return;
+    }
+    
+    // EMAIL QUERIES
+    if (lower.includes('email')) {
       setNovaMood(NOVA_STATES.THINKING);
       addChatMessage('nova', `You have ${novaState.data.emails.length} emails. I can analyze them for action items if you want!`);
-    } else if (lower.includes('meeting')) {
+      return;
+    }
+    
+    // MEETING QUERIES
+    if (lower.includes('meeting')) {
       setNovaMood(NOVA_STATES.EXCITED);
       if (novaState.data.meetings.length > 0) {
         const latest = novaState.data.meetings[0];
-        addChatMessage('nova', `Your latest meeting was "${latest.title}". I already extracted ${novaState.data.actionItems.length} action items from it!`);
+        const totalMeetings = novaState.data.meetings.length;
+        addChatMessage('nova', `📅 You have ${totalMeetings} recorded meetings. Latest: "${latest.title}". Want me to analyze your progress across all meetings?`);
       } else {
         addChatMessage('nova', "No recent meetings found. Upload some transcripts and I'll analyze them!");
       }
+      return;
+    }
+    
+    // FALLBACK
+    setNovaMood(NOVA_STATES.IDLE);
+    addChatMessage('nova', "I can help you with tasks, emails, meetings, and progress analysis! Try asking:\n• 'How's our progress?'\n• 'What tasks do I have?'\n• 'Analyze my meetings'");
+  }
+  
+  // SMART OVERALL PROGRESS ANALYSIS
+  async function analyzeOverallProgress() {
+    setNovaMood(NOVA_STATES.WORKING);
+    
+    const meetings = novaState.data.meetings;
+    const tasks = novaState.data.tasks;
+    
+    if (meetings.length === 0) {
+      setNovaMood(NOVA_STATES.CONCERNED);
+      addChatMessage('nova', "❌ I don't have any meeting data to analyze. Upload some meeting transcripts first!");
+      return;
+    }
+    
+    // Sort meetings by date (oldest first for timeline)
+    const sortedMeetings = [...meetings].sort((a, b) => {
+      const dateA = new Date(a.created_at || a.date || 0);
+      const dateB = new Date(b.created_at || b.date || 0);
+      return dateA - dateB;
+    });
+    
+    // EXTRACT KEY THEMES
+    const companies = new Set();
+    const commitments = [];
+    const blockers = [];
+    
+    sortedMeetings.forEach(meeting => {
+      const text = (meeting.summary || '') + ' ' + (meeting.transcript_text || '');
+      const title = meeting.title || 'Untitled';
+      
+      // Extract companies/projects mentioned
+      const companyPattern = /\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?(?:\s+(?:Protocol|Legal|UAE|Group|Hotel|Network))?)\b/g;
+      const companyMatches = text.match(companyPattern);
+      if (companyMatches) {
+        companyMatches.forEach(c => {
+          if (c.length > 3 && !['Goal', 'Meeting', 'Summary', 'Action'].includes(c)) {
+            companies.add(c);
+          }
+        });
+      }
+      
+      // Extract commitments (things you said you'd do)
+      const commitmentPatterns = [
+        /(?:will|going to|plan to|need to|should)\s+([^.]{20,100})/gi,
+        /(?:I'll|we'll|let me)\s+([^.]{20,100})/gi
+      ];
+      
+      commitmentPatterns.forEach(pattern => {
+        let match;
+        while ((match = pattern.exec(text)) !== null) {
+          if (match[1]) {
+            const cleaned = match[1].trim().split(/[.!?]/)[0];
+            if (cleaned.length > 15) {
+              commitments.push({
+                text: cleaned,
+                meeting: title,
+                date: meeting.created_at || meeting.date
+              });
+            }
+          }
+        }
+      });
+      
+      // Extract blockers
+      const blockerPatterns = [
+        /(?:problem|issue|challenge|blocker|stuck|waiting|need help)[^.]{10,100}/gi,
+        /(?:can't|cannot|unable to)\s+([^.]{20,100})/gi
+      ];
+      
+      blockerPatterns.forEach(pattern => {
+        let match;
+        while ((match = pattern.exec(text)) !== null) {
+          const captured = match[1] || match[0];
+          if (captured) {
+            const cleaned = captured.trim().split(/[.!?]/)[0];
+            if (cleaned.length > 15) {
+              blockers.push({
+                text: cleaned,
+                meeting: title
+              });
+            }
+          }
+        }
+      });
+    });
+    
+    // TASK COMPLETION ANALYSIS
+    const completedTasks = tasks.filter(t => t.status === 'completed').length;
+    const totalTasks = tasks.length;
+    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    
+    // GENERATE CRITICAL ANALYSIS
+    setNovaMood(NOVA_STATES.EXCITED);
+    
+    let analysis = `📊 **PROGRESS ANALYSIS (${sortedMeetings.length} meetings analyzed)**\n\n`;
+    
+    // Timeline
+    analysis += `📅 **Timeline:**\n`;
+    analysis += `• First meeting: ${sortedMeetings[0].title}\n`;
+    analysis += `• Latest meeting: ${sortedMeetings[sortedMeetings.length - 1].title}\n`;
+    analysis += `• Total meetings: ${sortedMeetings.length}\n\n`;
+    
+    // Key initiatives
+    if (companies.size > 0) {
+      analysis += `🎯 **Key Initiatives/Companies:**\n`;
+      Array.from(companies).slice(0, 5).forEach(c => {
+        analysis += `• ${c}\n`;
+      });
+      analysis += '\n';
+    }
+    
+    // Task completion
+    analysis += `✅ **Task Execution:**\n`;
+    analysis += `• Completion rate: ${completionRate}%\n`;
+    analysis += `• Completed: ${completedTasks}/${totalTasks}\n`;
+    
+    if (completionRate < 30) {
+      analysis += `• ⚠️ **CRITICAL:** Very low completion rate! Most commitments are not being executed.\n`;
+    } else if (completionRate < 60) {
+      analysis += `• ⚠️ Below target - need to focus on execution.\n`;
     } else {
-      setNovaMood(NOVA_STATES.IDLE);
-      addChatMessage('nova', "I can help you with tasks, emails, meetings, and more! Try asking about your tasks or meetings 😊");
+      analysis += `• ✅ Good execution rate!\n`;
+    }
+    analysis += '\n';
+    
+    // Top commitments
+    if (commitments.length > 0) {
+      analysis += `📝 **Key Commitments Made:**\n`;
+      commitments.slice(0, 5).forEach(c => {
+        analysis += `• "${c.text}" (${c.meeting})\n`;
+      });
+      analysis += '\n';
+    }
+    
+    // Blockers
+    if (blockers.length > 0) {
+      analysis += `🚫 **Blockers/Challenges Identified:**\n`;
+      blockers.slice(0, 3).forEach(b => {
+        analysis += `• ${b.text} (${b.meeting})\n`;
+      });
+      analysis += '\n';
+    }
+    
+    // CRITICAL ASSESSMENT
+    analysis += `🎯 **CRITICAL ASSESSMENT:**\n`;
+    
+    if (sortedMeetings.length < 3) {
+      analysis += `• ⚠️ Limited data - need more meetings to assess properly\n`;
+    } else if (completionRate < 40 && blockers.length > 2) {
+      analysis += `• 🔴 **RED FLAG:** Many commitments, low completion, multiple blockers\n`;
+      analysis += `• **Action:** Need to clear blockers and focus on execution\n`;
+    } else if (companies.size > 3 && completionRate < 50) {
+      analysis += `• ⚠️ **CONCERN:** Spreading too thin across ${companies.size} initiatives\n`;
+      analysis += `• **Action:** Consider focusing on fewer high-impact projects\n`;
+    } else if (completionRate > 70) {
+      analysis += `• ✅ **STRONG:** Good execution rate, momentum building\n`;
+      analysis += `• **Action:** Keep the momentum, scale what's working\n`;
+    } else {
+      analysis += `• 🟡 **MODERATE:** Making progress but room for improvement\n`;
+      analysis += `• **Action:** Clear blockers and increase follow-through\n`;
+    }
+    
+    addChatMessage('nova', analysis);
+    
+    // Offer to create tasks
+    if (commitments.length > completedTasks) {
+      setTimeout(() => {
+        addChatMessage('nova', `💡 I see ${commitments.length - completedTasks} commitments that don't have tasks yet. Want me to create tasks for them?`);
+      }, 1000);
     }
   }
 
