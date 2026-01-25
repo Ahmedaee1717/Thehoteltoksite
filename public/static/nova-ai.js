@@ -771,22 +771,26 @@
       }
     }
     
-    // PRIORITY 2: Extract from GPT-4 structured summary
-    if (items.length === 0 && meeting.summary && meeting.summary.includes('Action Items:')) {
-      const actionSection = meeting.summary.split('Action Items:')[1]?.split('Next Steps:')[0];
+    // PRIORITY 2: Extract from GPT-4 structured summary - Action Items section
+    if (items.length === 0 && meeting.summary && meeting.summary.includes('Action Items')) {
+      const actionSection = meeting.summary.split('Action Items')[1]?.split(/Next Steps|Goal:/)[0];
       if (actionSection) {
         const lines = actionSection.split('\n');
         lines.forEach(line => {
-          // Match lines like: • Send WhatsApp contact details - @Ali
-          // or: - Arrange meeting on January 14th - @Hamada
-          const match = line.match(/^[•\-]\s*(.+?)(?:\s*-\s*@(.+))?$/);
+          // Match lines like: 
+          // • Send WhatsApp contact details - @Ali
+          // • Deliver dashboard prototype - @Mark Rodriguez - Due: February 6th
+          // - Arrange meeting on January 14th
+          const match = line.match(/^[•\-\*]\s*(.+?)(?:\s*-\s*@(.+?))?(?:\s*-\s*Due:\s*(.+?))?$/);
           if (match) {
             const text = match[1].trim();
             const assignee = match[2]?.trim();
-            if (text.length > 10 && text.length < 200) {
+            const deadline = match[3]?.trim();
+            if (text.length > 10 && text.length < 300) {
               items.push({
                 text: text,
                 assignee: assignee,
+                deadline: deadline,
                 meetingId: meeting.id,
                 meetingTitle: meeting.title
               });
@@ -796,7 +800,31 @@
       }
     }
     
-    // FALLBACK: Old pattern matching on transcript
+    // PRIORITY 3: Extract from Decisions Made section (also actionable)
+    if (items.length === 0 && meeting.summary && meeting.summary.includes('Decisions Made')) {
+      const decisionsSection = meeting.summary.split('Decisions Made')[1]?.split(/Action Items|Next Steps|Goal:/)[0];
+      if (decisionsSection) {
+        const lines = decisionsSection.split('\n');
+        lines.forEach(line => {
+          // Match numbered decisions: 
+          // 1. Dashboard redesign prioritized first - targeting early February completion
+          // 2. Mobile experience prioritized second
+          const match = line.match(/^\d+\.\s*(.+)/);
+          if (match) {
+            const text = match[1].trim();
+            if (text.length > 10 && text.length < 300) {
+              items.push({
+                text: `Implement decision: ${text}`,
+                meetingId: meeting.id,
+                meetingTitle: meeting.title
+              });
+            }
+          }
+        });
+      }
+    }
+    
+    // FALLBACK: Old pattern matching on transcript (only if no structured items found)
     if (items.length === 0) {
       const text = meeting.transcript_text || '';
       const patterns = [
