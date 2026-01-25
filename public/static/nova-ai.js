@@ -1745,8 +1745,20 @@ ${meeting.summary?.substring(0, 500)}`;
   async function processMessage(message) {
     const lower = message.toLowerCase();
     
-    // SMART PROGRESS ANALYSIS
-    if (lower.includes('progress') || lower.includes('how are we doing') || lower.includes('what have we done') || lower.includes('overall')) {
+    // SMART PROGRESS ANALYSIS - Trigger on ANY progress-related query
+    const progressTriggers = [
+      'progress', 'how are we doing', 'what have we done', 'overall',
+      'yes', 'analyze', 'assess', 'evaluate', 'review', 'summary',
+      'how is our', 'based on', 'across all'
+    ];
+    
+    const shouldAnalyzeProgress = progressTriggers.some(trigger => lower.includes(trigger));
+    
+    // Also trigger if they mention meetings in a question format
+    const isMeetingProgressQuestion = (lower.includes('meeting') || lower.includes('email')) && 
+                                      (lower.includes('based on') || lower.includes('across') || lower.includes('how'));
+    
+    if (shouldAnalyzeProgress || isMeetingProgressQuestion) {
       setNovaMood(NOVA_STATES.THINKING);
       addChatMessage('nova', '🔍 Analyzing ALL your meetings, tasks, and commitments... Give me a moment to do this properly.');
       
@@ -1778,13 +1790,16 @@ ${meeting.summary?.substring(0, 500)}`;
       return;
     }
     
-    // MEETING QUERIES
-    if (lower.includes('meeting')) {
+    // MEETING QUERIES - Only for simple counts, not analysis questions
+    if (lower.includes('meeting') && !lower.includes('how') && !lower.includes('based')) {
       setNovaMood(NOVA_STATES.EXCITED);
       if (novaState.data.meetings.length > 0) {
-        const latest = novaState.data.meetings[0];
         const totalMeetings = novaState.data.meetings.length;
-        addChatMessage('nova', `📅 You have ${totalMeetings} recorded meetings. Latest: "${latest.title}". Want me to analyze your progress across all meetings?`);
+        // Automatically trigger deep analysis
+        addChatMessage('nova', `📅 You have ${totalMeetings} recorded meetings. Let me analyze your progress...`);
+        setTimeout(async () => {
+          await analyzeOverallProgress();
+        }, 1000);
       } else {
         addChatMessage('nova', "No recent meetings found. Upload some transcripts and I'll analyze them!");
       }
