@@ -19,9 +19,10 @@ export const loginPage = `<!DOCTYPE html>
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 16px;
             position: relative;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
         }
 
         /* Advanced holographic grid */
@@ -67,22 +68,23 @@ export const loginPage = `<!DOCTYPE html>
 
         .container {
             width: 100%;
-            max-width: 420px;
+            max-width: 400px;
             position: relative;
             z-index: 1;
+            margin: auto;
         }
 
         .logo-container {
             text-align: center;
-            margin-bottom: 48px;
+            margin-bottom: 24px;
         }
 
         .logo-icon {
-            width: 120px;
-            height: 120px;
-            margin: 0 auto 32px;
+            width: 90px;
+            height: 90px;
+            margin: 0 auto 20px;
             position: relative;
-            padding: 20px;
+            padding: 16px;
             background: #1a1a1a;
             border: 3px solid #D4AF37;
             box-shadow: 
@@ -123,10 +125,10 @@ export const loginPage = `<!DOCTYPE html>
         }
 
         .brand-name {
-            font-size: 28px;
+            font-size: 24px;
             font-weight: 700;
             letter-spacing: -0.5px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             background: linear-gradient(135deg, #ffffff 0%, #D4AF37 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -134,7 +136,7 @@ export const loginPage = `<!DOCTYPE html>
         }
 
         .brand-tagline {
-            font-size: 13px;
+            font-size: 11px;
             color: #666;
             letter-spacing: 0.8px;
             text-transform: uppercase;
@@ -145,7 +147,7 @@ export const loginPage = `<!DOCTYPE html>
             backdrop-filter: blur(40px);
             border: 1px solid rgba(212, 175, 55, 0.15);
             border-radius: 1px;
-            padding: 40px;
+            padding: 32px;
             position: relative;
         }
 
@@ -174,22 +176,22 @@ export const loginPage = `<!DOCTYPE html>
         }
 
         .title {
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 600;
             letter-spacing: -0.3px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             color: #ffffff;
         }
 
         .subtitle {
-            font-size: 13px;
+            font-size: 12px;
             color: #666;
-            margin-bottom: 32px;
+            margin-bottom: 24px;
             letter-spacing: 0.3px;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             position: relative;
         }
 
@@ -205,12 +207,12 @@ export const loginPage = `<!DOCTYPE html>
 
         .form-input {
             width: 100%;
-            padding: 14px 16px;
+            padding: 12px 14px;
             background: rgba(0, 0, 0, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 1px;
             color: #ffffff;
-            font-size: 15px;
+            font-size: 14px;
             transition: all 0.2s ease;
             font-family: inherit;
             letter-spacing: 0.3px;
@@ -240,19 +242,19 @@ export const loginPage = `<!DOCTYPE html>
 
         .btn-primary {
             width: 100%;
-            padding: 15px;
+            padding: 13px;
             background: linear-gradient(135deg, #D4AF37 0%, #F4E5B0 100%);
             border: none;
             border-radius: 1px;
             color: #000000;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.2s ease;
             font-family: inherit;
             text-transform: uppercase;
             letter-spacing: 2px;
-            margin-top: 12px;
+            margin-top: 8px;
         }
 
         .btn-primary:hover {
@@ -273,9 +275,9 @@ export const loginPage = `<!DOCTYPE html>
         .divider {
             display: flex;
             align-items: center;
-            margin: 24px 0;
+            margin: 20px 0;
             color: #555;
-            font-size: 12px;
+            font-size: 11px;
             letter-spacing: 0.5px;
         }
 
@@ -309,8 +311,8 @@ export const loginPage = `<!DOCTYPE html>
 
         .footer {
             text-align: center;
-            margin-top: 32px;
-            font-size: 12px;
+            margin-top: 24px;
+            font-size: 11px;
             color: #555;
             letter-spacing: 0.5px;
         }
@@ -357,12 +359,17 @@ export const loginPage = `<!DOCTYPE html>
 
         @media (max-width: 480px) {
             .card {
-                padding: 32px 24px;
+                padding: 24px 20px;
             }
             
             .logo-icon {
-                width: 60px;
-                height: 60px;
+                width: 70px;
+                height: 70px;
+                padding: 12px;
+            }
+            
+            .brand-name {
+                font-size: 20px;
             }
         }
     </style>
