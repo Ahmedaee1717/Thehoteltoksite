@@ -402,6 +402,89 @@ app.get('/admin/email-accounts', (c) => {
 // Home page
 app.get('/', homePage)
 
+// Cookie test page - for debugging
+app.get('/test-cookies', (c) => {
+  const sessionCookie = getCookie(c, 'session_id')
+  const authCookie = getCookie(c, 'auth_token')
+  
+  return c.html(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Cookie Test - Investay</title>
+      <style>
+        body { font-family: monospace; padding: 40px; background: #1a1a1a; color: #fff; }
+        .status { padding: 20px; margin: 10px 0; border-radius: 8px; }
+        .success { background: rgba(34, 197, 94, 0.2); border: 1px solid #22c55e; }
+        .error { background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; }
+        .info { background: rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; }
+        button { padding: 12px 24px; background: #D4AF37; color: #000; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin: 10px 5px; }
+        pre { background: #000; padding: 15px; border-radius: 8px; overflow-x: auto; }
+      </style>
+    </head>
+    <body>
+      <h1>🍪 Cookie Test Page</h1>
+      
+      <div class="status ${sessionCookie || authCookie ? 'success' : 'error'}">
+        <h2>Server-Side Cookie Status:</h2>
+        <p><strong>session_id:</strong> ${sessionCookie ? '✅ Found' : '❌ Not found'}</p>
+        <p><strong>auth_token:</strong> ${authCookie ? '✅ Found' : '❌ Not found'}</p>
+      </div>
+      
+      <div class="status info">
+        <h2>Actions:</h2>
+        <button onclick="testLogin()">Test Login API</button>
+        <button onclick="location.reload()">Refresh Page</button>
+        <button onclick="checkJSCookies()">Check JS Cookies</button>
+        <a href="/login"><button>Go to Login Page</button></a>
+      </div>
+      
+      <div id="result"></div>
+      
+      <script>
+        function checkJSCookies() {
+          const cookies = document.cookie;
+          const result = document.getElementById('result');
+          result.innerHTML = '<div class="status info"><h3>JavaScript document.cookie:</h3><pre>' + 
+            (cookies || '(empty)') + '</pre></div>';
+        }
+        
+        async function testLogin() {
+          const result = document.getElementById('result');
+          result.innerHTML = '<div class="status info">Testing login...</div>';
+          
+          try {
+            const response = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({
+                email: 'test1@investaycapital.com',
+                password: 'Test123456'
+              })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+              result.innerHTML = '<div class="status success"><h3>✅ Login Success!</h3><pre>' + 
+                JSON.stringify(data, null, 2) + '</pre>' +
+                '<p>Now refresh this page to check if cookies were set.</p></div>';
+            } else {
+              result.innerHTML = '<div class="status error"><h3>❌ Login Failed</h3><pre>' + 
+                JSON.stringify(data, null, 2) + '</pre></div>';
+            }
+          } catch (err) {
+            result.innerHTML = '<div class="status error"><h3>❌ Error</h3><pre>' + 
+              err.message + '</pre></div>';
+          }
+        }
+      </script>
+    </body>
+    </html>
+  `)
+})
+
 // Blog listing page
 app.get('/blog', async (c) => {
   const { DB } = c.env;
