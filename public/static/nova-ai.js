@@ -647,7 +647,10 @@
         // Check for EMAIL tasks specifically
         const emailTasks = items.filter(item => {
           const text = item.text.toLowerCase();
-          return text.includes('email') || text.includes('contact') || text.includes('reach out');
+          return text.includes('email') || 
+                 text.includes('contact') || 
+                 text.includes('reach out') ||
+                 text.includes('send') && (text.includes('via email') || text.includes('by email') || text.includes('to resort') || text.includes('to hotel') || text.includes('to client'));
         });
         
         if (emailTasks.length > 0) {
@@ -671,7 +674,11 @@
         // Show other action items
         const otherItems = items.filter(item => {
           const text = item.text.toLowerCase();
-          return !(text.includes('email') || text.includes('contact') || text.includes('reach out'));
+          const isEmail = text.includes('email') || 
+                         text.includes('contact') || 
+                         text.includes('reach out') ||
+                         (text.includes('send') && (text.includes('via email') || text.includes('by email') || text.includes('to resort') || text.includes('to hotel') || text.includes('to client')));
+          return !isEmail;
         });
         
         if (otherItems.length > 0) {
@@ -772,8 +779,17 @@
     }
     
     // PRIORITY 2: Extract from GPT-4 structured summary - Action Items section
-    if (items.length === 0 && meeting.summary && meeting.summary.includes('Action Items')) {
-      const actionSection = meeting.summary.split('Action Items')[1]?.split(/Next Steps|Goal:/)[0];
+    if (items.length === 0 && meeting.summary) {
+      // Try Action Items section
+      let actionSection = null;
+      if (meeting.summary.includes('Action Items')) {
+        actionSection = meeting.summary.split('Action Items')[1]?.split(/Next Steps|Goal:|Decisions/)[0];
+      }
+      // Also check for "Decisions:" format (numbered list)
+      else if (meeting.summary.includes('Decisions:')) {
+        actionSection = meeting.summary.split('Decisions:')[1]?.split(/Focus:|Timeline:|Opportunity:|Goal:/)[0];
+      }
+      
       if (actionSection) {
         const lines = actionSection.split('\n');
         lines.forEach(line => {
@@ -781,20 +797,30 @@
           // • Send WhatsApp contact details - @Ali
           // • Deliver dashboard prototype - @Mark Rodriguez - Due: February 6th
           // - Arrange meeting on January 14th
-          const match = line.match(/^[•\-\*]\s*(.+?)(?:\s*-\s*@(.+?))?(?:\s*-\s*Due:\s*(.+?))?$/);
-          if (match) {
-            const text = match[1].trim();
-            const assignee = match[2]?.trim();
-            const deadline = match[3]?.trim();
-            if (text.length > 10 && text.length < 300) {
-              items.push({
-                text: text,
-                assignee: assignee,
-                deadline: deadline,
-                meetingId: meeting.id,
-                meetingTitle: meeting.title
-              });
-            }
+          // (1) Prepare professional proposal with pricing tiers
+          // (4) Send complete package to resort via email
+          const bulletMatch = line.match(/^[•\-\*]\s*(.+?)(?:\s*-\s*@(.+?))?(?:\s*-\s*Due:\s*(.+?))?$/);
+          const numberedMatch = line.match(/^\((\d+)\)\s*(.+?)(?:\s*-\s*@(.+?))?$/);
+          
+          let text, assignee, deadline;
+          
+          if (bulletMatch) {
+            text = bulletMatch[1].trim();
+            assignee = bulletMatch[2]?.trim();
+            deadline = bulletMatch[3]?.trim();
+          } else if (numberedMatch) {
+            text = numberedMatch[2].trim();
+            assignee = numberedMatch[3]?.trim();
+          }
+          
+          if (text && text.length > 10 && text.length < 300) {
+            items.push({
+              text: text,
+              assignee: assignee,
+              deadline: deadline,
+              meetingId: meeting.id,
+              meetingTitle: meeting.title
+            });
           }
         });
       }
@@ -957,11 +983,18 @@
   function extractRecipientFromText(text) {
     console.log('🔍 Extracting recipient from:', text);
     
-    // Pattern 0A: "to [Company Name]" (e.g., "Send proposal to Sharmdreams Group")
-    const toCompanyMatch = text.match(/\b(?:to|for)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)/);
-    if (toCompanyMatch && !['Review', 'Next', 'All', 'Meeting'].includes(toCompanyMatch[1])) {
+    // Pattern 0A: "to [Company Name]" (e.g., "Send proposal to Sharmdreams Group", "Send package to resort")
+    const toCompanyMatch = text.match(/\b(?:to|for)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*(?:\s+[A-Z][a-z]+)?)/);
+    if (toCompanyMatch && !['Review', 'Next', 'All', 'Meeting', 'Wednesday'].includes(toCompanyMatch[1])) {
       console.log('✅ Recipient found (to/for Company):', toCompanyMatch[1]);
       return toCompanyMatch[1];
+    }
+    
+    // Pattern 0B: "to [lowercase entity] via email" (e.g., "to resort via email")
+    const toLowercaseMatch = text.match(/\bto\s+(resort|hotel|client|customer|partner|vendor|supplier)/i);
+    if (toLowercaseMatch) {
+      console.log('✅ Recipient found (to entity):', toLowercaseMatch[1]);
+      return toLowercaseMatch[1];
     }
     
     // Pattern 0B: Company name BEFORE "contact" or "information" (high priority)
