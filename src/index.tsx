@@ -33,6 +33,8 @@ const APP_VERSION = '2.1.0';
 type Bindings = {
   DB: D1Database;
   OPENAI_API_KEY?: string;
+  PERPLEXITY_API_KEY?: string;
+  TAVILY_API_KEY?: string;
   R2_BUCKET?: R2Bucket;
   JWT_SECRET?: string;
 }
