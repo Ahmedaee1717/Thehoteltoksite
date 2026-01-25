@@ -111,24 +111,57 @@ window.addEventListener('DOMContentLoaded', function() {
     const { useState, useEffect, useRef } = React;
     const h = React.createElement;
     
-    // Get user email from cookie or localStorage
-    const getUserEmail = () => {
-      // Try localStorage first (set during login)
-      const stored = localStorage.getItem('userEmail');
-      if (stored) return stored;
-      
-      // If not in localStorage, user is not logged in
-      return null;
+    // Get user email from server (NOT localStorage!)
+    const getUserEmail = async () => {
+      try {
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include'
+        });
+        const data = await response.json();
+        
+        if (data.success && data.user) {
+          return data.user.email;
+        }
+        return null;
+      } catch (err) {
+        console.error('Failed to get user:', err);
+        return null;
+      }
     };
     
-    const user = getUserEmail();
-    
-    // Redirect to login if not logged in
-    if (!user) {
-      window.location.href = '/login';
+    // Main App Component that fetches user first
+    function AppLoader() {
+      const [user, setUser] = useState(null);
+      const [loading, setLoading] = useState(true);
+      
+      useEffect(() => {
+        getUserEmail().then(email => {
+          if (!email) {
+            window.location.href = '/login';
+          } else {
+            setUser(email);
+            setLoading(false);
+          }
+        });
+      }, []);
+      
+      if (loading) {
+        return h('div', { 
+          style: { 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            height: '100vh',
+            background: '#0f172a',
+            color: '#fff'
+          }
+        }, 'Loading...');
+      }
+      
+      return h(EmailApp, { user });
     }
     
-    function EmailApp() {
+    function EmailApp({ user }) {
       const [view, setView] = useState('inbox');
       const [emails, setEmails] = useState([]);
       const [tasks, setTasks] = useState([]);
@@ -9769,7 +9802,7 @@ window.addEventListener('DOMContentLoaded', function() {
     
     console.log('🎨 Rendering Ultra Premium EmailApp...');
     const root = ReactDOM.createRoot(document.getElementById('email-root'));
-    root.render(h(EmailApp));
+    root.render(h(AppLoader));
     console.log('✨ Premium Email System Loaded!');
   }
   
