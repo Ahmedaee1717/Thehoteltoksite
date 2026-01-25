@@ -414,10 +414,7 @@
   // Boot up NOVA
   async function bootUpNova() {
     setNovaMood(NOVA_STATES.WORKING);
-    novaSpeak("Booting up neural network... 🌟", 2000);
-    
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
+    novaSpeak("Booting up neural network... 🌟", 2000);    if (!token) {
       setTimeout(() => {
         setNovaMood(NOVA_STATES.CONCERNED);
         novaSpeak("Hey! You need to log in first 😊");
@@ -458,7 +455,7 @@
   async function loadTasks(token) {
     try {
       const res = await fetch(`${API_BASE}/tasks`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
       if (res.ok) {
         const data = await res.json();
@@ -473,7 +470,7 @@
   async function loadEmails(token) {
     try {
       const res = await fetch(`${API_BASE}/email/list?limit=20`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
       if (res.ok) {
         const data = await res.json();
@@ -488,7 +485,7 @@
   async function loadMeetings(token) {
     try {
       const res = await fetch(`${API_BASE}/meetings/otter/transcripts?limit=20`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
       if (res.ok) {
         const data = await res.json();
@@ -1348,9 +1345,7 @@
       
       addChatMessage('nova', `📝 **EMAIL DRAFT FOR YOU:**\n\n\`\`\`\n${emailDraft}\n\`\`\``);
       
-      // Create the task with all the info
-      const token = localStorage.getItem('auth_token');
-      const enriched = await enrichActionItem(task, meeting);
+      // Create the task with all the info      const enriched = await enrichActionItem(task, meeting);
       
       // Extract email addresses (handle both old and new format)
       let emailsToTry = [];
@@ -1411,8 +1406,7 @@ ${meeting.summary?.substring(0, 500)}`;
       const res = await fetch(`${API_BASE}/tasks`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+                    'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           title: companyDomain ? `Email ${companyDomain}` : `Email ${recipient}`,
@@ -1440,15 +1434,12 @@ ${meeting.summary?.substring(0, 500)}`;
       addChatMessage('nova', '❌ Had trouble with the search, but creating a task with helpful search links...');
       
       // Fallback: create task anyway with search links
-      try {
-        const token = localStorage.getItem('auth_token');
-        const fallbackDesc = `Email ${recipient}\n\nSearch for contact info:\n• https://www.google.com/search?q=${encodeURIComponent(recipient + ' contact email')}\n• https://hunter.io/search/${encodeURIComponent(recipient)}\n• https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(recipient)}`;
+      try {        const fallbackDesc = `Email ${recipient}\n\nSearch for contact info:\n• https://www.google.com/search?q=${encodeURIComponent(recipient + ' contact email')}\n• https://hunter.io/search/${encodeURIComponent(recipient)}\n• https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(recipient)}`;
         
         await fetch(`${API_BASE}/tasks`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+                        'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             title: `Email ${recipient}`,
@@ -1605,9 +1596,7 @@ ${meeting.summary?.substring(0, 500)}`;
       setNovaMood(NOVA_STATES.WORKING);
       novaSpeak("Creating tasks with AI assistance... ⚡");
       
-      try {
-        const token = localStorage.getItem('auth_token');
-        let created = 0;
+      try {        let created = 0;
         
         for (const item of items) {
           const text = item.text.toLowerCase();
@@ -1629,8 +1618,7 @@ ${meeting.summary?.substring(0, 500)}`;
             const res = await fetch(`${API_BASE}/tasks`, {
               method: 'POST',
               headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
+                                'Content-Type': 'application/json'
               },
               body: JSON.stringify({
                 title: enrichedItem.title || item.text.substring(0, 200),
@@ -1670,13 +1658,10 @@ ${meeting.summary?.substring(0, 500)}`;
         novaSpeak(`Creating task: "${item.text.substring(0, 40)}..."`);
         setNovaMood(NOVA_STATES.WORKING);
         
-        try {
-          const token = localStorage.getItem('auth_token');
-          const res = await fetch(`${API_BASE}/tasks`, {
+        try {          const res = await fetch(`${API_BASE}/tasks`, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
+                            'Content-Type': 'application/json'
             },
             body: JSON.stringify({
               title: item.text.substring(0, 200),
