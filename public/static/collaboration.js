@@ -1543,7 +1543,22 @@ async function loadMeetings() {
 function createMeetingCard(meeting) {
   const startDate = new Date(meeting.start_time);
   const duration = Math.round(meeting.duration_seconds / 60);
-  const speakers = meeting.speakers ? JSON.parse(meeting.speakers) : [];
+  
+  // Handle speakers - can be JSON array or plain string
+  let speakers = [];
+  if (meeting.speakers) {
+    try {
+      // Try to parse as JSON first
+      speakers = JSON.parse(meeting.speakers);
+      if (!Array.isArray(speakers)) {
+        // If it's a parsed string, split by comma
+        speakers = [meeting.speakers];
+      }
+    } catch (e) {
+      // Not JSON, treat as comma-separated string
+      speakers = meeting.speakers.split(',').map(s => s.trim()).filter(s => s);
+    }
+  }
   const speakerCount = speakers.length;
   
   // Sanitize title to remove any corrupt characters
@@ -1614,7 +1629,22 @@ window.openMeetingTranscript = async function(meetingId) {
 
 function showMeetingModal(meeting) {
   const startDate = new Date(meeting.start_time);
-  const speakers = meeting.speakers ? JSON.parse(meeting.speakers) : [];
+  
+  // Handle speakers - can be JSON array or plain string
+  let speakers = [];
+  if (meeting.speakers) {
+    try {
+      // Try to parse as JSON first
+      speakers = JSON.parse(meeting.speakers);
+      if (!Array.isArray(speakers)) {
+        // If it's a parsed string, split by comma
+        speakers = [meeting.speakers];
+      }
+    } catch (e) {
+      // Not JSON, treat as comma-separated string
+      speakers = meeting.speakers.split(',').map(s => s.trim()).filter(s => s);
+    }
+  }
   
   // Sanitize title to remove any corrupt characters
   let safeTitle = meeting.title || 'Untitled Meeting';
