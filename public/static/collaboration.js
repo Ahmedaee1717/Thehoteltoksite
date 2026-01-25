@@ -816,8 +816,7 @@ async function handlePostSubmit(e) {
     const response = await fetch(url, {
       method: method,
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+                'Content-Type': 'application/json'
       },
       body: JSON.stringify(formData)
     });
@@ -1174,8 +1173,7 @@ async function updateUserRole(userEmail, newRole) {
     const response = await fetch(`${API_BASE}/users/${encodeURIComponent(userEmail)}/role`, {
       method: 'PUT',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+                'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         role: newRole,
@@ -1287,8 +1285,7 @@ async function collabAIAutoFillSEO() {
   try {    const response = await fetch('/api/ai/seo-optimize', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+                'Content-Type': 'application/json'
       },
       body: JSON.stringify({ title, content })
     });
@@ -1364,8 +1361,7 @@ async function collabAIGenerateSummary(silent = false) {
   try {    const response = await fetch('/api/ai/generate-summary', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+                'Content-Type': 'application/json'
       },
       body: JSON.stringify({ title, content })
     });
@@ -1400,8 +1396,7 @@ async function collabAIGenerateFAQ(silent = false) {
   try {    const response = await fetch('/api/ai/generate-faq', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+                'Content-Type': 'application/json'
       },
       body: JSON.stringify({ title, content })
     });
@@ -1436,8 +1431,7 @@ async function collabAIGenerateSchema(silent = false) {
   try {    const response = await fetch('/api/ai/generate-schema', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+                'Content-Type': 'application/json'
       },
       body: JSON.stringify({ title, content })
     });
@@ -1472,8 +1466,7 @@ async function collabAIGenerateEmbedding(silent = false) {
   try {    const response = await fetch('/api/ai/generate-embedding', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+                'Content-Type': 'application/json'
       },
       body: JSON.stringify({ title, content })
     });
@@ -1712,10 +1705,7 @@ window.deleteMeeting = async function(meetingId, meetingTitle) {
   
   try {
     showNotification('🗑️ Deleting meeting...', 'info');    const response = await fetch(`/api/meetings/otter/transcripts/${meetingId}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      method: 'DELETE'
     });
     
     const data = await response.json();
@@ -2019,9 +2009,6 @@ async function handleFileUpload(file) {
     const formData = new FormData();
     formData.append('file', file);    const response = await fetch('/api/meetings/parse-file', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
       body: formData
     });
     
@@ -2153,8 +2140,7 @@ window.syncFromZapier = async function() {
     showNotification('🔄 Syncing meetings from Zapier Tables...', 'info');    const response = await fetch(`/api/meetings/zapier/sync`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+                'Content-Type': 'application/json'
       },
       body: JSON.stringify({ zapierApiKey: apiKey })
     });
@@ -2440,8 +2426,7 @@ window.sendTeamEmail = async function() {
   try {    const response = await fetch(`${API_BASE}/send-email`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+                'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         to,
@@ -2470,7 +2455,7 @@ let currentTaskFilter = 'all';
 
 async function loadTasks() {
   console.log('📋 Loading tasks...');
-  try {    console.log('🔑 Token:', token ? 'Found' : 'Missing');
+  try {
     
     const res = await fetch('/api/tasks', { credentials: 'include' });
     
@@ -2690,8 +2675,7 @@ async function toggleTask(id, completed) {
   try {    const res = await fetch(`/api/tasks/${id}`, {
       method: 'PUT',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+                'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         status: completed ? 'completed' : 'pending'
@@ -2712,7 +2696,7 @@ async function deleteTask(id) {
   
   try {    const res = await fetch(`/api/tasks/${id}`, {
       method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` }
+      credentials: 'include'
     });
     
     if (res.ok) {
