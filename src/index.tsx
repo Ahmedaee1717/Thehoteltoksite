@@ -75,8 +75,13 @@ app.use('*', async (c, next) => {
   await next();
 })
 
-// Enable CORS for API routes
-app.use('/api/*', cors())
+// Enable CORS for API routes with credentials support
+app.use('/api/*', cors({
+  origin: (origin) => origin, // Allow all origins (can be restricted in production)
+  credentials: true, // CRITICAL: Allow cookies to be sent/received
+  allowHeaders: ['Content-Type', 'Authorization'],
+  allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+}))
 
 // Serve static files
 app.use('/static/*', serveStatic({ root: './public' }))

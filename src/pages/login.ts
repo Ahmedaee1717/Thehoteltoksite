@@ -465,6 +465,7 @@ export const loginPage = `<!DOCTYPE html>
                     headers: {
                         'Content-Type': 'application/json'
                     },
+                    credentials: 'include', // CRITICAL: Include cookies in request/response
                     body: JSON.stringify({ email, password })
                 });
 
