@@ -78,11 +78,11 @@ export const loginPage = `<!DOCTYPE html>
         }
 
         .logo-icon {
-            width: 180px;
-            height: auto;
+            width: 120px;
+            height: 120px;
             margin: 0 auto 32px;
             position: relative;
-            padding: 24px;
+            padding: 20px;
             background: #1a1a1a;
             border: 3px solid #D4AF37;
             box-shadow: 
@@ -114,11 +114,12 @@ export const loginPage = `<!DOCTYPE html>
 
         .logo-icon img {
             width: 100%;
-            height: auto;
+            height: 100%;
             display: block;
             position: relative;
             z-index: 1;
             filter: brightness(1.05) contrast(1.05);
+            object-fit: contain;
         }
 
         .brand-name {
@@ -370,7 +371,7 @@ export const loginPage = `<!DOCTYPE html>
     <div class="container">
         <div class="logo-container">
             <div class="logo-icon">
-                <img src="https://www.investaycapital.com/static/investay-logo-clean.png" alt="Investay Capital">
+                <img src="https://www.investaycapital.com/static/investay-logo-icon.png" alt="Investay Capital">
             </div>
             <div class="brand-name">INVESTAY CAPITAL</div>
             <div class="brand-tagline">Enterprise Email Platform</div>
