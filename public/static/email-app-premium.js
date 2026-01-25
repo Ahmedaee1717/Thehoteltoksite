@@ -123,17 +123,22 @@ window.addEventListener('DOMContentLoaded', function() {
     // Get user email from server (NOT localStorage!)
     const getUserEmail = async () => {
       try {
+        console.log('🔍 [DEBUG] getUserEmail() called - Fetching /api/auth/me...');
         const response = await fetch('/api/auth/me', {
           credentials: 'include'
         });
+        console.log('🔍 [DEBUG] /api/auth/me response status:', response.status);
         const data = await response.json();
+        console.log('🔍 [DEBUG] /api/auth/me data:', data);
         
         if (data.success && data.user) {
+          console.log('✅ [DEBUG] User authenticated:', data.user.email);
           return data.user.email;
         }
+        console.log('❌ [DEBUG] getUserEmail returning null - no valid user');
         return null;
       } catch (err) {
-        console.error('Failed to get user:', err);
+        console.error('❌ [DEBUG] Failed to get user:', err);
         return null;
       }
     };
@@ -144,10 +149,13 @@ window.addEventListener('DOMContentLoaded', function() {
       const [loading, setLoading] = useState(true);
       
       useEffect(() => {
+        console.log('🔄 [DEBUG] AppLoader useEffect triggered - checking auth...');
         getUserEmail().then(email => {
           if (!email) {
+            console.log('❌ [DEBUG] No email returned, redirecting to /login...');
             window.location.href = '/login';
           } else {
+            console.log('✅ [DEBUG] Setting user:', email);
             setUser(email);
             setLoading(false);
           }
@@ -1142,16 +1150,19 @@ window.addEventListener('DOMContentLoaded', function() {
       
       const loadCollabData = async (emailId) => {
         try {
+          console.log('🔍 [DEBUG] loadCollabData called for emailId:', emailId);
           const [commentsRes, statsRes] = await Promise.all([
             fetch(`/api/collaboration/comments/${emailId}`, { credentials: 'include' }),
             fetch(`/api/collaboration/stats/${emailId}`, { credentials: 'include' })
           ]);
+          console.log('🔍 [DEBUG] Collaboration API responses - comments:', commentsRes.status, 'stats:', statsRes.status);
           const commentsData = await commentsRes.json();
           const statsData = await statsRes.json();
+          console.log('✅ [DEBUG] Collaboration data loaded:', { comments: commentsData.comments?.length || 0, stats: statsData.stats });
           setComments(commentsData.comments || []);
           setCollabStats(statsData.stats || {});
         } catch (error) {
-          console.error('Load collab error:', error);
+          console.error('❌ [DEBUG] Load collab error:', error);
         }
       };
       
