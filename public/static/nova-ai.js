@@ -957,7 +957,14 @@
   function extractRecipientFromText(text) {
     console.log('🔍 Extracting recipient from:', text);
     
-    // Pattern 0: Company name BEFORE "contact" or "information" (highest priority)
+    // Pattern 0A: "to [Company Name]" (e.g., "Send proposal to Sharmdreams Group")
+    const toCompanyMatch = text.match(/\b(?:to|for)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)/);
+    if (toCompanyMatch && !['Review', 'Next', 'All', 'Meeting'].includes(toCompanyMatch[1])) {
+      console.log('✅ Recipient found (to/for Company):', toCompanyMatch[1]);
+      return toCompanyMatch[1];
+    }
+    
+    // Pattern 0B: Company name BEFORE "contact" or "information" (high priority)
     // e.g., "Find Mattereum contact information" → "Mattereum"
     const beforeContactMatch = text.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:contact|information|details|email)/i);
     if (beforeContactMatch && !['Find', 'Email', 'Contact', 'Reach', 'Get'].includes(beforeContactMatch[1])) {
@@ -1642,7 +1649,12 @@ ${meeting.summary?.substring(0, 500)}`;
         
         for (const item of items) {
           const text = item.text.toLowerCase();
-          const isEmailTask = text.includes('email') || text.includes('contact') || text.includes('reach out');
+          const isEmailTask = text.includes('email') || 
+                              text.includes('contact') || 
+                              text.includes('reach out') ||
+                              text.includes('send') && (text.includes(' to ') || text.includes(' for ')) ||
+                              text.includes('proposal') ||
+                              text.includes('reach out to');
           
           if (isEmailTask) {
             // For EMAIL tasks, use handleSmartEmailTask which does web search
