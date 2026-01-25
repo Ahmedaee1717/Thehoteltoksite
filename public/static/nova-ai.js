@@ -414,26 +414,39 @@
   // Boot up NOVA
   async function bootUpNova() {
     setNovaMood(NOVA_STATES.WORKING);
-    novaSpeak("Booting up neural network... 🌟", 2000);    if (!token) {
+    novaSpeak("Booting up neural network... 🌟", 2000);
+    
+    // Check auth via API (no more localStorage tokens!)
+    try {
+      const authRes = await fetch('/api/auth/me', { credentials: 'include' });
+      const authData = await authRes.json();
+      
+      if (!authData.success || !authData.user) {
+        setTimeout(() => {
+          setNovaMood(NOVA_STATES.CONCERNED);
+          novaSpeak("Hey! You need to log in first 😊");
+        }, 2000);
+        return;
+      }
+      
+      // Get user name from API response
+      novaState.context.userName = authData.user.displayName || authData.user.email.split('@')[0];
+      
+    } catch (e) {
+      console.error('NOVA auth check failed:', e);
       setTimeout(() => {
         setNovaMood(NOVA_STATES.CONCERNED);
-        novaSpeak("Hey! You need to log in first 😊");
+        novaSpeak("Having trouble verifying your identity...");
       }, 2000);
       return;
     }
 
-    // Get user name from token
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      novaState.context.userName = (payload.email || 'User').split('@')[0];
-    } catch (e) {}
-
-    try {
-      // Load all data
+      // Load all data (no token params needed - uses cookies!)
       await Promise.all([
-        loadTasks(token),
-        loadEmails(token),
-        loadMeetings(token)
+        loadTasks(),
+        loadEmails(),
+        loadMeetings()
       ]);
 
       setTimeout(() => {
@@ -452,7 +465,7 @@
   }
 
   // Load data functions
-  async function loadTasks(token) {
+  async function loadTasks() {
     try {
       const res = await fetch(`${API_BASE}/tasks`, {
         credentials: 'include'
@@ -467,7 +480,7 @@
     }
   }
 
-  async function loadEmails(token) {
+  async function loadEmails() {
     try {
       const res = await fetch(`${API_BASE}/email/list?limit=20`, {
         credentials: 'include'
@@ -482,7 +495,7 @@
     }
   }
 
-  async function loadMeetings(token) {
+  async function loadMeetings() {
     try {
       const res = await fetch(`${API_BASE}/meetings/otter/transcripts?limit=20`, {
         credentials: 'include'
