@@ -259,25 +259,15 @@ authRoutes.get('/me', async (c) => {
   
   try {
     const token = getCookie(c, 'auth_token')
-    const sessionId = getCookie(c, 'session_id')
     
-    if (!token || !sessionId) {
+    if (!token) {
       return c.json({ 
         success: false, 
         error: 'Not authenticated' 
       }, { status: 401, headers })
     }
     
-    // Verify session
-    const session = sessionStore.get(sessionId)
-    if (!session) {
-      return c.json({ 
-        success: false, 
-        error: 'Session expired' 
-      }, { status: 401, headers })
-    }
-    
-    // Verify JWT token
+    // Verify JWT token (don't rely on in-memory session)
     const jwtSecret = JWT_SECRET || 'default-secret-change-in-production'
     const payload = await verifyToken(token, jwtSecret)
     
@@ -288,7 +278,7 @@ authRoutes.get('/me', async (c) => {
       }, { status: 401, headers })
     }
     
-    // Get fresh user data
+    // Get fresh user data from database
     const account = await DB.prepare(`
       SELECT id, email_address, display_name, is_active 
       FROM email_accounts 
