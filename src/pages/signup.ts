@@ -13,7 +13,7 @@ export const signupPage = `<!DOCTYPE html>
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
-            background: #000000;
+            background: #1a1a1a;
             color: #ffffff;
             min-height: 100vh;
             display: flex;
@@ -415,7 +415,7 @@ export const signupPage = `<!DOCTYPE html>
 <body>
     <div class="container">
         <div class="logo">
-            <img src="https://www.investaycapital.com/static/investay-logo-gold-line.png" alt="Investay Capital">
+            <img src="https://www.investaycapital.com/static/investay-logo-clean.png" alt="Investay Capital">
         </div>
 
         <div class="card">
