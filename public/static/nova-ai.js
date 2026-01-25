@@ -640,8 +640,8 @@
       });
     }
 
-    // Extract action items from recent meetings
-    for (const meeting of novaState.data.meetings.slice(0, 3)) {
+    // Extract action items from recent meetings (up to 10 most recent)
+    for (const meeting of novaState.data.meetings.slice(0, 10)) {
       const items = extractActionItemsFromMeeting(meeting);
       if (items.length > 0) {
         // Check for EMAIL tasks specifically
