@@ -812,7 +812,9 @@
   border-radius: 12px;
   font-size: 13px;
   color: white;
-  line-height: 1.6;
+  line-height: 1.8;
+  white-space: pre-line;
+  word-wrap: break-word;
 }
 
 .msg-nova .msg-bubble {

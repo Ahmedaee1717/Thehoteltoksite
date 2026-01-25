@@ -1904,72 +1904,71 @@ ${meeting.summary?.substring(0, 500)}`;
     // GENERATE CRITICAL ANALYSIS
     setNovaMood(NOVA_STATES.EXCITED);
     
-    let analysis = `📊 **PROGRESS ANALYSIS (${sortedMeetings.length} meetings analyzed)**\n\n`;
+    let analysis = `📊 **PROGRESS ANALYSIS**\n${sortedMeetings.length} meetings analyzed\n\n`;
+    analysis += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
     
     // Timeline
-    analysis += `📅 **Timeline:**\n`;
-    analysis += `• First meeting: ${sortedMeetings[0].title}\n`;
-    analysis += `• Latest meeting: ${sortedMeetings[sortedMeetings.length - 1].title}\n`;
-    analysis += `• Total meetings: ${sortedMeetings.length}\n\n`;
+    analysis += `📅 **TIMELINE**\n\n`;
+    analysis += `  First: ${sortedMeetings[0].title}\n`;
+    analysis += `  Latest: ${sortedMeetings[sortedMeetings.length - 1].title}\n`;
+    analysis += `  Total: ${sortedMeetings.length} meetings\n\n`;
     
     // Key initiatives
     if (companies.size > 0) {
-      analysis += `🎯 **Key Initiatives/Companies:**\n`;
+      analysis += `🎯 **KEY INITIATIVES**\n\n`;
       Array.from(companies).slice(0, 5).forEach(c => {
-        analysis += `• ${c}\n`;
+        analysis += `  • ${c}\n`;
       });
       analysis += '\n';
     }
     
     // Task completion
-    analysis += `✅ **Task Execution:**\n`;
-    analysis += `• Completion rate: ${completionRate}%\n`;
-    analysis += `• Completed: ${completedTasks}/${totalTasks}\n`;
+    analysis += `✅ **TASK EXECUTION**\n\n`;
+    analysis += `  Completion rate: ${completionRate}%\n`;
+    analysis += `  Completed: ${completedTasks}/${totalTasks}\n\n`;
     
     if (completionRate < 30) {
-      analysis += `• ⚠️ **CRITICAL:** Very low completion rate! Most commitments are not being executed.\n`;
+      analysis += `  ⚠️ **CRITICAL:** Very low completion rate!\n  Most commitments not being executed.\n\n`;
     } else if (completionRate < 60) {
-      analysis += `• ⚠️ Below target - need to focus on execution.\n`;
+      analysis += `  ⚠️ Below target - need to focus on execution.\n\n`;
     } else {
-      analysis += `• ✅ Good execution rate!\n`;
+      analysis += `  ✅ Good execution rate!\n\n`;
     }
-    analysis += '\n';
     
     // Top commitments
     if (commitments.length > 0) {
-      analysis += `📝 **Key Commitments Made:**\n`;
+      analysis += `📝 **KEY COMMITMENTS**\n\n`;
       commitments.slice(0, 5).forEach(c => {
-        analysis += `• "${c.text}" (${c.meeting})\n`;
+        analysis += `  • "${c.text}"\n    (${c.meeting})\n\n`;
       });
-      analysis += '\n';
     }
     
     // Blockers
     if (blockers.length > 0) {
-      analysis += `🚫 **Blockers/Challenges Identified:**\n`;
+      analysis += `🚫 **BLOCKERS/CHALLENGES**\n\n`;
       blockers.slice(0, 3).forEach(b => {
-        analysis += `• ${b.text} (${b.meeting})\n`;
+        analysis += `  • ${b.text}\n    (${b.meeting})\n\n`;
       });
-      analysis += '\n';
     }
     
     // CRITICAL ASSESSMENT
-    analysis += `🎯 **CRITICAL ASSESSMENT:**\n`;
+    analysis += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    analysis += `🎯 **CRITICAL ASSESSMENT**\n\n`;
     
     if (sortedMeetings.length < 3) {
-      analysis += `• ⚠️ Limited data - need more meetings to assess properly\n`;
+      analysis += `  ⚠️ Limited data\n  Need more meetings to assess properly\n`;
     } else if (completionRate < 40 && blockers.length > 2) {
-      analysis += `• 🔴 **RED FLAG:** Many commitments, low completion, multiple blockers\n`;
-      analysis += `• **Action:** Need to clear blockers and focus on execution\n`;
+      analysis += `  🔴 **RED FLAG**\n  Many commitments, low completion, multiple blockers\n\n`;
+      analysis += `  **Action Required:**\n  Clear blockers and focus on execution\n`;
     } else if (companies.size > 3 && completionRate < 50) {
-      analysis += `• ⚠️ **CONCERN:** Spreading too thin across ${companies.size} initiatives\n`;
-      analysis += `• **Action:** Consider focusing on fewer high-impact projects\n`;
+      analysis += `  ⚠️ **CONCERN**\n  Spreading too thin across ${companies.size} initiatives\n\n`;
+      analysis += `  **Action Required:**\n  Focus on fewer high-impact projects\n`;
     } else if (completionRate > 70) {
-      analysis += `• ✅ **STRONG:** Good execution rate, momentum building\n`;
-      analysis += `• **Action:** Keep the momentum, scale what's working\n`;
+      analysis += `  ✅ **STRONG**\n  Good execution rate, momentum building\n\n`;
+      analysis += `  **Next Steps:**\n  Keep momentum, scale what's working\n`;
     } else {
-      analysis += `• 🟡 **MODERATE:** Making progress but room for improvement\n`;
-      analysis += `• **Action:** Clear blockers and increase follow-through\n`;
+      analysis += `  🟡 **MODERATE**\n  Making progress but room for improvement\n\n`;
+      analysis += `  **Action Required:**\n  Clear blockers and increase follow-through\n`;
     }
     
     addChatMessage('nova', analysis);
