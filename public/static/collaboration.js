@@ -1809,7 +1809,10 @@ window.showManualUploadModal = function() {
                 <p style="margin: 0 0 12px 0; color: rgba(255,255,255,0.6); font-size: 14px;">
                   Supports: TXT, DOCX, PDF
                 </p>
-                <input type="file" id="file-input" accept=".txt,.docx,.pdf" style="display: none;">
+                <p style="margin: 0 0 12px 0; color: #C9A962; font-size: 13px; font-weight: 600;">
+                  📦 Bulk Upload: Select up to 50 files at once!
+                </p>
+                <input type="file" id="file-input" accept=".txt,.docx,.pdf" multiple style="display: none;">
                 <button type="button" class="quantum-btn" onclick="document.getElementById('file-input').click()">
                   Choose File
                 </button>
@@ -1911,17 +1914,17 @@ function setupFileUpload() {
     dropzone.style.borderColor = 'rgba(255, 255, 255, 0.2)';
     dropzone.style.background = 'rgba(255, 255, 255, 0.03)';
     
-    const files = e.dataTransfer.files;
+    const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
-      handleFileUpload(files[0]);
+      handleBulkFileUpload(files);
     }
   });
   
   // File input handler
   fileInput.addEventListener('change', (e) => {
-    const files = e.target.files;
+    const files = Array.from(e.target.files);
     if (files.length > 0) {
-      handleFileUpload(files[0]);
+      handleBulkFileUpload(files);
     }
   });
   
@@ -2057,6 +2060,167 @@ async function handleFileUpload(file) {
     `;
     showNotification('❌ PDF upload failed. Try manual entry.', 'error');
   }
+}
+
+async function handleBulkFileUpload(files) {
+  const filesArray = Array.from(files);
+  const MAX_FILES = 50;
+  
+  if (filesArray.length > MAX_FILES) {
+    showNotification(`❌ Maximum ${MAX_FILES} files allowed. You selected ${filesArray.length} files.`, 'error');
+    return;
+  }
+  
+  const allowedTypes = [
+    'text/plain',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/pdf'
+  ];
+  
+  const allowedExtensions = ['.txt', '.docx', '.pdf'];
+  
+  // Filter valid files
+  const validFiles = filesArray.filter(file => {
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+    return allowedTypes.includes(file.type) || allowedExtensions.includes(fileExtension);
+  });
+  
+  if (validFiles.length === 0) {
+    showNotification('❌ No valid files found. Please upload TXT, DOCX, or PDF files.', 'error');
+    return;
+  }
+  
+  if (validFiles.length < filesArray.length) {
+    showNotification(`⚠️ ${filesArray.length - validFiles.length} invalid file(s) skipped. Processing ${validFiles.length} valid files.`, 'warning');
+  }
+  
+  const statusDiv = document.getElementById('file-upload-status');
+  statusDiv.style.display = 'block';
+  
+  // Single file upload - use existing logic
+  if (validFiles.length === 1) {
+    await handleFileUpload(validFiles[0]);
+    return;
+  }
+  
+  // Bulk upload
+  statusDiv.innerHTML = `
+    <div style="padding: 12px; background: rgba(201, 169, 98, 0.1); border-radius: 8px; color: #fff;">
+      <strong>📦 Bulk Upload: ${validFiles.length} files</strong><br>
+      <small style="color: rgba(255,255,255,0.7);">🔄 Processing files...</small>
+      <div id="bulk-progress" style="margin-top: 8px;"></div>
+    </div>
+  `;
+  
+  const progressDiv = document.getElementById('bulk-progress');
+  let successCount = 0;
+  let failCount = 0;
+  
+  // Close the modal and show progress notification
+  closeManualUploadModal();
+  showNotification(`📦 Bulk upload started: ${validFiles.length} files`, 'info');
+  
+  // Process files sequentially to avoid overwhelming the server
+  for (let i = 0; i < validFiles.length; i++) {
+    const file = validFiles[i];
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+    
+    try {
+      let title, transcript, summary, dateCreated, ownerName;
+      
+      // Handle TXT files directly
+      if (fileExtension === '.txt') {
+        const text = await file.text();
+        title = file.name.replace('.txt', '');
+        transcript = text;
+        
+        // Try to extract summary
+        const summaryMatch = text.match(/SUMMARY\s*[:\n]+(.*?)(?=\n\n|SPEAKERS|$)/is);
+        if (summaryMatch) {
+          summary = summaryMatch[1].trim();
+        }
+        
+        // Try to extract date
+        const dateMatch = text.match(/(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+(\w+\s+\d+,\s+\d{4}\s+\d+:\d+\s*[AP]M)/i);
+        if (dateMatch) {
+          dateCreated = new Date(dateMatch[0]).toISOString();
+        }
+        
+        // Try to extract owner
+        const speakersMatch = text.match(/SPEAKERS\s*[:\n]+(.*?)(?=\n\n|TRANSCRIPT|$)/is);
+        if (speakersMatch) {
+          const speakers = speakersMatch[1].trim().split(/,\s*/);
+          if (speakers.length > 0) {
+            ownerName = speakers[0].trim();
+          }
+        }
+      } else {
+        // Handle DOCX/PDF via backend
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await fetch('/api/meetings/parse-file', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.error || 'Extraction failed');
+        }
+        
+        title = data.title || file.name.replace(/\.(docx|pdf)$/, '');
+        transcript = data.transcript || '';
+        summary = data.summary || '';
+        dateCreated = data.date;
+        ownerName = data.owner;
+      }
+      
+      // Upload to backend
+      const response = await fetch('/api/meetings/otter/transcripts', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: title || `Meeting ${i + 1}`,
+          transcript_text: transcript,
+          summary: summary || '',
+          meeting_url: '',
+          owner_name: ownerName || 'Unknown',
+          date_created: dateCreated || new Date().toISOString()
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        successCount++;
+        console.log(`✅ Uploaded: ${file.name}`);
+      } else {
+        failCount++;
+        console.error(`❌ Failed: ${file.name} - ${result.error}`);
+      }
+    } catch (error) {
+      failCount++;
+      console.error(`❌ Error processing ${file.name}:`, error);
+    }
+    
+    // Update progress
+    showNotification(`📦 Progress: ${i + 1}/${validFiles.length} (✅${successCount} ❌${failCount})`, 'info');
+  }
+  
+  // Show final result
+  if (failCount === 0) {
+    showNotification(`🎉 Bulk upload complete! Successfully uploaded ${successCount} meetings!`, 'success');
+  } else {
+    showNotification(`⚠️ Bulk upload finished: ${successCount} succeeded, ${failCount} failed`, 'warning');
+  }
+  
+  // Refresh the meetings list
+  setTimeout(() => {
+    location.reload();
+  }, 2000);
 }
 
 window.closeManualUploadModal = function() {
