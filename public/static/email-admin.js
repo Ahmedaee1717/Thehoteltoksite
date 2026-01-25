@@ -132,6 +132,40 @@ function EmailAdminApp() {
     }
   };
   
+  const handleResetPassword = async (id, email) => {
+    const newPassword = prompt(`Enter new password for ${email}:\n\n(Minimum 8 characters)`);
+    
+    if (!newPassword) {
+      return; // User cancelled
+    }
+    
+    if (newPassword.length < 8) {
+      setError('Password must be at least 8 characters long');
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/email/accounts/${id}/reset-password`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ newPassword })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setSuccess(`✅ Password for ${email} updated successfully!`);
+      } else {
+        setError(data.error || 'Failed to reset password');
+      }
+    } catch (err) {
+      console.error('Reset password error:', err);
+      setError('Failed to reset password: ' + err.message);
+    }
+  };
+  
   // ============================================
   // SHARED MAILBOX FUNCTIONS
   // ============================================
@@ -549,6 +583,7 @@ function EmailAdminApp() {
                     account=${account}
                     onDelete=${handleDeleteAccount}
                     onToggle=${handleToggleStatus}
+                    onResetPassword=${handleResetPassword}
                   />
                 `)}
               </div>
@@ -641,7 +676,7 @@ function EmailAdminApp() {
 // ============================================
 // ACCOUNT CARD COMPONENT
 // ============================================
-function AccountCard({ account, onDelete, onToggle }) {
+function AccountCard({ account, onDelete, onToggle, onResetPassword }) {
   const isActive = account.is_active === 1;
   const createdDate = new Date(account.created_at).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -726,6 +761,23 @@ function AccountCard({ account, onDelete, onToggle }) {
           }}
         >
           ${isActive ? 'Deactivate' : 'Activate'}
+        </button>
+        
+        <button
+          onClick=${() => onResetPassword(account.id, account.email)}
+          style=${{
+            padding: '8px 16px',
+            background: 'rgba(59, 130, 246, 0.1)',
+            color: '#93c5fd',
+            border: '1px solid rgba(59, 130, 246, 0.3)',
+            borderRadius: '10px',
+            fontSize: '14px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          🔑 Reset Password
         </button>
         
         <button

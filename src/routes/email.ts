@@ -2702,6 +2702,66 @@ emailRoutes.patch('/accounts/:id/toggle', async (c) => {
   }
 });
 
+// PATCH /api/email/accounts/:id/reset-password
+// Reset email account password (Admin only)
+emailRoutes.patch('/accounts/:id/reset-password', async (c) => {
+  const { DB } = c.env;
+  const accountId = c.req.param('id');
+  
+  try {
+    const { newPassword } = await c.req.json();
+    
+    // Validate password
+    if (!newPassword || newPassword.length < 8) {
+      return c.json({ 
+        success: false, 
+        error: 'Password must be at least 8 characters long' 
+      }, 400);
+    }
+    
+    // Get account
+    const account = await DB.prepare(`
+      SELECT id, email_address as email FROM email_accounts WHERE id = ?
+    `).bind(accountId).first();
+    
+    if (!account) {
+      return c.json({ 
+        success: false, 
+        error: 'Email account not found' 
+      }, 404);
+    }
+    
+    // Hash the new password
+    const passwordHash = await hashPassword(newPassword);
+    
+    // Update password
+    const result = await DB.prepare(`
+      UPDATE email_accounts 
+      SET password_hash = ?, updated_at = datetime('now')
+      WHERE id = ?
+    `).bind(passwordHash, accountId).run();
+    
+    if (!result.success) {
+      return c.json({ 
+        success: false, 
+        error: 'Failed to update password' 
+      }, 500);
+    }
+    
+    return c.json({
+      success: true,
+      message: 'Password updated successfully',
+      account: {
+        id: account.id,
+        email: account.email
+      }
+    });
+  } catch (error: any) {
+    console.error('Password reset error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
 // ============================================
 // POST /api/email/receive
 // Webhook endpoint for receiving emails from Mailgun
