@@ -1091,6 +1091,62 @@ meetings.delete('/otter/transcripts/:id', async (c) => {
   }
 })
 
+// Update transcript (e.g., speakers, summary, etc.)
+meetings.put('/otter/transcripts/:id', async (c) => {
+  const id = c.req.param('id')
+  
+  try {
+    const body = await c.req.json()
+    const { speakers, title, summary, transcript_text, meeting_url } = body
+    
+    // Build UPDATE query dynamically based on provided fields
+    const updates: string[] = []
+    const params: any[] = []
+    
+    if (speakers !== undefined) {
+      updates.push('speakers = ?')
+      params.push(speakers)
+    }
+    if (title !== undefined) {
+      updates.push('title = ?')
+      params.push(title)
+    }
+    if (summary !== undefined) {
+      updates.push('summary = ?')
+      params.push(summary)
+    }
+    if (transcript_text !== undefined) {
+      updates.push('transcript_text = ?')
+      params.push(transcript_text)
+    }
+    if (meeting_url !== undefined) {
+      updates.push('meeting_url = ?')
+      params.push(meeting_url)
+    }
+    
+    if (updates.length === 0) {
+      return c.json({ success: false, error: 'No fields to update' }, 400)
+    }
+    
+    // Always update updated_at
+    updates.push('updated_at = CURRENT_TIMESTAMP')
+    params.push(id)
+    
+    const query = `
+      UPDATE otter_transcripts 
+      SET ${updates.join(', ')}
+      WHERE id = ?
+    `
+    
+    await c.env.DB.prepare(query).bind(...params).run()
+    
+    return c.json({ success: true, message: 'Transcript updated successfully' })
+  } catch (error: any) {
+    console.error('Error updating transcript:', error)
+    return c.json({ success: false, error: 'Failed to update transcript', details: error.message }, 500)
+  }
+})
+
 // Search transcripts (full-text search)
 meetings.get('/otter/search', async (c) => {
   const query = c.req.query('q') || ''

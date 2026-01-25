@@ -1679,9 +1679,17 @@ function showMeetingModal(meeting) {
           
           ${speakers.length > 0 ? `
             <div class="meeting-speakers-section">
-              <h3>👥 Speakers</h3>
-              <div class="speakers-list">
-                ${speakers.map(s => `<span class="speaker-tag">${escapeHtml(s.name || s.speaker_name || 'Unknown')}</span>`).join('')}
+              <h3>👥 Speakers <button onclick="editSpeakers(${meeting.id})" class="edit-speakers-btn" title="Edit speaker names">✏️ Edit</button></h3>
+              <div class="speakers-list" id="speakers-list-${meeting.id}">
+                ${speakers.map((s, idx) => {
+                  const speakerName = escapeHtml(s.name || s.speaker_name || 'Unknown');
+                  return `
+                    <span class="speaker-tag" data-speaker-index="${idx}">
+                      <span class="speaker-name">${speakerName}</span>
+                      ${(s.name || s.speaker_name || 'Unknown') === 'Unknown' ? '<span class="unknown-badge" title="Unknown speaker - click Edit to identify">❓</span>' : ''}
+                    </span>
+                  `;
+                }).join('')}
               </div>
             </div>
           ` : ''}
@@ -1718,6 +1726,159 @@ window.closeMeetingModal = function() {
   const modal = document.getElementById('meeting-transcript-modal');
   if (modal) {
     modal.remove();
+  }
+};
+
+// ✏️ EDIT SPEAKERS
+window.editSpeakers = async function(meetingId) {
+  try {
+    // Fetch the full meeting data
+    const response = await fetch(`/api/meetings/otter/transcripts/${meetingId}`);
+    const meeting = await response.json();
+    
+    if (!meeting) {
+      showNotification('❌ Failed to load meeting data', 'error');
+      return;
+    }
+    
+    // Parse speakers
+    let speakers = [];
+    if (meeting.speakers) {
+      try {
+        speakers = JSON.parse(meeting.speakers);
+        if (!Array.isArray(speakers)) {
+          speakers = [{ name: meeting.speakers }];
+        }
+      } catch (e) {
+        speakers = meeting.speakers.split(',').map(s => ({ name: s.trim() })).filter(s => s.name);
+      }
+    }
+    
+    // Build editing UI
+    const editModalHtml = `
+      <div id="edit-speakers-modal" class="collab-email-modal" onclick="if(event.target === this) closeEditSpeakersModal()">
+        <div class="collab-email-modal-content" style="max-width: 600px;">
+          <div class="collab-email-modal-header">
+            <h3>✏️ Edit Speaker Names</h3>
+            <button class="collab-email-modal-close" onclick="closeEditSpeakersModal()">×</button>
+          </div>
+          
+          <div class="collab-email-modal-body">
+            <p style="margin-bottom: 20px; color: #666;">
+              💡 <strong>Tip:</strong> Identify unknown speakers by editing their names below. 
+              Changes will update the meeting transcript.
+            </p>
+            
+            <div id="speakers-edit-list">
+              ${speakers.map((speaker, idx) => {
+                const speakerName = speaker.name || speaker.speaker_name || 'Unknown';
+                const isUnknown = speakerName === 'Unknown';
+                return `
+                  <div class="speaker-edit-row" data-speaker-index="${idx}">
+                    <span class="speaker-number">Speaker ${idx + 1}:</span>
+                    <input 
+                      type="text" 
+                      class="speaker-name-input ${isUnknown ? 'unknown-speaker' : ''}" 
+                      value="${escapeHtml(speakerName)}"
+                      placeholder="Enter speaker name..."
+                      data-original="${escapeHtml(speakerName)}"
+                    />
+                    ${isUnknown ? '<span class="unknown-indicator">❓ Unknown - Please Identify</span>' : ''}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+            
+            <button onclick="addNewSpeaker()" class="add-speaker-btn" style="margin-top: 15px;">
+              ➕ Add Another Speaker
+            </button>
+          </div>
+          
+          <div class="collab-email-modal-footer">
+            <button class="collab-email-btn-cancel" onclick="closeEditSpeakersModal()">Cancel</button>
+            <button class="collab-email-btn-send" onclick="saveSpeakers(${meetingId})">
+              <span class="email-btn-icon">💾</span>
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', editModalHtml);
+  } catch (error) {
+    console.error('Error opening speaker editor:', error);
+    showNotification('❌ Failed to open speaker editor', 'error');
+  }
+};
+
+window.closeEditSpeakersModal = function() {
+  const modal = document.getElementById('edit-speakers-modal');
+  if (modal) {
+    modal.remove();
+  }
+};
+
+window.addNewSpeaker = function() {
+  const list = document.getElementById('speakers-edit-list');
+  const currentCount = list.querySelectorAll('.speaker-edit-row').length;
+  
+  const newRow = `
+    <div class="speaker-edit-row" data-speaker-index="${currentCount}">
+      <span class="speaker-number">Speaker ${currentCount + 1}:</span>
+      <input 
+        type="text" 
+        class="speaker-name-input" 
+        value=""
+        placeholder="Enter speaker name..."
+      />
+    </div>
+  `;
+  
+  list.insertAdjacentHTML('beforeend', newRow);
+};
+
+window.saveSpeakers = async function(meetingId) {
+  try {
+    // Collect all speaker names
+    const inputs = document.querySelectorAll('#speakers-edit-list .speaker-name-input');
+    const speakers = Array.from(inputs)
+      .map(input => ({
+        name: input.value.trim()
+      }))
+      .filter(s => s.name); // Remove empty names
+    
+    if (speakers.length === 0) {
+      showNotification('⚠️ Please enter at least one speaker name', 'warning');
+      return;
+    }
+    
+    showNotification('💾 Saving speaker changes...', 'info');
+    
+    // Update the meeting with new speakers
+    const response = await fetch(`/api/meetings/otter/transcripts/${meetingId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        speakers: JSON.stringify(speakers)
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      showNotification('✅ Speakers updated successfully!', 'success');
+      closeEditSpeakersModal();
+      closeMeetingModal();
+      loadMeetings(); // Refresh the meetings list
+    } else {
+      showNotification(`❌ ${data.error || 'Failed to update speakers'}`, 'error');
+    }
+  } catch (error) {
+    console.error('Error saving speakers:', error);
+    showNotification('❌ Error saving speaker changes', 'error');
   }
 };
 

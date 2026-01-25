@@ -975,3 +975,106 @@
     height: 140px;
   }
 }
+
+/* 👥 Speaker Editing Styles */
+.edit-speakers-btn {
+  margin-left: 10px;
+  padding: 4px 12px;
+  background: rgba(0, 240, 255, 0.1);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 6px;
+  color: #00f0ff;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.edit-speakers-btn:hover {
+  background: rgba(0, 240, 255, 0.2);
+  border-color: #00f0ff;
+  transform: translateY(-2px);
+}
+
+.unknown-badge {
+  margin-left: 5px;
+  font-size: 14px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.speaker-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 15px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.speaker-edit-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(0, 240, 255, 0.3);
+}
+
+.speaker-number {
+  min-width: 80px;
+  font-weight: 600;
+  color: #00f0ff;
+  font-size: 14px;
+}
+
+.speaker-name-input {
+  flex: 1;
+  padding: 10px 15px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.speaker-name-input:focus {
+  outline: none;
+  border-color: #00f0ff;
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+}
+
+.speaker-name-input.unknown-speaker {
+  border-color: rgba(255, 193, 7, 0.5);
+  background: rgba(255, 193, 7, 0.05);
+}
+
+.unknown-indicator {
+  color: #ffc107;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.add-speaker-btn {
+  width: 100%;
+  padding: 12px;
+  background: rgba(0, 240, 255, 0.1);
+  border: 2px dashed rgba(0, 240, 255, 0.3);
+  border-radius: 8px;
+  color: #00f0ff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.add-speaker-btn:hover {
+  background: rgba(0, 240, 255, 0.2);
+  border-color: #00f0ff;
+  transform: translateY(-2px);
+}
