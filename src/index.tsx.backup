@@ -23,7 +23,6 @@ import testFormDataRoutes from './routes/test-formdata'
 import search from './routes/search'
 import publicSignup from './routes/public-signup'
 import { homePage } from './pages/home'
-import { signupPage } from './pages/signup'
 import { answerQuestion } from './services/ai-optimizer'
 
 // Force production cache refresh - v2.1.0
@@ -214,14 +213,9 @@ app.get('/mail', (c) => {
   `)
 })
 
-// Signup page - serve the HTML directly
+// Signup page - serve the static HTML file
 app.get('/signup', (c) => {
-  return c.html(signupPage)
-})
-
-// Also support /signup.html for direct access
-app.get('/signup.html', (c) => {
-  return c.html(signupPage)
+  return c.redirect('/signup.html')
 })
 
 // Login page

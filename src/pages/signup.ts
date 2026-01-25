@@ -1,0 +1,855 @@
+export const signupPage = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - iNVESTAY CAPITAL</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #000000;
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #D4AF37;
+            border-radius: 50%;
+            animation: float 20s infinite;
+            opacity: 0.3;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translate(0, 0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.3;
+            }
+            90% {
+                opacity: 0.3;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty));
+                opacity: 0;
+            }
+        }
+
+        .glow-orb {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, transparent 70%);
+            filter: blur(60px);
+            animation: orbit 30s infinite ease-in-out;
+        }
+
+        .orb-1 {
+            top: -200px;
+            left: -200px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            bottom: -200px;
+            right: -200px;
+            animation-delay: 15s;
+        }
+
+        @keyframes orbit {
+            0%, 100% {
+                transform: translate(0, 0) scale(1);
+            }
+            50% {
+                transform: translate(100px, 100px) scale(1.2);
+            }
+        }
+
+        /* Container */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 550px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Logo */
+        .logo-container {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        .logo {
+            width: 300px;
+            height: auto;
+            filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.6));
+            animation: logoGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes logoGlow {
+            0%, 100% {
+                filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.6));
+            }
+            50% {
+                filter: drop-shadow(0 0 50px rgba(212, 175, 55, 0.9));
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Card */
+        .card {
+            background: linear-gradient(135deg, rgba(26, 26, 26, 0.95) 0%, rgba(0, 0, 0, 0.95) 100%);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 24px;
+            padding: 50px 40px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8),
+                        0 0 60px rgba(212, 175, 55, 0.1);
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 1s ease-out 0.3s backwards;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(212, 175, 55, 0.05), transparent);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% {
+                transform: translateX(-100%) translateY(-100%) rotate(45deg);
+            }
+            100% {
+                transform: translateX(100%) translateY(100%) rotate(45deg);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Title */
+        .title {
+            font-size: 36px;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #D4AF37 0%, #F4E5B0 50%, #D4AF37 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 3px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #999;
+            margin-bottom: 40px;
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 30px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 12px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #D4AF37;
+            font-weight: 600;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: #D4AF37;
+            z-index: 2;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 18px 20px 18px 55px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(212, 175, 55, 0.2);
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #D4AF37;
+            background: rgba(0, 0, 0, 0.7);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.2);
+        }
+
+        .email-domain {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            font-size: 16px;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        select.form-input {
+            padding-right: 40px;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23D4AF37' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 20px center;
+            cursor: pointer;
+        }
+
+        /* Button */
+        .btn-primary {
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, #D4AF37 0%, #F4E5B0 50%, #D4AF37 100%);
+            border: none;
+            border-radius: 12px;
+            color: #000000;
+            font-size: 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(212, 175, 55, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 50px rgba(212, 175, 55, 0.6);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Verification Step */
+        .verification-step {
+            display: none;
+        }
+
+        .verification-step.active {
+            display: block;
+        }
+
+        .code-input-group {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 40px 0;
+        }
+
+        .code-digit {
+            width: 60px;
+            height: 70px;
+            text-align: center;
+            font-size: 32px;
+            font-weight: 700;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 12px;
+            color: #ffffff;
+            transition: all 0.3s ease;
+        }
+
+        .code-digit:focus {
+            outline: none;
+            border-color: #D4AF37;
+            background: rgba(0, 0, 0, 0.7);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+            transform: scale(1.05);
+        }
+
+        .timer {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 14px;
+            color: #999;
+        }
+
+        .timer.warning {
+            color: #ff6b6b;
+            font-weight: 600;
+        }
+
+        /* Success message */
+        .success-message {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .success-message.active {
+            display: block;
+        }
+
+        .success-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: successPop 0.6s ease-out;
+        }
+
+        @keyframes successPop {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(212, 175, 55, 0.2);
+            border-top-color: #D4AF37;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Error message */
+        .error-message {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin: 20px 0;
+            color: #ff6b6b;
+            font-size: 14px;
+            display: none;
+            text-align: center;
+        }
+
+        .error-message.active {
+            display: block;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        /* Info box */
+        .info-box {
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+            font-size: 13px;
+            color: #ccc;
+            line-height: 1.6;
+        }
+
+        .info-box strong {
+            color: #D4AF37;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .footer a {
+            color: #D4AF37;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer a:hover {
+            color: #F4E5B0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated background -->
+    <div class="bg-animation">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+    </div>
+
+    <div class="container">
+        <!-- Logo -->
+        <div class="logo-container">
+            <img src="https://www.investaycapital.com/static/investay-logo-full.png" alt="iNVESTAY CAPITAL" class="logo">
+        </div>
+
+        <!-- Signup Card -->
+        <div class="card">
+            <div id="step1" class="signup-step active">
+                <h1 class="title">JOIN US</h1>
+                <p class="subtitle">Enterprise Email Platform</p>
+
+                <div class="error-message" id="error1"></div>
+
+                <form id="signupForm">
+                    <div class="form-group">
+                        <label class="form-label">👤 Full Name</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">✨</span>
+                            <input type="text" class="form-input" id="fullName" placeholder="John Smith" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">📧 Email Username</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">@</span>
+                            <input type="text" class="form-input" id="username" placeholder="your.name" required>
+                            <span class="email-domain">@investaycapital.com</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">🏢 Company</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">🏛️</span>
+                            <select class="form-input" id="company" required>
+                                <option value="">Select your company</option>
+                                <option value="mattereum.com">Mattereum</option>
+                                <option value="sharmdreamsgroup.com">Sharm Dreams Group</option>
+                                <option value="virgingates.com">Virgin Gates</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="loading" id="loading1">
+                        <div class="spinner"></div>
+                        <p style="margin-top: 15px; color: #999;">Sending verification code...</p>
+                    </div>
+
+                    <button type="submit" class="btn-primary" id="submitBtn1">
+                        Request Verification Code
+                    </button>
+                </form>
+
+                <div class="info-box">
+                    <strong>🔒 Secure Signup Process</strong><br>
+                    Only employees of <strong>Mattereum</strong>, <strong>Sharm Dreams Group</strong>, and <strong>Virgin Gates</strong> can register.<br>
+                    A verification code will be sent to your company email.
+                </div>
+            </div>
+
+            <!-- Step 2: Verification -->
+            <div id="step2" class="verification-step">
+                <h1 class="title">VERIFY</h1>
+                <p class="subtitle" id="verificationEmail">Check your email</p>
+
+                <div class="error-message" id="error2"></div>
+
+                <p style="text-align: center; color: #999; margin-bottom: 30px; font-size: 14px;">
+                    Enter the 6-digit code we sent to your email
+                </p>
+
+                <form id="verifyForm">
+                    <div class="code-input-group">
+                        <input type="text" class="code-digit" maxlength="1" id="digit1" data-index="0">
+                        <input type="text" class="code-digit" maxlength="1" id="digit2" data-index="1">
+                        <input type="text" class="code-digit" maxlength="1" id="digit3" data-index="2">
+                        <input type="text" class="code-digit" maxlength="1" id="digit4" data-index="3">
+                        <input type="text" class="code-digit" maxlength="1" id="digit5" data-index="4">
+                        <input type="text" class="code-digit" maxlength="1" id="digit6" data-index="5">
+                    </div>
+
+                    <div class="timer" id="timer">
+                        ⏱ Code expires in <span id="countdown">10:00</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">🔐 Create Password</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">🔒</span>
+                            <input type="password" class="form-input" id="password" placeholder="Min. 8 characters" required minlength="8">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">🔐 Confirm Password</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">✓</span>
+                            <input type="password" class="form-input" id="confirmPassword" placeholder="Re-enter password" required>
+                        </div>
+                    </div>
+
+                    <div class="loading" id="loading2">
+                        <div class="spinner"></div>
+                        <p style="margin-top: 15px; color: #999;">Creating your account...</p>
+                    </div>
+
+                    <button type="submit" class="btn-primary" id="submitBtn2">
+                        Complete Signup
+                    </button>
+
+                    <p style="text-align: center; margin-top: 20px;">
+                        <a href="#" id="resendCode" style="color: #D4AF37; text-decoration: none; font-size: 14px;">
+                            Didn't receive code? Resend
+                        </a>
+                    </p>
+                </form>
+            </div>
+
+            <!-- Step 3: Success -->
+            <div id="step3" class="success-message">
+                <div class="success-icon">🎉</div>
+                <h1 class="title">WELCOME!</h1>
+                <p style="color: #999; margin: 20px 0 40px 0; font-size: 16px;">
+                    Your account has been created successfully
+                </p>
+                <a href="/mail" class="btn-primary" style="display: inline-block; text-decoration: none;">
+                    Access Your Inbox
+                </a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>© 2026 iNVESTAY CAPITAL. All rights reserved.</p>
+            <p style="margin-top: 10px;">
+                Already have an account? <a href="/login">Sign in</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Create animated particles
+        const bgAnimation = document.querySelector('.bg-animation');
+        for (let i = 0; i < 50; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 100 + '%';
+            particle.style.setProperty('--tx', (Math.random() - 0.5) * 200 + 'px');
+            particle.style.setProperty('--ty', (Math.random() - 0.5) * 200 + 'px');
+            particle.style.animationDelay = Math.random() * 20 + 's';
+            bgAnimation.appendChild(particle);
+        }
+
+        let signupData = {};
+        let countdownInterval;
+
+        // Step 1: Request verification
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const fullName = document.getElementById('fullName').value.trim();
+            const username = document.getElementById('username').value.trim().toLowerCase();
+            const company = document.getElementById('company').value;
+
+            if (!fullName || !username || !company) {
+                showError('error1', 'Please fill in all fields');
+                return;
+            }
+
+            // Validate username
+            if (!/^[a-z0-9._-]+$/.test(username)) {
+                showError('error1', 'Username can only contain lowercase letters, numbers, dots, and hyphens');
+                return;
+            }
+
+            signupData = { fullName, username, company };
+
+            document.getElementById('loading1').classList.add('active');
+            document.getElementById('submitBtn1').disabled = true;
+
+            try {
+                const response = await fetch('/api/signup/request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(signupData)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Signup failed');
+                }
+
+                // Move to verification step
+                document.getElementById('verificationEmail').textContent = \`Code sent to \${data.verificationEmail}\`;
+                document.getElementById('step1').classList.remove('active');
+                document.getElementById('step2').classList.add('active');
+                
+                // Start countdown
+                startCountdown(data.expiresIn || 600);
+                
+                // Focus first digit
+                document.getElementById('digit1').focus();
+
+            } catch (error) {
+                showError('error1', error.message);
+            } finally {
+                document.getElementById('loading1').classList.remove('active');
+                document.getElementById('submitBtn1').disabled = false;
+            }
+        });
+
+        // Code input auto-advance
+        const codeDigits = document.querySelectorAll('.code-digit');
+        codeDigits.forEach((digit, index) => {
+            digit.addEventListener('input', (e) => {
+                if (e.target.value.length === 1 && index < 5) {
+                    codeDigits[index + 1].focus();
+                }
+            });
+
+            digit.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    codeDigits[index - 1].focus();
+                }
+            });
+
+            digit.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pastedData = e.clipboardData.getData('text').replace(/\\D/g, '').slice(0, 6);
+                pastedData.split('').forEach((char, i) => {
+                    if (codeDigits[i]) {
+                        codeDigits[i].value = char;
+                    }
+                });
+                if (pastedData.length === 6) {
+                    codeDigits[5].focus();
+                }
+            });
+        });
+
+        // Step 2: Verify and complete signup
+        document.getElementById('verifyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const code = Array.from(codeDigits).map(d => d.value).join('');
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (code.length !== 6) {
+                showError('error2', 'Please enter the 6-digit code');
+                return;
+            }
+
+            if (password.length < 8) {
+                showError('error2', 'Password must be at least 8 characters');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showError('error2', 'Passwords do not match');
+                return;
+            }
+
+            document.getElementById('loading2').classList.add('active');
+            document.getElementById('submitBtn2').disabled = true;
+
+            try {
+                const response = await fetch('/api/signup/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ...signupData,
+                        code,
+                        password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Verification failed');
+                }
+
+                // Show success
+                clearInterval(countdownInterval);
+                document.getElementById('step2').classList.remove('active');
+                document.getElementById('step3').classList.add('active');
+
+            } catch (error) {
+                showError('error2', error.message);
+            } finally {
+                document.getElementById('loading2').classList.remove('active');
+                document.getElementById('submitBtn2').disabled = false;
+            }
+        });
+
+        // Resend code
+        document.getElementById('resendCode').addEventListener('click', async (e) => {
+            e.preventDefault();
+            
+            try {
+                const response = await fetch('/api/signup/request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(signupData)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to resend code');
+                }
+
+                // Reset countdown
+                clearInterval(countdownInterval);
+                startCountdown(data.expiresIn || 600);
+                
+                // Clear code inputs
+                codeDigits.forEach(d => d.value = '');
+                document.getElementById('digit1').focus();
+
+                showError('error2', '✅ New code sent!');
+                setTimeout(() => {
+                    document.getElementById('error2').classList.remove('active');
+                }, 3000);
+
+            } catch (error) {
+                showError('error2', error.message);
+            }
+        });
+
+        function startCountdown(seconds) {
+            const timerEl = document.getElementById('timer');
+            const countdownEl = document.getElementById('countdown');
+            let timeLeft = seconds;
+
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+
+                const minutes = Math.floor(timeLeft / 60);
+                const secs = timeLeft % 60;
+                countdownEl.textContent = \`\${minutes}:\${secs.toString().padStart(2, '0')}\`;
+
+                if (timeLeft <= 60) {
+                    timerEl.classList.add('warning');
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    showError('error2', 'Verification code expired. Please request a new one.');
+                }
+            }, 1000);
+        }
+
+        function showError(elementId, message) {
+            const errorEl = document.getElementById(elementId);
+            errorEl.textContent = message;
+            errorEl.classList.add('active');
+            setTimeout(() => {
+                errorEl.classList.remove('active');
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
+`
