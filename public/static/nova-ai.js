@@ -790,42 +790,65 @@
       }
       // Also check for "Decisions:" format (numbered list)
       else if (meeting.summary.includes('Decisions:')) {
-        actionSection = meeting.summary.split('Decisions:')[1]?.split(/Focus:|Timeline:|Opportunity:|Goal:/)[0];
+        // Split on the NEXT section header (at start of line or after period)
+        // Don't split on keywords that appear mid-sentence (like "Focus: Enhanced guest...")
+        actionSection = meeting.summary.split('Decisions:')[1]?.split(/\.\s+(?:Focus|Timeline|Opportunity|Next Steps|Action Items|Goal):/)[0];
       }
       
       if (actionSection) {
-        const lines = actionSection.split('\n');
-        lines.forEach(line => {
-          // Match lines like: 
-          // • Send WhatsApp contact details - @Ali
-          // • Deliver dashboard prototype - @Mark Rodriguez - Due: February 6th
-          // - Arrange meeting on January 14th
-          // (1) Prepare professional proposal with pricing tiers
-          // (4) Send complete package to resort via email
-          const bulletMatch = line.match(/^[•\-\*]\s*(.+?)(?:\s*-\s*@(.+?))?(?:\s*-\s*Due:\s*(.+?))?$/);
-          const numberedMatch = line.match(/^\((\d+)\)\s*(.+?)(?:\s*-\s*@(.+?))?$/);
-          
-          let text, assignee, deadline;
-          
-          if (bulletMatch) {
-            text = bulletMatch[1].trim();
-            assignee = bulletMatch[2]?.trim();
-            deadline = bulletMatch[3]?.trim();
-          } else if (numberedMatch) {
-            text = numberedMatch[2].trim();
-            assignee = numberedMatch[3]?.trim();
-          }
-          
-          if (text && text.length > 10 && text.length < 300) {
-            items.push({
-              text: text,
-              assignee: assignee,
-              deadline: deadline,
-              meetingId: meeting.id,
-              meetingTitle: meeting.title
-            });
-          }
-        });
+        // First, try to split inline numbered lists like: (1) Text, (2) Text, (3) Text
+        const inlineNumbered = actionSection.match(/\((\d+)\)\s*([^()]+?)(?=\s*\(\d+\)|$)/g);
+        
+        if (inlineNumbered && inlineNumbered.length > 1) {
+          // Parse inline numbered list
+          inlineNumbered.forEach(item => {
+            const match = item.match(/\((\d+)\)\s*(.+?)(?:,\s*)?$/);
+            if (match) {
+              const text = match[2].trim().replace(/,$/, ''); // Remove trailing comma
+              if (text.length > 10 && text.length < 300) {
+                items.push({
+                  text: text,
+                  meetingId: meeting.id,
+                  meetingTitle: meeting.title
+                });
+              }
+            }
+          });
+        } else {
+          // Parse line-by-line format
+          const lines = actionSection.split('\n');
+          lines.forEach(line => {
+            // Match lines like: 
+            // • Send WhatsApp contact details - @Ali
+            // • Deliver dashboard prototype - @Mark Rodriguez - Due: February 6th
+            // - Arrange meeting on January 14th
+            // (1) Prepare professional proposal with pricing tiers
+            // (4) Send complete package to resort via email
+            const bulletMatch = line.match(/^[•\-\*]\s*(.+?)(?:\s*-\s*@(.+?))?(?:\s*-\s*Due:\s*(.+?))?$/);
+            const numberedMatch = line.match(/^\((\d+)\)\s*(.+?)(?:\s*-\s*@(.+?))?$/);
+            
+            let text, assignee, deadline;
+            
+            if (bulletMatch) {
+              text = bulletMatch[1].trim();
+              assignee = bulletMatch[2]?.trim();
+              deadline = bulletMatch[3]?.trim();
+            } else if (numberedMatch) {
+              text = numberedMatch[2].trim();
+              assignee = numberedMatch[3]?.trim();
+            }
+            
+            if (text && text.length > 10 && text.length < 300) {
+              items.push({
+                text: text,
+                assignee: assignee,
+                deadline: deadline,
+                meetingId: meeting.id,
+                meetingTitle: meeting.title
+              });
+            }
+          });
+        }
       }
     }
     
