@@ -1,13 +1,37 @@
 import { Hono } from 'hono'
 import type { CloudflareBindings } from '../types/cloudflare'
+import { sign, verify } from 'hono/jwt'
 
 const crm = new Hono<{ Bindings: CloudflareBindings }>()
+
+// Helper function to get user email from cookie
+function getUserEmailFromCookie(c: any): string | null {
+  const authToken = c.req.raw.headers.get('cookie')?.split('; ').find(c => c.startsWith('auth_token='))?.split('=')[1]
+  
+  if (!authToken) {
+    return null
+  }
+  
+  try {
+    const JWT_SECRET = c.env.JWT_SECRET || 'default-secret-change-in-production'
+    const payload = verify(authToken, JWT_SECRET) as any
+    return payload.email || null
+  } catch (error) {
+    console.error('JWT verification failed:', error)
+    return null
+  }
+}
 
 // ===== CONTACTS =====
 
 // Get all contacts
 crm.get('/contacts', async (c) => {
-  const userEmail = c.req.query('userEmail') || 'admin@investaycapital.com'
+  const userEmail = getUserEmailFromCookie(c)
+  
+  if (!userEmail) {
+    return c.json({ error: 'Authentication required' }, 401)
+  }
+  
   const search = c.req.query('search')
   const type = c.req.query('type') // client, prospect, partner, vendor, other
   
@@ -47,6 +71,12 @@ crm.get('/contacts', async (c) => {
 
 // Get single contact with full details
 crm.get('/contacts/:id', async (c) => {
+  const userEmail = getUserEmailFromCookie(c)
+  
+  if (!userEmail) {
+    return c.json({ error: 'Authentication required' }, 401)
+  }
+  
   const contactId = c.req.param('id')
   
   try {
@@ -97,14 +127,20 @@ crm.get('/contacts/:id', async (c) => {
 
 // Create contact
 crm.post('/contacts', async (c) => {
+  const userEmail = getUserEmailFromCookie(c)
+  
+  if (!userEmail) {
+    return c.json({ error: 'Authentication required' }, 401)
+  }
+  
   try {
     const { 
-      userEmail, name, email, phone, company, position, 
+      name, email, phone, company, position, 
       contactType, notes, customFields, tags 
     } = await c.req.json()
     
-    if (!userEmail || !name || !email) {
-      return c.json({ error: 'userEmail, name and email are required' }, 400)
+    if (!name || !email) {
+      return c.json({ error: 'name and email are required' }, 400)
     }
     
     const result = await c.env.DB.prepare(`
@@ -130,6 +166,12 @@ crm.post('/contacts', async (c) => {
 
 // Update contact
 crm.put('/contacts/:id', async (c) => {
+  const userEmail = getUserEmailFromCookie(c)
+  
+  if (!userEmail) {
+    return c.json({ error: 'Authentication required' }, 401)
+  }
+  
   const contactId = c.req.param('id')
   
   try {
@@ -167,6 +209,12 @@ crm.put('/contacts/:id', async (c) => {
 
 // Delete contact
 crm.delete('/contacts/:id', async (c) => {
+  const userEmail = getUserEmailFromCookie(c)
+  
+  if (!userEmail) {
+    return c.json({ error: 'Authentication required' }, 401)
+  }
+  
   const contactId = c.req.param('id')
   
   try {
@@ -182,7 +230,12 @@ crm.delete('/contacts/:id', async (c) => {
 
 // Get all deals
 crm.get('/deals', async (c) => {
-  const userEmail = c.req.query('userEmail') || 'admin@investaycapital.com'
+  const userEmail = getUserEmailFromCookie(c)
+  
+  if (!userEmail) {
+    return c.json({ error: 'Authentication required' }, 401)
+  }
+  
   const stage = c.req.query('stage')
   
   try {
@@ -212,7 +265,11 @@ crm.get('/deals', async (c) => {
 
 // Get deal pipeline stats
 crm.get('/deals/pipeline/stats', async (c) => {
-  const userEmail = c.req.query('userEmail') || 'admin@investaycapital.com'
+  const userEmail = getUserEmailFromCookie(c)
+  
+  if (!userEmail) {
+    return c.json({ error: 'Authentication required' }, 401)
+  }
   
   try {
     const { results } = await c.env.DB.prepare(`
@@ -235,14 +292,20 @@ crm.get('/deals/pipeline/stats', async (c) => {
 
 // Create deal
 crm.post('/deals', async (c) => {
+  const userEmail = getUserEmailFromCookie(c)
+  
+  if (!userEmail) {
+    return c.json({ error: 'Authentication required' }, 401)
+  }
+  
   try {
     const { 
-      userEmail, contactId, title, value, stage, 
+      contactId, title, value, stage, 
       probability, closeDate, notes, customFields 
     } = await c.req.json()
     
-    if (!userEmail || !title) {
-      return c.json({ error: 'userEmail and title are required' }, 400)
+    if (!title) {
+      return c.json({ error: 'title is required' }, 400)
     }
     
     const result = await c.env.DB.prepare(`
@@ -268,6 +331,12 @@ crm.post('/deals', async (c) => {
 
 // Update deal
 crm.put('/deals/:id', async (c) => {
+  const userEmail = getUserEmailFromCookie(c)
+  
+  if (!userEmail) {
+    return c.json({ error: 'Authentication required' }, 401)
+  }
+  
   const dealId = c.req.param('id')
   
   try {
@@ -307,14 +376,20 @@ crm.put('/deals/:id', async (c) => {
 
 // Log activity
 crm.post('/activities', async (c) => {
+  const userEmail = getUserEmailFromCookie(c)
+  
+  if (!userEmail) {
+    return c.json({ error: 'Authentication required' }, 401)
+  }
+  
   try {
     const { 
-      userEmail, contactId, dealId, emailId, activityType, 
+      contactId, dealId, emailId, activityType, 
       subject, notes, activityDate 
     } = await c.req.json()
     
-    if (!userEmail || !activityType) {
-      return c.json({ error: 'userEmail and activityType are required' }, 400)
+    if (!activityType) {
+      return c.json({ error: 'activityType is required' }, 400)
     }
     
     const result = await c.env.DB.prepare(`

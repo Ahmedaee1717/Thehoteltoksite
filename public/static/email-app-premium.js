@@ -524,8 +524,8 @@ window.addEventListener('DOMContentLoaded', function() {
           // Load CRM data
           if (view === 'crm') {
             const [contactsRes, dealsRes] = await Promise.all([
-              fetch(`/api/crm/contacts?user=${user}`),
-              fetch(`/api/crm/deals?user=${user}`)
+              fetch(`/api/crm/contacts`, { credentials: 'include' }),
+              fetch(`/api/crm/deals`, { credentials: 'include' })
             ]);
             const contactsData = await contactsRes.json();
             const dealsData = await dealsRes.json();
@@ -1143,8 +1143,8 @@ window.addEventListener('DOMContentLoaded', function() {
       const loadCollabData = async (emailId) => {
         try {
           const [commentsRes, statsRes] = await Promise.all([
-            fetch(`/api/collaboration/comments/${emailId}`),
-            fetch(`/api/collaboration/stats/${emailId}`)
+            fetch(`/api/collaboration/comments/${emailId}`, { credentials: 'include' }),
+            fetch(`/api/collaboration/stats/${emailId}`, { credentials: 'include' })
           ]);
           const commentsData = await commentsRes.json();
           const statsData = await statsRes.json();
@@ -1226,12 +1226,13 @@ window.addEventListener('DOMContentLoaded', function() {
         if (!newComment.trim() || !selectedEmail) return;
         try {
           // Fetch user profile to get actual display name
-          const profileRes = await fetch('/api/auth/profile');
+          const profileRes = await fetch('/api/auth/profile', { credentials: 'include' });
           const profileData = await profileRes.json();
           const displayName = profileData.success ? profileData.user.displayName : user.split('@')[0];
           
           const res = await fetch('/api/collaboration/comments', {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               email_id: selectedEmail.id,
@@ -1364,9 +1365,9 @@ window.addEventListener('DOMContentLoaded', function() {
         try {
           const res = await fetch('/api/crm/contacts', {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              userEmail: user,
               name: newContactName,
               email: newContactEmail,
               phone: newContactPhone,
@@ -1432,7 +1433,7 @@ window.addEventListener('DOMContentLoaded', function() {
       // Load contact details
       const loadContactDetails = async (contactId) => {
         try {
-          const res = await fetch(`/api/crm/contacts/${contactId}`);
+          const res = await fetch(`/api/crm/contacts/${contactId}`, { credentials: 'include' });
           const data = await res.json();
           if (data.contact) {
             setSelectedContact(data.contact);
@@ -1452,6 +1453,7 @@ window.addEventListener('DOMContentLoaded', function() {
         try {
           const res = await fetch(`/api/crm/contacts/${contactId}`, {
             method: 'PUT',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updates)
           });
@@ -1471,7 +1473,10 @@ window.addEventListener('DOMContentLoaded', function() {
       const deleteContact = async (contactId) => {
         if (!confirm('⚠️ Delete this contact? This action cannot be undone.')) return;
         try {
-          const res = await fetch(`/api/crm/contacts/${contactId}`, { method: 'DELETE' });
+          const res = await fetch(`/api/crm/contacts/${contactId}`, { 
+            method: 'DELETE',
+            credentials: 'include'
+          });
           const result = await res.json();
           if (result.success) {
             alert('✅ Contact deleted!');
@@ -6343,7 +6348,10 @@ window.addEventListener('DOMContentLoaded', function() {
                     },
                       h('button', {
                         onClick: () => {
-                          fetch(`/api/collaboration/comments/${comment.id}/resolve`, { method: 'PUT' })
+                          fetch(`/api/collaboration/comments/${comment.id}/resolve`, { 
+                            method: 'PUT',
+                            credentials: 'include'
+                          })
                             .then(() => loadCollabData(selectedEmail.id));
                         },
                         style: {
@@ -6865,7 +6873,7 @@ window.addEventListener('DOMContentLoaded', function() {
         try {
           // Get CRM contacts
           const searchParam = query && query.length >= 1 ? `&search=${encodeURIComponent(query)}` : '';
-          const crmRes = await fetch(`/api/crm/contacts?userEmail=${user}${searchParam}`);
+          const crmRes = await fetch(`/api/crm/contacts${searchParam}`, { credentials: 'include' });
           const crmData = await crmRes.json();
           
           console.log('CRM Contacts Response:', crmData); // Debug log
