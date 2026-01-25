@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     console.log('✅ Authenticated as:', data.user.email);
     currentUser = data.user.email;
+    document.getElementById('user-email').textContent = currentUser;
   } catch (error) {
     console.error('❌ Auth check failed:', error);
     window.location.href = '/login';
@@ -31,10 +32,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   
   console.log('✅ Auth verified, loading collaboration center...');
-  
-  // Update user email display
-  document.getElementById('user-email').textContent = currentUser;
-  
   await loadMyRole();
   setupNavigation();
   setupBackButton();
@@ -60,14 +57,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // 🎭 LOAD USER ROLE
 async function loadMyRole() {
-  try {
-    
-    }
-    
-    console.log('🎭 Fetching user role...');
-    const response = await fetch(`${API_BASE}/my-role`, {
-      credentials: 'include'
-    });
+  try {console.log('🎭 Fetching user role...');
+    const response = await fetch(`${API_BASE}/my-role`, { credentials: 'include' });
     
     const data = await response.json();
     console.log('📊 Role response:', data);
@@ -167,13 +158,9 @@ async function loadInitialData() {
 
 // 📈 LOAD COUNTS
 async function loadCounts() {
-  try {
-    
-    
+  try {    
     // Load posts count
-    const postsResponse = await fetch(`${API_BASE}/blog-posts`, {
-      credentials: 'include'
-    });
+    const postsResponse = await fetch(`${API_BASE}/blog-posts`, { credentials: 'include' });
     const postsData = await postsResponse.json();
     
     if (postsData.success) {
@@ -183,9 +170,7 @@ async function loadCounts() {
     }
     
     // Load team count
-    const teamResponse = await fetch(`${API_BASE}/users`, {
-      credentials: 'include'
-    });
+    const teamResponse = await fetch(`${API_BASE}/users`, { credentials: 'include' });
     const teamData = await teamResponse.json();
     
     if (teamData.success) {
@@ -201,11 +186,7 @@ async function loadMyPosts() {
   const container = document.getElementById('my-posts-list');
   container.innerHTML = '<div class="loading-quantum"><div class="loading-spinner"></div><p>Loading posts...</p></div>';
   
-  try {
-    
-    const response = await fetch(`${API_BASE}/blog-posts`, {
-      credentials: 'include'
-    });
+  try {    const response = await fetch(`${API_BASE}/blog-posts`, { credentials: 'include' });
     
     const data = await response.json();
     
@@ -246,11 +227,7 @@ async function loadAllPosts() {
   const container = document.getElementById('all-posts-list');
   container.innerHTML = '<div class="loading-quantum"><div class="loading-spinner"></div><p>Loading posts...</p></div>';
   
-  try {
-    
-    const response = await fetch(`${API_BASE}/blog-posts`, {
-      credentials: 'include'
-    });
+  try {    const response = await fetch(`${API_BASE}/blog-posts`, { credentials: 'include' });
     
     const data = await response.json();
     
@@ -425,12 +402,8 @@ window.closePostActionModal = function() {
 async function editPost(slug) {
   console.log('🔧 editPost called with slug:', slug);
   try {
-    // Fetch the post data
-    
-    console.log('🔧 Fetching post from API...');
-    const response = await fetch(`/api/admin/posts/${slug}`, {
-      credentials: 'include'
-    });
+    // Fetch the post data    console.log('🔧 Fetching post from API...');
+    const response = await fetch(`/api/admin/posts/${slug}`, { credentials: 'include' });
     
     const data = await response.json();
     
@@ -834,9 +807,7 @@ async function handlePostSubmit(e) {
     ai_include_in_knowledge_base: document.getElementById('collab-ai-include-kb').checked ? 1 : 0
   };
   
-  try {
-    
-    
+  try {    
     // Determine if this is an update or create
     const isUpdate = !!editSlug;
     const url = isUpdate ? `/api/admin/posts/${editSlug}` : '/api/admin/posts';
@@ -844,7 +815,8 @@ async function handlePostSubmit(e) {
     
     const response = await fetch(url, {
       method: method,
-      credentials: 'include'
+      headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(formData)
@@ -873,11 +845,7 @@ async function loadTeam() {
   const container = document.getElementById('team-list');
   container.innerHTML = '<div class="loading-quantum"><div class="loading-spinner"></div><p>Loading team...</p></div>';
   
-  try {
-    
-    const response = await fetch(`${API_BASE}/users`, {
-      credentials: 'include'
-    });
+  try {    const response = await fetch(`${API_BASE}/users`, { credentials: 'include' });
     
     const data = await response.json();
     
@@ -961,20 +929,14 @@ async function loadActivity() {
   const container = document.getElementById('activity-list');
   container.innerHTML = '<div class="loading-quantum"><div class="loading-spinner"></div><p>Loading activity...</p></div>';
   
-  try {
-    
-    
+  try {    
     // Fetch recent posts as activity
-    const postsResponse = await fetch(`${API_BASE}/blog-posts`, {
-      credentials: 'include'
-    });
+    const postsResponse = await fetch(`${API_BASE}/blog-posts`, { credentials: 'include' });
     
     const postsData = await postsResponse.json();
     
     // Fetch team members for online status
-    const teamResponse = await fetch(`${API_BASE}/users`, {
-      credentials: 'include'
-    });
+    const teamResponse = await fetch(`${API_BASE}/users`, { credentials: 'include' });
     
     const teamData = await teamResponse.json();
     
@@ -1133,13 +1095,9 @@ function openMessage(email) {
 async function loadSettings() {
   const container = document.getElementById('user-permissions-list');
   
-  try {
-    
-    
+  try {    
     // Fetch all users with their roles
-    const response = await fetch(`${API_BASE}/users`, {
-      credentials: 'include'
-    });
+    const response = await fetch(`${API_BASE}/users`, { credentials: 'include' });
     
     const data = await response.json();
     
@@ -1212,12 +1170,11 @@ async function loadSettings() {
 
 // 💾 UPDATE USER ROLE
 async function updateUserRole(userEmail, newRole) {
-  try {
-    
-    
+  try {    
     const response = await fetch(`${API_BASE}/users/${encodeURIComponent(userEmail)}/role`, {
       method: 'PUT',
-      credentials: 'include'
+      headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -1327,11 +1284,10 @@ async function collabAIAutoFillSEO() {
   const originalText = btn.querySelector('.ultra-ai-mega-text').textContent;
   btn.querySelector('.ultra-ai-mega-text').textContent = '🤖 AI ANALYZING...';
   
-  try {
-    
-    const response = await fetch('/api/ai/seo-optimize', {
+  try {    const response = await fetch('/api/ai/seo-optimize', {
       method: 'POST',
-      credentials: 'include'
+      headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ title, content })
@@ -1376,10 +1332,7 @@ async function collabAIOptimizeAll() {
   
   try {
     // Show status box
-    document.getElementById('collab-ai-status-box').style.display = 'block';
-    
-    
-    
+    document.getElementById('collab-ai-status-box').style.display = 'block';    
     // Generate all AI features
     await Promise.all([
       collabAIGenerateSummary(true),
@@ -1408,11 +1361,10 @@ async function collabAIGenerateSummary(silent = false) {
     return;
   }
   
-  try {
-    
-    const response = await fetch('/api/ai/generate-summary', {
+  try {    const response = await fetch('/api/ai/generate-summary', {
       method: 'POST',
-      credentials: 'include'
+      headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ title, content })
@@ -1427,6 +1379,7 @@ async function collabAIGenerateSummary(silent = false) {
         document.getElementById('collab-ai-result-box').style.display = 'block';
         document.getElementById('collab-ai-result-text').textContent = JSON.stringify(data.summary, null, 2);
         showNotification('✅ AI Summary generated!', 'success');
+      }
     }
   } catch (error) {
     console.error('AI summary error:', error);
@@ -1444,11 +1397,10 @@ async function collabAIGenerateFAQ(silent = false) {
     return;
   }
   
-  try {
-    
-    const response = await fetch('/api/ai/generate-faq', {
+  try {    const response = await fetch('/api/ai/generate-faq', {
       method: 'POST',
-      credentials: 'include'
+      headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ title, content })
@@ -1463,6 +1415,7 @@ async function collabAIGenerateFAQ(silent = false) {
         document.getElementById('collab-ai-result-box').style.display = 'block';
         document.getElementById('collab-ai-result-text').textContent = JSON.stringify(data.faq, null, 2);
         showNotification('✅ FAQ Schema generated!', 'success');
+      }
     }
   } catch (error) {
     console.error('AI FAQ error:', error);
@@ -1480,11 +1433,10 @@ async function collabAIGenerateSchema(silent = false) {
     return;
   }
   
-  try {
-    
-    const response = await fetch('/api/ai/generate-schema', {
+  try {    const response = await fetch('/api/ai/generate-schema', {
       method: 'POST',
-      credentials: 'include'
+      headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ title, content })
@@ -1499,6 +1451,7 @@ async function collabAIGenerateSchema(silent = false) {
         document.getElementById('collab-ai-result-box').style.display = 'block';
         document.getElementById('collab-ai-result-text').textContent = JSON.stringify(data.schema, null, 2);
         showNotification('✅ Structured Data generated!', 'success');
+      }
     }
   } catch (error) {
     console.error('AI schema error:', error);
@@ -1516,11 +1469,10 @@ async function collabAIGenerateEmbedding(silent = false) {
     return;
   }
   
-  try {
-    
-    const response = await fetch('/api/ai/generate-embedding', {
+  try {    const response = await fetch('/api/ai/generate-embedding', {
       method: 'POST',
-      credentials: 'include'
+      headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ title, content })
@@ -1535,6 +1487,7 @@ async function collabAIGenerateEmbedding(silent = false) {
         document.getElementById('collab-ai-result-box').style.display = 'block';
         document.getElementById('collab-ai-result-text').textContent = `Embedding vector generated (${data.embedding?.length || 0} dimensions)`;
         showNotification('✅ Neural Embedding generated!', 'success');
+      }
     }
   } catch (error) {
     console.error('AI embedding error:', error);
@@ -1548,11 +1501,7 @@ async function loadMeetings() {
   const container = document.getElementById('meetings-list');
   container.innerHTML = '<div class="loading-quantum"><div class="loading-spinner"></div><p>Loading meetings...</p></div>';
   
-  try {
-    
-    const response = await fetch(`/api/meetings/otter/transcripts?limit=50`, {
-      credentials: 'include'
-    });
+  try {    const response = await fetch(`/api/meetings/otter/transcripts?limit=50`, { credentials: 'include' });
     
     const data = await response.json();
     
@@ -1657,11 +1606,7 @@ function createMeetingCard(meeting) {
 }
 
 window.openMeetingTranscript = async function(meetingId) {
-  try {
-    
-    const response = await fetch(`/api/meetings/otter/transcripts/${meetingId}`, {
-      credentials: 'include'
-    });
+  try {    const response = await fetch(`/api/meetings/otter/transcripts/${meetingId}`, { credentials: 'include' });
     
     const data = await response.json();
     
@@ -1766,12 +1711,11 @@ window.deleteMeeting = async function(meetingId, meetingTitle) {
   }
   
   try {
-    showNotification('🗑️ Deleting meeting...', 'info');
-    
-    
-    const response = await fetch(`/api/meetings/otter/transcripts/${meetingId}`, {
+    showNotification('🗑️ Deleting meeting...', 'info');    const response = await fetch(`/api/meetings/otter/transcripts/${meetingId}`, {
       method: 'DELETE',
-      credentials: 'include'
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
     });
     
     const data = await response.json();
@@ -2073,12 +2017,10 @@ async function handleFileUpload(file) {
     
     // For DOCX and PDF, send to backend
     const formData = new FormData();
-    formData.append('file', file);
-    
-    
-    const response = await fetch('/api/meetings/parse-file', {
+    formData.append('file', file);    const response = await fetch('/api/meetings/parse-file', {
       method: 'POST',
-      credentials: 'include'
+      headers: {
+        'Authorization': `Bearer ${token}`
       },
       body: formData
     });
@@ -2093,6 +2035,7 @@ async function handleFileUpload(file) {
       
       if (data.date) {
         document.getElementById('manual-date').value = data.date;
+      }
       
       if (data.owner) {
         document.getElementById('manual-owner').value = data.owner;
@@ -2163,7 +2106,7 @@ window.uploadManualMeeting = async function() {
     // Post directly to webhook endpoint (same as Zapier would)
     const response = await fetch('/api/meetings/webhook/zapier', {
       method: 'POST',
-      credentials: 'include'
+      headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -2207,12 +2150,10 @@ window.syncFromZapier = async function() {
   }
   
   try {
-    showNotification('🔄 Syncing meetings from Zapier Tables...', 'info');
-    
-    
-    const response = await fetch(`/api/meetings/zapier/sync`, {
+    showNotification('🔄 Syncing meetings from Zapier Tables...', 'info');    const response = await fetch(`/api/meetings/zapier/sync`, {
       method: 'POST',
-      credentials: 'include'
+      headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ zapierApiKey: apiKey })
@@ -2267,11 +2208,7 @@ async function searchMeetings(query) {
   const container = document.getElementById('meetings-list');
   container.innerHTML = '<div class="loading-quantum"><div class="loading-spinner"></div><p>Searching...</p></div>';
   
-  try {
-    
-    const response = await fetch(`/api/meetings/otter/search?q=${encodeURIComponent(query)}`, {
-      credentials: 'include'
-    });
+  try {    const response = await fetch(`/api/meetings/otter/search?q=${encodeURIComponent(query)}`, { credentials: 'include' });
     
     const data = await response.json();
     
@@ -2500,11 +2437,10 @@ window.sendTeamEmail = async function() {
     return;
   }
   
-  try {
-    
-    const response = await fetch(`${API_BASE}/send-email`, {
+  try {    const response = await fetch(`${API_BASE}/send-email`, {
       method: 'POST',
-      credentials: 'include'
+      headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -2534,13 +2470,9 @@ let currentTaskFilter = 'all';
 
 async function loadTasks() {
   console.log('📋 Loading tasks...');
-  try {
+  try {    console.log('🔑 Token:', token ? 'Found' : 'Missing');
     
-    console.log('🔑 Token:', token ? 'Found' : 'Missing');
-    
-    const res = await fetch('/api/tasks', {
-      credentials: 'include'
-    });
+    const res = await fetch('/api/tasks', { credentials: 'include' });
     
     console.log('📊 Tasks API response:', res.status);
     
@@ -2551,6 +2483,7 @@ async function loadTasks() {
       const tasksCountEl = document.getElementById('tasks-count');
       if (tasksCountEl) {
         tasksCountEl.textContent = allTasks.filter(t => t.status !== 'completed').length;
+      }
       renderTasks();
     } else {
       const error = await res.text();
@@ -2754,11 +2687,10 @@ function renderTasks() {
 }
 
 async function toggleTask(id, completed) {
-  try {
-    
-    const res = await fetch(`/api/tasks/${id}`, {
+  try {    const res = await fetch(`/api/tasks/${id}`, {
       method: 'PUT',
-      credentials: 'include'
+      headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -2778,11 +2710,9 @@ async function toggleTask(id, completed) {
 async function deleteTask(id) {
   if (!confirm('Delete this task?')) return;
   
-  try {
-    
-    const res = await fetch(`/api/tasks/${id}`, {
+  try {    const res = await fetch(`/api/tasks/${id}`, {
       method: 'DELETE',
-      credentials: 'include'
+      headers: { 'Authorization': `Bearer ${token}` }
     });
     
     if (res.ok) {
