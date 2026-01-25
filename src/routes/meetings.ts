@@ -990,7 +990,8 @@ meetings.post('/otter/transcripts', async (c) => {
       summary = '', 
       meeting_url = '', 
       owner_name = 'Unknown',
-      date_created 
+      date_created,
+      speakers: providedSpeakers
     } = body
     
     if (!title || !transcript_text) {
@@ -1064,7 +1065,15 @@ meetings.post('/otter/transcripts', async (c) => {
       return JSON.stringify([{ name: 'Unknown' }])
     }
     
-    const speakers = extractSpeakers(transcript_text)
+    // Use provided speakers if available, otherwise auto-extract from transcript
+    let speakers: string
+    if (providedSpeakers && typeof providedSpeakers === 'string' && providedSpeakers.length > 0) {
+      // Frontend already extracted speakers as JSON string
+      speakers = providedSpeakers
+    } else {
+      // Auto-extract speakers from transcript
+      speakers = extractSpeakers(transcript_text)
+    }
     
     // Insert into database (id is auto-increment INTEGER)
     const result = await c.env.DB.prepare(`

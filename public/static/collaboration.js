@@ -2382,13 +2382,21 @@ async function handleBulkFileUpload(files) {
           dateCreated = new Date(dateMatch[0]).toISOString();
         }
         
-        // Try to extract owner
+        // Try to extract speakers from SPEAKERS section OR transcript
+        let speakers = [];
         const speakersMatch = text.match(/SPEAKERS\s*[:\n]+(.*?)(?=\n\n|TRANSCRIPT|$)/is);
         if (speakersMatch) {
-          const speakers = speakersMatch[1].trim().split(/,\s*/);
-          if (speakers.length > 0) {
-            ownerName = speakers[0].trim();
-          }
+          speakers = speakersMatch[1].trim().split(/,\s*/).map(s => ({ name: s.trim() })).filter(s => s.name);
+        }
+        
+        // If no speakers found, auto-extract from transcript
+        if (speakers.length === 0) {
+          speakers = extractSpeakersFromTranscript(transcript);
+        }
+        
+        // Set owner to first speaker
+        if (speakers.length > 0) {
+          ownerName = speakers[0].name;
         }
       } else {
         // Handle DOCX/PDF via backend
@@ -2413,6 +2421,13 @@ async function handleBulkFileUpload(files) {
         ownerName = data.owner;
       }
       
+      // Extract speakers if not already extracted
+      let speakers = [];
+      if (fileExtension !== '.txt') {
+        // For DOCX/PDF, extract speakers from transcript
+        speakers = extractSpeakersFromTranscript(transcript);
+      }
+      
       // Upload to backend
       const response = await fetch('/api/meetings/otter/transcripts', {
         method: 'POST',
@@ -2424,7 +2439,8 @@ async function handleBulkFileUpload(files) {
           summary: summary || '',
           meeting_url: '',
           owner_name: ownerName || 'Unknown',
-          date_created: dateCreated || new Date().toISOString()
+          date_created: dateCreated || new Date().toISOString(),
+          speakers: speakers.length > 0 ? JSON.stringify(speakers) : ''
         })
       });
       
