@@ -980,6 +980,82 @@ meetings.get('/otter/transcripts', async (c) => {
   }
 })
 
+// Create/upload new meeting transcript
+meetings.post('/otter/transcripts', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { 
+      title, 
+      transcript_text, 
+      summary = '', 
+      meeting_url = '', 
+      owner_name = 'Unknown',
+      date_created 
+    } = body
+    
+    if (!title || !transcript_text) {
+      return c.json({ 
+        success: false, 
+        error: 'Title and transcript_text are required' 
+      }, 400)
+    }
+    
+    // Generate unique ID
+    const id = `ott_${Date.now()}_${Math.random().toString(36).substring(7)}`
+    
+    // Parse date or use current time
+    const startTime = date_created ? new Date(date_created).toISOString() : new Date().toISOString()
+    
+    // Calculate duration from transcript length (rough estimate: 150 words per minute)
+    const wordCount = transcript_text.split(/\s+/).length
+    const durationSeconds = Math.ceil((wordCount / 150) * 60)
+    
+    // Try to extract speakers from transcript
+    let speakers = ''
+    const speakersMatch = transcript_text.match(/SPEAKERS\s*[:\n]+(.*?)(?=\n\n|TRANSCRIPT|$)/is)
+    if (speakersMatch) {
+      speakers = speakersMatch[1].trim()
+    } else if (owner_name && owner_name !== 'Unknown') {
+      speakers = owner_name
+    }
+    
+    // Insert into database
+    await c.env.DB.prepare(`
+      INSERT INTO otter_transcripts (
+        id, otter_id, title, summary, start_time, end_time,
+        duration_seconds, meeting_url, transcript_text, speakers,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      id,
+      id, // Use same ID for otter_id
+      title,
+      summary,
+      startTime,
+      startTime, // Same as start_time for now
+      durationSeconds,
+      meeting_url,
+      transcript_text,
+      speakers,
+      startTime,
+      startTime
+    ).run()
+    
+    return c.json({ 
+      success: true, 
+      id,
+      message: 'Meeting transcript uploaded successfully' 
+    })
+  } catch (error: any) {
+    console.error('Error uploading transcript:', error)
+    return c.json({ 
+      success: false,
+      error: 'Failed to upload transcript', 
+      details: error.message 
+    }, 500)
+  }
+})
+
 // Get single transcript with full text
 meetings.get('/otter/transcripts/:id', async (c) => {
   const id = c.req.param('id')
