@@ -52,10 +52,9 @@ export const signupPage = `<!DOCTYPE html>
         }
 
         .logo img {
-            height: 48px;
+            height: 80px;
             width: auto;
             display: inline-block;
-            filter: brightness(1.1) contrast(1.05);
         }
 
         .card {
@@ -416,7 +415,7 @@ export const signupPage = `<!DOCTYPE html>
 <body>
     <div class="container">
         <div class="logo">
-            <img src="https://www.investaycapital.com/static/investay-logo-full.png" alt="Investay Capital">
+            <img src="https://www.investaycapital.com/static/investay-logo-white.png" alt="Investay Capital">
         </div>
 
         <div class="card">
