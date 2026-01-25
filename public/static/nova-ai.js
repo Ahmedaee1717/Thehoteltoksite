@@ -641,8 +641,11 @@
     }
 
     // Extract action items from recent meetings (up to 10 most recent)
+    console.log('🔍 NOVA: Processing meetings for action items...', novaState.data.meetings.length, 'total');
     for (const meeting of novaState.data.meetings.slice(0, 10)) {
+      console.log(`📋 Checking meeting: "${meeting.title}" (ID: ${meeting.id})`);
       const items = extractActionItemsFromMeeting(meeting);
+      console.log(`   → Found ${items.length} action items`);
       if (items.length > 0) {
         // Check for EMAIL tasks specifically
         const emailTasks = items.filter(item => {
@@ -1641,7 +1644,18 @@ ${meeting.summary?.substring(0, 500)}`;
   
   // Check if an insight was previously dismissed
   function isInsightDismissed(insight) {
-    const insightId = `${insight.type}_${JSON.stringify(insight.data || {})}`;
+    // For action items and email tasks, include meeting ID in the insight ID
+    // This prevents old dismissals from hiding new meetings
+    let insightId;
+    if (insight.type === 'action-items' || insight.type === 'smart-email-task') {
+      const meetingId = insight.data?.meeting?.id || insight.data?.task?.meetingId;
+      insightId = `${insight.type}_${meetingId}_${Date.now()}`;
+      // Don't check dismissals for meeting-specific insights - always show them
+      return false; // NEVER filter out meeting action items
+    } else {
+      insightId = `${insight.type}_${JSON.stringify(insight.data || {})}`;
+    }
+    
     const dismissed = JSON.parse(localStorage.getItem('nova_dismissed_insights') || '{}');
     return dismissed[insightId] !== undefined;
   }
