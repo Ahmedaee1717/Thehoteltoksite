@@ -1,46 +1,38 @@
 import { Hono } from 'hono'
+import { getCookie } from 'hono/cookie'
+import { verifyToken } from '../lib/auth'
 
 type Bindings = {
   DB: D1Database;
+  JWT_SECRET?: string;
 }
 
 function generateId(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 }
 
-// Helper to extract user email from JWT token
-function getUserEmailFromToken(authHeader: string | undefined): string | null {
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
-  }
-  
+// Helper to extract user email from cookie token
+async function getUserEmailFromCookie(c: any): Promise<string | null> {
   try {
-    const token = authHeader.substring(7);
+    const token = getCookie(c, 'auth_token');
     
-    // Try JWT format first (for regular users)
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      if (payload.email) return payload.email;
-    } catch (e) {
-      // Not JWT, try simple base64 (for admin)
+    if (!token) {
+      console.log('❌ No auth_token cookie found');
+      return null;
     }
     
-    // Try simple base64 format (for admin users)
-    try {
-      const payload = JSON.parse(atob(token));
-      // Admin token has username, need to fetch email from DB
-      // For now, if it has userId and username, it's an admin
-      if (payload.username && payload.userId) {
-        // Return a recognizable admin identifier
-        return 'admin@investaycapital.com';
-      }
-    } catch (e) {
-      // Not base64 either
+    const secret = c.env.JWT_SECRET || 'default-secret-change-in-production';
+    const payload = await verifyToken(token, secret);
+    
+    if (!payload || !payload.email) {
+      console.log('❌ Token verification failed');
+      return null;
     }
     
-    return null;
+    console.log('✅ Collaboration auth successful for:', payload.email);
+    return payload.email;
   } catch (error) {
-    console.error('Error extracting email from token:', error);
+    console.error('Error extracting email from cookie:', error);
     return null;
   }
 }
@@ -50,8 +42,7 @@ export const collaborationRoutes = new Hono<{ Bindings: Bindings }>()
 // Get user's role and permissions
 collaborationRoutes.get('/my-role', async (c) => {
   const { DB } = c.env;
-  const authHeader = c.req.header('Authorization');
-  const userEmail = getUserEmailFromToken(authHeader);
+  const userEmail = await getUserEmailFromCookie(c);
   
   if (!userEmail) {
     return c.json({ success: false, error: 'Unauthorized' }, 401);
@@ -103,9 +94,8 @@ collaborationRoutes.put('/users/:email/role', async (c) => {
   const { DB } = c.env;
   const targetEmail = c.req.param('email');
   
-  // Extract admin email from Authorization header
-  const authHeader = c.req.header('Authorization');
-  const adminEmail = getUserEmailFromToken(authHeader);
+  // Extract admin email from cookie
+  const adminEmail = await getUserEmailFromCookie(c);
   
   if (!adminEmail) {
     return c.json({ success: false, error: 'Unauthorized - invalid token' }, 401);
@@ -135,8 +125,7 @@ collaborationRoutes.put('/users/:email/role', async (c) => {
 // Get blog posts accessible to user
 collaborationRoutes.get('/blog-posts', async (c) => {
   const { DB } = c.env;
-  const authHeader = c.req.header('Authorization');
-  const userEmail = getUserEmailFromToken(authHeader);
+  const userEmail = await getUserEmailFromCookie(c);
   
   if (!userEmail) {
     return c.json({ success: false, error: 'Unauthorized' }, 401);
