@@ -186,21 +186,17 @@ authRoutes.post('/login', async (c) => {
     sessionStore.create(sessionId, account.id as string, account.email_address as string)
     
     // Set secure HTTP-only cookie
-    setCookie(c, 'session_id', sessionId, {
+    const cookieOptions = {
       httpOnly: true,
       secure: true, // HTTPS required for production
-      sameSite: 'Lax',
+      sameSite: 'Lax' as const,
       maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: '/'
-    })
+      path: '/',
+      domain: '.investaycapital.com' // Allow subdomains
+    }
     
-    setCookie(c, 'auth_token', token, {
-      httpOnly: true,
-      secure: true, // HTTPS required for production
-      sameSite: 'Lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: '/'
-    })
+    setCookie(c, 'session_id', sessionId, cookieOptions)
+    setCookie(c, 'auth_token', token, cookieOptions)
     
     return c.json({ 
       success: true,
