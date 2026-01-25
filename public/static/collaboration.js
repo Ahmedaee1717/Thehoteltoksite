@@ -9,18 +9,32 @@ let userRole = null;
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('🌌 Collaboration Center initializing...');
   
-  // Check localStorage for token (same as email app)
-  const token = localStorage.getItem('auth_token');
-  console.log('🔑 Auth token found in localStorage:', token ? 'YES' : 'NO');
+  // NO MORE LOCALSTORAGE! Check auth via API call with cookies
+  console.log('🔑 Checking authentication via /api/auth/me...');
   
-  if (!token) {
-    console.log('❌ No auth token, redirecting to login...');
+  try {
+    const response = await fetch('/api/auth/me', { credentials: 'include' });
+    const data = await response.json();
+    
+    if (!data.success || !data.user) {
+      console.log('❌ Not authenticated, redirecting to login...');
+      window.location.href = '/login';
+      return;
+    }
+    
+    console.log('✅ Authenticated as:', data.user.email);
+    currentUser = data.user.email;
+  } catch (error) {
+    console.error('❌ Auth check failed:', error);
     window.location.href = '/login';
     return;
   }
   
-  console.log('✅ Auth token found, loading user...');
-  await loadUser();
+  console.log('✅ Auth verified, loading collaboration center...');
+  
+  // Update user email display
+  document.getElementById('user-email').textContent = currentUser;
+  
   await loadMyRole();
   setupNavigation();
   setupBackButton();
@@ -44,45 +58,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
-// 👤 LOAD USER INFO
-async function loadUser() {
-  try {
-    // Check for auth token in localStorage (same as email interface)
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-      console.log('❌ No auth token in loadUser, redirecting to login');
-      window.location.href = '/login';
-      return;
-    }
-    
-    console.log('🔍 Decoding JWT token...');
-    // Extract email from token (simple JWT decode)
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    currentUser = payload.email || 'user@investaycapital.com';
-    
-    console.log('✅ User loaded:', currentUser);
-    document.getElementById('user-email').textContent = currentUser;
-  } catch (error) {
-    console.error('❌ Error loading user:', error);
-    window.location.href = '/login';
-  }
-}
-
 // 🎭 LOAD USER ROLE
 async function loadMyRole() {
   try {
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-      console.log('❌ No auth token in loadMyRole');
-      window.location.href = '/login';
-      return;
+    
     }
     
     console.log('🎭 Fetching user role...');
     const response = await fetch(`${API_BASE}/my-role`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      credentials: 'include'
     });
     
     const data = await response.json();
@@ -184,11 +168,11 @@ async function loadInitialData() {
 // 📈 LOAD COUNTS
 async function loadCounts() {
   try {
-    const token = localStorage.getItem('auth_token');
+    
     
     // Load posts count
     const postsResponse = await fetch(`${API_BASE}/blog-posts`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      credentials: 'include'
     });
     const postsData = await postsResponse.json();
     
@@ -200,7 +184,7 @@ async function loadCounts() {
     
     // Load team count
     const teamResponse = await fetch(`${API_BASE}/users`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      credentials: 'include'
     });
     const teamData = await teamResponse.json();
     
@@ -218,9 +202,9 @@ async function loadMyPosts() {
   container.innerHTML = '<div class="loading-quantum"><div class="loading-spinner"></div><p>Loading posts...</p></div>';
   
   try {
-    const token = localStorage.getItem('auth_token');
+    
     const response = await fetch(`${API_BASE}/blog-posts`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      credentials: 'include'
     });
     
     const data = await response.json();
@@ -263,9 +247,9 @@ async function loadAllPosts() {
   container.innerHTML = '<div class="loading-quantum"><div class="loading-spinner"></div><p>Loading posts...</p></div>';
   
   try {
-    const token = localStorage.getItem('auth_token');
+    
     const response = await fetch(`${API_BASE}/blog-posts`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      credentials: 'include'
     });
     
     const data = await response.json();
@@ -442,10 +426,10 @@ async function editPost(slug) {
   console.log('🔧 editPost called with slug:', slug);
   try {
     // Fetch the post data
-    const token = localStorage.getItem('auth_token');
+    
     console.log('🔧 Fetching post from API...');
     const response = await fetch(`/api/admin/posts/${slug}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      credentials: 'include'
     });
     
     const data = await response.json();
@@ -851,7 +835,7 @@ async function handlePostSubmit(e) {
   };
   
   try {
-    const token = localStorage.getItem('auth_token');
+    
     
     // Determine if this is an update or create
     const isUpdate = !!editSlug;
@@ -860,8 +844,7 @@ async function handlePostSubmit(e) {
     
     const response = await fetch(url, {
       method: method,
-      headers: {
-        'Authorization': `Bearer ${token}`,
+      credentials: 'include'
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(formData)
@@ -891,9 +874,9 @@ async function loadTeam() {
   container.innerHTML = '<div class="loading-quantum"><div class="loading-spinner"></div><p>Loading team...</p></div>';
   
   try {
-    const token = localStorage.getItem('auth_token');
+    
     const response = await fetch(`${API_BASE}/users`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      credentials: 'include'
     });
     
     const data = await response.json();
@@ -979,18 +962,18 @@ async function loadActivity() {
   container.innerHTML = '<div class="loading-quantum"><div class="loading-spinner"></div><p>Loading activity...</p></div>';
   
   try {
-    const token = localStorage.getItem('auth_token');
+    
     
     // Fetch recent posts as activity
     const postsResponse = await fetch(`${API_BASE}/blog-posts`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      credentials: 'include'
     });
     
     const postsData = await postsResponse.json();
     
     // Fetch team members for online status
     const teamResponse = await fetch(`${API_BASE}/users`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      credentials: 'include'
     });
     
     const teamData = await teamResponse.json();
@@ -1151,13 +1134,11 @@ async function loadSettings() {
   const container = document.getElementById('user-permissions-list');
   
   try {
-    const token = localStorage.getItem('auth_token');
+    
     
     // Fetch all users with their roles
     const response = await fetch(`${API_BASE}/users`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      credentials: 'include'
     });
     
     const data = await response.json();
@@ -1232,12 +1213,11 @@ async function loadSettings() {
 // 💾 UPDATE USER ROLE
 async function updateUserRole(userEmail, newRole) {
   try {
-    const token = localStorage.getItem('auth_token');
+    
     
     const response = await fetch(`${API_BASE}/users/${encodeURIComponent(userEmail)}/role`, {
       method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
+      credentials: 'include'
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -1348,11 +1328,10 @@ async function collabAIAutoFillSEO() {
   btn.querySelector('.ultra-ai-mega-text').textContent = '🤖 AI ANALYZING...';
   
   try {
-    const token = localStorage.getItem('auth_token');
+    
     const response = await fetch('/api/ai/seo-optimize', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
+      credentials: 'include'
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ title, content })
@@ -1399,7 +1378,7 @@ async function collabAIOptimizeAll() {
     // Show status box
     document.getElementById('collab-ai-status-box').style.display = 'block';
     
-    const token = localStorage.getItem('auth_token');
+    
     
     // Generate all AI features
     await Promise.all([
@@ -1430,11 +1409,10 @@ async function collabAIGenerateSummary(silent = false) {
   }
   
   try {
-    const token = localStorage.getItem('auth_token');
+    
     const response = await fetch('/api/ai/generate-summary', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
+      credentials: 'include'
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ title, content })
@@ -1449,7 +1427,6 @@ async function collabAIGenerateSummary(silent = false) {
         document.getElementById('collab-ai-result-box').style.display = 'block';
         document.getElementById('collab-ai-result-text').textContent = JSON.stringify(data.summary, null, 2);
         showNotification('✅ AI Summary generated!', 'success');
-      }
     }
   } catch (error) {
     console.error('AI summary error:', error);
@@ -1468,11 +1445,10 @@ async function collabAIGenerateFAQ(silent = false) {
   }
   
   try {
-    const token = localStorage.getItem('auth_token');
+    
     const response = await fetch('/api/ai/generate-faq', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
+      credentials: 'include'
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ title, content })
@@ -1487,7 +1463,6 @@ async function collabAIGenerateFAQ(silent = false) {
         document.getElementById('collab-ai-result-box').style.display = 'block';
         document.getElementById('collab-ai-result-text').textContent = JSON.stringify(data.faq, null, 2);
         showNotification('✅ FAQ Schema generated!', 'success');
-      }
     }
   } catch (error) {
     console.error('AI FAQ error:', error);
@@ -1506,11 +1481,10 @@ async function collabAIGenerateSchema(silent = false) {
   }
   
   try {
-    const token = localStorage.getItem('auth_token');
+    
     const response = await fetch('/api/ai/generate-schema', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
+      credentials: 'include'
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ title, content })
@@ -1525,7 +1499,6 @@ async function collabAIGenerateSchema(silent = false) {
         document.getElementById('collab-ai-result-box').style.display = 'block';
         document.getElementById('collab-ai-result-text').textContent = JSON.stringify(data.schema, null, 2);
         showNotification('✅ Structured Data generated!', 'success');
-      }
     }
   } catch (error) {
     console.error('AI schema error:', error);
@@ -1544,11 +1517,10 @@ async function collabAIGenerateEmbedding(silent = false) {
   }
   
   try {
-    const token = localStorage.getItem('auth_token');
+    
     const response = await fetch('/api/ai/generate-embedding', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
+      credentials: 'include'
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ title, content })
@@ -1563,7 +1535,6 @@ async function collabAIGenerateEmbedding(silent = false) {
         document.getElementById('collab-ai-result-box').style.display = 'block';
         document.getElementById('collab-ai-result-text').textContent = `Embedding vector generated (${data.embedding?.length || 0} dimensions)`;
         showNotification('✅ Neural Embedding generated!', 'success');
-      }
     }
   } catch (error) {
     console.error('AI embedding error:', error);
@@ -1578,9 +1549,9 @@ async function loadMeetings() {
   container.innerHTML = '<div class="loading-quantum"><div class="loading-spinner"></div><p>Loading meetings...</p></div>';
   
   try {
-    const token = localStorage.getItem('auth_token');
+    
     const response = await fetch(`/api/meetings/otter/transcripts?limit=50`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      credentials: 'include'
     });
     
     const data = await response.json();
@@ -1687,9 +1658,9 @@ function createMeetingCard(meeting) {
 
 window.openMeetingTranscript = async function(meetingId) {
   try {
-    const token = localStorage.getItem('auth_token');
+    
     const response = await fetch(`/api/meetings/otter/transcripts/${meetingId}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      credentials: 'include'
     });
     
     const data = await response.json();
@@ -1797,12 +1768,10 @@ window.deleteMeeting = async function(meetingId, meetingTitle) {
   try {
     showNotification('🗑️ Deleting meeting...', 'info');
     
-    const token = localStorage.getItem('auth_token');
+    
     const response = await fetch(`/api/meetings/otter/transcripts/${meetingId}`, {
       method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      credentials: 'include'
     });
     
     const data = await response.json();
@@ -2106,11 +2075,10 @@ async function handleFileUpload(file) {
     const formData = new FormData();
     formData.append('file', file);
     
-    const token = localStorage.getItem('auth_token');
+    
     const response = await fetch('/api/meetings/parse-file', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
+      credentials: 'include'
       },
       body: formData
     });
@@ -2125,7 +2093,6 @@ async function handleFileUpload(file) {
       
       if (data.date) {
         document.getElementById('manual-date').value = data.date;
-      }
       
       if (data.owner) {
         document.getElementById('manual-owner').value = data.owner;
@@ -2196,7 +2163,7 @@ window.uploadManualMeeting = async function() {
     // Post directly to webhook endpoint (same as Zapier would)
     const response = await fetch('/api/meetings/webhook/zapier', {
       method: 'POST',
-      headers: {
+      credentials: 'include'
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -2242,11 +2209,10 @@ window.syncFromZapier = async function() {
   try {
     showNotification('🔄 Syncing meetings from Zapier Tables...', 'info');
     
-    const token = localStorage.getItem('auth_token');
+    
     const response = await fetch(`/api/meetings/zapier/sync`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
+      credentials: 'include'
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ zapierApiKey: apiKey })
@@ -2302,9 +2268,9 @@ async function searchMeetings(query) {
   container.innerHTML = '<div class="loading-quantum"><div class="loading-spinner"></div><p>Searching...</p></div>';
   
   try {
-    const token = localStorage.getItem('auth_token');
+    
     const response = await fetch(`/api/meetings/otter/search?q=${encodeURIComponent(query)}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      credentials: 'include'
     });
     
     const data = await response.json();
@@ -2535,11 +2501,10 @@ window.sendTeamEmail = async function() {
   }
   
   try {
-    const token = localStorage.getItem('auth_token');
+    
     const response = await fetch(`${API_BASE}/send-email`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
+      credentials: 'include'
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -2570,11 +2535,11 @@ let currentTaskFilter = 'all';
 async function loadTasks() {
   console.log('📋 Loading tasks...');
   try {
-    const token = localStorage.getItem('auth_token');
+    
     console.log('🔑 Token:', token ? 'Found' : 'Missing');
     
     const res = await fetch('/api/tasks', {
-      headers: { 'Authorization': `Bearer ${token}` }
+      credentials: 'include'
     });
     
     console.log('📊 Tasks API response:', res.status);
@@ -2586,7 +2551,6 @@ async function loadTasks() {
       const tasksCountEl = document.getElementById('tasks-count');
       if (tasksCountEl) {
         tasksCountEl.textContent = allTasks.filter(t => t.status !== 'completed').length;
-      }
       renderTasks();
     } else {
       const error = await res.text();
@@ -2791,11 +2755,10 @@ function renderTasks() {
 
 async function toggleTask(id, completed) {
   try {
-    const token = localStorage.getItem('auth_token');
+    
     const res = await fetch(`/api/tasks/${id}`, {
       method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
+      credentials: 'include'
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -2816,10 +2779,10 @@ async function deleteTask(id) {
   if (!confirm('Delete this task?')) return;
   
   try {
-    const token = localStorage.getItem('auth_token');
+    
     const res = await fetch(`/api/tasks/${id}`, {
       method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` }
+      credentials: 'include'
     });
     
     if (res.ok) {
