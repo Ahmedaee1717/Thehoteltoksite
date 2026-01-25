@@ -111,6 +111,15 @@ window.addEventListener('DOMContentLoaded', function() {
     const { useState, useEffect, useRef } = React;
     const h = React.createElement;
     
+    // CRITICAL: Clear localStorage on app load to prevent cross-user contamination
+    // This ensures we ALWAYS fetch fresh user data from the server
+    try {
+      localStorage.clear();
+      console.log('✅ localStorage cleared - fetching fresh user data from server');
+    } catch (e) {
+      console.warn('Could not clear localStorage:', e);
+    }
+    
     // Get user email from server (NOT localStorage!)
     const getUserEmail = async () => {
       try {
