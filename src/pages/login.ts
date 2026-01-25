@@ -21,22 +21,48 @@ export const loginPage = `<!DOCTYPE html>
             justify-content: center;
             padding: 20px;
             position: relative;
+            overflow: hidden;
         }
 
-        /* Precision grid */
+        /* Advanced holographic grid */
         body::before {
             content: '';
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
             background-image: 
-                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-            background-size: 40px 40px;
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(212, 175, 55, 0.02) 2px, rgba(212, 175, 55, 0.02) 4px),
+                repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(212, 175, 55, 0.02) 2px, rgba(212, 175, 55, 0.02) 4px),
+                repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(212, 175, 55, 0.01) 10px, rgba(212, 175, 55, 0.01) 20px);
+            transform: perspective(800px) rotateX(65deg) translateZ(-100px);
             pointer-events: none;
             z-index: 0;
+        }
+
+        /* Ambient glow effect with scanning beam */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -100%;
+            left: 0;
+            width: 100%;
+            height: 200%;
+            background: linear-gradient(180deg, 
+                transparent 0%, 
+                rgba(212, 175, 55, 0.03) 48%, 
+                rgba(212, 175, 55, 0.1) 50%, 
+                rgba(212, 175, 55, 0.03) 52%, 
+                transparent 100%);
+            pointer-events: none;
+            z-index: 0;
+            animation: scanBeam 8s ease-in-out infinite;
+        }
+
+        @keyframes scanBeam {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(50%); }
         }
 
         .container {
@@ -52,16 +78,47 @@ export const loginPage = `<!DOCTYPE html>
         }
 
         .logo-icon {
-            width: 72px;
-            height: 72px;
-            margin: 0 auto 20px;
+            width: 180px;
+            height: auto;
+            margin: 0 auto 32px;
             position: relative;
+            padding: 24px;
+            background: #1a1a1a;
+            border: 3px solid #D4AF37;
+            box-shadow: 
+                0 0 40px rgba(212, 175, 55, 0.25),
+                inset 0 0 40px rgba(212, 175, 55, 0.08),
+                0 0 80px rgba(212, 175, 55, 0.15);
+        }
+
+        .logo-icon::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+        }
+
+        .logo-icon::after {
+            content: '';
+            position: absolute;
+            top: -12px;
+            left: -12px;
+            right: -12px;
+            bottom: -12px;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.2) 0%, transparent 70%);
+            z-index: -1;
         }
 
         .logo-icon img {
             width: 100%;
-            height: 100%;
+            height: auto;
             display: block;
+            position: relative;
+            z-index: 1;
+            filter: brightness(1.05) contrast(1.05);
         }
 
         .brand-name {
@@ -313,7 +370,7 @@ export const loginPage = `<!DOCTYPE html>
     <div class="container">
         <div class="logo-container">
             <div class="logo-icon">
-                <img src="https://www.investaycapital.com/static/investay-icon.png" alt="Investay Capital">
+                <img src="https://www.investaycapital.com/static/investay-logo-clean.png" alt="Investay Capital">
             </div>
             <div class="brand-name">INVESTAY CAPITAL</div>
             <div class="brand-tagline">Enterprise Email Platform</div>
