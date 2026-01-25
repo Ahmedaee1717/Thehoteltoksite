@@ -995,13 +995,13 @@ meetings.post('/otter/transcripts', async (c) => {
     
     if (!title || !transcript_text) {
       return c.json({ 
-        success: false, 
+        success: true,
         error: 'Title and transcript_text are required' 
       }, 400)
     }
     
-    // Generate unique ID
-    const id = `ott_${Date.now()}_${Math.random().toString(36).substring(7)}`
+    // Generate unique otter_id
+    const otterId = `ott_${Date.now()}_${Math.random().toString(36).substring(7)}`
     
     // Parse date or use current time
     const startTime = date_created ? new Date(date_created).toISOString() : new Date().toISOString()
@@ -1019,16 +1019,15 @@ meetings.post('/otter/transcripts', async (c) => {
       speakers = owner_name
     }
     
-    // Insert into database
-    await c.env.DB.prepare(`
+    // Insert into database (id is auto-increment INTEGER)
+    const result = await c.env.DB.prepare(`
       INSERT INTO otter_transcripts (
-        id, otter_id, title, summary, start_time, end_time,
+        otter_id, title, summary, start_time, end_time,
         duration_seconds, meeting_url, transcript_text, speakers,
         created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
-      id,
-      id, // Use same ID for otter_id
+      otterId,
       title,
       summary,
       startTime,
@@ -1043,7 +1042,7 @@ meetings.post('/otter/transcripts', async (c) => {
     
     return c.json({ 
       success: true, 
-      id,
+      id: result.meta.last_row_id,
       message: 'Meeting transcript uploaded successfully' 
     })
   } catch (error: any) {
