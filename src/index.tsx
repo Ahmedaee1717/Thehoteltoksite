@@ -21,6 +21,7 @@ import voice from './routes/voice'
 import sharedMailboxRoutes from './routes/shared-mailbox'
 import testFormDataRoutes from './routes/test-formdata'
 import search from './routes/search'
+import publicSignup from './routes/public-signup'
 import { homePage } from './pages/home'
 import { answerQuestion } from './services/ai-optimizer'
 
@@ -97,6 +98,7 @@ app.route('/api/voice', voice)
 app.route('/api/shared-mailboxes', sharedMailboxRoutes)
 app.route('/api/test', testFormDataRoutes)
 app.route('/api/search', search)
+app.route('/api/signup', publicSignup)
 
 // AI Q&A Endpoint - semantic search and question answering
 app.post('/api/ai-answer', async (c) => {

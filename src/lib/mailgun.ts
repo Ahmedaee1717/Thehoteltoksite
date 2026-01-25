@@ -331,3 +331,46 @@ export class MailgunService {
 export function createMailgunService(config: MailgunConfig): MailgunService {
   return new MailgunService(config);
 }
+
+/**
+ * Simple function to send verification emails
+ */
+export async function sendVerificationEmail(
+  apiKey: string,
+  domain: string,
+  to: string,
+  subject: string,
+  html: string
+): Promise<any> {
+  try {
+    const apiUrl = 'https://api.mailgun.net/v3';
+    const from = `iNVESTAY CAPITAL <noreply@${domain}>`;
+    
+    const form = new FormData();
+    form.append('from', from);
+    form.append('to', to);
+    form.append('subject', subject);
+    form.append('html', html);
+    form.append('o:tracking-opens', 'no');
+    form.append('o:tracking-clicks', 'no');
+    
+    const response = await fetch(`${apiUrl}/${domain}/messages`, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Basic ' + btoa(`api:${apiKey}`)
+      },
+      body: form
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      return { success: true, messageId: result.id };
+    } else {
+      throw new Error(result.message || 'Failed to send email');
+    }
+  } catch (error: any) {
+    throw new Error(error.message || 'Failed to send verification email');
+  }
+}
+
