@@ -765,10 +765,15 @@
     
     // PRIORITY 2: Extract from GPT-4 structured summary - Action Items section
     if (items.length === 0 && meeting.summary) {
-      // Try Action Items section
+      // Try Action Items section (case-insensitive)
       let actionSection = null;
-      if (meeting.summary.includes('Action Items')) {
-        actionSection = meeting.summary.split('Action Items')[1]?.split(/Next Steps|Goal:|Decisions/)[0];
+      const summaryLower = meeting.summary.toLowerCase();
+      
+      if (summaryLower.includes('action items')) {
+        // Find the position case-insensitively
+        const actionItemsIndex = meeting.summary.toLowerCase().indexOf('action items');
+        const afterActionItems = meeting.summary.substring(actionItemsIndex + 'action items'.length);
+        actionSection = afterActionItems.split(/Next Steps|Goal:|Decisions/)[0];
       }
       // Also check for "Decisions:" format (numbered list)
       else if (meeting.summary.includes('Decisions:')) {
@@ -919,7 +924,16 @@
         console.log(`🌐 Found domain: ${companyDomain}`);
       }
       
-      // 2. Extract person name (but avoid common words like "at", "someone")
+      // 2. Extract "to [Company Name]" or "email to [Company Name]"
+      if (!recipient) {
+        const toCompanyMatch = text.match(/(?:email|send|to)\s+(?:to\s+)?([A-Z][A-Za-z\s&]+(?:Group|Company|Inc|LLC|Ltd|Corporation|Corp)?)/);
+        if (toCompanyMatch) {
+          recipient = toCompanyMatch[1].trim();
+          console.log(`🏢 Found company: ${recipient}`);
+        }
+      }
+      
+      // 3. Extract person name (but avoid common words like "at", "someone")
       if (!recipient) {
         const skipWords = ['at', 'someone', 'them', 'him', 'her', 'the', 'a', 'an', 'and', 'or'];
         const nameMatch = text.match(/(?:email|contact|reach out to)\s+(?:someone\s+at\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/);
