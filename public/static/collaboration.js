@@ -3323,17 +3323,25 @@ async function submitPost() {
 
 // Load Live Board Posts
 async function loadLiveBoardPosts() {
+  console.log('📡 Loading live board posts...');
   try {
     const response = await fetch(`${API_BASE}/live-board/posts`, { credentials: 'include' });
+    console.log('📊 Live board API response status:', response.status);
+    
     const data = await response.json();
+    console.log('📊 Live board API data:', data);
     
     if (data.success) {
       liveBoardPosts = data.posts || [];
+      console.log(`✅ Live board posts loaded: ${liveBoardPosts.length}`);
       document.getElementById('live-board-count').textContent = liveBoardPosts.length;
       renderLiveBoardFeed();
+    } else {
+      console.warn('⚠️ Live board API returned success:false:', data.error);
+      renderLiveBoardEmpty('Unable to load posts. ' + (data.error || ''));
     }
   } catch (error) {
-    console.error('Error loading live board posts:', error);
+    console.error('❌ Error loading live board posts:', error);
     renderLiveBoardEmpty('Failed to load posts');
   }
 }
@@ -3348,10 +3356,10 @@ function renderLiveBoardFeed() {
   
   switch (currentFilter) {
     case 'my':
-      filteredPosts = liveBoardPosts.filter(p => p.author_email === userEmail);
+      filteredPosts = liveBoardPosts.filter(p => p.user_email === userEmail);
       break;
     case 'mentions':
-      filteredPosts = liveBoardPosts.filter(p => p.text.includes(`@${userEmail}`));
+      filteredPosts = liveBoardPosts.filter(p => p.text && p.text.includes(`@${userEmail}`));
       break;
     case 'links':
       filteredPosts = liveBoardPosts.filter(p => p.link_url);
@@ -3365,41 +3373,41 @@ function renderLiveBoardFeed() {
   
   // Render posts
   feedContainer.innerHTML = filteredPosts.map(post => `
-    <div class="feed-post" data-post-id="${post.id}">
+    <div class="feed-post" data-post-id="${escapeHtml(post.id)}">
       <div class="feed-post-header">
         <div class="feed-post-author">
           <div class="feed-post-avatar">
-            ${post.author_email.charAt(0).toUpperCase()}
+            ${(post.user_name || post.user_email || 'U').charAt(0).toUpperCase()}
           </div>
           <div class="feed-post-author-info">
-            <div class="feed-post-author-name">${post.author_email}</div>
+            <div class="feed-post-author-name">${escapeHtml(post.user_name || post.user_email)}</div>
             <div class="feed-post-timestamp">${formatTimeAgo(post.created_at)}</div>
           </div>
         </div>
         <div class="feed-post-menu">
-          <button class="feed-post-menu-btn" onclick="togglePostMenu(${post.id})">⋮</button>
+          <button class="feed-post-menu-btn" onclick="togglePostMenu('${escapeHtml(post.id)}')">⋮</button>
         </div>
       </div>
       <div class="feed-post-content">
         <div class="feed-post-text">${escapeHtml(post.text)}</div>
         ${post.link_url ? `
-          <a href="${post.link_url}" target="_blank" class="feed-post-link">
+          <a href="${escapeHtml(post.link_url)}" target="_blank" class="feed-post-link">
             <span class="feed-post-link-icon">🔗</span>
-            <span class="feed-post-link-text">${post.link_url}</span>
+            <span class="feed-post-link-text">${escapeHtml(post.link_url)}</span>
           </a>
         ` : ''}
       </div>
       <div class="feed-post-actions">
-        <button class="feed-post-action-btn" onclick="likePost(${post.id})">
-          <span>👍</span>
-          <span id="like-count-${post.id}">${post.likes || 0}</span>
+        <button class="feed-post-action-btn ${post.is_liked ? 'liked' : ''}" onclick="likePost('${escapeHtml(post.id)}')">
+          <span>${post.is_liked ? '❤️' : '🤍'}</span>
+          <span id="like-count-${escapeHtml(post.id)}">${post.likes || 0}</span>
         </button>
-        <button class="feed-post-action-btn" onclick="commentOnPost(${post.id})">
+        <button class="feed-post-action-btn" onclick="commentOnPost('${escapeHtml(post.id)}')">
           <span>💬</span>
           <span>Comment</span>
         </button>
-        <button class="feed-post-action-btn" onclick="sharePost(${post.id})">
-          <span>🔗</span>
+        <button class="feed-post-action-btn" onclick="sharePost('${escapeHtml(post.id)}')">
+          <span>📤</span>
           <span>Share</span>
         </button>
       </div>
