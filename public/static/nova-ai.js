@@ -739,17 +739,8 @@
     displayInsights(filteredInsights);
     setNovaMood(filteredInsights.length > 0 ? NOVA_STATES.EXCITED : NOVA_STATES.IDLE);
     
-    // NOVA announces findings
-    if (peopleMap.size > 0 || projectMap.size > 0) {
-      const people = Array.from(peopleMap.keys()).filter(p => peopleMap.get(p).length > 1);
-      const projects = Array.from(projectMap.keys()).filter(p => projectMap.get(p).length > 1);
-      
-      if (people.length > 0) {
-        novaSpeak(`I found ${people.join(', ')} mentioned across multiple meetings! 🔍`);
-      } else if (projects.length > 0) {
-        novaSpeak(`Tracking ${projects.join(', ')} across your meetings! 📊`);
-      }
-    }
+    // Cross-meeting intelligence has been disabled (too noisy)
+    // NOVA now focuses on actionable insights only
   }
 
   // Extract action items from meeting

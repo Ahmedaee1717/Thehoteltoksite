@@ -3293,9 +3293,10 @@ async function submitPost() {
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span>⏳</span><span>Posting...</span>';
     
-    const response = await fetch('/api/live-board/posts', {
+    const response = await fetch(`${API_BASE}/live-board/posts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ text })
     });
     
@@ -3323,7 +3324,7 @@ async function submitPost() {
 // Load Live Board Posts
 async function loadLiveBoardPosts() {
   try {
-    const response = await fetch('/api/live-board/posts');
+    const response = await fetch(`${API_BASE}/live-board/posts`, { credentials: 'include' });
     const data = await response.json();
     
     if (data.success) {
@@ -3435,8 +3436,9 @@ function formatTimeAgo(timestamp) {
 // Like Post
 async function likePost(postId) {
   try {
-    const response = await fetch(`/api/live-board/posts/${postId}/like`, {
-      method: 'POST'
+    const response = await fetch(`${API_BASE}/live-board/posts/${postId}/like`, {
+      method: 'POST',
+      credentials: 'include'
     });
     
     const data = await response.json();
