@@ -6922,7 +6922,7 @@ window.addEventListener('DOMContentLoaded', function() {
             });
           }
           
-          console.log('CRM matches:', suggestions.length); // Debug log
+          console.log('✅ CRM matches:', suggestions.length); // Debug log
           
           // Add matching team emails
           teamEmails.forEach(teamMember => {
@@ -6938,7 +6938,7 @@ window.addEventListener('DOMContentLoaded', function() {
             }
           });
           
-          console.log('Total suggestions:', suggestions.length); // Debug log
+          console.log('✅ Total suggestions after filtering:', suggestions.length, 'for query:', queryLower); // Debug log
           
           setContactSuggestions(suggestions.slice(0, 8)); // Limit to 8 suggestions
           setShowContactSuggestions(suggestions.length > 0);
@@ -6951,7 +6951,9 @@ window.addEventListener('DOMContentLoaded', function() {
       
       // Handle TO field change
       const handleToChange = (value) => {
+        console.log('📧 TO field changed:', value);
         setTo(value);
+        // Load suggestions with the new value immediately
         loadContactSuggestions(value);
       };
       
