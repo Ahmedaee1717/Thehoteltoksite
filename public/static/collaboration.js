@@ -1735,16 +1735,19 @@ function extractSpeakersFromTranscript(transcript) {
   
   const speakers = new Set();
   
-  // Pattern 1: "Speaker Name 0:00" or "Speaker Name 0:00:00"
-  const timestampPattern = /^([^\d\n]+?)\s+\d+:\d+(?::\d+)?$/gm;
+  // Pattern 1: "Speaker Name  0:00" or "Speaker Name  0:00:00" (with double space before timestamp)
+  // This matches Otter.ai format: "Vinay Gupta  1:10" 
+  // Note: uses double space to avoid matching "Name 2" (line numbers)
+  const timestampPattern = /^(.+?)\s{2,}\d+:\d+(?::\d+)?(?:\s|$)/gm;
   let match;
   
   while ((match = timestampPattern.exec(transcript)) !== null) {
     const name = match[1].trim();
-    if (name && name.length > 1 && name.length < 100) {
+    // Only process if it looks like a real name (not too short, not all caps section headers)
+    if (name && name.length >= 2 && name.length < 100 && !name.match(/^(SPEAKERS?|TRANSCRIPT|SUMMARY|NOTE|MEETING)$/i)) {
       // Remove role/title in parentheses if present
       const cleanName = name.replace(/\s*\([^)]+\)\s*:?$/, '').trim();
-      if (cleanName.length > 1) {
+      if (cleanName.length >= 2) {
         speakers.add(cleanName);
       }
     }
@@ -1755,10 +1758,10 @@ function extractSpeakersFromTranscript(transcript) {
   
   while ((match = colonPattern.exec(transcript)) !== null) {
     const name = match[1].trim();
-    if (name && name.length > 1 && name.length < 100) {
+    if (name && name.length >= 2 && name.length < 100) {
       // Remove role/title in parentheses if present
       const cleanName = name.replace(/\s*\([^)]+\)\s*$/, '').trim();
-      if (cleanName.length > 1 && !cleanName.match(/^(SPEAKERS?|TRANSCRIPT|SUMMARY|NOTE|MEETING)/i)) {
+      if (cleanName.length >= 2 && !cleanName.match(/^(SPEAKERS?|TRANSCRIPT|SUMMARY|NOTE|MEETING)/i)) {
         speakers.add(cleanName);
       }
     }
@@ -2371,7 +2374,7 @@ async function handleBulkFileUpload(files) {
         transcript = text;
         
         // Try to extract summary
-        const summaryMatch = text.match(/SUMMARY\s*[:\n]+(.*?)(?=\n\n|SPEAKERS|$)/is);
+        const summaryMatch = text.match(/SUMMARY\s*[:\n]+(.*?)(?=\n\n|SPEAKERS|TRANSCRIPT|$)/is);
         if (summaryMatch) {
           summary = summaryMatch[1].trim();
         }
@@ -2398,60 +2401,79 @@ async function handleBulkFileUpload(files) {
         if (speakers.length > 0) {
           ownerName = speakers[0].name;
         }
+        
+        // Upload to backend with extracted speakers
+        const response = await fetch('/api/meetings/otter/transcripts', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title,
+            transcript_text: transcript,
+            summary: summary || '',
+            meeting_url: '',
+            owner_name: ownerName || 'Unknown',
+            date_created: dateCreated,
+            speakers: speakers.length > 0 ? JSON.stringify(speakers) : undefined
+          })
+        });
+        
+        const data = await response.json();
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        
+        successCount++;
+        progressDiv.innerHTML = `✅ ${successCount}/${validFiles.length} uploaded: ${file.name}`;
+        
       } else {
         // Handle DOCX/PDF via backend
         const formData = new FormData();
         formData.append('file', file);
         
-        const response = await fetch('/api/meetings/parse-file', {
+        const parseResponse = await fetch('/api/meetings/parse-file', {
           method: 'POST',
           body: formData
         });
         
-        const data = await response.json();
+        const parseData = await parseResponse.json();
         
-        if (!data.success) {
-          throw new Error(data.error || 'Extraction failed');
+        if (!parseData.success) {
+          throw new Error(parseData.error || 'Extraction failed');
         }
         
-        title = data.title || file.name.replace(/\.(docx|pdf)$/, '');
-        transcript = data.transcript || '';
-        summary = data.summary || '';
-        dateCreated = data.date;
-        ownerName = data.owner;
-      }
-      
-      // Extract speakers if not already extracted
-      let speakers = [];
-      if (fileExtension !== '.txt') {
-        // For DOCX/PDF, extract speakers from transcript
-        speakers = extractSpeakersFromTranscript(transcript);
-      }
-      
-      // Upload to backend
-      const response = await fetch('/api/meetings/otter/transcripts', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: title || `Meeting ${i + 1}`,
-          transcript_text: transcript,
-          summary: summary || '',
-          meeting_url: '',
-          owner_name: ownerName || 'Unknown',
-          date_created: dateCreated || new Date().toISOString(),
-          speakers: speakers.length > 0 ? JSON.stringify(speakers) : ''
-        })
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
+        title = parseData.title || file.name.replace(/\.(docx|pdf)$/, '');
+        transcript = parseData.transcript || '';
+        summary = parseData.summary || '';
+        dateCreated = parseData.date;
+        ownerName = parseData.owner;
+        
+        // Extract speakers from transcript
+        const speakers = extractSpeakersFromTranscript(transcript);
+        
+        // Upload to backend
+        const response = await fetch('/api/meetings/otter/transcripts', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: title || `Meeting ${i + 1}`,
+            transcript_text: transcript,
+            summary: summary || '',
+            meeting_url: '',
+            owner_name: ownerName || (speakers.length > 0 ? speakers[0].name : 'Unknown'),
+            date_created: dateCreated || new Date().toISOString(),
+            speakers: speakers.length > 0 ? JSON.stringify(speakers) : undefined
+          })
+        });
+        
+        const data = await response.json();
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        
         successCount++;
-        console.log(`✅ Uploaded: ${file.name}`);
-      } else {
-        failCount++;
-        console.error(`❌ Failed: ${file.name} - ${result.error}`);
+        progressDiv.innerHTML = `✅ ${successCount}/${validFiles.length} uploaded: ${file.name}`;
       }
     } catch (error) {
       failCount++;
