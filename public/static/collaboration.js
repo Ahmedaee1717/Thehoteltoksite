@@ -37,6 +37,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupBackButton();
   await loadInitialData();
   
+  // Set initial view to live-board if no hash
+  if (!window.location.hash) {
+    console.log('🚀 Setting initial view to live-board');
+    switchView('live-board');
+  }
+  
   // Handle hash navigation (e.g., /collaborate#tasks)
   if (window.location.hash) {
     const view = window.location.hash.replace('#', '');

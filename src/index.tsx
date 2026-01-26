@@ -1639,7 +1639,7 @@ app.get('/collaborate', (c) => {
                 <!-- CONTENT AREA -->
                 <div class="collab-content">
                     <!-- LIVE BOARD VIEW -->
-                    <div id="live-board-view" class="collab-view active">
+                    <div id="live-board-view" class="collab-view">
                         <div class="view-header">
                             <h1 class="view-title">🔴 LIVE BOARD</h1>
                             <p class="view-subtitle">Real-time team updates and collaboration feed</p>
