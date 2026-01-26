@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { generateVerificationCode, hashPassword } from '../lib/auth'
 import { sendVerificationEmail } from '../lib/mailgun'
+import { generateId } from '../utils/id'
 
 type Bindings = {
   DB: D1Database
@@ -336,11 +337,16 @@ publicSignup.post('/verify', async (c) => {
     // Hash password
     const passwordHash = await hashPassword(password)
 
-    // Create account
+    // Generate account ID
+    const accountId = generateId('acc')
+
+    // Create account with is_active = 1
     await c.env.DB.prepare(`
-      INSERT INTO email_accounts (email_address, display_name, password_hash, is_admin, created_at, updated_at)
-      VALUES (?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-    `).bind(email, pending.full_name, passwordHash).run()
+      INSERT INTO email_accounts (id, email_address, display_name, password_hash, is_active, is_admin, created_at, updated_at)
+      VALUES (?, ?, ?, ?, 1, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `).bind(accountId, email, pending.full_name, passwordHash).run()
+
+    console.log(`✅ Account created: ${email} (ID: ${accountId}, is_active: 1)`)
 
     // Delete pending signup
     await c.env.DB.prepare('DELETE FROM pending_signups WHERE email = ?').bind(email).run()
