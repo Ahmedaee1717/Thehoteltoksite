@@ -659,8 +659,8 @@
         if (emailTasks.length > 0) {
           // CREATE SMART EMAIL TASK INSIGHT
           emailTasks.forEach(emailTask => {
-            // Use SMART extraction function
-            const recipient = extractRecipientFromText(emailTask.text);
+            // SMART EXTRACTION: Use meeting title + task text to find recipient
+            const recipient = extractRecipientFromContext(emailTask.text, meeting.title, meeting.summary);
             
             insights.push({
               type: 'smart-email-task',
@@ -1061,6 +1061,63 @@
     
     console.warn('⚠️ No recipient found, using default');
     return 'recipient';
+  }
+
+  // EXTRACT RECIPIENT FROM MEETING CONTEXT (TITLE + SUMMARY)
+  function extractRecipientFromContext(taskText, meetingTitle, meetingSummary) {
+    console.log('🔍 Extracting recipient from context...');
+    console.log('   Task:', taskText);
+    console.log('   Meeting:', meetingTitle);
+    
+    // PRIORITY 1: Extract company/resort name from meeting title
+    // Examples:
+    // "Hotel Partnership Proposal - Old Palace Resort Sahl Hasheesh" → "Old Palace Resort Sahl Hasheesh"
+    // "Strategic Partnership Discussion - Sharmdreams Group" → "Sharmdreams Group"
+    // "_Mattereum __ Sharm Dreams weekly catch up" → "Sharm Dreams"
+    
+    // Pattern A: "Title - Company Name" format
+    const dashMatch = meetingTitle.match(/[-—]\s*(.+?)(?:\s+\(|$)/);
+    if (dashMatch) {
+      const companyName = dashMatch[1].trim();
+      console.log('✅ Found company from meeting title (after dash):', companyName);
+      return companyName;
+    }
+    
+    // Pattern B: Meeting title contains "Partnership" or "Discussion" with company name
+    const partnershipMatch = meetingTitle.match(/(?:Partnership|Discussion|Meeting|Catch up).*?(?:with|regarding)?[\s-]+([A-Z][a-zA-Z\s]+(?:Group|Resort|Hotel|Company|Corp|Inc)?)/i);
+    if (partnershipMatch && partnershipMatch[1].trim().length > 3) {
+      const companyName = partnershipMatch[1].trim();
+      console.log('✅ Found company from meeting title (partnership pattern):', companyName);
+      return companyName;
+    }
+    
+    // Pattern C: Extract from summary "regarding [Company Name]"
+    if (meetingSummary) {
+      const regardingMatch = meetingSummary.match(/regarding\s+([A-Z][a-zA-Z\s]+(?:Group|Resort|Hotel|Company|Corp|Inc)?)/i);
+      if (regardingMatch) {
+        const companyName = regardingMatch[1].trim();
+        console.log('✅ Found company from summary (regarding):', companyName);
+        return companyName;
+      }
+    }
+    
+    // PRIORITY 2: Check if task has explicit "to [Company]" pattern
+    const toCompanyMatch = taskText.match(/\bto\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)/);
+    if (toCompanyMatch && !['Review', 'Next', 'All', 'Meeting', 'Wednesday'].includes(toCompanyMatch[1])) {
+      console.log('✅ Found company from task text (to Company):', toCompanyMatch[1]);
+      return toCompanyMatch[1];
+    }
+    
+    // PRIORITY 3: If task says "to resort/hotel/client", use generic term
+    const toLowercaseMatch = taskText.match(/\bto\s+(resort|hotel|client|customer|partner)/i);
+    if (toLowercaseMatch) {
+      console.log('⚠️ Generic recipient found:', toLowercaseMatch[1]);
+      // Don't return generic term - fallback to full extraction
+    }
+    
+    // FALLBACK: Use old extractRecipientFromText as last resort
+    console.log('⚠️ Falling back to text-only extraction');
+    return extractRecipientFromText(taskText);
   }
 
   // SMART EMAIL TASK HANDLER WITH REAL WEB SEARCH
