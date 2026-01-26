@@ -12,7 +12,7 @@ type Bindings = {
 const publicSignup = new Hono<{ Bindings: Bindings }>()
 
 // Allowed domains for signup
-const ALLOWED_DOMAINS = ['mattereum.com', 'sharmdreamsgroup.com', 'virgingates.com']
+const ALLOWED_DOMAINS = ['mattereum.com', 'sharmdreamsgroup.com', 'virgingates.com', 'investaycapital.com']
 
 // Step 1: Request signup - sends verification email
 publicSignup.post('/request', async (c) => {
@@ -27,13 +27,14 @@ publicSignup.post('/request', async (c) => {
     const domain = company.toLowerCase()
     if (!ALLOWED_DOMAINS.includes(domain)) {
       return c.json({ 
-        error: 'Invalid domain. Only Mattereum, Sharm Dreams Group, and Virgin Gates employees can sign up.' 
+        error: 'Invalid domain. Only Mattereum, Sharm Dreams Group, Virgin Gates, and Investay Capital employees can sign up.' 
       }, 403)
     }
 
     // Validate that verification email matches the company domain
+    // For investaycapital.com, allow self-verification (no external email needed)
     const verificationEmailDomain = verificationEmail.toLowerCase().split('@')[1]
-    if (verificationEmailDomain !== domain) {
+    if (domain !== 'investaycapital.com' && verificationEmailDomain !== domain) {
       return c.json({ 
         error: `Verification email must be from ${domain}` 
       }, 400)
