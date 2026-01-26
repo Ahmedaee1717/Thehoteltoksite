@@ -6880,14 +6880,16 @@ window.addEventListener('DOMContentLoaded', function() {
       
       // Load contact suggestions
       const loadContactSuggestions = async (query) => {
+        console.log('🔍 Loading suggestions for query:', query);
         setLoadingContacts(true);
         try {
           // Get CRM contacts
-          const searchParam = query && query.length >= 1 ? `&search=${encodeURIComponent(query)}` : '';
+          const searchParam = query && query.length >= 1 ? `?search=${encodeURIComponent(query)}` : '';
+          console.log('📡 Fetching:', `/api/crm/contacts${searchParam}`);
           const crmRes = await fetch(`/api/crm/contacts${searchParam}`, { credentials: 'include' });
           const crmData = await crmRes.json();
           
-          console.log('CRM Contacts Response:', crmData); // Debug log
+          console.log('✅ CRM Contacts Response:', crmData); // Debug log
           
           // Get company team members (all @investaycapital.com emails)
           const teamEmails = [
