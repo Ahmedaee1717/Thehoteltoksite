@@ -1715,7 +1715,7 @@ app.get('/collaborate', (c) => {
                     </div>
 
                     <!-- MY POSTS VIEW -->
-                    <div id="my-posts-view" class="collab-view"
+                    <div id="my-posts-view" class="collab-view">
                         <div class="view-header">
                             <h1 class="view-title">My Posts</h1>
                             <p class="view-subtitle">Your authored and collaborated posts</p>
