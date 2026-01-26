@@ -582,42 +582,33 @@
     
     const insights = [];
 
-    // 🧠 CROSS-MEETING INTELLIGENCE
-    const { peopleMap, projectMap, actionItemsMap } = extractCrossMeetingInsights();
+    // 🧠 CROSS-MEETING INTELLIGENCE (DISABLED - too noisy)
+    // const { peopleMap, projectMap, actionItemsMap } = extractCrossMeetingInsights();
 
-    // Surface people mentioned in multiple meetings
-    peopleMap.forEach((meetings, person) => {
-      if (meetings.length > 1) {
-        insights.push({
-          type: 'person-connection',
-          priority: 'medium',
-          icon: '👤',
-          title: `${person} mentioned in ${meetings.length} meetings`,
-          subtitle: `Most recent: "${meetings[meetings.length - 1].title}"`,
-          action: () => {
-            novaSpeak(`Found ${person} in ${meetings.length} meetings: ${meetings.map(m => m.title).join(', ')}`);
-            // TODO: Show detailed person timeline
-          },
-          data: { person, meetings }
-        });
-      }
-    });
-
-    // Surface projects discussed across meetings
-    projectMap.forEach((meetings, project) => {
-      if (meetings.length > 1) {
-        insights.push({
-          type: 'project-connection',
-          priority: 'medium',
-          icon: '🏢',
-          title: `${project} discussed in ${meetings.length} meetings`,
-          subtitle: meetings.map(m => `• ${m.title.substring(0, 40)}...`).slice(0, 2).join('\n'),
-          action: () => {
-            novaSpeak(`${project} timeline: ${meetings.map(m => m.title).join(' → ')}`);
-            // TODO: Show project timeline
-          },
-          data: { project, meetings }
-        });
+    // REMOVED: Person mentions (e.g., "Farzam mentioned in 2 meetings")
+    // REMOVED: Project tracking (e.g., "Mattereum discussed in 3 meetings")
+    
+    // Extract action items directly from meetings instead
+    const actionItemsMap = [];
+    novaState.data.meetings.forEach(meeting => {
+      if (meeting.summary && meeting.summary.includes('Action Items:')) {
+        const actionSection = meeting.summary.split('Action Items:')[1]?.split('Next Steps:')[0];
+        if (actionSection) {
+          const actions = actionSection.split('\n').filter(line => 
+            line.trim().startsWith('•') || line.trim().startsWith('-')
+          );
+          actions.forEach(action => {
+            const cleanAction = action.replace(/^[•\-]\s*/, '').trim();
+            if (cleanAction.length > 10) {
+              actionItemsMap.push({
+                text: cleanAction,
+                meetingId: meeting.id,
+                meetingTitle: meeting.title,
+                assignee: cleanAction.match(/@([A-Za-z\s]+)/)?.[1]
+              });
+            }
+          });
+        }
       }
     });
 
