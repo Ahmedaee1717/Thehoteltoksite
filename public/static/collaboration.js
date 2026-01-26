@@ -113,6 +113,9 @@ function switchView(view) {
   
   // Load data for the view
   switch (view) {
+    case 'live-board':
+      loadLiveBoard();
+      break;
     case 'my-posts':
       loadMyPosts();
       break;
@@ -152,13 +155,22 @@ function setupBackButton() {
 
 // 📊 LOAD INITIAL DATA
 async function loadInitialData() {
-  await loadMyPosts();
+  await loadLiveBoard(); // Load Live Board first as it's the default view
   await loadCounts();
+  setupLiveBoardComposer(); // Setup the post composer
 }
 
 // 📈 LOAD COUNTS
 async function loadCounts() {
   try {    
+    // Load live board posts count
+    const liveBoardResponse = await fetch(`${API_BASE}/live-board/posts`, { credentials: 'include' });
+    const liveBoardData = await liveBoardResponse.json();
+    
+    if (liveBoardData.success && liveBoardData.posts) {
+      document.getElementById('live-board-count').textContent = liveBoardData.posts.length;
+    }
+    
     // Load posts count
     const postsResponse = await fetch(`${API_BASE}/blog-posts`, { credentials: 'include' });
     const postsData = await postsResponse.json();
@@ -169,12 +181,15 @@ async function loadCounts() {
       document.getElementById('all-posts-count').textContent = postsData.posts.length;
     }
     
-    // Load team count
-    const teamResponse = await fetch(`${API_BASE}/users`, { credentials: 'include' });
-    const teamData = await teamResponse.json();
-    
-    if (teamData.success) {
-      document.getElementById('team-count').textContent = teamData.users.length;
+    // Load team count (if element exists)
+    const teamCountElement = document.getElementById('team-count');
+    if (teamCountElement) {
+      const teamResponse = await fetch(`${API_BASE}/users`, { credentials: 'include' });
+      const teamData = await teamResponse.json();
+      
+      if (teamData.success) {
+        teamCountElement.textContent = teamData.users.length;
+      }
     }
   } catch (error) {
     console.error('Error loading counts:', error);
@@ -3175,3 +3190,310 @@ document.addEventListener('DOMContentLoaded', () => {
 // Make functions global
 window.toggleTask = toggleTask;
 window.deleteTask = deleteTask;
+
+// ========================================
+// 🔴 LIVE BOARD FUNCTIONALITY
+// ========================================
+
+// Live Board State
+let liveBoardPosts = [];
+let currentFilter = 'all';
+let liveBoardInitialized = false;
+
+// Load Live Board (wrapper for switchView)
+async function loadLiveBoard() {
+  if (!liveBoardInitialized) {
+    await initLiveBoard();
+    liveBoardInitialized = true;
+  } else {
+    // Just reload posts if already initialized
+    await loadLiveBoardPosts();
+  }
+}
+
+// Setup Live Board Composer (wrapper for loadInitialData)
+function setupLiveBoardComposer() {
+  // This is handled by initLiveBoard, so just a placeholder
+  if (!liveBoardInitialized) {
+    initLiveBoard();
+    liveBoardInitialized = true;
+  }
+}
+
+// Initialize Live Board
+async function initLiveBoard() {
+  console.log('📡 Initializing Live Board...');
+  
+  // Set user avatar
+  const userEmail = document.getElementById('user-email').textContent;
+  const avatarText = userEmail.charAt(0).toUpperCase();
+  document.getElementById('composer-avatar-text').textContent = avatarText;
+  
+  // Add event listeners
+  const input = document.getElementById('live-board-input');
+  const submitBtn = document.getElementById('submit-post-btn');
+  const cancelBtn = document.getElementById('cancel-post-btn');
+  const composerFooter = document.getElementById('composer-footer');
+  
+  // Show/hide composer footer
+  input.addEventListener('focus', () => {
+    composerFooter.style.display = 'flex';
+    input.style.minHeight = '80px';
+  });
+  
+  // Auto-resize textarea
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = input.scrollHeight + 'px';
+  });
+  
+  // Cancel post
+  cancelBtn.addEventListener('click', () => {
+    input.value = '';
+    input.style.height = 'auto';
+    composerFooter.style.display = 'none';
+  });
+  
+  // Submit post
+  submitBtn.addEventListener('click', () => submitPost());
+  
+  // Submit on Ctrl+Enter
+  input.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'Enter') {
+      submitPost();
+    }
+  });
+  
+  // Filter buttons
+  document.querySelectorAll('.feed-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.feed-filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      renderLiveBoardFeed();
+    });
+  });
+  
+  // Load posts
+  await loadLiveBoardPosts();
+}
+
+// Submit Post
+async function submitPost() {
+  const input = document.getElementById('live-board-input');
+  const text = input.value.trim();
+  
+  if (!text) {
+    showNotification('Please enter some text', 'error');
+    return;
+  }
+  
+  try {
+    const submitBtn = document.getElementById('submit-post-btn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span>⏳</span><span>Posting...</span>';
+    
+    const response = await fetch('/api/live-board/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      showNotification('✅ Posted successfully!', 'success');
+      input.value = '';
+      input.style.height = 'auto';
+      document.getElementById('composer-footer').style.display = 'none';
+      await loadLiveBoardPosts();
+    } else {
+      showNotification(data.error || 'Failed to post', 'error');
+    }
+  } catch (error) {
+    console.error('Error submitting post:', error);
+    showNotification('Failed to post', 'error');
+  } finally {
+    const submitBtn = document.getElementById('submit-post-btn');
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<span>📤</span><span>Post</span>';
+  }
+}
+
+// Load Live Board Posts
+async function loadLiveBoardPosts() {
+  try {
+    const response = await fetch('/api/live-board/posts');
+    const data = await response.json();
+    
+    if (data.success) {
+      liveBoardPosts = data.posts || [];
+      document.getElementById('live-board-count').textContent = liveBoardPosts.length;
+      renderLiveBoardFeed();
+    }
+  } catch (error) {
+    console.error('Error loading live board posts:', error);
+    renderLiveBoardEmpty('Failed to load posts');
+  }
+}
+
+// Render Live Board Feed
+function renderLiveBoardFeed() {
+  const feedContainer = document.getElementById('live-board-feed');
+  
+  // Filter posts
+  let filteredPosts = liveBoardPosts;
+  const userEmail = document.getElementById('user-email').textContent;
+  
+  switch (currentFilter) {
+    case 'my':
+      filteredPosts = liveBoardPosts.filter(p => p.author_email === userEmail);
+      break;
+    case 'mentions':
+      filteredPosts = liveBoardPosts.filter(p => p.text.includes(`@${userEmail}`));
+      break;
+    case 'links':
+      filteredPosts = liveBoardPosts.filter(p => p.link_url);
+      break;
+  }
+  
+  if (filteredPosts.length === 0) {
+    renderLiveBoardEmpty('No posts yet');
+    return;
+  }
+  
+  // Render posts
+  feedContainer.innerHTML = filteredPosts.map(post => `
+    <div class="feed-post" data-post-id="${post.id}">
+      <div class="feed-post-header">
+        <div class="feed-post-author">
+          <div class="feed-post-avatar">
+            ${post.author_email.charAt(0).toUpperCase()}
+          </div>
+          <div class="feed-post-author-info">
+            <div class="feed-post-author-name">${post.author_email}</div>
+            <div class="feed-post-timestamp">${formatTimeAgo(post.created_at)}</div>
+          </div>
+        </div>
+        <div class="feed-post-menu">
+          <button class="feed-post-menu-btn" onclick="togglePostMenu(${post.id})">⋮</button>
+        </div>
+      </div>
+      <div class="feed-post-content">
+        <div class="feed-post-text">${escapeHtml(post.text)}</div>
+        ${post.link_url ? `
+          <a href="${post.link_url}" target="_blank" class="feed-post-link">
+            <span class="feed-post-link-icon">🔗</span>
+            <span class="feed-post-link-text">${post.link_url}</span>
+          </a>
+        ` : ''}
+      </div>
+      <div class="feed-post-actions">
+        <button class="feed-post-action-btn" onclick="likePost(${post.id})">
+          <span>👍</span>
+          <span id="like-count-${post.id}">${post.likes || 0}</span>
+        </button>
+        <button class="feed-post-action-btn" onclick="commentOnPost(${post.id})">
+          <span>💬</span>
+          <span>Comment</span>
+        </button>
+        <button class="feed-post-action-btn" onclick="sharePost(${post.id})">
+          <span>🔗</span>
+          <span>Share</span>
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Render Empty State
+function renderLiveBoardEmpty(message) {
+  const feedContainer = document.getElementById('live-board-feed');
+  feedContainer.innerHTML = `
+    <div class="live-board-empty">
+      <div class="live-board-empty-icon">📭</div>
+      <div class="live-board-empty-title">${message}</div>
+      <div class="live-board-empty-text">Be the first to share an update with your team!</div>
+    </div>
+  `;
+}
+
+// Format Time Ago
+function formatTimeAgo(timestamp) {
+  const now = new Date();
+  const date = new Date(timestamp);
+  const seconds = Math.floor((now - date) / 1000);
+  
+  if (seconds < 60) return 'Just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+  
+  return date.toLocaleDateString();
+}
+
+// Like Post
+async function likePost(postId) {
+  try {
+    const response = await fetch(`/api/live-board/posts/${postId}/like`, {
+      method: 'POST'
+    });
+    
+    const data = await response.json();
+    if (data.success) {
+      document.getElementById(`like-count-${postId}`).textContent = data.likes;
+    }
+  } catch (error) {
+    console.error('Error liking post:', error);
+  }
+}
+
+// Comment on Post
+function commentOnPost(postId) {
+  showNotification('💬 Comments coming soon!', 'info');
+}
+
+// Share Post
+function sharePost(postId) {
+  const post = liveBoardPosts.find(p => p.id === postId);
+  if (post) {
+    navigator.clipboard.writeText(post.text);
+    showNotification('✅ Post text copied to clipboard!', 'success');
+  }
+}
+
+// Toggle Post Menu
+function togglePostMenu(postId) {
+  showNotification('⋮ Post options coming soon!', 'info');
+}
+
+// Update view switching to include live-board
+const originalSwitchView = window.switchView;
+window.switchView = function(viewName) {
+  if (viewName === 'live-board') {
+    // Hide all views
+    document.querySelectorAll('.collab-view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.collab-nav-item').forEach(n => n.classList.remove('active'));
+    
+    // Show live board
+    document.getElementById('live-board-view').classList.add('active');
+    document.querySelector('[data-view="live-board"]').classList.add('active');
+    
+    // Load if not loaded
+    if (liveBoardPosts.length === 0) {
+      initLiveBoard();
+    }
+  } else {
+    originalSwitchView(viewName);
+  }
+};
+
+// Auto-initialize when page loads
+if (document.getElementById('live-board-view')) {
+  setTimeout(() => {
+    if (document.getElementById('live-board-view').classList.contains('active')) {
+      initLiveBoard();
+    }
+  }, 500);
+}
+

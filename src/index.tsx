@@ -1596,7 +1596,12 @@ app.get('/collaborate', (c) => {
                 <!-- SIDEBAR NAVIGATION -->
                 <aside class="collab-sidebar">
                     <nav class="collab-nav">
-                        <button class="collab-nav-item active" data-view="my-posts">
+                        <button class="collab-nav-item active" data-view="live-board">
+                            <span class="nav-icon">🔴</span>
+                            <span class="nav-label">LIVE BOARD</span>
+                            <span class="nav-count" id="live-board-count">0</span>
+                        </button>
+                        <button class="collab-nav-item" data-view="my-posts">
                             <span class="nav-icon">📝</span>
                             <span class="nav-label">My Posts</span>
                             <span class="nav-count" id="my-posts-count">0</span>
@@ -1609,11 +1614,6 @@ app.get('/collaborate', (c) => {
                         <button class="collab-nav-item" data-view="new-post">
                             <span class="nav-icon">✨</span>
                             <span class="nav-label">New Post</span>
-                        </button>
-                        <button class="collab-nav-item" data-view="team">
-                            <span class="nav-icon">👥</span>
-                            <span class="nav-label">Team</span>
-                            <span class="nav-count" id="team-count">0</span>
                         </button>
                         <button class="collab-nav-item" data-view="meetings">
                             <span class="nav-icon">🎙️</span>
@@ -1638,8 +1638,84 @@ app.get('/collaborate', (c) => {
 
                 <!-- CONTENT AREA -->
                 <div class="collab-content">
+                    <!-- LIVE BOARD VIEW -->
+                    <div id="live-board-view" class="collab-view active">
+                        <div class="view-header">
+                            <h1 class="view-title">🔴 LIVE BOARD</h1>
+                            <p class="view-subtitle">Real-time team updates and collaboration feed</p>
+                        </div>
+                        
+                        <!-- POST COMPOSER -->
+                        <div class="live-board-composer">
+                            <div class="composer-header">
+                                <div class="composer-user-avatar" id="composer-avatar">
+                                    <span id="composer-avatar-text">U</span>
+                                </div>
+                                <div class="composer-input-wrapper">
+                                    <textarea 
+                                        id="live-board-input" 
+                                        class="composer-input" 
+                                        placeholder="Share an update, link, or idea with the team..."
+                                        rows="1"
+                                    ></textarea>
+                                </div>
+                            </div>
+                            <div class="composer-footer" id="composer-footer" style="display: none;">
+                                <div class="composer-actions">
+                                    <button class="composer-action-btn" id="attach-link-btn" title="Attach link">
+                                        <span>🔗</span>
+                                        <span>Link</span>
+                                    </button>
+                                    <button class="composer-action-btn" id="attach-media-btn" title="Attach media">
+                                        <span>📷</span>
+                                        <span>Media</span>
+                                    </button>
+                                    <button class="composer-action-btn" id="mention-user-btn" title="Mention user">
+                                        <span>@</span>
+                                        <span>Mention</span>
+                                    </button>
+                                </div>
+                                <div class="composer-submit">
+                                    <button class="composer-cancel-btn" id="cancel-post-btn">Cancel</button>
+                                    <button class="composer-post-btn" id="submit-post-btn">
+                                        <span>📤</span>
+                                        <span>Post</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- FEED FILTERS -->
+                        <div class="live-board-filters">
+                            <button class="feed-filter-btn active" data-filter="all">
+                                <span>🌐</span>
+                                <span>All Updates</span>
+                            </button>
+                            <button class="feed-filter-btn" data-filter="my">
+                                <span>👤</span>
+                                <span>My Posts</span>
+                            </button>
+                            <button class="feed-filter-btn" data-filter="mentions">
+                                <span>@</span>
+                                <span>Mentions</span>
+                            </button>
+                            <button class="feed-filter-btn" data-filter="links">
+                                <span>🔗</span>
+                                <span>Links</span>
+                            </button>
+                        </div>
+                        
+                        <!-- LIVE FEED -->
+                        <div id="live-board-feed" class="live-board-feed">
+                            <div class="loading-quantum">
+                                <div class="loading-spinner"></div>
+                                <p>Loading live board...</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- MY POSTS VIEW -->
-                    <div id="my-posts-view" class="collab-view active">
+                    <div id="my-posts-view" class="collab-view"
                         <div class="view-header">
                             <h1 class="view-title">My Posts</h1>
                             <p class="view-subtitle">Your authored and collaborated posts</p>
@@ -1680,20 +1756,6 @@ app.get('/collaborate', (c) => {
                     <!-- Trix Editor CSS/JS (loaded for Collab Center) -->
                     <link rel="stylesheet" type="text/css" href="https://unpkg.com/trix@2.0.8/dist/trix.css">
                     <script type="text/javascript" src="https://unpkg.com/trix@2.0.8/dist/trix.umd.min.js"></script>
-
-                    <!-- TEAM VIEW -->
-                    <div id="team-view" class="collab-view">
-                        <div class="view-header">
-                            <h1 class="view-title">Team Members</h1>
-                            <p class="view-subtitle">Manage collaboration roles</p>
-                        </div>
-                        <div id="team-list" class="team-grid">
-                            <div class="loading-quantum">
-                                <div class="loading-spinner"></div>
-                                <p>Loading team...</p>
-                            </div>
-                        </div>
-                    </div>
 
                     <!-- MEETINGS VIEW (OTTER.AI TRANSCRIPTS VIA ZAPIER WEBHOOK) -->
                     <div id="meetings-view" class="collab-view">

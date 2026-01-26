@@ -335,4 +335,238 @@ export async function logBlogActivity(
   `).bind(activityId, postId, userEmail, action, details ? JSON.stringify(details) : null).run();
 }
 
+// ==================== LIVE BOARD API ====================
+
+// Create live board posts table if not exists
+async function ensureLiveBoardTable(DB: D1Database) {
+  try {
+    await DB.prepare(`
+      CREATE TABLE IF NOT EXISTS live_board_posts (
+        id TEXT PRIMARY KEY,
+        user_email TEXT NOT NULL,
+        text TEXT NOT NULL,
+        link_url TEXT,
+        link_title TEXT,
+        link_description TEXT,
+        link_image TEXT,
+        mentions TEXT,
+        likes INTEGER DEFAULT 0,
+        comments INTEGER DEFAULT 0,
+        shares INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run();
+    
+    await DB.prepare(`
+      CREATE TABLE IF NOT EXISTS live_board_likes (
+        id TEXT PRIMARY KEY,
+        post_id TEXT NOT NULL,
+        user_email TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(post_id, user_email)
+      )
+    `).run();
+    
+    console.log('✅ Live Board tables ensured');
+  } catch (error) {
+    console.error('❌ Error ensuring Live Board tables:', error);
+  }
+}
+
+// Get all live board posts
+collaborationRoutes.get('/live-board/posts', async (c) => {
+  const { DB } = c.env;
+  const userEmail = await getUserEmailFromCookie(c);
+  
+  if (!userEmail) {
+    return c.json({ success: false, error: 'Unauthorized' }, 401);
+  }
+  
+  try {
+    await ensureLiveBoardTable(DB);
+    
+    const posts = await DB.prepare(`
+      SELECT 
+        p.*,
+        ea.display_name as user_name,
+        CASE WHEN l.user_email IS NOT NULL THEN 1 ELSE 0 END as is_liked
+      FROM live_board_posts p
+      LEFT JOIN email_accounts ea ON p.user_email = ea.email_address
+      LEFT JOIN live_board_likes l ON p.id = l.post_id AND l.user_email = ?
+      ORDER BY p.created_at DESC
+      LIMIT 100
+    `).bind(userEmail).all();
+    
+    return c.json({ success: true, posts: posts.results || [] });
+  } catch (error: any) {
+    console.error('Error fetching live board posts:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Create a new live board post
+collaborationRoutes.post('/live-board/posts', async (c) => {
+  const { DB } = c.env;
+  const userEmail = await getUserEmailFromCookie(c);
+  
+  if (!userEmail) {
+    return c.json({ success: false, error: 'Unauthorized' }, 401);
+  }
+  
+  try {
+    await ensureLiveBoardTable(DB);
+    
+    const body = await c.req.json();
+    const { text, linkUrl, linkTitle, linkDescription, linkImage } = body;
+    
+    if (!text || text.trim().length === 0) {
+      return c.json({ success: false, error: 'Post text is required' }, 400);
+    }
+    
+    // Extract mentions (@username)
+    const mentionRegex = /@([a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
+    const mentions = text.match(mentionRegex) || [];
+    
+    const postId = generateId('lbp');
+    const now = new Date().toISOString();
+    
+    await DB.prepare(`
+      INSERT INTO live_board_posts (
+        id, user_email, text, link_url, link_title, link_description, link_image,
+        mentions, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      postId,
+      userEmail,
+      text.trim(),
+      linkUrl || null,
+      linkTitle || null,
+      linkDescription || null,
+      linkImage || null,
+      JSON.stringify(mentions),
+      now,
+      now
+    ).run();
+    
+    // Get the created post with user info
+    const post = await DB.prepare(`
+      SELECT 
+        p.*,
+        ea.display_name as user_name
+      FROM live_board_posts p
+      LEFT JOIN email_accounts ea ON p.user_email = ea.email_address
+      WHERE p.id = ?
+    `).bind(postId).first();
+    
+    return c.json({ success: true, post });
+  } catch (error: any) {
+    console.error('Error creating live board post:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Like/unlike a post
+collaborationRoutes.post('/live-board/posts/:postId/like', async (c) => {
+  const { DB } = c.env;
+  const userEmail = await getUserEmailFromCookie(c);
+  const postId = c.req.param('postId');
+  
+  if (!userEmail) {
+    return c.json({ success: false, error: 'Unauthorized' }, 401);
+  }
+  
+  try {
+    await ensureLiveBoardTable(DB);
+    
+    // Check if already liked
+    const existingLike = await DB.prepare(`
+      SELECT id FROM live_board_likes WHERE post_id = ? AND user_email = ?
+    `).bind(postId, userEmail).first();
+    
+    if (existingLike) {
+      // Unlike
+      await DB.prepare(`
+        DELETE FROM live_board_likes WHERE post_id = ? AND user_email = ?
+      `).bind(postId, userEmail).run();
+      
+      await DB.prepare(`
+        UPDATE live_board_posts SET likes = likes - 1 WHERE id = ?
+      `).bind(postId).run();
+    } else {
+      // Like
+      const likeId = generateId('lbl');
+      await DB.prepare(`
+        INSERT INTO live_board_likes (id, post_id, user_email) VALUES (?, ?, ?)
+      `).bind(likeId, postId, userEmail).run();
+      
+      await DB.prepare(`
+        UPDATE live_board_posts SET likes = likes + 1 WHERE id = ?
+      `).bind(postId).run();
+    }
+    
+    // Get updated likes count
+    const post = await DB.prepare(`
+      SELECT likes FROM live_board_posts WHERE id = ?
+    `).bind(postId).first();
+    
+    return c.json({ 
+      success: true, 
+      likes: post?.likes || 0,
+      isLiked: !existingLike
+    });
+  } catch (error: any) {
+    console.error('Error liking post:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Delete a post
+collaborationRoutes.delete('/live-board/posts/:postId', async (c) => {
+  const { DB } = c.env;
+  const userEmail = await getUserEmailFromCookie(c);
+  const postId = c.req.param('postId');
+  
+  if (!userEmail) {
+    return c.json({ success: false, error: 'Unauthorized' }, 401);
+  }
+  
+  try {
+    // Check if user owns the post
+    const post = await DB.prepare(`
+      SELECT user_email FROM live_board_posts WHERE id = ?
+    `).bind(postId).first();
+    
+    if (!post) {
+      return c.json({ success: false, error: 'Post not found' }, 404);
+    }
+    
+    if (post.user_email !== userEmail) {
+      // Check if user is admin
+      const role = await DB.prepare(`
+        SELECT role FROM user_roles WHERE user_email = ?
+      `).bind(userEmail).first();
+      
+      if (!role || role.role !== 'admin') {
+        return c.json({ success: false, error: 'Unauthorized' }, 403);
+      }
+    }
+    
+    // Delete likes first
+    await DB.prepare(`
+      DELETE FROM live_board_likes WHERE post_id = ?
+    `).bind(postId).run();
+    
+    // Delete post
+    await DB.prepare(`
+      DELETE FROM live_board_posts WHERE id = ?
+    `).bind(postId).run();
+    
+    return c.json({ success: true, message: 'Post deleted' });
+  } catch (error: any) {
+    console.error('Error deleting post:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
 export default collaborationRoutes;
