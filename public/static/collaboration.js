@@ -3352,11 +3352,19 @@ async function loadLiveBoardPosts() {
 
 // Render Live Board Feed
 function renderLiveBoardFeed() {
+  console.log('🎨 Rendering live board feed...');
   const feedContainer = document.getElementById('live-board-feed');
+  
+  if (!feedContainer) {
+    console.error('❌ Feed container not found!');
+    return;
+  }
   
   // Filter posts
   let filteredPosts = liveBoardPosts;
   const userEmail = document.getElementById('user-email').textContent;
+  
+  console.log(`📊 Total posts: ${liveBoardPosts.length}, Filter: ${currentFilter}`);
   
   switch (currentFilter) {
     case 'my':
@@ -3370,12 +3378,16 @@ function renderLiveBoardFeed() {
       break;
   }
   
+  console.log(`📊 Filtered posts: ${filteredPosts.length}`);
+  
   if (filteredPosts.length === 0) {
+    console.log('📭 Showing empty state');
     renderLiveBoardEmpty('No posts yet');
     return;
   }
   
   // Render posts
+  console.log('✅ Rendering posts...');
   feedContainer.innerHTML = filteredPosts.map(post => `
     <div class="feed-post" data-post-id="${escapeHtml(post.id)}">
       <div class="feed-post-header">
@@ -3421,7 +3433,12 @@ function renderLiveBoardFeed() {
 
 // Render Empty State
 function renderLiveBoardEmpty(message) {
+  console.log(`📭 Rendering empty state: ${message}`);
   const feedContainer = document.getElementById('live-board-feed');
+  if (!feedContainer) {
+    console.error('❌ Feed container not found for empty state!');
+    return;
+  }
   feedContainer.innerHTML = `
     <div class="live-board-empty">
       <div class="live-board-empty-icon">📭</div>
@@ -3429,6 +3446,7 @@ function renderLiveBoardEmpty(message) {
       <div class="live-board-empty-text">Be the first to share an update with your team!</div>
     </div>
   `;
+  console.log('✅ Empty state rendered');
 }
 
 // Format Time Ago
