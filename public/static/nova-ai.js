@@ -1223,6 +1223,15 @@
         console.log('🔍 Query used:', searchQuery);
         console.log('🔍 Company domain:', companyDomain);
         console.log('🔍 Search target:', searchTarget);
+        
+        // ALWAYS add searchLinks (even on success) for task description
+        contactInfo.searchLinks = {
+          google: `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`,
+          linkedin: `https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(recipient)}`,
+          hunter: companyDomain ? `https://hunter.io/search/${companyDomain}` : `https://hunter.io/search/${encodeURIComponent(recipient)}`,
+          rocketreach: `https://rocketreach.co/search?query=${encodeURIComponent(recipient)}`
+        };
+        
       } catch (searchError) {
         console.error('❌ Search API failed:', searchError);
         console.error('   Query was:', searchQuery);
@@ -1237,7 +1246,8 @@
           searchLinks: {
             google: `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`,
             linkedin: `https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(recipient)}`,
-            hunter: companyDomain ? `https://hunter.io/search/${companyDomain}` : `https://hunter.io/search/${encodeURIComponent(recipient)}`
+            hunter: companyDomain ? `https://hunter.io/search/${companyDomain}` : `https://hunter.io/search/${encodeURIComponent(recipient)}`,
+            rocketreach: `https://rocketreach.co/search?query=${encodeURIComponent(recipient)}`
           }
         };
         
