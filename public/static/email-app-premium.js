@@ -6949,18 +6949,29 @@ window.addEventListener('DOMContentLoaded', function() {
         }
       };
       
+      // Track if we're selecting from suggestions to avoid re-loading
+      let isSelectingContact = false;
+      
       // Handle TO field change
       const handleToChange = (value) => {
         console.log('📧 TO field changed:', value);
         setTo(value);
-        // Load suggestions with the new value immediately
-        loadContactSuggestions(value);
+        
+        // Don't reload suggestions if we're selecting a contact
+        if (!isSelectingContact) {
+          // Load suggestions with the new value immediately
+          loadContactSuggestions(value);
+        }
+        isSelectingContact = false; // Reset flag
       };
       
       // Select contact from suggestions
       const selectContact = (contact) => {
+        console.log('✅ Contact selected:', contact.email);
+        isSelectingContact = true; // Set flag before setting value
         setTo(contact.email);
         setShowContactSuggestions(false);
+        setContactSuggestions([]); // Clear suggestions
       };
       
       const handleAIAssist = async (action, tone = 'professional') => {
