@@ -372,29 +372,56 @@ meetings.get('/calendar/summary', async (c) => {
 function extractSpeakers(transcript: string): any[] {
   const speakers: Set<string> = new Set()
   
-  // Pattern 1: "Speaker Name  00:00" format (Otter.ai style)
-  const pattern1 = /^([A-Za-z][A-Za-z\s]+?)\s+\d{1,2}:\d{2}/gm
+  // Pattern 1: "Speaker Name  0:00  " (with double space before AND after timestamp)
+  // This matches Otter.ai format: "Vinay Gupta  1:10  \r\n"
+  // CRITICAL: Must have full timestamp (X:XX) not just a number
+  const timestampPattern = /^(.+?)\s{2,}(\d+:\d+(?::\d+)?)\s+/gm
   let match
-  while ((match = pattern1.exec(transcript)) !== null) {
-    const name = match[1].trim()
-    if (name.length > 1 && name.length < 50) {
-      speakers.add(name)
+  
+  while ((match = timestampPattern.exec(transcript)) !== null) {
+    let name = match[1].trim()
+    const timestamp = match[2] // captured for validation
+    
+    // Only extract if timestamp is valid (has colon)
+    if (!timestamp.includes(':')) continue
+    
+    // Clean up: remove any newlines, carriage returns, or extra text
+    name = name.split(/[\r\n]+/)[0].trim()
+    
+    // Only process if it looks like a real name
+    if (name && name.length >= 2 && name.length < 100 && !name.match(/^(SPEAKERS?|TRANSCRIPT|SUMMARY|NOTE|MEETING)$/i)) {
+      // Remove role/title in parentheses if present
+      const cleanName = name.replace(/\s*\([^)]+\)\s*:?$/, '').trim()
+      
+      // Further validation: must not contain special chars or numbers at the end
+      if (cleanName.length >= 2 && !cleanName.match(/[<>{}[\]]/) && !cleanName.match(/\s+\d+$/)) {
+        speakers.add(cleanName)
+      }
     }
   }
   
-  // Pattern 2: "Speaker Name:" format
-  const pattern2 = /^([A-Za-z][A-Za-z\s]+?):/gm
-  while ((match = pattern2.exec(transcript)) !== null) {
-    const name = match[1].trim()
-    if (name.length > 1 && name.length < 50 && !name.match(/^(SUMMARY|SPEAKERS|TRANSCRIPT|KEYWORDS)/i)) {
-      speakers.add(name)
+  // Pattern 2: "Speaker Name (Role):" or "Speaker Name:"
+  const colonPattern = /^([A-Z][^\n:]+?)(?:\s*\([^)]+\))?\s*:/gm
+  
+  while ((match = colonPattern.exec(transcript)) !== null) {
+    let name = match[1].trim()
+    
+    // Clean up: remove any newlines or extra text
+    name = name.split(/[\r\n]+/)[0].trim()
+    
+    if (name && name.length >= 2 && name.length < 100) {
+      // Remove role/title in parentheses if present
+      const cleanName = name.replace(/\s*\([^)]+\)\s*$/, '').trim()
+      if (cleanName.length >= 2 && !cleanName.match(/^(SPEAKERS?|TRANSCRIPT|SUMMARY|NOTE|MEETING)/i) && !cleanName.match(/[<>{}[\]]/) && !cleanName.match(/\s+\d+$/)) {
+        speakers.add(cleanName)
+      }
     }
   }
   
-  // Pattern 3: Extract from "SPEAKERS" section
-  const speakersSection = transcript.match(/SPEAKERS\s*[:\n]+(.*?)(?=\n\n|TRANSCRIPT|##|$)/is)
+  // Pattern 3: Extract from "SPEAKERS" section (for TXT files)
+  const speakersSection = transcript.match(/SPEAKERS\s*[:\n]+(.*?)(?=\n\n|TRANSCRIPT|$)/is)
   if (speakersSection) {
-    const speakerNames = speakersSection[1].split(/[,\n]/).map(s => s.trim()).filter(s => s && s.length > 1 && s.length < 50)
+    const speakerNames = speakersSection[1].split(/[,\n]/).map(s => s.trim()).filter(s => s && s.length >= 2 && s.length < 50)
     speakerNames.forEach(name => speakers.add(name))
   }
   
@@ -1227,6 +1254,138 @@ meetings.get('/otter/search', async (c) => {
   } catch (error: any) {
     console.error('Error searching transcripts:', error)
     return c.json({ error: 'Failed to search transcripts', details: error.message }, 500)
+  }
+})
+
+// ===== FIX EXISTING MEETINGS =====
+// Re-extract speakers and regenerate AI summary for meetings with bad data
+meetings.post('/fix/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    
+    // Get the meeting
+    const meeting = await c.env.DB.prepare(`
+      SELECT id, title, transcript_text, speakers, summary
+      FROM otter_transcripts
+      WHERE id = ?
+    `).bind(id).first()
+    
+    if (!meeting) {
+      return c.json({ error: 'Meeting not found' }, 404)
+    }
+    
+    console.log(`🔧 Fixing meeting ${id}: ${meeting.title}`)
+    
+    // Re-extract speakers using the FIXED logic
+    const transcript = meeting.transcript_text as string
+    const speakers = extractSpeakers(transcript)
+    
+    console.log(`👥 Re-extracted speakers (${speakers.length}):`, speakers.map((s: any) => s.name).join(', '))
+    
+    // Regenerate AI summary if missing or too short
+    let summary = meeting.summary as string
+    if (!summary || summary.length < 50) {
+      console.log(`📝 Regenerating AI summary...`)
+      summary = await generateAISummary(transcript, c.env.OPENAI_API_KEY)
+      console.log(`✅ Generated summary: ${summary.substring(0, 100)}...`)
+    }
+    
+    // Update the meeting
+    await c.env.DB.prepare(`
+      UPDATE otter_transcripts
+      SET speakers = ?, summary = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(
+      JSON.stringify(speakers),
+      summary,
+      id
+    ).run()
+    
+    return c.json({
+      success: true,
+      message: 'Meeting fixed successfully',
+      speakers: speakers,
+      summary: summary
+    })
+  } catch (error: any) {
+    console.error('❌ Fix meeting error:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to fix meeting',
+      details: error.message
+    }, 500)
+  }
+})
+
+// Fix ALL meetings with bad speaker data
+meetings.post('/fix-all', async (c) => {
+  try {
+    // Get all meetings
+    const { results } = await c.env.DB.prepare(`
+      SELECT id, title, speakers
+      FROM otter_transcripts
+      ORDER BY id DESC
+    `).all()
+    
+    if (!results || results.length === 0) {
+      return c.json({ message: 'No meetings found' })
+    }
+    
+    console.log(`🔧 Fixing ${results.length} meetings...`)
+    
+    let fixedCount = 0
+    let skippedCount = 0
+    
+    for (const meeting of results) {
+      try {
+        // Parse speakers
+        let speakers = []
+        if (meeting.speakers) {
+          try {
+            speakers = JSON.parse(meeting.speakers as string)
+          } catch (e) {
+            // Invalid JSON, needs fixing
+          }
+        }
+        
+        // Check if speakers have numbers in names (bad data)
+        const hasBadData = speakers.some((s: any) => 
+          s.name && /\s+\d+$/.test(s.name) // "Vinay Gupta 1", "Vinay Gupta 2", etc.
+        )
+        
+        if (hasBadData || speakers.length > 20) {
+          console.log(`🔧 Fixing meeting ${meeting.id}: ${meeting.title} (${speakers.length} speakers)`)
+          
+          // Call the fix endpoint
+          const fixResponse = await fetch(`${c.req.url.replace('/fix-all', `/fix/${meeting.id}`)}`, {
+            method: 'POST',
+            headers: c.req.raw.headers
+          })
+          
+          if (fixResponse.ok) {
+            fixedCount++
+          }
+        } else {
+          skippedCount++
+        }
+      } catch (error) {
+        console.error(`❌ Error fixing meeting ${meeting.id}:`, error)
+      }
+    }
+    
+    return c.json({
+      success: true,
+      message: `Fixed ${fixedCount} meetings, skipped ${skippedCount}`,
+      fixed: fixedCount,
+      skipped: skippedCount
+    })
+  } catch (error: any) {
+    console.error('❌ Fix all meetings error:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to fix meetings',
+      details: error.message
+    }, 500)
   }
 })
 

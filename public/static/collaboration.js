@@ -1735,19 +1735,29 @@ function extractSpeakersFromTranscript(transcript) {
   
   const speakers = new Set();
   
-  // Pattern 1: "Speaker Name  0:00" or "Speaker Name  0:00:00" (with double space before timestamp)
-  // This matches Otter.ai format: "Vinay Gupta  1:10" 
-  // Note: uses double space to avoid matching "Name 2" (line numbers)
-  const timestampPattern = /^(.+?)\s{2,}\d+:\d+(?::\d+)?(?:\s|$)/gm;
+  // Pattern 1: "Speaker Name  0:00  " (with double space before AND after timestamp)
+  // This matches Otter.ai format: "Vinay Gupta  1:10  \r\n"
+  // CRITICAL: Must have full timestamp (X:XX) not just a number
+  const timestampPattern = /^(.+?)\s{2,}(\d+:\d+(?::\d+)?)\s+/gm;
   let match;
   
   while ((match = timestampPattern.exec(transcript)) !== null) {
-    const name = match[1].trim();
+    let name = match[1].trim();
+    const timestamp = match[2]; // captured for validation
+    
+    // Only extract if timestamp is valid (has colon)
+    if (!timestamp.includes(':')) continue;
+    
+    // Clean up: remove any newlines, carriage returns, or extra text
+    name = name.split(/[\r\n]+/)[0].trim();
+    
     // Only process if it looks like a real name (not too short, not all caps section headers)
     if (name && name.length >= 2 && name.length < 100 && !name.match(/^(SPEAKERS?|TRANSCRIPT|SUMMARY|NOTE|MEETING)$/i)) {
       // Remove role/title in parentheses if present
       const cleanName = name.replace(/\s*\([^)]+\)\s*:?$/, '').trim();
-      if (cleanName.length >= 2) {
+      
+      // Further validation: must not contain special chars or numbers at the end
+      if (cleanName.length >= 2 && !cleanName.match(/[<>{}[\]]/) && !cleanName.match(/\s+\d+$/)) {
         speakers.add(cleanName);
       }
     }
@@ -1757,11 +1767,15 @@ function extractSpeakersFromTranscript(transcript) {
   const colonPattern = /^([A-Z][^\n:]+?)(?:\s*\([^)]+\))?\s*:/gm;
   
   while ((match = colonPattern.exec(transcript)) !== null) {
-    const name = match[1].trim();
+    let name = match[1].trim();
+    
+    // Clean up: remove any newlines or extra text
+    name = name.split(/[\r\n]+/)[0].trim();
+    
     if (name && name.length >= 2 && name.length < 100) {
       // Remove role/title in parentheses if present
       const cleanName = name.replace(/\s*\([^)]+\)\s*$/, '').trim();
-      if (cleanName.length >= 2 && !cleanName.match(/^(SPEAKERS?|TRANSCRIPT|SUMMARY|NOTE|MEETING)/i)) {
+      if (cleanName.length >= 2 && !cleanName.match(/^(SPEAKERS?|TRANSCRIPT|SUMMARY|NOTE|MEETING)/i) && !cleanName.match(/[<>{}[\]]/) && !cleanName.match(/\s+\d+$/)) {
         speakers.add(cleanName);
       }
     }
