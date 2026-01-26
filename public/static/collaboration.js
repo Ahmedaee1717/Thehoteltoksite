@@ -1,7 +1,7 @@
 // ✨ COLLABORATION CENTER - Year 2070 JavaScript ✨
 
 const API_BASE = '/api/collaboration';
-let currentView = 'my-posts';
+let currentView = 'live-board'; // Default to Live Board
 let currentUser = null;
 let userRole = null;
 
@@ -98,6 +98,7 @@ function setupNavigation() {
 }
 
 function switchView(view) {
+  console.log(`🔄 Switching view to: ${view}`);
   currentView = view;
   
   // Hide all views
@@ -109,6 +110,9 @@ function switchView(view) {
   const targetView = document.getElementById(`${view}-view`);
   if (targetView) {
     targetView.classList.add('active');
+    console.log(`✅ View activated: ${view}-view`);
+  } else {
+    console.error(`❌ View not found: ${view}-view`);
   }
   
   // Load data for the view
