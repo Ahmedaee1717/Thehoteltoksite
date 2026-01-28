@@ -61,8 +61,8 @@ zoomRoutes.post('/webhook', async (c) => {
       // ============================================
       // OPTION 1: Custom Header Authentication (RECOMMENDED)
       // ============================================
-      // Check if Zoom sent a custom header: x-zoom-webhook-secret
-      const customSecret = c.req.header('x-zoom-webhook-secret')
+      // Check if Zoom sent a custom header: x-zoom-webhook-secret OR zoom-webhook-secret
+      const customSecret = c.req.header('x-zoom-webhook-secret') || c.req.header('zoom-webhook-secret')
       
       if (customSecret) {
         console.log('🔑 Custom header found:', customSecret.substring(0, 10) + '...')
