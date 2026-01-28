@@ -171,7 +171,7 @@ meetingRoutes.get('/oauth/redirect', async (c) => {
           <p class="text-gray-300 mb-4">Welcome, ${userData.first_name} ${userData.last_name}</p>
           <p class="text-gray-400 mb-6">Email: ${userData.email}</p>
           <p class="text-gray-300 mb-6">The AI Meeting Bot can now access your meetings for transcription and translation.</p>
-          <a href="/meetings/dashboard" class="inline-block bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded font-medium">
+          <a href="/static/zoom-bot-dashboard.html" class="inline-block bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded font-medium">
             Go to Meeting Dashboard →
           </a>
         </div>
