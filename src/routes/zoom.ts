@@ -39,69 +39,35 @@ zoomRoutes.post('/webhook', async (c) => {
   const { DB, ZOOM_WEBHOOK_SECRET_TOKEN, ZOOM_WEBHOOK_VERIFICATION_SECRET } = c.env
   
   try {
-    console.log('📥 Zoom webhook received')
-    console.log('🔍 Headers:', Object.fromEntries(c.req.raw.headers.entries()))
-    
-    // Check for custom header authentication (if provided)
-    const customHeaderSecret = c.req.header('zoom-webhook-secret')
-    if (customHeaderSecret) {
-      console.log('🔑 Custom header found:', customHeaderSecret.substring(0, 10) + '...')
-      const expectedSecret = ZOOM_WEBHOOK_VERIFICATION_SECRET || 'md4m8ttp8hnoj846ew2e0zb5gstw46ut'
-      if (customHeaderSecret !== expectedSecret) {
-        console.error('❌ Invalid custom header secret')
-        console.error('Expected:', expectedSecret.substring(0, 10) + '...')
-        console.error('Got:', customHeaderSecret.substring(0, 10) + '...')
-        return c.json({ error: 'Invalid authentication' }, 401)
-      }
-      console.log('✅ Custom header authentication verified')
-    } else {
-      console.log('ℹ️ No custom header found')
-    }
-    
-    // Get request body
+    // Get request body FIRST (before any logging)
     const body = await c.req.text()
-    console.log('📝 Request body length:', body.length)
-    
     const payload = JSON.parse(body)
     
-    console.log('📦 Webhook event type:', payload.event)
-    
     // ============================================
-    // STEP 1: HANDLE VALIDATION CHALLENGE
+    // STEP 1: HANDLE VALIDATION CHALLENGE IMMEDIATELY
     // ============================================
     if (payload.event === 'endpoint.url_validation') {
-      console.log('🔐 Validation challenge received')
-      console.log('📦 Full payload:', JSON.stringify(payload, null, 2))
-      
       const plainToken = payload.payload?.plainToken
       
       if (!plainToken) {
-        console.error('❌ No plainToken in validation request')
         return c.json({ error: 'No plainToken provided' }, 400)
       }
       
       // Create HMAC signature using Web Crypto API
       const secret = ZOOM_WEBHOOK_VERIFICATION_SECRET || 'md4m8ttp8hnoj846ew2e0zb5gstw46ut'
-      console.log('🔑 Using secret (first 10 chars):', secret.substring(0, 10) + '...')
-      
       const encryptedToken = await createHmacSha256(secret, plainToken)
       
-      console.log('✅ Validation response:', {
-        plainToken,
-        encryptedToken: encryptedToken.substring(0, 20) + '...'
-      })
-      
-      // Zoom expects EXACT format: plainToken and encryptedToken
-      const response = {
+      // Return IMMEDIATELY with minimal response
+      return c.json({
         plainToken: plainToken,
         encryptedToken: encryptedToken
-      }
-      
-      console.log('📤 Sending response:', JSON.stringify(response))
-      
-      // Return immediately with no extra headers
-      return c.json(response, 200)
+      })
     }
+    
+    // Log after validation (don't slow down the response)
+    console.log('📥 Zoom webhook received')
+    console.log('🔍 Headers:', Object.fromEntries(c.req.raw.headers.entries()))
+    console.log('📦 Webhook event type:', payload.event)
     
     // ============================================
     // STEP 2: VERIFY WEBHOOK SIGNATURE

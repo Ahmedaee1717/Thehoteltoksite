@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zoom Webhook Validator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold mb-2">🔧 Zoom Webhook Validator</h1>
+        <p class="text-gray-400 mb-8">Test your Zoom webhook endpoint in real-time</p>
+        
+        <!-- Endpoint URL -->
+        <div class="bg-gray-800 p-6 rounded-lg mb-6">
+            <label class="block text-sm font-medium mb-2">Webhook URL</label>
+            <div class="flex gap-2">
+                <input 
+                    type="text" 
+                    id="webhookUrl" 
+                    value="https://www.investaycapital.com/api/zoom/webhook"
+                    class="flex-1 bg-gray-700 px-4 py-2 rounded font-mono text-sm"
+                />
+                <button 
+                    onclick="testWebhook()"
+                    class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded font-medium transition"
+                >
+                    🧪 Test Now
+                </button>
+            </div>
+        </div>
+
+        <!-- Plain Token Input -->
+        <div class="bg-gray-800 p-6 rounded-lg mb-6">
+            <label class="block text-sm font-medium mb-2">Plain Token (for testing)</label>
+            <input 
+                type="text" 
+                id="plainToken" 
+                value="TEST_TOKEN_" 
+                placeholder="Enter any test token"
+                class="w-full bg-gray-700 px-4 py-2 rounded font-mono text-sm"
+            />
+            <p class="text-xs text-gray-400 mt-2">
+                This simulates what Zoom sends during validation
+            </p>
+        </div>
+
+        <!-- Status -->
+        <div id="status" class="hidden bg-yellow-900 border-l-4 border-yellow-500 p-4 rounded mb-6">
+            <p class="font-medium">⏳ Testing endpoint...</p>
+        </div>
+
+        <!-- Results -->
+        <div id="results" class="hidden"></div>
+
+        <!-- Instructions -->
+        <div class="bg-gray-800 p-6 rounded-lg mt-8">
+            <h2 class="text-2xl font-bold mb-4">📋 How to Use This</h2>
+            <ol class="space-y-3 text-gray-300">
+                <li class="flex gap-3">
+                    <span class="text-blue-400 font-bold">1.</span>
+                    <span>Click <strong>"🧪 Test Now"</strong> to verify the endpoint is working</span>
+                </li>
+                <li class="flex gap-3">
+                    <span class="text-blue-400 font-bold">2.</span>
+                    <span>If you see ✅ <strong>Success</strong>, the endpoint is ready for Zoom</span>
+                </li>
+                <li class="flex gap-3">
+                    <span class="text-blue-400 font-bold">3.</span>
+                    <span>Go to your <a href="https://marketplace.zoom.us/user/build" target="_blank" class="text-blue-400 underline">Zoom App Dashboard</a></span>
+                </li>
+                <li class="flex gap-3">
+                    <span class="text-blue-400 font-bold">4.</span>
+                    <span><strong>DELETE</strong> your current webhook subscription (it has cached failures)</span>
+                </li>
+                <li class="flex gap-3">
+                    <span class="text-blue-400 font-bold">5.</span>
+                    <span>Create a <strong>NEW</strong> webhook subscription with the URL above</span>
+                </li>
+                <li class="flex gap-3">
+                    <span class="text-blue-400 font-bold">6.</span>
+                    <span>Click <strong>"Validate"</strong> in Zoom - it will work! 🎉</span>
+                </li>
+            </ol>
+        </div>
+
+        <!-- Alternative URLs -->
+        <div class="bg-gray-800 p-6 rounded-lg mt-6">
+            <h3 class="text-xl font-bold mb-3">🔀 Alternative URLs (if needed)</h3>
+            <div class="space-y-2">
+                <div class="flex items-center gap-2">
+                    <button 
+                        onclick="document.getElementById('webhookUrl').value = 'https://www.investaycapital.com/api/zoom/webhook'"
+                        class="text-blue-400 hover:text-blue-300 text-sm"
+                    >
+                        📌 Production (Custom Domain)
+                    </button>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button 
+                        onclick="document.getElementById('webhookUrl').value = 'https://d43379bf.investay-email-system.pages.dev/api/zoom/webhook'"
+                        class="text-blue-400 hover:text-blue-300 text-sm"
+                    >
+                        📌 Cloudflare Pages URL
+                    </button>
+                </div>
+            </div>
+            <p class="text-xs text-gray-400 mt-3">
+                💡 If validation fails with custom domain, try the Cloudflare Pages URL
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center text-gray-500 text-sm mt-12">
+            <p>🚀 Zoom Meeting Bot - Real-time Transcription & Translation</p>
+            <p class="mt-2">Built with Hono + Cloudflare Workers + D1 Database</p>
+        </div>
+    </div>
+
+    <script>
+        // Generate random token on page load
+        document.getElementById('plainToken').value = 'TEST_TOKEN_' + Math.random().toString(36).substring(7);
+
+        async function testWebhook() {
+            const url = document.getElementById('webhookUrl').value;
+            const plainToken = document.getElementById('plainToken').value;
+            
+            // Show loading
+            document.getElementById('status').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+            
+            const startTime = Date.now();
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        event: 'endpoint.url_validation',
+                        payload: {
+                            plainToken: plainToken
+                        }
+                    })
+                });
+                
+                const responseTime = Date.now() - startTime;
+                const data = await response.json();
+                
+                // Hide loading
+                document.getElementById('status').classList.add('hidden');
+                
+                // Show results
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.classList.remove('hidden');
+                
+                if (response.ok && data.plainToken && data.encryptedToken) {
+                    resultsDiv.innerHTML = `
+                        <div class="bg-green-900 border-l-4 border-green-500 p-6 rounded">
+                            <h3 class="text-2xl font-bold mb-4">✅ Success!</h3>
+                            <div class="space-y-3 text-sm">
+                                <div>
+                                    <span class="text-gray-400">Status:</span>
+                                    <span class="font-mono ml-2">${response.status} ${response.statusText}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-400">Response Time:</span>
+                                    <span class="font-mono ml-2">${responseTime}ms</span>
+                                    ${responseTime < 1000 ? '<span class="ml-2 text-green-400">⚡ Fast!</span>' : ''}
+                                </div>
+                                <div>
+                                    <span class="text-gray-400">Plain Token:</span>
+                                    <code class="block bg-gray-800 p-2 rounded mt-1 break-all">${data.plainToken}</code>
+                                </div>
+                                <div>
+                                    <span class="text-gray-400">Encrypted Token:</span>
+                                    <code class="block bg-gray-800 p-2 rounded mt-1 break-all">${data.encryptedToken}</code>
+                                </div>
+                            </div>
+                            <div class="mt-6 p-4 bg-green-800 rounded">
+                                <p class="font-bold mb-2">🎉 Your endpoint is ready for Zoom!</p>
+                                <p class="text-sm text-green-200">
+                                    Go to <a href="https://marketplace.zoom.us/user/build" target="_blank" class="underline">Zoom Dashboard</a> 
+                                    and validate your webhook. It will work! 🚀
+                                </p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    resultsDiv.innerHTML = `
+                        <div class="bg-red-900 border-l-4 border-red-500 p-6 rounded">
+                            <h3 class="text-2xl font-bold mb-4">❌ Unexpected Response</h3>
+                            <div class="space-y-3 text-sm">
+                                <div>
+                                    <span class="text-gray-400">Status:</span>
+                                    <span class="font-mono ml-2">${response.status} ${response.statusText}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-400">Response:</span>
+                                    <code class="block bg-gray-800 p-2 rounded mt-1 break-all">${JSON.stringify(data, null, 2)}</code>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('status').classList.add('hidden');
+                
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.classList.remove('hidden');
+                resultsDiv.innerHTML = `
+                    <div class="bg-red-900 border-l-4 border-red-500 p-6 rounded">
+                        <h3 class="text-2xl font-bold mb-4">❌ Error</h3>
+                        <div class="space-y-3 text-sm">
+                            <div>
+                                <span class="text-gray-400">Error:</span>
+                                <code class="block bg-gray-800 p-2 rounded mt-1">${error.message}</code>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-4 bg-red-800 rounded text-sm">
+                            <p class="font-bold mb-2">Possible causes:</p>
+                            <ul class="list-disc list-inside space-y-1 text-red-200">
+                                <li>Network error or CORS issue</li>
+                                <li>Endpoint is down (unlikely)</li>
+                                <li>Browser blocking the request</li>
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-test on page load
+        window.addEventListener('load', () => {
+            setTimeout(testWebhook, 500);
+        });
+    </script>
+</body>
+</html>
