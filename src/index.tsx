@@ -22,6 +22,7 @@ import sharedMailboxRoutes from './routes/shared-mailbox'
 import testFormDataRoutes from './routes/test-formdata'
 import search from './routes/search'
 import publicSignup from './routes/public-signup'
+import zoomRoutes from './routes/zoom'
 import { homePage } from './pages/home'
 import { signupPage } from './pages/signup'
 import { loginPage } from './pages/login'
@@ -108,6 +109,7 @@ app.route('/api/shared-mailboxes', sharedMailboxRoutes)
 app.route('/api/test', testFormDataRoutes)
 app.route('/api/search', search)
 app.route('/api/signup', publicSignup)
+app.route('/api/zoom', zoomRoutes)
 
 // AI Q&A Endpoint - semantic search and question answering
 app.post('/api/ai-answer', async (c) => {

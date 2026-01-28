@@ -1,0 +1,334 @@
+// Zoom Webhook & Meeting Bot Routes
+import { Hono } from 'hono'
+import { createHmac } from 'node:crypto'
+
+type Bindings = {
+  DB: D1Database
+  ZOOM_ACCOUNT_ID?: string
+  ZOOM_CLIENT_ID?: string
+  ZOOM_CLIENT_SECRET?: string
+  ZOOM_WEBHOOK_SECRET_TOKEN?: string
+  ZOOM_WEBHOOK_VERIFICATION_SECRET?: string
+}
+
+const zoomRoutes = new Hono<{ Bindings: Bindings }>()
+
+// ============================================
+// POST /api/zoom/webhook
+// Zoom Event Webhook Endpoint
+// ============================================
+zoomRoutes.post('/webhook', async (c) => {
+  const { DB, ZOOM_WEBHOOK_SECRET_TOKEN, ZOOM_WEBHOOK_VERIFICATION_SECRET } = c.env
+  
+  try {
+    console.log('📥 Zoom webhook received')
+    
+    // Get request body
+    const body = await c.req.text()
+    const payload = JSON.parse(body)
+    
+    console.log('📦 Webhook payload:', JSON.stringify(payload, null, 2))
+    
+    // ============================================
+    // STEP 1: HANDLE VALIDATION CHALLENGE
+    // ============================================
+    if (payload.event === 'endpoint.url_validation') {
+      console.log('🔐 Validation challenge received')
+      
+      const plainToken = payload.payload?.plainToken
+      
+      if (!plainToken) {
+        console.error('❌ No plainToken in validation request')
+        return c.json({ error: 'No plainToken provided' }, 400)
+      }
+      
+      // Create HMAC signature
+      const secret = ZOOM_WEBHOOK_VERIFICATION_SECRET || 'md4m8ttp8hnoj846ew2e0zb5gstw46ut'
+      const hmac = createHmac('sha256', secret)
+      hmac.update(plainToken)
+      const encryptedToken = hmac.digest('hex')
+      
+      console.log('✅ Validation response:', {
+        plainToken,
+        encryptedToken: encryptedToken.substring(0, 20) + '...'
+      })
+      
+      return c.json({
+        plainToken: plainToken,
+        encryptedToken: encryptedToken
+      })
+    }
+    
+    // ============================================
+    // STEP 2: VERIFY WEBHOOK SIGNATURE
+    // ============================================
+    const signature = c.req.header('x-zm-signature')
+    const timestamp = c.req.header('x-zm-request-timestamp')
+    
+    if (signature && timestamp) {
+      const message = `v0:${timestamp}:${body}`
+      const secret = ZOOM_WEBHOOK_VERIFICATION_SECRET || 'md4m8ttp8hnoj846ew2e0zb5gstw46ut'
+      const hmac = createHmac('sha256', secret)
+      hmac.update(message)
+      const expectedSignature = `v0=${hmac.digest('hex')}`
+      
+      if (signature !== expectedSignature) {
+        console.error('❌ Invalid webhook signature')
+        return c.json({ error: 'Invalid signature' }, 401)
+      }
+      
+      console.log('✅ Webhook signature verified')
+    }
+    
+    // ============================================
+    // STEP 3: HANDLE DIFFERENT EVENT TYPES
+    // ============================================
+    const event = payload.event
+    
+    switch (event) {
+      case 'meeting.started':
+        await handleMeetingStarted(DB, payload)
+        break
+        
+      case 'meeting.ended':
+        await handleMeetingEnded(DB, payload)
+        break
+        
+      case 'meeting.participant_joined':
+        await handleParticipantJoined(DB, payload)
+        break
+        
+      case 'meeting.participant_left':
+        await handleParticipantLeft(DB, payload)
+        break
+        
+      case 'recording.completed':
+        await handleRecordingCompleted(DB, payload)
+        break
+        
+      case 'recording.transcript_completed':
+        await handleTranscriptCompleted(DB, payload)
+        break
+        
+      default:
+        console.log('ℹ️ Unhandled event type:', event)
+    }
+    
+    return c.json({ success: true, event })
+    
+  } catch (error: any) {
+    console.error('❌ Webhook error:', error)
+    return c.json({ 
+      success: false, 
+      error: error.message 
+    }, 500)
+  }
+})
+
+// ============================================
+// GET /api/zoom/meetings
+// Get all meeting sessions
+// ============================================
+zoomRoutes.get('/meetings', async (c) => {
+  const { DB } = c.env
+  
+  try {
+    const meetings = await DB.prepare(`
+      SELECT * FROM zoom_meeting_sessions 
+      ORDER BY started_at DESC 
+      LIMIT 50
+    `).all()
+    
+    return c.json({ 
+      success: true, 
+      meetings: meetings.results || [] 
+    })
+  } catch (error: any) {
+    console.error('Error fetching meetings:', error)
+    return c.json({ 
+      success: false, 
+      error: error.message 
+    }, 500)
+  }
+})
+
+// ============================================
+// GET /api/zoom/meetings/:meetingId
+// Get specific meeting details
+// ============================================
+zoomRoutes.get('/meetings/:meetingId', async (c) => {
+  const { DB } = c.env
+  const meetingId = c.req.param('meetingId')
+  
+  try {
+    const meeting = await DB.prepare(`
+      SELECT * FROM zoom_meeting_sessions 
+      WHERE zoom_meeting_id = ?
+    `).bind(meetingId).first()
+    
+    if (!meeting) {
+      return c.json({ 
+        success: false, 
+        error: 'Meeting not found' 
+      }, 404)
+    }
+    
+    // Get participants
+    const participants = await DB.prepare(`
+      SELECT * FROM zoom_meeting_participants 
+      WHERE session_id = ?
+      ORDER BY joined_at
+    `).bind(meeting.id).all()
+    
+    return c.json({ 
+      success: true, 
+      meeting,
+      participants: participants.results || []
+    })
+  } catch (error: any) {
+    console.error('Error fetching meeting:', error)
+    return c.json({ 
+      success: false, 
+      error: error.message 
+    }, 500)
+  }
+})
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+async function handleMeetingStarted(DB: D1Database, payload: any) {
+  console.log('🎬 Meeting started:', payload.payload?.object?.id)
+  
+  const meeting = payload.payload?.object
+  const sessionId = `zoom_${meeting.id}_${Date.now()}`
+  
+  // Create meeting session record
+  await DB.prepare(`
+    INSERT INTO zoom_meeting_sessions (
+      id, zoom_meeting_id, topic, host_id, start_time, status, created_at
+    ) VALUES (?, ?, ?, ?, ?, 'active', CURRENT_TIMESTAMP)
+  `).bind(
+    sessionId,
+    meeting.id,
+    meeting.topic || 'Zoom Meeting',
+    meeting.host_id,
+    meeting.start_time
+  ).run()
+  
+  console.log('✅ Meeting session created:', sessionId)
+}
+
+async function handleMeetingEnded(DB: D1Database, payload: any) {
+  console.log('🏁 Meeting ended:', payload.payload?.object?.id)
+  
+  const meeting = payload.payload?.object
+  
+  // Update meeting session
+  await DB.prepare(`
+    UPDATE zoom_meeting_sessions 
+    SET status = 'ended', end_time = ?, duration = ?
+    WHERE zoom_meeting_id = ?
+  `).bind(
+    meeting.end_time,
+    meeting.duration,
+    meeting.id
+  ).run()
+  
+  console.log('✅ Meeting session updated')
+}
+
+async function handleParticipantJoined(DB: D1Database, payload: any) {
+  console.log('👋 Participant joined:', payload.payload?.object?.participant?.user_name)
+  
+  const participant = payload.payload?.object?.participant
+  const meetingId = payload.payload?.object?.id
+  
+  // Find session
+  const session = await DB.prepare(`
+    SELECT id FROM zoom_meeting_sessions 
+    WHERE zoom_meeting_id = ?
+  `).bind(meetingId).first()
+  
+  if (!session) {
+    console.error('❌ Session not found for meeting:', meetingId)
+    return
+  }
+  
+  // Create participant record
+  const participantId = `part_${participant.id}_${Date.now()}`
+  
+  await DB.prepare(`
+    INSERT INTO zoom_meeting_participants (
+      id, session_id, participant_id, user_name, email, joined_at
+    ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+  `).bind(
+    participantId,
+    session.id,
+    participant.id,
+    participant.user_name,
+    participant.email || null
+  ).run()
+  
+  console.log('✅ Participant recorded:', participant.user_name)
+}
+
+async function handleParticipantLeft(DB: D1Database, payload: any) {
+  console.log('👋 Participant left:', payload.payload?.object?.participant?.user_name)
+  
+  const participant = payload.payload?.object?.participant
+  const meetingId = payload.payload?.object?.id
+  
+  // Update participant record
+  await DB.prepare(`
+    UPDATE zoom_meeting_participants 
+    SET left_at = CURRENT_TIMESTAMP
+    WHERE participant_id = ? 
+    AND session_id IN (
+      SELECT id FROM zoom_meeting_sessions WHERE zoom_meeting_id = ?
+    )
+  `).bind(participant.id, meetingId).run()
+  
+  console.log('✅ Participant updated:', participant.user_name)
+}
+
+async function handleRecordingCompleted(DB: D1Database, payload: any) {
+  console.log('📹 Recording completed:', payload.payload?.object?.id)
+  
+  const recording = payload.payload?.object
+  const meetingId = recording.meeting_id || recording.id
+  
+  // Store recording info
+  await DB.prepare(`
+    UPDATE zoom_meeting_sessions 
+    SET recording_url = ?, recording_completed_at = CURRENT_TIMESTAMP
+    WHERE zoom_meeting_id = ?
+  `).bind(
+    recording.recording_files?.[0]?.download_url || null,
+    meetingId
+  ).run()
+  
+  console.log('✅ Recording info stored')
+}
+
+async function handleTranscriptCompleted(DB: D1Database, payload: any) {
+  console.log('📝 Transcript completed:', payload.payload?.object?.id)
+  
+  const transcript = payload.payload?.object
+  const meetingId = transcript.meeting_id || transcript.id
+  
+  // Store transcript info
+  await DB.prepare(`
+    UPDATE zoom_meeting_sessions 
+    SET transcript_url = ?, transcript_completed_at = CURRENT_TIMESTAMP
+    WHERE zoom_meeting_id = ?
+  `).bind(
+    transcript.recording_files?.[0]?.download_url || null,
+    meetingId
+  ).run()
+  
+  console.log('✅ Transcript info stored')
+}
+
+export default zoomRoutes
