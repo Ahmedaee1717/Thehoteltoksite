@@ -71,6 +71,7 @@ zoomRoutes.post('/webhook', async (c) => {
     // ============================================
     if (payload.event === 'endpoint.url_validation') {
       console.log('🔐 Validation challenge received')
+      console.log('📦 Full payload:', JSON.stringify(payload, null, 2))
       
       const plainToken = payload.payload?.plainToken
       
@@ -81,6 +82,8 @@ zoomRoutes.post('/webhook', async (c) => {
       
       // Create HMAC signature using Web Crypto API
       const secret = ZOOM_WEBHOOK_VERIFICATION_SECRET || 'md4m8ttp8hnoj846ew2e0zb5gstw46ut'
+      console.log('🔑 Using secret (first 10 chars):', secret.substring(0, 10) + '...')
+      
       const encryptedToken = await createHmacSha256(secret, plainToken)
       
       console.log('✅ Validation response:', {
@@ -88,14 +91,16 @@ zoomRoutes.post('/webhook', async (c) => {
         encryptedToken: encryptedToken.substring(0, 20) + '...'
       })
       
-      // Return with explicit headers for Zoom
-      return c.json({
+      // Zoom expects EXACT format: plainToken and encryptedToken
+      const response = {
         plainToken: plainToken,
         encryptedToken: encryptedToken
-      }, 200, {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate'
-      })
+      }
+      
+      console.log('📤 Sending response:', JSON.stringify(response))
+      
+      // Return immediately with no extra headers
+      return c.json(response, 200)
     }
     
     // ============================================
