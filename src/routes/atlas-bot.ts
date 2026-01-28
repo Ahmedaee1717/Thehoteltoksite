@@ -53,10 +53,8 @@ atlasBot.post('/start', async (c) => {
           },
           realtime_endpoints: [
             {
-              url: 'https://www.investaycapital.com/meetings/api/bot/webhook',
-              headers: {
-                'X-Bot-Source': 'ATLAS'
-              }
+              type: 'http',
+              url: 'https://www.investaycapital.com/meetings/api/bot/webhook'
             }
           ]
         },
