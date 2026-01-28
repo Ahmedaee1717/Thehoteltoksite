@@ -360,6 +360,18 @@
             const originalHTML = button.innerHTML;
             
             try {
+                // Check OAuth status first
+                try {
+                    const oauthStatus = await axios.get('/meetings/oauth/status?userEmail=ahmed.enin@virgingates.com');
+                    if (!oauthStatus.data.valid || oauthStatus.data.expired) {
+                        alert('🔐 Zoom OAuth Disconnected!\n\nYour Zoom connection has expired.\n\nPlease:\n1. Reconnect Zoom at /static/zoom-bot-dashboard.html\n2. Click "Connect Zoom Account"\n3. Try again');
+                        return;
+                    }
+                } catch (oauthError) {
+                    alert('🔐 Zoom OAuth Not Connected!\n\nConnect your Zoom account:\n1. Go to dashboard\n2. Click "Connect Zoom Account"\n3. Authorize\n4. Try again');
+                    return;
+                }
+                
                 // Update button state
                 button.disabled = true;
                 button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Processing...';
@@ -392,7 +404,7 @@
                 } else if (error.response?.status === 401 || error.response?.data?.error?.includes('authorized')) {
                     errorMsg = '🔐 OAuth token expired or not found.\n\nPlease RECONNECT your Zoom account:\n1. Click "Connect Zoom Account" button (top right)\n2. Authorize on Zoom\n3. Try again';
                 } else if (error.response?.data?.error?.includes('Failed to fetch recording')) {
-                    errorMsg = '⚠️ Could not fetch recording from Zoom.\n\nPossible causes:\n1. OAuth token expired - Click "Connect Zoom Account"\n2. No cloud recording enabled for this meeting\n3. Recording not ready yet (wait 10-15 min)\n4. Meeting too old (recordings auto-delete after time)\n\nCheck recordings: https://zoom.us/recording';
+                    errorMsg = '⚠️ Could not fetch recording from Zoom.\n\n📋 TROUBLESHOOTING:\n\n1. RECONNECT ZOOM:\n   → https://www.investaycapital.com/static/zoom-bot-dashboard.html\n   → Click "Connect Zoom Account"\n\n2. ENABLE CLOUD RECORDING:\n   → https://zoom.us/profile/setting\n   → Recording tab → Enable "Cloud recording"\n\n3. WAIT FOR PROCESSING:\n   → Recordings take 10-30 minutes to process\n   → Check: https://zoom.us/recording\n\n💡 TIP: Using ATLAS? Just click "View Live" instead!';
                 }
                 
                 alert(errorMsg);
