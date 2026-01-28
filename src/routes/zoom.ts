@@ -36,15 +36,51 @@ async function createHmacSha256(secret: string, message: string): Promise<string
 // Zoom Event Webhook Endpoint
 // ============================================
 zoomRoutes.post('/webhook', async (c) => {
-  const { DB, ZOOM_WEBHOOK_SECRET_TOKEN, ZOOM_WEBHOOK_VERIFICATION_SECRET } = c.env
+  const { DB, ZOOM_WEBHOOK_SECRET_TOKEN } = c.env
   
   try {
     // Get request body FIRST (before any logging)
     const body = await c.req.text()
     const payload = JSON.parse(body)
     
+    console.log('📥 Zoom webhook received')
+    console.log('📦 Event type:', payload.event)
+    
     // ============================================
-    // STEP 1: HANDLE VALIDATION CHALLENGE IMMEDIATELY
+    // STEP 1: VERIFY REQUEST SIGNATURE (ALWAYS REQUIRED)
+    // ============================================
+    const timestamp = c.req.header('x-zm-request-timestamp')
+    const signature = c.req.header('x-zm-signature')
+    
+    if (!ZOOM_WEBHOOK_SECRET_TOKEN) {
+      console.error('❌ ZOOM_WEBHOOK_SECRET_TOKEN not configured!')
+      console.error('ℹ️  After saving the webhook subscription in Zoom, copy the Secret Token')
+      console.error('ℹ️  Then run: npx wrangler pages secret put ZOOM_WEBHOOK_SECRET_TOKEN')
+      return c.json({ error: 'Webhook secret not configured' }, 500)
+    }
+    
+    // For validation requests, timestamp might not be present
+    if (timestamp && signature) {
+      // Construct the message string exactly as Zoom does
+      const message = `v0:${timestamp}:${body}`
+      
+      // Hash the message with the secret token
+      const hashForVerify = await createHmacSha256(ZOOM_WEBHOOK_SECRET_TOKEN, message)
+      const expectedSignature = `v0=${hashForVerify}`
+      
+      // Verify signature matches
+      if (signature !== expectedSignature) {
+        console.error('❌ Invalid webhook signature!')
+        console.error('Expected:', expectedSignature.substring(0, 20) + '...')
+        console.error('Received:', signature.substring(0, 20) + '...')
+        return c.json({ error: 'Invalid signature' }, 401)
+      }
+      
+      console.log('✅ Webhook signature verified')
+    }
+    
+    // ============================================
+    // STEP 2: HANDLE VALIDATION CHALLENGE
     // ============================================
     if (payload.event === 'endpoint.url_validation') {
       const plainToken = payload.payload?.plainToken
@@ -56,93 +92,17 @@ zoomRoutes.post('/webhook', async (c) => {
       
       console.log('🔐 Validation request received')
       console.log('📝 Plain token:', plainToken)
-      console.log('📋 All headers:', JSON.stringify(Object.fromEntries(c.req.raw.headers.entries())))
       
-      // ============================================
-      // OPTION 1: Custom Header Authentication (RECOMMENDED)
-      // ============================================
-      // Check if Zoom sent a custom header: x-zoom-webhook-secret OR zoom-webhook-secret
-      const customSecret = c.req.header('x-zoom-webhook-secret') || c.req.header('zoom-webhook-secret')
+      // Hash the plainToken using the Webhook Secret Token
+      const encryptedToken = await createHmacSha256(ZOOM_WEBHOOK_SECRET_TOKEN, plainToken)
       
-      if (customSecret) {
-        console.log('🔑 Custom header found:', customSecret.substring(0, 10) + '...')
-        
-        // Verify custom header matches our expected value
-        const expectedCustomSecret = ZOOM_WEBHOOK_VERIFICATION_SECRET || 'md4m8ttp8hnoj846ew2e0zb5gstw46ut'
-        
-        if (customSecret === expectedCustomSecret) {
-          console.log('✅ Custom header valid - generating encrypted token')
-          const encryptedToken = await createHmacSha256(customSecret, plainToken)
-          
-          return c.json({
-            plainToken: plainToken,
-            encryptedToken: encryptedToken
-          })
-        } else {
-          console.error('❌ Custom header mismatch!')
-          console.error('Expected:', expectedCustomSecret.substring(0, 10) + '...')
-          console.error('Received:', customSecret.substring(0, 10) + '...')
-          return c.json({ error: 'Invalid custom header' }, 401)
-        }
-      }
+      console.log('✅ Encrypted token generated:', encryptedToken)
       
-      // ============================================
-      // OPTION 2: Default Header Provided by Zoom
-      // ============================================
-      console.log('ℹ️  No custom header - checking for ZOOM_WEBHOOK_SECRET_TOKEN')
-      
-      const secret = ZOOM_WEBHOOK_SECRET_TOKEN
-      
-      if (!secret) {
-        console.warn('⚠️  No ZOOM_WEBHOOK_SECRET_TOKEN configured')
-        console.log('ℹ️  SOLUTION 1: Use Custom Header in Zoom:')
-        console.log('     - Key: x-zoom-webhook-secret')
-        console.log('     - Value: md4m8ttp8hnoj846ew2e0zb5gstw46ut')
-        console.log('ℹ️  SOLUTION 2: Save subscription in Zoom first, copy Secret Token, then run:')
-        console.log('     npx wrangler pages secret put ZOOM_WEBHOOK_SECRET_TOKEN')
-        
-        return c.json({ 
-          error: 'No authentication configured. Use Custom Header or configure ZOOM_WEBHOOK_SECRET_TOKEN.'
-        }, 401)
-      }
-      
-      console.log('🔑 Using ZOOM_WEBHOOK_SECRET_TOKEN')
-      
-      // Create HMAC signature using Web Crypto API
-      const encryptedToken = await createHmacSha256(secret, plainToken)
-      
-      console.log('✅ Encrypted token generated')
-      
-      // Return IMMEDIATELY with minimal response
+      // Return IMMEDIATELY
       return c.json({
         plainToken: plainToken,
         encryptedToken: encryptedToken
       })
-    }
-    
-    // Log after validation (don't slow down the response)
-    console.log('📥 Zoom webhook received')
-    console.log('🔍 Headers:', Object.fromEntries(c.req.raw.headers.entries()))
-    console.log('📦 Webhook event type:', payload.event)
-    
-    // ============================================
-    // STEP 2: VERIFY WEBHOOK SIGNATURE
-    // ============================================
-    const signature = c.req.header('x-zm-signature')
-    const timestamp = c.req.header('x-zm-request-timestamp')
-    
-    if (signature && timestamp) {
-      const message = `v0:${timestamp}:${body}`
-      const secret = ZOOM_WEBHOOK_VERIFICATION_SECRET || 'md4m8ttp8hnoj846ew2e0zb5gstw46ut'
-      const hash = await createHmacSha256(secret, message)
-      const expectedSignature = `v0=${hash}`
-      
-      if (signature !== expectedSignature) {
-        console.error('❌ Invalid webhook signature')
-        return c.json({ error: 'Invalid signature' }, 401)
-      }
-      
-      console.log('✅ Webhook signature verified')
     }
     
     // ============================================
