@@ -52,9 +52,6 @@ atlasBot.post('/start', async (c) => {
             }
           }
         },
-        transcription_options: {
-          provider: 'default'
-        },
         chat: {
           on_bot_join: {
             send_to: 'everyone',
