@@ -50,7 +50,14 @@ atlasBot.post('/start', async (c) => {
                 language_code: 'en'
               }
             }
-          }
+          },
+          realtime_endpoints: [
+            {
+              type: 'webhook',
+              url: 'https://www.investaycapital.com/meetings/api/bot/realtime-webhook',
+              events: ['transcript.data', 'participant_events.join', 'participant_events.leave']
+            }
+          ]
         },
         chat: {
           on_bot_join: {
@@ -564,6 +571,134 @@ atlasBot.post('/webhook', async (c) => {
     
   } catch (error: any) {
     console.error('❌ Error processing ATLAS webhook:', error)
+    return c.json({
+      success: false,
+      error: error.message
+    }, 500)
+  }
+})
+
+// ============================================
+// REAL-TIME WEBHOOK - Receive live transcript.data events
+// ============================================
+atlasBot.post('/realtime-webhook', async (c) => {
+  const { DB, AI } = c.env
+  
+  try {
+    const webhook = await c.req.json() as any
+    console.log('📡 Real-time webhook received:', webhook.event, 'at', new Date().toISOString())
+    
+    // Handle transcript.data event (REAL-TIME!)
+    if (webhook.event === 'transcript.data') {
+      const data = webhook.data
+      
+      console.log('💬 Real-time transcript:', {
+        speaker: data.speaker?.name,
+        text: data.words?.map((w: any) => w.text).join(' '),
+        timestamp: data.start_timestamp
+      })
+      
+      // Find session by bot_id
+      const botId = data.bot_id || 'unknown'
+      const meeting = await DB.prepare(`
+        SELECT id, zoom_meeting_id FROM zoom_meeting_sessions
+        WHERE recording_url LIKE ?
+        LIMIT 1
+      `).bind(`%"bot_id":"${botId}"%`).first() as any
+      
+      const sessionId = meeting?.id || `bot_${botId}`
+      
+      // Process words into transcript chunk
+      if (data.words && Array.isArray(data.words) && data.words.length > 0) {
+        const text = data.words.map((w: any) => w.text).join(' ')
+        const speaker = data.speaker?.name || 'Unknown'
+        const timestamp = data.start_timestamp || Date.now()
+        const chunkId = `chunk_${sessionId}_${timestamp}_${Date.now()}`
+        
+        // Store transcript chunk
+        await DB.prepare(`
+          INSERT INTO zoom_transcript_chunks (
+            id, session_id, speaker_name, speaker_id, text, 
+            timestamp_ms, confidence, language, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        `).bind(
+          chunkId,
+          sessionId,
+          speaker,
+          speaker,
+          text,
+          timestamp,
+          0.95,
+          'en'
+        ).run()
+        
+        console.log('✅ Stored real-time chunk:', chunkId)
+        
+        // Analyze sentiment with Cloudflare AI
+        try {
+          const sentimentResult = await AI.run('@cf/huggingface/distilbert-sst-2-english', {
+            text: text
+          }) as any
+          
+          const sentiment = sentimentResult[0]?.label?.toLowerCase() || 'neutral'
+          const confidence = sentimentResult[0]?.score || 0.5
+          
+          await DB.prepare(`
+            INSERT INTO meeting_sentiment_analysis (
+              id, session_id, chunk_id, timestamp_ms, sentiment, 
+              confidence, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+          `).bind(
+            `sentiment_${chunkId}`,
+            sessionId,
+            chunkId,
+            timestamp,
+            sentiment,
+            confidence
+          ).run()
+          
+          console.log('✅ Sentiment analyzed:', sentiment)
+        } catch (sentimentError) {
+          console.error('⚠️ Sentiment analysis failed:', sentimentError)
+        }
+        
+        // Update speaker analytics
+        const wordCount = data.words.length
+        await DB.prepare(`
+          INSERT INTO speaker_analytics (
+            id, session_id, speaker_name, speaker_id, 
+            total_talk_time_ms, word_count, sentiment_score, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+          ON CONFLICT(id) DO UPDATE SET
+            total_talk_time_ms = total_talk_time_ms + excluded.total_talk_time_ms,
+            word_count = word_count + excluded.word_count,
+            updated_at = CURRENT_TIMESTAMP
+        `).bind(
+          `speaker_${sessionId}_${speaker}`,
+          sessionId,
+          speaker,
+          speaker,
+          data.end_timestamp - data.start_timestamp,
+          wordCount,
+          0.5
+        ).run()
+        
+        console.log('✅ Speaker analytics updated')
+      }
+    }
+    
+    // Handle participant events
+    else if (webhook.event === 'participant_events.join') {
+      console.log('👋 Participant joined:', webhook.data?.name)
+    }
+    else if (webhook.event === 'participant_events.leave') {
+      console.log('👋 Participant left:', webhook.data?.name)
+    }
+    
+    return c.json({ success: true })
+    
+  } catch (error: any) {
+    console.error('❌ Error processing real-time webhook:', error)
     return c.json({
       success: false,
       error: error.message
