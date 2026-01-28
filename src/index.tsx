@@ -111,7 +111,6 @@ app.route('/api/test', testFormDataRoutes)
 app.route('/api/search', search)
 app.route('/api/signup', publicSignup)
 app.route('/api/zoom', zoomRoutes)
-app.route('/api/zoom-oauth', zoomOAuthRoutes)
 app.route('/meetings', zoomMeetingRoutes)
 app.route('/oauth', zoomMeetingRoutes)
 
