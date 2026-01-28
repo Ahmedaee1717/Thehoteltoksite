@@ -353,9 +353,10 @@
 
         // Process transcript from Zoom
         async function processTranscript(meetingId, button) {
+            const originalHTML = button.innerHTML;
+            
             try {
                 // Update button state
-                const originalHTML = button.innerHTML;
                 button.disabled = true;
                 button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Processing...';
                 
@@ -383,9 +384,11 @@
                 }
                 
                 if (error.response?.status === 404) {
-                    errorMsg = '⚠️ No transcript found for this meeting.\n\nMake sure:\n1. Cloud recording was enabled\n2. Meeting ended at least 10 minutes ago\n3. Recording processing is complete';
-                } else if (error.response?.status === 401) {
-                    errorMsg = '🔐 OAuth token expired.\n\nPlease reconnect your Zoom account by clicking "Connect Zoom Account" at the top.';
+                    errorMsg = '⚠️ No transcript found for this meeting.\n\nMake sure:\n1. Cloud recording was enabled\n2. Meeting ended at least 10 minutes ago\n3. Recording processing is complete\n\nCheck: https://zoom.us/recording';
+                } else if (error.response?.status === 401 || error.response?.data?.error?.includes('authorized')) {
+                    errorMsg = '🔐 OAuth token expired or not found.\n\nPlease RECONNECT your Zoom account:\n1. Click "Connect Zoom Account" button (top right)\n2. Authorize on Zoom\n3. Try again';
+                } else if (error.response?.data?.error?.includes('Failed to fetch recording')) {
+                    errorMsg = '⚠️ Could not fetch recording from Zoom.\n\nPossible causes:\n1. OAuth token expired - Click "Connect Zoom Account"\n2. No cloud recording enabled for this meeting\n3. Recording not ready yet (wait 10-15 min)\n4. Meeting too old (recordings auto-delete after time)\n\nCheck recordings: https://zoom.us/recording';
                 }
                 
                 alert(errorMsg);
