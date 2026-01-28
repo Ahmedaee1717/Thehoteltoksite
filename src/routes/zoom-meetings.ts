@@ -37,12 +37,9 @@ meetingRoutes.get('/oauth/authorize', async (c) => {
     state: state
   }).toString()
   
-  // Add required scopes for meeting bot functionality
-  const scopesUrl = authUrl + '&scope=' + encodeURIComponent('user:read meeting:read meeting:write recording:read')
+  console.log('🔐 Redirecting to Zoom OAuth:', authUrl)
   
-  console.log('🔐 Redirecting to Zoom OAuth:', scopesUrl)
-  
-  return c.redirect(scopesUrl)
+  return c.redirect(authUrl)
 })
 
 // Step 2: Handle OAuth callback
