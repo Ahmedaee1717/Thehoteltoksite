@@ -206,10 +206,28 @@ liveAI.post('/demo/simulate-live', async (c) => {
 // Get live updates for a meeting (polling endpoint)
 liveAI.get('/live-updates', async (c) => {
   const { DB, AI } = c.env
-  const meetingId = c.req.query('meeting')
+  let meetingId = c.req.query('meeting')
   const since = parseInt(c.req.query('since') || '0')
   
   try {
+    // If meetingId doesn't start with "zoom_" or "demo_", it's a Zoom meeting ID
+    // Look up the actual session_id from the database
+    if (meetingId && !meetingId.startsWith('zoom_') && !meetingId.startsWith('demo_')) {
+      console.log('🔍 Looking up session_id for Zoom meeting ID:', meetingId)
+      const meeting = await DB.prepare(`
+        SELECT id FROM zoom_meeting_sessions
+        WHERE zoom_meeting_id = ?
+        LIMIT 1
+      `).bind(meetingId).first() as any
+      
+      if (meeting) {
+        meetingId = meeting.id
+        console.log('✅ Found session_id:', meetingId)
+      } else {
+        console.log('❌ Meeting not found in database')
+      }
+    }
+    
     // Get new transcript chunks since last poll
     const transcripts = await DB.prepare(`
       SELECT * FROM zoom_transcript_chunks
