@@ -249,12 +249,13 @@
 
             tbody.innerHTML = meetingsData.map(meeting => {
                 const status = getStatusBadge(meeting.status);
-                const duration = meeting.duration_minutes || 'N/A';
+                const duration = meeting.duration || 'N/A';
                 const participants = meeting.participant_count || 0;
                 const startTime = new Date(meeting.start_time).toLocaleString();
+                const meetingId = meeting.zoom_meeting_id || meeting.meeting_id;
 
                 return `
-                    <tr class="hover:bg-gray-50 cursor-pointer" onclick="showMeetingDetails('${meeting.meeting_id}')">
+                    <tr class="hover:bg-gray-50 cursor-pointer" onclick="showMeetingDetails('${meetingId}')">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -262,7 +263,7 @@
                                 </div>
                                 <div class="ml-4">
                                     <div class="text-sm font-medium text-gray-900">${meeting.topic}</div>
-                                    <div class="text-sm text-gray-500">ID: ${meeting.meeting_id}</div>
+                                    <div class="text-sm text-gray-500">ID: ${meetingId}</div>
                                 </div>
                             </div>
                         </td>
@@ -271,10 +272,10 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${duration} min</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${participants}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="event.stopPropagation(); viewTranscript('${meeting.meeting_id}')">
+                            <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="event.stopPropagation(); viewTranscript('${meetingId}')">
                                 <i class="fas fa-file-alt mr-1"></i> Transcript
                             </button>
-                            <button class="text-green-600 hover:text-green-900" onclick="event.stopPropagation(); viewRecording('${meeting.meeting_id}')">
+                            <button class="text-green-600 hover:text-green-900" onclick="event.stopPropagation(); viewRecording('${meetingId}')">
                                 <i class="fas fa-play-circle mr-1"></i> Recording
                             </button>
                         </td>
@@ -296,8 +297,11 @@
 
         // Show meeting details
         async function showMeetingDetails(meetingId) {
-            const meeting = meetings.find(m => m.meeting_id === meetingId);
+            const meeting = meetings.find(m => (m.zoom_meeting_id || m.meeting_id) === meetingId);
             if (!meeting) return;
+
+            const displayId = meeting.zoom_meeting_id || meeting.meeting_id;
+            const duration = meeting.duration || meeting.duration_minutes || 'N/A';
 
             document.getElementById('modalTitle').textContent = meeting.topic;
             document.getElementById('modalContent').innerHTML = `
@@ -305,7 +309,7 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <p class="text-sm font-medium text-gray-500">Meeting ID</p>
-                            <p class="mt-1 text-sm text-gray-900">${meeting.meeting_id}</p>
+                            <p class="mt-1 text-sm text-gray-900">${displayId}</p>
                         </div>
                         <div>
                             <p class="text-sm font-medium text-gray-500">Status</p>
@@ -317,16 +321,16 @@
                         </div>
                         <div>
                             <p class="text-sm font-medium text-gray-500">Duration</p>
-                            <p class="mt-1 text-sm text-gray-900">${meeting.duration_minutes || 'N/A'} minutes</p>
+                            <p class="mt-1 text-sm text-gray-900">${duration} minutes</p>
                         </div>
                     </div>
                     <div class="pt-4 border-t border-gray-200">
                         <p class="text-sm font-medium text-gray-500 mb-2">Actions</p>
                         <div class="flex space-x-2">
-                            <button onclick="viewTranscript('${meeting.meeting_id}')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                            <button onclick="viewTranscript('${displayId}')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
                                 <i class="fas fa-file-alt mr-2"></i> View Transcript
                             </button>
-                            <button onclick="viewRecording('${meeting.meeting_id}')" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                            <button onclick="viewRecording('${displayId}')" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
                                 <i class="fas fa-play-circle mr-2"></i> View Recording
                             </button>
                         </div>
