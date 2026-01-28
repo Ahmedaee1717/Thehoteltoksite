@@ -50,12 +50,68 @@ zoomRoutes.post('/webhook', async (c) => {
       const plainToken = payload.payload?.plainToken
       
       if (!plainToken) {
+        console.error('❌ No plainToken in validation request')
         return c.json({ error: 'No plainToken provided' }, 400)
       }
       
+      console.log('🔐 Validation request received')
+      console.log('📝 Plain token:', plainToken)
+      console.log('📋 All headers:', JSON.stringify(Object.fromEntries(c.req.raw.headers.entries())))
+      
+      // ============================================
+      // OPTION 1: Custom Header Authentication (RECOMMENDED)
+      // ============================================
+      // Check if Zoom sent a custom header: x-zoom-webhook-secret
+      const customSecret = c.req.header('x-zoom-webhook-secret')
+      
+      if (customSecret) {
+        console.log('🔑 Custom header found:', customSecret.substring(0, 10) + '...')
+        
+        // Verify custom header matches our expected value
+        const expectedCustomSecret = ZOOM_WEBHOOK_VERIFICATION_SECRET || 'md4m8ttp8hnoj846ew2e0zb5gstw46ut'
+        
+        if (customSecret === expectedCustomSecret) {
+          console.log('✅ Custom header valid - generating encrypted token')
+          const encryptedToken = await createHmacSha256(customSecret, plainToken)
+          
+          return c.json({
+            plainToken: plainToken,
+            encryptedToken: encryptedToken
+          })
+        } else {
+          console.error('❌ Custom header mismatch!')
+          console.error('Expected:', expectedCustomSecret.substring(0, 10) + '...')
+          console.error('Received:', customSecret.substring(0, 10) + '...')
+          return c.json({ error: 'Invalid custom header' }, 401)
+        }
+      }
+      
+      // ============================================
+      // OPTION 2: Default Header Provided by Zoom
+      // ============================================
+      console.log('ℹ️  No custom header - checking for ZOOM_WEBHOOK_SECRET_TOKEN')
+      
+      const secret = ZOOM_WEBHOOK_SECRET_TOKEN
+      
+      if (!secret) {
+        console.warn('⚠️  No ZOOM_WEBHOOK_SECRET_TOKEN configured')
+        console.log('ℹ️  SOLUTION 1: Use Custom Header in Zoom:')
+        console.log('     - Key: x-zoom-webhook-secret')
+        console.log('     - Value: md4m8ttp8hnoj846ew2e0zb5gstw46ut')
+        console.log('ℹ️  SOLUTION 2: Save subscription in Zoom first, copy Secret Token, then run:')
+        console.log('     npx wrangler pages secret put ZOOM_WEBHOOK_SECRET_TOKEN')
+        
+        return c.json({ 
+          error: 'No authentication configured. Use Custom Header or configure ZOOM_WEBHOOK_SECRET_TOKEN.'
+        }, 401)
+      }
+      
+      console.log('🔑 Using ZOOM_WEBHOOK_SECRET_TOKEN')
+      
       // Create HMAC signature using Web Crypto API
-      const secret = ZOOM_WEBHOOK_VERIFICATION_SECRET || 'md4m8ttp8hnoj846ew2e0zb5gstw46ut'
       const encryptedToken = await createHmacSha256(secret, plainToken)
+      
+      console.log('✅ Encrypted token generated')
       
       // Return IMMEDIATELY with minimal response
       return c.json({
