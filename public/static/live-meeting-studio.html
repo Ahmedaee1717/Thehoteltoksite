@@ -9,6 +9,11 @@
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <style>
+        html, body {
+            height: 100%;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
         .pulse-dot {
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
@@ -284,10 +289,8 @@
 
         // WebSocket connection for real-time updates
         function connectWebSocket() {
-            // DISABLED POLLING FOR DEBUGGING
-            console.log('⚠️ Polling is temporarily disabled for debugging');
-            // For demo, we'll use polling instead of WebSocket
-            // In production, use Cloudflare Durable Objects for WebSocket
+            // Polling disabled - not needed for empty page
+            console.log('✅ Polling disabled - page should be static');
             // setInterval(pollForUpdates, 2000);
         }
 
