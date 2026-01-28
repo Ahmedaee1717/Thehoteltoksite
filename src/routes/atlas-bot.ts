@@ -50,7 +50,15 @@ atlasBot.post('/start', async (c) => {
                 language_code: 'en'
               }
             }
-          }
+          },
+          realtime_endpoints: [
+            {
+              url: 'https://www.investaycapital.com/meetings/api/bot/webhook',
+              headers: {
+                'X-Bot-Source': 'ATLAS'
+              }
+            }
+          ]
         },
         chat: {
           on_bot_join: {
