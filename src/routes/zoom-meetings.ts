@@ -37,9 +37,12 @@ meetingRoutes.get('/oauth/authorize', async (c) => {
     state: state
   }).toString()
   
-  console.log('🔐 Redirecting to Zoom OAuth:', authUrl)
+  // Add required scopes for meeting bot functionality
+  const scopesUrl = authUrl + '&scope=' + encodeURIComponent('user:read meeting:read meeting:write recording:read')
   
-  return c.redirect(authUrl)
+  console.log('🔐 Redirecting to Zoom OAuth:', scopesUrl)
+  
+  return c.redirect(scopesUrl)
 })
 
 // Step 2: Handle OAuth callback
@@ -118,7 +121,10 @@ meetingRoutes.get('/oauth/redirect', async (c) => {
     })
     
     if (!userResponse.ok) {
-      throw new Error('Failed to get user info')
+      const errorText = await userResponse.text()
+      console.error('❌ Zoom API /users/me failed:', errorText)
+      console.error('❌ Status:', userResponse.status)
+      throw new Error(`Failed to get user info: ${userResponse.status} - ${errorText}`)
     }
     
     const userData = await userResponse.json() as {
