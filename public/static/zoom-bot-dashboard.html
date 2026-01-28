@@ -363,7 +363,7 @@
                 // Check OAuth status first
                 try {
                     const oauthStatus = await axios.get('/meetings/oauth/status?userEmail=ahmed.enin@virgingates.com');
-                    if (!oauthStatus.data.valid || oauthStatus.data.expired) {
+                    if (!oauthStatus.data.authorized || oauthStatus.data.isExpired) {
                         alert('🔐 Zoom OAuth Disconnected!\n\nYour Zoom connection has expired.\n\nPlease:\n1. Reconnect Zoom at /static/zoom-bot-dashboard.html\n2. Click "Connect Zoom Account"\n3. Try again');
                         return;
                     }
