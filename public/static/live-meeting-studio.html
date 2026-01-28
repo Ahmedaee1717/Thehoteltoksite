@@ -414,38 +414,59 @@
 
         // Initialize talk-time chart
         function initializeTalkTimeChart() {
-            const ctx = document.getElementById('talkTimeChart').getContext('2d');
-            talkTimeChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        data: [],
-                        backgroundColor: [
-                            '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'
-                        ]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
+            console.log('🎨 Initializing Chart.js...');
+            const canvas = document.getElementById('talkTimeChart');
+            if (!canvas) {
+                console.error('❌ Canvas element not found!');
+                return;
+            }
+            
+            try {
+                const ctx = canvas.getContext('2d');
+                talkTimeChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            data: [],
+                            backgroundColor: [
+                                '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: false,  // DISABLE responsive to prevent resize loops
+                        maintainAspectRatio: true,
+                        animation: false,  // DISABLE animations
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
                         }
                     }
-                }
-            });
+                });
+                console.log('✅ Chart.js initialized successfully');
+            } catch (error) {
+                console.error('❌ Chart.js initialization failed:', error);
+            }
         }
 
         // Update speaker stats
         function updateSpeakerStats(speakers) {
+            if (!speakers || Object.keys(speakers).length === 0) {
+                console.log('⚠️ No speakers to update');
+                return;
+            }
+            
             const sortedSpeakers = Object.entries(speakers).sort((a, b) => b[1].talk_time - a[1].talk_time);
             
-            // Update chart
-            talkTimeChart.data.labels = sortedSpeakers.map(([name]) => name);
-            talkTimeChart.data.datasets[0].data = sortedSpeakers.map(([_, data]) => data.talk_time);
-            talkTimeChart.update();
+            // Update chart only if it exists
+            if (talkTimeChart) {
+                talkTimeChart.data.labels = sortedSpeakers.map(([name]) => name);
+                talkTimeChart.data.datasets[0].data = sortedSpeakers.map(([_, data]) => data.talk_time);
+                talkTimeChart.update('none');  // Update without animation
+                console.log('📊 Chart updated:', sortedSpeakers.length, 'speakers');
+            }
             
             // Update stats list
             const statsContainer = document.getElementById('speakerStats');
