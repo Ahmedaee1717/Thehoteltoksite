@@ -189,6 +189,79 @@ meetingRoutes.get('/oauth/redirect', async (c) => {
 })
 
 // ============================================
+// OAUTH STATUS & MANAGEMENT
+// ============================================
+
+// Check OAuth status
+meetingRoutes.get('/oauth/status', async (c) => {
+  const { DB } = c.env
+  const userEmail = c.req.query('userEmail') || 'ahmed.enin@virgingates.com'
+  
+  try {
+    const tokenData = await DB.prepare(`
+      SELECT user_id, zoom_user_id, email, expires_at, scope, created_at
+      FROM zoom_oauth_tokens
+      WHERE email = ?
+    `).bind(userEmail).first() as any
+    
+    if (!tokenData) {
+      return c.json({
+        authorized: false,
+        message: 'Zoom account not connected'
+      })
+    }
+    
+    const expiresAt = new Date(tokenData.expires_at)
+    const now = new Date()
+    const isExpired = expiresAt < now
+    
+    return c.json({
+      authorized: true,
+      email: tokenData.email,
+      zoomUserId: tokenData.zoom_user_id,
+      connectedAt: tokenData.created_at,
+      expiresAt: tokenData.expires_at,
+      isExpired: isExpired,
+      scope: tokenData.scope
+    })
+  } catch (error: any) {
+    console.error('❌ Status check error:', error)
+    return c.json({ 
+      error: 'Failed to check OAuth status', 
+      details: error.message 
+    }, 500)
+  }
+})
+
+// Revoke OAuth authorization
+meetingRoutes.post('/oauth/revoke', async (c) => {
+  const { DB } = c.env
+  
+  try {
+    const { userEmail } = await c.req.json()
+    
+    if (!userEmail) {
+      return c.json({ error: 'userEmail is required' }, 400)
+    }
+    
+    await DB.prepare(`
+      DELETE FROM zoom_oauth_tokens WHERE email = ?
+    `).bind(userEmail).run()
+    
+    return c.json({
+      success: true,
+      message: 'Zoom authorization revoked successfully'
+    })
+  } catch (error: any) {
+    console.error('❌ Revoke error:', error)
+    return c.json({ 
+      error: 'Failed to revoke authorization', 
+      details: error.message 
+    }, 500)
+  }
+})
+
+// ============================================
 // MEETING APIs
 // ============================================
 
