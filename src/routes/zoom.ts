@@ -40,23 +40,31 @@ zoomRoutes.post('/webhook', async (c) => {
   
   try {
     console.log('📥 Zoom webhook received')
+    console.log('🔍 Headers:', Object.fromEntries(c.req.raw.headers.entries()))
     
     // Check for custom header authentication (if provided)
     const customHeaderSecret = c.req.header('zoom-webhook-secret')
     if (customHeaderSecret) {
+      console.log('🔑 Custom header found:', customHeaderSecret.substring(0, 10) + '...')
       const expectedSecret = ZOOM_WEBHOOK_VERIFICATION_SECRET || 'md4m8ttp8hnoj846ew2e0zb5gstw46ut'
       if (customHeaderSecret !== expectedSecret) {
         console.error('❌ Invalid custom header secret')
+        console.error('Expected:', expectedSecret.substring(0, 10) + '...')
+        console.error('Got:', customHeaderSecret.substring(0, 10) + '...')
         return c.json({ error: 'Invalid authentication' }, 401)
       }
       console.log('✅ Custom header authentication verified')
+    } else {
+      console.log('ℹ️ No custom header found')
     }
     
     // Get request body
     const body = await c.req.text()
+    console.log('📝 Request body length:', body.length)
+    
     const payload = JSON.parse(body)
     
-    console.log('📦 Webhook payload:', JSON.stringify(payload, null, 2))
+    console.log('📦 Webhook event type:', payload.event)
     
     // ============================================
     // STEP 1: HANDLE VALIDATION CHALLENGE
@@ -80,9 +88,13 @@ zoomRoutes.post('/webhook', async (c) => {
         encryptedToken: encryptedToken.substring(0, 20) + '...'
       })
       
+      // Return with explicit headers for Zoom
       return c.json({
         plainToken: plainToken,
         encryptedToken: encryptedToken
+      }, 200, {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
       })
     }
     
