@@ -50,14 +50,7 @@ atlasBot.post('/start', async (c) => {
                 language_code: 'en'
               }
             }
-          },
-          realtime_endpoints: [
-            {
-              type: 'webhook',
-              url: 'https://www.investaycapital.com/meetings/api/bot/webhook',
-              events: ['transcript.data', 'transcript.partial_data']
-            }
-          ]
+          }
         },
         chat: {
           on_bot_join: {
@@ -199,6 +192,181 @@ atlasBot.get('/status/:botId', async (c) => {
     
   } catch (error: any) {
     console.error('❌ Error getting ATLAS bot status:', error)
+    return c.json({
+      success: false,
+      error: error.message
+    }, 500)
+  }
+})
+
+// ============================================
+// GET REAL-TIME TRANSCRIPT - Poll Recall.ai for transcript data
+// ============================================
+atlasBot.get('/transcript/:botId', async (c) => {
+  const { DB, AI, RECALL_API_KEY } = c.env
+  const botId = c.req.param('botId')
+  
+  try {
+    console.log('📝 Fetching transcript for bot:', botId)
+    
+    // Get transcript from Recall.ai API (updated endpoint)
+    // First get the bot to find the transcript ID
+    const botResponse = await fetch(`${RECALL_API_URL}/bot/${botId}`, {
+      headers: {
+        'Authorization': `Token ${RECALL_API_KEY}`
+      }
+    })
+    
+    if (!botResponse.ok) {
+      throw new Error('Failed to get bot details')
+    }
+    
+    const botData = await botResponse.json() as any
+    
+    // Get transcript ID from recordings
+    const transcriptId = botData.recordings?.[0]?.transcript?.id
+    
+    if (!transcriptId) {
+      return c.json({
+        success: true,
+        bot_id: botId,
+        words: 0,
+        message: 'No transcript available yet'
+      })
+    }
+    
+    // Fetch transcript using new endpoint
+    const recallResponse = await fetch(`${RECALL_API_URL}/transcript/${transcriptId}`, {
+      headers: {
+        'Authorization': `Token ${RECALL_API_KEY}`
+      }
+    })
+    
+    if (!recallResponse.ok) {
+      const errorText = await recallResponse.text()
+      console.error('❌ Recall.ai transcript API error:', errorText)
+      throw new Error(`Failed to get transcript: ${errorText}`)
+    }
+    
+    const transcriptData = await recallResponse.json() as any
+    console.log('✅ Transcript received:', transcriptData?.words?.length || 0, 'words')
+    
+    // Process transcript words into our database
+    if (transcriptData?.words && Array.isArray(transcriptData.words)) {
+      // Look up session_id from bot_id
+      const meeting = await DB.prepare(`
+        SELECT id FROM zoom_meeting_sessions
+        WHERE recording_url LIKE ?
+        LIMIT 1
+      `).bind(`%"bot_id":"${botId}"%`).first() as any
+      
+      const sessionId = meeting?.id || `bot_${botId}`
+      
+      // Group words into sentences (every 10 words or at punctuation)
+      let currentSentence: any[] = []
+      let processedCount = 0
+      
+      for (const word of transcriptData.words) {
+        currentSentence.push(word)
+        
+        // Create sentence chunk when we hit punctuation or 10 words
+        const shouldFlush = word.text?.match(/[.!?]$/) || currentSentence.length >= 10
+        
+        if (shouldFlush && currentSentence.length > 0) {
+          const text = currentSentence.map(w => w.text).join(' ')
+          const speaker = currentSentence[0].speaker || 'Unknown'
+          const timestamp = currentSentence[0].start_time || Date.now()
+          const chunkId = `chunk_${sessionId}_${timestamp}_${Date.now()}`
+          
+          // Check if chunk already exists
+          const existing = await DB.prepare(`
+            SELECT id FROM zoom_transcript_chunks WHERE id = ?
+          `).bind(chunkId).first()
+          
+          if (!existing) {
+            // Store transcript chunk
+            await DB.prepare(`
+              INSERT INTO zoom_transcript_chunks (
+                id, session_id, speaker_name, speaker_id, text, 
+                timestamp_ms, confidence, language, created_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            `).bind(
+              chunkId,
+              sessionId,
+              speaker,
+              speaker,
+              text,
+              timestamp,
+              0.95,
+              'en'
+            ).run()
+            
+            // Analyze sentiment
+            try {
+              const sentimentResult = await AI.run('@cf/huggingface/distilbert-sst-2-english', {
+                text: text
+              }) as any
+              
+              const sentiment = sentimentResult[0]?.label?.toLowerCase() || 'neutral'
+              const confidence = sentimentResult[0]?.score || 0.5
+              
+              await DB.prepare(`
+                INSERT INTO meeting_sentiment_analysis (
+                  id, session_id, chunk_id, timestamp_ms, sentiment, 
+                  confidence, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+              `).bind(
+                `sentiment_${chunkId}`,
+                sessionId,
+                chunkId,
+                timestamp,
+                sentiment,
+                confidence
+              ).run()
+            } catch (sentimentError) {
+              console.error('⚠️ Sentiment analysis failed:', sentimentError)
+            }
+            
+            // Update speaker analytics
+            const wordCount = currentSentence.length
+            await DB.prepare(`
+              INSERT INTO speaker_analytics (
+                id, session_id, speaker_name, speaker_id, 
+                total_talk_time_ms, word_count, sentiment_score, updated_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+              ON CONFLICT(id) DO UPDATE SET
+                total_talk_time_ms = total_talk_time_ms + excluded.total_talk_time_ms,
+                word_count = word_count + excluded.word_count,
+                updated_at = CURRENT_TIMESTAMP
+            `).bind(
+              `speaker_${sessionId}_${speaker}`,
+              sessionId,
+              speaker,
+              speaker,
+              3000,
+              wordCount,
+              0.5
+            ).run()
+            
+            processedCount++
+          }
+          
+          currentSentence = []
+        }
+      }
+      
+      console.log('✅ Processed', processedCount, 'new transcript chunks')
+    }
+    
+    return c.json({
+      success: true,
+      bot_id: botId,
+      words: transcriptData?.words?.length || 0,
+      processed: true
+    })
+    
+  } catch (error: any) {
+    console.error('❌ Error fetching transcript:', error)
     return c.json({
       success: false,
       error: error.message

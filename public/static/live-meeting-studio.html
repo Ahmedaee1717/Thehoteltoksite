@@ -666,6 +666,9 @@
                     
                     if (status === 'in_call_not_recording' || status === 'in_call_recording' || status === 'recording') {
                         updateAtlasStatus('live', 'ATLAS Live 🔴');
+                        
+                        // Fetch real-time transcript from Recall.ai
+                        fetchAtlasTranscript();
                     } else if (status === 'joining_call' || status === 'in_waiting_room') {
                         updateAtlasStatus('connecting', 'ATLAS Connecting...');
                         setTimeout(checkAtlasStatus, 3000); // Check again in 3s
@@ -694,6 +697,34 @@
             }
         }
 
+        async function fetchAtlasTranscript() {
+            if (!atlasBotId) return;
+            
+            try {
+                const response = await axios.get(`/meetings/api/bot/transcript/${atlasBotId}`);
+                
+                if (response.data.success) {
+                    console.log('📝 Fetched transcript:', response.data.words, 'words');
+                    
+                    // Reload the live updates to get new transcripts
+                    const updatesResponse = await axios.get(`/meetings/api/live-updates?meeting=${meetingId}&since=0`);
+                    
+                    if (updatesResponse.data.transcripts && updatesResponse.data.transcripts.length > 0) {
+                        updatesResponse.data.transcripts.forEach(chunk => {
+                            if (!displayedChunkIds.has(chunk.id)) {
+                                addTranscriptChunk(chunk);
+                            }
+                        });
+                        
+                        updateSentiment(updatesResponse.data.sentiment);
+                        updateSpeakers(updatesResponse.data.speakers);
+                    }
+                }
+            } catch (error) {
+                console.error('⚠️ Error fetching ATLAS transcript:', error);
+            }
+        }
+
         function startAggressivePolling() {
             // Poll every 2 seconds for real-time updates
             if (atlasPollingInterval) {
@@ -702,6 +733,11 @@
             
             atlasPollingInterval = setInterval(async () => {
                 try {
+                    // Fetch new transcript from Recall.ai
+                    if (atlasBotId) {
+                        await fetchAtlasTranscript();
+                    }
+                    
                     const response = await axios.get(`/meetings/api/live-updates?meeting=${meetingId}&since=0`);
                     
                     if (response.data.transcripts && response.data.transcripts.length > 0) {
