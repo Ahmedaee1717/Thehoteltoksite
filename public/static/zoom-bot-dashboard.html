@@ -203,10 +203,14 @@
         // Revoke OAuth
         async function revokeOAuth() {
             try {
-                await axios.post('/meetings/oauth/revoke');
+                await axios.post('/meetings/oauth/revoke', {
+                    userEmail: 'ahmed.enin@virgingates.com'
+                });
+                alert('✅ Zoom account disconnected successfully!');
                 window.location.reload();
             } catch (error) {
-                alert('Failed to disconnect Zoom account');
+                console.error('Disconnect error:', error);
+                alert('Failed to disconnect Zoom account. Please try refreshing the page.');
             }
         }
 
