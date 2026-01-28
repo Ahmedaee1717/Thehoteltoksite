@@ -48,6 +48,16 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
+                    <!-- ATLAS Bot Status -->
+                    <div id="atlasBotStatus" class="hidden bg-white/20 backdrop-blur px-4 py-2 rounded-lg">
+                        <div class="flex items-center space-x-2">
+                            <span id="atlasStatusDot" class="w-3 h-3 bg-gray-400 rounded-full"></span>
+                            <span id="atlasStatusText" class="text-sm font-medium">ATLAS Offline</span>
+                        </div>
+                    </div>
+                    <button id="startAtlasBtn" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg font-medium transition">
+                        <i class="fas fa-robot mr-2"></i>Start ATLAS Bot
+                    </button>
                     <div class="text-right">
                         <div class="text-sm opacity-75">Duration</div>
                         <div class="text-lg font-bold" id="meetingDuration">00:00:00</div>
@@ -564,6 +574,168 @@
             autoScroll = !autoScroll;
             document.getElementById('autoScrollBtn').style.opacity = autoScroll ? '1' : '0.5';
         });
+
+        // ============================================
+        // ATLAS BOT - Live Transcription
+        // ============================================
+        let atlasBotId = null;
+        let atlasPollingInterval = null;
+
+        async function startAtlasBot() {
+            try {
+                const startBtn = document.getElementById('startAtlasBtn');
+                startBtn.disabled = true;
+                startBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Starting ATLAS...';
+                
+                // Prompt for Zoom meeting URL or ID
+                const meetingInput = prompt('Enter Zoom Meeting URL or Meeting ID:', '');
+                if (!meetingInput) {
+                    startBtn.disabled = false;
+                    startBtn.innerHTML = '<i class="fas fa-robot mr-2"></i>Start ATLAS Bot';
+                    return;
+                }
+                
+                // Check if it's a URL or ID
+                let payload;
+                if (meetingInput.includes('zoom.us')) {
+                    payload = { meeting_url: meetingInput, bot_name: 'ATLAS' };
+                } else {
+                    payload = { meeting_id: meetingInput, bot_name: 'ATLAS' };
+                    // Update the page meeting ID
+                    meetingId = meetingInput;
+                    document.getElementById('meetingTitle').textContent = `Session ${meetingId}`;
+                }
+                
+                console.log('🤖 Starting ATLAS bot with:', payload);
+                
+                const response = await axios.post('/meetings/api/bot/start', payload);
+                
+                if (response.data.success) {
+                    atlasBotId = response.data.bot_id;
+                    meetingId = response.data.meeting_id;
+                    
+                    // Update UI
+                    updateAtlasStatus('connecting', 'ATLAS Connecting...');
+                    startBtn.classList.add('hidden');
+                    document.getElementById('atlasBotStatus').classList.remove('hidden');
+                    
+                    // Start polling for status
+                    checkAtlasStatus();
+                    
+                    // Enable aggressive polling for real-time updates
+                    startAggressivePolling();
+                    
+                    alert('✅ ATLAS bot is joining your meeting!\n\nTranscripts will appear in real-time in 10-15 seconds.');
+                } else {
+                    throw new Error(response.data.error);
+                }
+            } catch (error) {
+                console.error('❌ Failed to start ATLAS:', error);
+                alert('Failed to start ATLAS: ' + error.message);
+                const startBtn = document.getElementById('startAtlasBtn');
+                startBtn.disabled = false;
+                startBtn.innerHTML = '<i class="fas fa-robot mr-2"></i>Start ATLAS Bot';
+            }
+        }
+
+        async function stopAtlasBot() {
+            if (!atlasBotId) return;
+            
+            try {
+                await axios.post('/meetings/api/bot/stop', { bot_id: atlasBotId });
+                updateAtlasStatus('offline', 'ATLAS Offline');
+                stopAggressivePolling();
+                document.getElementById('startAtlasBtn').classList.remove('hidden');
+                document.getElementById('atlasBotStatus').classList.add('hidden');
+                atlasBotId = null;
+                
+                alert('✅ ATLAS has left the meeting. Full transcript saved.');
+            } catch (error) {
+                console.error('❌ Failed to stop ATLAS:', error);
+            }
+        }
+
+        async function checkAtlasStatus() {
+            if (!atlasBotId) return;
+            
+            try {
+                const response = await axios.get(`/meetings/api/bot/status/${atlasBotId}`);
+                
+                if (response.data.success) {
+                    const status = response.data.status;
+                    
+                    if (status === 'in_call_not_recording' || status === 'in_call_recording' || status === 'recording') {
+                        updateAtlasStatus('live', 'ATLAS Live 🔴');
+                    } else if (status === 'joining_call' || status === 'in_waiting_room') {
+                        updateAtlasStatus('connecting', 'ATLAS Connecting...');
+                        setTimeout(checkAtlasStatus, 3000); // Check again in 3s
+                    } else if (status === 'done' || status === 'fatal') {
+                        updateAtlasStatus('offline', 'ATLAS Offline');
+                        stopAtlasBot();
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Failed to check ATLAS status:', error);
+            }
+        }
+
+        function updateAtlasStatus(status, text) {
+            const statusDot = document.getElementById('atlasStatusDot');
+            const statusText = document.getElementById('atlasStatusText');
+            
+            statusText.textContent = text;
+            
+            if (status === 'live') {
+                statusDot.className = 'w-3 h-3 bg-red-500 rounded-full pulse-dot';
+            } else if (status === 'connecting') {
+                statusDot.className = 'w-3 h-3 bg-yellow-500 rounded-full pulse-dot';
+            } else {
+                statusDot.className = 'w-3 h-3 bg-gray-400 rounded-full';
+            }
+        }
+
+        function startAggressivePolling() {
+            // Poll every 2 seconds for real-time updates
+            if (atlasPollingInterval) {
+                clearInterval(atlasPollingInterval);
+            }
+            
+            atlasPollingInterval = setInterval(async () => {
+                try {
+                    const response = await axios.get(`/meetings/api/live-updates?meeting=${meetingId}&since=0`);
+                    
+                    if (response.data.transcripts && response.data.transcripts.length > 0) {
+                        response.data.transcripts.forEach(chunk => {
+                            if (!displayedChunkIds.has(chunk.id)) {
+                                addTranscriptChunk(chunk);
+                            }
+                        });
+                    }
+                    if (response.data.sentiment) {
+                        updateSentiment(response.data.sentiment);
+                    }
+                    if (response.data.speakers) {
+                        updateSpeakerStats(response.data.speakers);
+                    }
+                } catch (error) {
+                    console.error('⚠️ Polling error:', error);
+                }
+            }, 2000); // Every 2 seconds
+            
+            console.log('✅ Aggressive polling enabled (every 2 seconds)');
+        }
+
+        function stopAggressivePolling() {
+            if (atlasPollingInterval) {
+                clearInterval(atlasPollingInterval);
+                atlasPollingInterval = null;
+                console.log('🛑 Aggressive polling stopped');
+            }
+        }
+
+        // Event Listeners for ATLAS
+        document.getElementById('startAtlasBtn').addEventListener('click', startAtlasBot);
+        document.getElementById('endMeetingBtn').addEventListener('click', stopAtlasBot);
 
         // Initialize on load - ONLY ONCE
         let hasInitialized = false;
