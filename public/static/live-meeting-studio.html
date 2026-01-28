@@ -224,6 +224,7 @@
         // Global state
         let meetingId = null;
         let transcriptChunks = [];
+        let displayedChunkIds = new Set(); // Track which chunks are already displayed
         let sentimentData = { positive: 0, neutral: 0, negative: 0 };
         let speakerData = {};
         let talkTimeChart = null;
@@ -300,6 +301,12 @@
 
         // Add transcript chunk to UI
         function addTranscriptChunk(chunk) {
+            // Skip if already displayed
+            if (displayedChunkIds.has(chunk.id)) {
+                return;
+            }
+            displayedChunkIds.add(chunk.id);
+            
             const container = document.getElementById('transcriptContainer');
             
             // Remove empty state
