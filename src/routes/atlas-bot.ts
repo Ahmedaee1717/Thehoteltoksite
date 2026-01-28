@@ -200,6 +200,63 @@ atlasBot.get('/status/:botId', async (c) => {
 })
 
 // ============================================
+// GET ACTIVE BOT FOR MEETING
+// ============================================
+atlasBot.get('/active/:meetingId', async (c) => {
+  const { RECALL_API_KEY } = c.env
+  const meetingId = c.req.param('meetingId')
+  
+  try {
+    console.log('🔍 Finding active bot for meeting:', meetingId)
+    
+    // List all bots from Recall.ai
+    const recallResponse = await fetch(`${RECALL_API_URL}/bot/`, {
+      headers: {
+        'Authorization': `Token ${RECALL_API_KEY}`
+      }
+    })
+    
+    if (!recallResponse.ok) {
+      throw new Error('Failed to list bots')
+    }
+    
+    const botsData = await recallResponse.json() as any
+    
+    // Find active bot for this meeting
+    const activeBot = botsData.results?.find((bot: any) => {
+      const botMeetingId = bot.meeting_url?.meeting_id
+      const lastStatus = bot.status_changes?.[bot.status_changes.length - 1]?.code
+      
+      return botMeetingId === meetingId && 
+             lastStatus !== 'fatal' && 
+             lastStatus !== 'done'
+    })
+    
+    if (activeBot) {
+      console.log('✅ Found active bot:', activeBot.id)
+      return c.json({
+        success: true,
+        bot_id: activeBot.id,
+        status: activeBot.status_changes?.[activeBot.status_changes.length - 1]?.code,
+        bot_name: activeBot.bot_name
+      })
+    } else {
+      return c.json({
+        success: false,
+        error: 'No active bot found for this meeting'
+      }, 404)
+    }
+    
+  } catch (error: any) {
+    console.error('❌ Error finding active bot:', error)
+    return c.json({
+      success: false,
+      error: error.message
+    }, 500)
+  }
+})
+
+// ============================================
 // GET REAL-TIME TRANSCRIPT - Poll Recall.ai for transcript data
 // ============================================
 atlasBot.get('/transcript/:botId', async (c) => {

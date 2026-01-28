@@ -773,6 +773,38 @@
         document.getElementById('startAtlasBtn').addEventListener('click', startAtlasBot);
         document.getElementById('endMeetingBtn').addEventListener('click', stopAtlasBot);
 
+        // Auto-discover active bot on page load
+        async function autoDiscoverBot() {
+            if (!meetingId || meetingId.startsWith('demo_')) return;
+            
+            // Extract Zoom meeting ID from session ID
+            const zoomMeetingId = meetingId.replace(/^zoom_/, '').replace(/_\d+$/, '');
+            
+            try {
+                console.log('🔍 Checking for active bot for meeting:', zoomMeetingId);
+                const response = await axios.get(`/meetings/api/bot/active/${zoomMeetingId}`);
+                
+                if (response.data.success) {
+                    console.log('✅ Found active bot:', response.data.bot_id);
+                    atlasBotId = response.data.bot_id;
+                    
+                    // Update UI
+                    updateAtlasStatus('live', 'ATLAS Live 🔴');
+                    document.getElementById('startAtlasBtn').classList.add('hidden');
+                    document.getElementById('atlasBotStatus').classList.remove('hidden');
+                    
+                    // Start polling
+                    checkAtlasStatus();
+                    startAggressivePolling();
+                }
+            } catch (error) {
+                console.log('ℹ️ No active bot found:', error.response?.data?.error);
+            }
+        }
+        
+        // Run auto-discovery after page loads
+        setTimeout(autoDiscoverBot, 1000);
+
         // Initialize on load - ONLY ONCE
         let hasInitialized = false;
         
