@@ -272,9 +272,14 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${duration} min</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${participants}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="event.stopPropagation(); viewTranscript('${meetingId}')">
-                                <i class="fas fa-file-alt mr-1"></i> Transcript
+                        <div class="flex gap-2">
+                            <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="event.stopPropagation(); processTranscript('${meetingId}', this)">
+                                <i class="fas fa-sync mr-1"></i> Process Transcript
                             </button>
+                            <button class="text-green-600 hover:text-green-900" onclick="event.stopPropagation(); viewInLiveStudio('${meetingId}')">
+                                <i class="fas fa-eye mr-1"></i> View Live
+                            </button>
+                        </div>
                             <button class="text-green-600 hover:text-green-900" onclick="event.stopPropagation(); viewRecording('${meetingId}')">
                                 <i class="fas fa-play-circle mr-1"></i> Recording
                             </button>
@@ -346,21 +351,59 @@
             document.getElementById('meetingModal').classList.add('hidden');
         });
 
-        // View transcript
-        async function viewTranscript(meetingId) {
+        // Process transcript from Zoom
+        async function processTranscript(meetingId, button) {
             try {
-                const response = await axios.get(`/meetings/api/meetings/${meetingId}/transcript`);
-                const transcript = response.data.transcript || 'No transcript available yet.';
+                // Update button state
+                const originalHTML = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Processing...';
                 
-                document.getElementById('modalContent').innerHTML = `
-                    <div class="prose max-w-none">
-                        <h4 class="text-lg font-medium mb-4">Meeting Transcript</h4>
-                        <pre class="whitespace-pre-wrap bg-gray-50 p-4 rounded-lg text-sm">${transcript}</pre>
-                    </div>
-                `;
+                console.log('🔄 Processing transcript for meeting:', meetingId);
+                
+                const response = await axios.post(`/meetings/api/meetings/${meetingId}/process-transcript`);
+                
+                if (response.data.success) {
+                    alert(`✅ Transcript processed successfully!\n\nChunks found: ${response.data.chunks_found}\nChunks processed: ${response.data.chunks_processed}\n\nClick "View Live" to see results.`);
+                    
+                    // Restore button
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fas fa-check mr-1"></i> Processed!';
+                    button.classList.remove('text-blue-600', 'hover:text-blue-900');
+                    button.classList.add('text-green-600', 'hover:text-green-900');
+                } else {
+                    throw new Error(response.data.error || 'Processing failed');
+                }
             } catch (error) {
-                alert('Failed to load transcript');
+                console.error('❌ Error processing transcript:', error);
+                
+                let errorMsg = 'Failed to process transcript';
+                if (error.response?.data?.error) {
+                    errorMsg += ':\n' + error.response.data.error;
+                }
+                
+                if (error.response?.status === 404) {
+                    errorMsg = '⚠️ No transcript found for this meeting.\n\nMake sure:\n1. Cloud recording was enabled\n2. Meeting ended at least 10 minutes ago\n3. Recording processing is complete';
+                } else if (error.response?.status === 401) {
+                    errorMsg = '🔐 OAuth token expired.\n\nPlease reconnect your Zoom account by clicking "Connect Zoom Account" at the top.';
+                }
+                
+                alert(errorMsg);
+                
+                // Restore button
+                button.disabled = false;
+                button.innerHTML = originalHTML;
             }
+        }
+
+        // View in Live Meeting Studio
+        function viewInLiveStudio(meetingId) {
+            window.open(`/static/live-meeting-studio.html?meeting=${meetingId}`, '_blank');
+        }
+
+        // View transcript (old function - now redirects to Live Studio)
+        async function viewTranscript(meetingId) {
+            viewInLiveStudio(meetingId);
         }
 
         // View recording
