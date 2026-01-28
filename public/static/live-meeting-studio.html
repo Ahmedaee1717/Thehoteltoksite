@@ -541,10 +541,24 @@
             document.getElementById('autoScrollBtn').style.opacity = autoScroll ? '1' : '0.5';
         });
 
-        // Initialize on load
+        // Initialize on load - ONLY ONCE
+        let hasInitialized = false;
+        
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Page loaded - initializing...');
-            init();
+            console.log('🚀 DOMContentLoaded fired');
+            
+            if (hasInitialized) {
+                console.warn('⚠️ Init already called, skipping');
+                return;
+            }
+            
+            hasInitialized = true;
+            
+            try {
+                init();
+            } catch (error) {
+                console.error('❌ Init error:', error);
+            }
         });
     </script>
 </body>
