@@ -23,6 +23,7 @@ import testFormDataRoutes from './routes/test-formdata'
 import search from './routes/search'
 import publicSignup from './routes/public-signup'
 import zoomRoutes from './routes/zoom'
+import zoomMeetingRoutes from './routes/zoom-meetings'
 import { homePage } from './pages/home'
 import { signupPage } from './pages/signup'
 import { loginPage } from './pages/login'
@@ -110,6 +111,9 @@ app.route('/api/test', testFormDataRoutes)
 app.route('/api/search', search)
 app.route('/api/signup', publicSignup)
 app.route('/api/zoom', zoomRoutes)
+app.route('/api/zoom-oauth', zoomOAuthRoutes)
+app.route('/meetings', zoomMeetingRoutes)
+app.route('/oauth', zoomMeetingRoutes)
 
 // AI Q&A Endpoint - semantic search and question answering
 app.post('/api/ai-answer', async (c) => {
@@ -2159,3 +2163,4 @@ Sitemap: https://investaycapital.com/sitemap.xml`;
 
 export default app
 // FORCE CACHE BUST: 1768339539673108300
+300

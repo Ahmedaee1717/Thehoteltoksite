@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Meeting Bot - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white">
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-robot text-3xl text-blue-500"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold">AI Meeting Bot</h1>
+                        <p class="text-sm text-gray-400">Real-time Transcription & Translation</p>
+                    </div>
+                </div>
+                <button id="authorizeBtn" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-medium transition">
+                    <i class="fas fa-link mr-2"></i>
+                    Connect Zoom Account
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Total Meetings</p>
+                        <p id="totalMeetings" class="text-3xl font-bold mt-1">0</p>
+                    </div>
+                    <i class="fas fa-video text-3xl text-blue-500"></i>
+                </div>
+            </div>
+            
+            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Active Now</p>
+                        <p id="activeMeetings" class="text-3xl font-bold mt-1 text-green-500">0</p>
+                    </div>
+                    <i class="fas fa-circle text-3xl text-green-500 animate-pulse"></i>
+                </div>
+            </div>
+            
+            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Total Participants</p>
+                        <p id="totalParticipants" class="text-3xl font-bold mt-1">0</p>
+                    </div>
+                    <i class="fas fa-users text-3xl text-purple-500"></i>
+                </div>
+            </div>
+            
+            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Total Duration</p>
+                        <p id="totalDuration" class="text-3xl font-bold mt-1">0h</p>
+                    </div>
+                    <i class="fas fa-clock text-3xl text-yellow-500"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meetings List -->
+        <div class="bg-gray-800 rounded-lg border border-gray-700">
+            <div class="p-6 border-b border-gray-700">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold">
+                        <i class="fas fa-list mr-2"></i>
+                        Recent Meetings
+                    </h2>
+                    <button onclick="loadMeetings()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded transition">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+            
+            <div id="meetingsContainer" class="divide-y divide-gray-700">
+                <!-- Meetings will be loaded here -->
+                <div class="p-8 text-center text-gray-400">
+                    <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
+                    <p>Loading meetings...</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script>
+        // Authorize with Zoom
+        document.getElementById('authorizeBtn').addEventListener('click', () => {
+            window.location.href = '/meetings/oauth/authorize'
+        })
+
+        // Load meetings
+        async function loadMeetings() {
+            const container = document.getElementById('meetingsContainer')
+            container.innerHTML = '<div class="p-8 text-center text-gray-400"><i class="fas fa-spinner fa-spin text-4xl mb-4"></i><p>Loading...</p></div>'
+            
+            try {
+                const response = await axios.get('/meetings/api/meetings')
+                const meetings = response.data.meetings
+                
+                if (meetings.length === 0) {
+                    container.innerHTML = `
+                        <div class="p-8 text-center text-gray-400">
+                            <i class="fas fa-inbox text-6xl mb-4 opacity-50"></i>
+                            <p class="text-xl mb-2">No meetings yet</p>
+                            <p class="text-sm">Start a Zoom meeting and it will appear here automatically!</p>
+                        </div>
+                    `
+                    return
+                }
+                
+                // Update stats
+                document.getElementById('totalMeetings').textContent = meetings.length
+                let activeMeetings = 0
+                let totalParticipants = 0
+                
+                // Render meetings
+                container.innerHTML = meetings.map(meeting => {
+                    const isActive = meeting.status === 'active'
+                    if (isActive) activeMeetings++
+                    totalParticipants += meeting.participant_count || 0
+                    
+                    const startTime = new Date(meeting.start_time)
+                    const endTime = meeting.end_time ? new Date(meeting.end_time) : null
+                    const duration = endTime ? Math.round((endTime - startTime) / 1000 / 60) : 'ongoing'
+                    
+                    return `
+                        <div class="p-6 hover:bg-gray-750 transition cursor-pointer" onclick="viewMeeting('${meeting.zoom_meeting_id}')">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-3 mb-2">
+                                        <h3 class="text-lg font-semibold">${meeting.topic || 'Untitled Meeting'}</h3>
+                                        ${isActive ? '<span class="px-2 py-1 bg-green-500 text-white text-xs rounded-full animate-pulse">LIVE</span>' : ''}
+                                        ${meeting.status === 'ended' ? '<span class="px-2 py-1 bg-gray-600 text-white text-xs rounded-full">Ended</span>' : ''}
+                                    </div>
+                                    <div class="flex items-center space-x-4 text-sm text-gray-400">
+                                        <span><i class="fas fa-calendar mr-1"></i>${startTime.toLocaleDateString()}</span>
+                                        <span><i class="fas fa-clock mr-1"></i>${startTime.toLocaleTimeString()}</span>
+                                        <span><i class="fas fa-users mr-1"></i>${meeting.participant_count || 0} participants</span>
+                                        <span><i class="fas fa-hourglass mr-1"></i>${duration} min</span>
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-600"></i>
+                            </div>
+                        </div>
+                    `
+                }).join('')
+                
+                // Update stats
+                document.getElementById('activeMeetings').textContent = activeMeetings
+                document.getElementById('totalParticipants').textContent = totalParticipants
+                
+            } catch (error) {
+                console.error('Error loading meetings:', error)
+                container.innerHTML = `
+                    <div class="p-8 text-center text-red-400">
+                        <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
+                        <p>Failed to load meetings</p>
+                        <button onclick="loadMeetings()" class="mt-4 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
+                            Try Again
+                        </button>
+                    </div>
+                `
+            }
+        }
+
+        // View meeting details
+        function viewMeeting(meetingId) {
+            window.location.href = `/meetings/dashboard/${meetingId}`
+        }
+
+        // Auto-load meetings on page load
+        window.addEventListener('load', () => {
+            loadMeetings()
+            // Refresh every 5 seconds
+            setInterval(loadMeetings, 5000)
+        })
+    </script>
+</body>
+</html>
