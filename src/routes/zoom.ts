@@ -1,6 +1,5 @@
 // Zoom Webhook & Meeting Bot Routes
 import { Hono } from 'hono'
-import { createHmac } from 'node:crypto'
 
 type Bindings = {
   DB: D1Database
@@ -12,6 +11,25 @@ type Bindings = {
 }
 
 const zoomRoutes = new Hono<{ Bindings: Bindings }>()
+
+// Helper function to create HMAC using Web Crypto API
+async function createHmacSha256(secret: string, message: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const keyData = encoder.encode(secret)
+  const messageData = encoder.encode(message)
+  
+  const key = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  
+  const signature = await crypto.subtle.sign('HMAC', key, messageData)
+  const hashArray = Array.from(new Uint8Array(signature))
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+}
 
 // ============================================
 // POST /api/zoom/webhook
@@ -42,11 +60,9 @@ zoomRoutes.post('/webhook', async (c) => {
         return c.json({ error: 'No plainToken provided' }, 400)
       }
       
-      // Create HMAC signature
+      // Create HMAC signature using Web Crypto API
       const secret = ZOOM_WEBHOOK_VERIFICATION_SECRET || 'md4m8ttp8hnoj846ew2e0zb5gstw46ut'
-      const hmac = createHmac('sha256', secret)
-      hmac.update(plainToken)
-      const encryptedToken = hmac.digest('hex')
+      const encryptedToken = await createHmacSha256(secret, plainToken)
       
       console.log('✅ Validation response:', {
         plainToken,
@@ -68,9 +84,8 @@ zoomRoutes.post('/webhook', async (c) => {
     if (signature && timestamp) {
       const message = `v0:${timestamp}:${body}`
       const secret = ZOOM_WEBHOOK_VERIFICATION_SECRET || 'md4m8ttp8hnoj846ew2e0zb5gstw46ut'
-      const hmac = createHmac('sha256', secret)
-      hmac.update(message)
-      const expectedSignature = `v0=${hmac.digest('hex')}`
+      const hash = await createHmacSha256(secret, message)
+      const expectedSignature = `v0=${hash}`
       
       if (signature !== expectedSignature) {
         console.error('❌ Invalid webhook signature')
