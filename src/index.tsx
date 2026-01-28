@@ -24,6 +24,7 @@ import search from './routes/search'
 import publicSignup from './routes/public-signup'
 import zoomRoutes from './routes/zoom'
 import zoomMeetingRoutes from './routes/zoom-meetings'
+import liveAIRoutes from './routes/live-ai'
 import { homePage } from './pages/home'
 import { signupPage } from './pages/signup'
 import { loginPage } from './pages/login'
@@ -112,6 +113,7 @@ app.route('/api/search', search)
 app.route('/api/signup', publicSignup)
 app.route('/api/zoom', zoomRoutes)
 app.route('/meetings', zoomMeetingRoutes)
+app.route('/meetings/api', liveAIRoutes)
 app.route('/oauth', zoomMeetingRoutes)
 
 // AI Q&A Endpoint - semantic search and question answering
