@@ -586,7 +586,26 @@ atlasBot.post('/realtime-webhook', async (c) => {
   
   try {
     const webhook = await c.req.json() as any
-    console.log('📡 Real-time webhook received:', webhook.event, 'at', new Date().toISOString())
+    const timestamp = new Date().toISOString()
+    
+    console.log('📡 Real-time webhook received:', webhook.event, 'at', timestamp)
+    
+    // Store webhook event for debugging
+    try {
+      await DB.prepare(`
+        INSERT INTO webhook_events (
+          id, event_type, payload, received_at
+        ) VALUES (?, ?, ?, ?)
+      `).bind(
+        `webhook_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        webhook.event || 'unknown',
+        JSON.stringify(webhook),
+        timestamp
+      ).run()
+    } catch (dbError) {
+      // Table might not exist, that's okay
+      console.log('⚠️ Could not store webhook event:', dbError)
+    }
     
     // Handle transcript.data event (REAL-TIME!)
     if (webhook.event === 'transcript.data') {
@@ -600,13 +619,38 @@ atlasBot.post('/realtime-webhook', async (c) => {
       
       // Find session by bot_id
       const botId = data.bot_id || 'unknown'
-      const meeting = await DB.prepare(`
+      let meeting = await DB.prepare(`
         SELECT id, zoom_meeting_id FROM zoom_meeting_sessions
         WHERE recording_url LIKE ?
         LIMIT 1
       `).bind(`%"bot_id":"${botId}"%`).first() as any
       
-      const sessionId = meeting?.id || `bot_${botId}`
+      let sessionId = meeting?.id
+      
+      // If session doesn't exist, create it
+      if (!sessionId) {
+        sessionId = `bot_${botId}`
+        console.log('⚠️ Session not found, creating:', sessionId)
+        
+        try {
+          await DB.prepare(`
+            INSERT OR IGNORE INTO zoom_meeting_sessions (
+              id, zoom_meeting_id, topic, host_id, start_time, status,
+              recording_url, created_at
+            ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, 'live', ?, CURRENT_TIMESTAMP)
+          `).bind(
+            sessionId,
+            sessionId,
+            'Live Meeting (Real-time)',
+            'atlas_bot',
+            JSON.stringify({ bot_id: botId, source: 'realtime_webhook' })
+          ).run()
+          
+          console.log('✅ Session created:', sessionId)
+        } catch (createError) {
+          console.error('⚠️ Could not create session:', createError)
+        }
+      }
       
       // Process words into transcript chunk
       if (data.words && Array.isArray(data.words) && data.words.length > 0) {
@@ -699,6 +743,60 @@ atlasBot.post('/realtime-webhook', async (c) => {
     
   } catch (error: any) {
     console.error('❌ Error processing real-time webhook:', error)
+    return c.json({
+      success: false,
+      error: error.message
+    }, 500)
+  }
+})
+
+// ============================================
+// TEST WEBHOOK - Manually test webhook endpoint
+// ============================================
+atlasBot.post('/test-webhook', async (c) => {
+  const { DB, AI } = c.env
+  
+  try {
+    // Simulate a transcript.data event
+    const testWebhook = {
+      event: 'transcript.data',
+      data: {
+        bot_id: 'test-bot-123',
+        speaker: {
+          name: 'Test Speaker'
+        },
+        words: [
+          { text: 'This' },
+          { text: 'is' },
+          { text: 'a' },
+          { text: 'test' }
+        ],
+        start_timestamp: Date.now(),
+        end_timestamp: Date.now() + 3000
+      }
+    }
+    
+    console.log('🧪 Sending test webhook to realtime-webhook endpoint')
+    
+    // Call our own webhook endpoint
+    const response = await fetch('https://www.investaycapital.com/meetings/api/bot/realtime-webhook', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(testWebhook)
+    })
+    
+    const result = await response.json()
+    
+    return c.json({
+      success: true,
+      message: 'Test webhook sent',
+      response: result
+    })
+    
+  } catch (error: any) {
+    console.error('❌ Error sending test webhook:', error)
     return c.json({
       success: false,
       error: error.message
