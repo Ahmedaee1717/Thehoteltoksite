@@ -255,7 +255,17 @@
         // Load existing transcript from database
         async function loadExistingTranscript() {
             try {
-                const response = await axios.get(`/meetings/api/live-updates?meeting=${meetingId}`);
+                // Add 3-second timeout to prevent hanging
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
+                
+                const response = await axios.get(`/meetings/api/live-updates?meeting=${meetingId}`, {
+                    signal: controller.signal,
+                    timeout: 3000
+                });
+                
+                clearTimeout(timeoutId);
+                
                 if (response.data.transcripts && response.data.transcripts.length > 0) {
                     response.data.transcripts.forEach(chunk => {
                         addTranscriptChunk(chunk);
@@ -268,15 +278,17 @@
                     updateSpeakerStats(response.data.speakers);
                 }
             } catch (error) {
-                console.log('No existing transcript found, starting fresh');
+                console.log('No existing transcript found or API timeout, starting fresh');
             }
         }
 
         // WebSocket connection for real-time updates
         function connectWebSocket() {
+            // DISABLED POLLING FOR DEBUGGING
+            console.log('⚠️ Polling is temporarily disabled for debugging');
             // For demo, we'll use polling instead of WebSocket
             // In production, use Cloudflare Durable Objects for WebSocket
-            setInterval(pollForUpdates, 2000);
+            // setInterval(pollForUpdates, 2000);
         }
 
         // Poll for new transcript chunks
