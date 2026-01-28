@@ -250,6 +250,26 @@
             // Load existing transcript if any
             await loadExistingTranscript();
         }
+        
+        // Load existing transcript from database
+        async function loadExistingTranscript() {
+            try {
+                const response = await axios.get(`/meetings/api/live-updates?meeting=${meetingId}`);
+                if (response.data.transcripts && response.data.transcripts.length > 0) {
+                    response.data.transcripts.forEach(chunk => {
+                        addTranscriptChunk(chunk);
+                    });
+                }
+                if (response.data.sentiment) {
+                    updateSentiment(response.data.sentiment);
+                }
+                if (response.data.speakers) {
+                    updateSpeakerStats(response.data.speakers);
+                }
+            } catch (error) {
+                console.log('No existing transcript found, starting fresh');
+            }
+        }
 
         // WebSocket connection for real-time updates
         function connectWebSocket() {
@@ -444,6 +464,17 @@
 
         // AI Co-Pilot
         document.getElementById('copilotSendBtn').addEventListener('click', async () => {
+            await sendCopilotMessage();
+        });
+        
+        // Allow Enter key to send message
+        document.getElementById('copilotInput').addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                await sendCopilotMessage();
+            }
+        });
+        
+        async function sendCopilotMessage() {
             const input = document.getElementById('copilotInput');
             const question = input.value.trim();
             if (!question) return;
@@ -462,7 +493,7 @@
             } catch (error) {
                 addCopilotMessage('assistant', 'Sorry, I encountered an error. Please try again.');
             }
-        });
+        }
 
         function addCopilotMessage(type, text) {
             const container = document.getElementById('copilotChat');
