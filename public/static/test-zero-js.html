@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zero JS Test</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: system-ui, -apple-system, sans-serif;
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .card {
+            background: white;
+            color: #333;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            margin-top: 0;
+        }
+        .test-box {
+            border: 2px solid #667eea;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>🧪 Zero JavaScript Test</h1>
+            <p><strong>Purpose:</strong> Test if page expands infinitely with ZERO JavaScript</p>
+            <p><strong>What's on this page:</strong></p>
+            <ul>
+                <li>✅ Pure HTML + CSS</li>
+                <li>❌ No JavaScript at all</li>
+                <li>❌ No external libraries</li>
+                <li>❌ No CDN scripts</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>Test Instructions</h2>
+            <div class="test-box">
+                <p><strong>1. Wait 30 seconds</strong></p>
+                <p>Does the page keep expanding downward with white space?</p>
+            </div>
+            <div class="test-box">
+                <p><strong>2. Check scroll position</strong></p>
+                <p>Scroll to bottom. Wait. Does more content appear?</p>
+            </div>
+            <div class="test-box">
+                <p><strong>3. Check browser console</strong></p>
+                <p>Press F12 → Console. Are there any errors?</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Static Content Blocks</h2>
+            <p>If you see this page expanding, the issue is NOT JavaScript.</p>
+            <p>Possible causes would be:</p>
+            <ul>
+                <li>Browser bug</li>
+                <li>Cloudflare Pages issue</li>
+                <li>CSS rendering problem</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>Test Result</h2>
+            <div class="test-box">
+                <p><strong>Current timestamp:</strong> 2026-01-28</p>
+                <p><strong>Page height:</strong> Fixed (should not expand)</p>
+                <p><strong>Expected behavior:</strong> Page stays static, no expansion</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- NO SCRIPTS - This page should be 100% static -->
+</body>
+</html>
