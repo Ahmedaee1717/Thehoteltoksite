@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Meeting Studio - Feature Tester</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-lg shadow-lg p-8 mb-6">
+            <h1 class="text-3xl font-bold mb-4">
+                <i class="fas fa-flask text-blue-500"></i>
+                Live AI Meeting Studio - Feature Tester
+            </h1>
+            <p class="text-gray-600 mb-4">Use this page to test all features of the Live Meeting Studio.</p>
+        </div>
+
+        <!-- Test 1: Create Demo Meeting -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-4">
+            <h2 class="text-xl font-semibold mb-3">
+                <i class="fas fa-plus-circle text-green-500 mr-2"></i>
+                Test 1: Create Demo Meeting
+            </h2>
+            <p class="text-gray-600 mb-4">Creates a demo meeting with 10 transcript chunks, 3 speakers, sentiment analysis.</p>
+            <button id="createDemoBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium">
+                <i class="fas fa-play mr-2"></i>
+                Create Demo Meeting
+            </button>
+            <div id="demo-result" class="mt-4 p-4 bg-gray-50 rounded hidden"></div>
+        </div>
+
+        <!-- Test 2: Fetch Live Updates -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-4">
+            <h2 class="text-xl font-semibold mb-3">
+                <i class="fas fa-sync text-purple-500 mr-2"></i>
+                Test 2: Fetch Live Updates
+            </h2>
+            <p class="text-gray-600 mb-4">Fetches transcripts, sentiment, and speaker stats for a meeting.</p>
+            <div class="flex gap-2 mb-4">
+                <input type="text" id="meetingIdInput" placeholder="Enter meeting ID" 
+                    class="flex-1 border border-gray-300 rounded-lg px-4 py-2">
+                <button id="fetchUpdatesBtn" class="bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-lg font-medium">
+                    <i class="fas fa-download mr-2"></i>
+                    Fetch Updates
+                </button>
+            </div>
+            <div id="updates-result" class="mt-4 p-4 bg-gray-50 rounded hidden"></div>
+        </div>
+
+        <!-- Test 3: AI Co-Pilot -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-4">
+            <h2 class="text-xl font-semibold mb-3">
+                <i class="fas fa-robot text-indigo-500 mr-2"></i>
+                Test 3: AI Co-Pilot
+            </h2>
+            <p class="text-gray-600 mb-4">Ask questions about the meeting transcript (requires OpenAI API key).</p>
+            <div class="space-y-2 mb-4">
+                <input type="text" id="copilotMeetingId" placeholder="Meeting ID" 
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2">
+                <input type="text" id="copilotQuestion" placeholder="Ask a question (e.g., 'Summarize the discussion')" 
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2">
+                <button id="askCopilotBtn" class="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium">
+                    <i class="fas fa-paper-plane mr-2"></i>
+                    Ask AI Co-Pilot
+                </button>
+            </div>
+            <div id="copilot-result" class="mt-4 p-4 bg-gray-50 rounded hidden"></div>
+        </div>
+
+        <!-- Test 4: Generate Sparkpage -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-4">
+            <h2 class="text-xl font-semibold mb-3">
+                <i class="fas fa-file-alt text-orange-500 mr-2"></i>
+                Test 4: Generate Sparkpage
+            </h2>
+            <p class="text-gray-600 mb-4">Generate a structured summary document (requires OpenAI API key).</p>
+            <div class="flex gap-2 mb-4">
+                <input type="text" id="sparkpageMeetingId" placeholder="Meeting ID" 
+                    class="flex-1 border border-gray-300 rounded-lg px-4 py-2">
+                <button id="generateSparkpageBtn" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-medium">
+                    <i class="fas fa-magic mr-2"></i>
+                    Generate Sparkpage
+                </button>
+            </div>
+            <div id="sparkpage-result" class="mt-4 p-4 bg-gray-50 rounded hidden"></div>
+        </div>
+
+        <!-- API Key Status -->
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+            <div class="flex items-start">
+                <i class="fas fa-exclamation-triangle text-yellow-400 mt-1 mr-3"></i>
+                <div>
+                    <h3 class="font-semibold text-yellow-800">API Keys Required</h3>
+                    <p class="text-yellow-700 text-sm mt-1">
+                        AI Co-Pilot and Sparkpage features require OpenAI API key. 
+                        Add it via: <code class="bg-yellow-100 px-2 py-1 rounded">npx wrangler pages secret put OPENAI_API_KEY</code>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="bg-blue-50 rounded-lg p-6">
+            <h3 class="font-semibold text-blue-800 mb-2">
+                <i class="fas fa-info-circle mr-2"></i>
+                How to Use
+            </h3>
+            <ol class="list-decimal list-inside space-y-2 text-blue-700 text-sm">
+                <li>Click "Create Demo Meeting" to generate a test meeting</li>
+                <li>Copy the meeting ID from the result</li>
+                <li>Use the meeting ID to test other features</li>
+                <li>Open Live Meeting Studio to see real-time updates</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://www.investaycapital.com/meetings/api';
+
+        // Test 1: Create Demo Meeting
+        document.getElementById('createDemoBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('createDemoBtn');
+            const resultDiv = document.getElementById('demo-result');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating...';
+            resultDiv.classList.add('hidden');
+            
+            try {
+                const response = await axios.post(`${API_BASE}/demo/create`);
+                const data = response.data;
+                
+                resultDiv.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="flex items-center text-green-600 font-semibold">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            Demo Meeting Created!
+                        </div>
+                        <div><strong>Meeting ID:</strong> <code class="bg-gray-200 px-2 py-1 rounded">${data.meeting_id}</code></div>
+                        <div><strong>Message:</strong> ${data.message}</div>
+                        <div class="pt-2">
+                            <a href="https://www.investaycapital.com${data.url}" 
+                                target="_blank"
+                                class="inline-block bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
+                                <i class="fas fa-external-link-alt mr-2"></i>
+                                Open in Live Studio
+                            </a>
+                        </div>
+                    </div>
+                `;
+                resultDiv.classList.remove('hidden');
+                
+                // Auto-fill meeting ID in other tests
+                document.getElementById('meetingIdInput').value = data.meeting_id;
+                document.getElementById('copilotMeetingId').value = data.meeting_id;
+                document.getElementById('sparkpageMeetingId').value = data.meeting_id;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="text-red-600">
+                        <i class="fas fa-times-circle mr-2"></i>
+                        Error: ${error.message}
+                    </div>
+                `;
+                resultDiv.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-play mr-2"></i>Create Demo Meeting';
+            }
+        });
+
+        // Test 2: Fetch Live Updates
+        document.getElementById('fetchUpdatesBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('fetchUpdatesBtn');
+            const resultDiv = document.getElementById('updates-result');
+            const meetingId = document.getElementById('meetingIdInput').value;
+            
+            if (!meetingId) {
+                alert('Please enter a meeting ID');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Fetching...';
+            resultDiv.classList.add('hidden');
+            
+            try {
+                const response = await axios.get(`${API_BASE}/live-updates`, {
+                    params: { meeting: meetingId }
+                });
+                const data = response.data;
+                
+                resultDiv.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="flex items-center text-green-600 font-semibold">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            Updates Fetched!
+                        </div>
+                        <div><strong>Transcripts:</strong> ${data.transcripts.length} chunks</div>
+                        <div><strong>Sentiment:</strong> 
+                            Positive: ${data.sentiment.positive || 0}%, 
+                            Neutral: ${data.sentiment.neutral || 0}%, 
+                            Negative: ${data.sentiment.negative || 0}%
+                        </div>
+                        <div><strong>Speakers:</strong> ${Object.keys(data.speakers).length} people</div>
+                        <details class="mt-2">
+                            <summary class="cursor-pointer text-blue-600 hover:text-blue-700">View Raw JSON</summary>
+                            <pre class="mt-2 text-xs bg-gray-100 p-2 rounded overflow-auto max-h-64">${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+                resultDiv.classList.remove('hidden');
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="text-red-600">
+                        <i class="fas fa-times-circle mr-2"></i>
+                        Error: ${error.message}
+                    </div>
+                `;
+                resultDiv.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-download mr-2"></i>Fetch Updates';
+            }
+        });
+
+        // Test 3: AI Co-Pilot
+        document.getElementById('askCopilotBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('askCopilotBtn');
+            const resultDiv = document.getElementById('copilot-result');
+            const meetingId = document.getElementById('copilotMeetingId').value;
+            const question = document.getElementById('copilotQuestion').value;
+            
+            if (!meetingId || !question) {
+                alert('Please enter both meeting ID and question');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Asking AI...';
+            resultDiv.classList.add('hidden');
+            
+            try {
+                const response = await axios.post(`${API_BASE}/copilot`, {
+                    meeting_id: meetingId,
+                    question: question
+                });
+                const data = response.data;
+                
+                resultDiv.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="flex items-center text-green-600 font-semibold">
+                            <i class="fas fa-robot mr-2"></i>
+                            AI Response
+                        </div>
+                        <div class="bg-white p-4 rounded border border-gray-200">
+                            ${data.answer}
+                        </div>
+                        <div class="text-sm text-gray-500">
+                            Context used: ${data.context_chunks} transcript chunks
+                        </div>
+                    </div>
+                `;
+                resultDiv.classList.remove('hidden');
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="text-red-600">
+                        <i class="fas fa-times-circle mr-2"></i>
+                        Error: ${error.response?.data?.error || error.message}
+                        ${!error.response?.data?.error ? '<div class="text-sm mt-2">💡 Make sure OPENAI_API_KEY is configured</div>' : ''}
+                    </div>
+                `;
+                resultDiv.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Ask AI Co-Pilot';
+            }
+        });
+
+        // Test 4: Generate Sparkpage
+        document.getElementById('generateSparkpageBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('generateSparkpageBtn');
+            const resultDiv = document.getElementById('sparkpage-result');
+            const meetingId = document.getElementById('sparkpageMeetingId').value;
+            
+            if (!meetingId) {
+                alert('Please enter a meeting ID');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
+            resultDiv.classList.add('hidden');
+            
+            try {
+                const response = await axios.post(`${API_BASE}/generate-sparkpage`, {
+                    meeting_id: meetingId
+                });
+                const data = response.data;
+                
+                resultDiv.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="flex items-center text-green-600 font-semibold">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            Sparkpage Generated!
+                        </div>
+                        <div><strong>Summary ID:</strong> ${data.summary_id}</div>
+                        <details class="mt-2">
+                            <summary class="cursor-pointer text-blue-600 hover:text-blue-700">View Content</summary>
+                            <div class="mt-2 bg-white p-4 rounded border border-gray-200 max-h-64 overflow-auto">
+                                <pre class="whitespace-pre-wrap text-sm">${data.summary.content}</pre>
+                            </div>
+                        </details>
+                    </div>
+                `;
+                resultDiv.classList.remove('hidden');
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="text-red-600">
+                        <i class="fas fa-times-circle mr-2"></i>
+                        Error: ${error.response?.data?.error || error.message}
+                        ${!error.response?.data?.error ? '<div class="text-sm mt-2">💡 Make sure OPENAI_API_KEY is configured</div>' : ''}
+                    </div>
+                `;
+                resultDiv.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-magic mr-2"></i>Generate Sparkpage';
+            }
+        });
+    </script>
+</body>
+</html>
