@@ -1,5 +1,35 @@
 # Investay Signal - Enterprise Email Management Platform
 
+## 🎉 NEW: Live AI Meeting Studio (January 28, 2026)
+
+**Phase 2A Complete - Production Ready!**
+
+A complete AI-powered meeting companion with real-time insights:
+- ✅ **Live Transcript**: Real-time speech-to-text with color-coded sentiment
+- ✅ **Sentiment Tracker**: Meeting vibe analysis (😊 😐 😟)
+- ✅ **Speaker Analytics**: Talk-time metrics with Chart.js visualizations
+- ✅ **Fact-Checking**: Automated verification with Perplexity AI
+- ✅ **AI Co-Pilot**: Chat assistant powered by Claude/GPT-4
+- ✅ **Sparkpage Generation**: Structured meeting summaries
+- ✅ **Multi-Language Translation**: Cloudflare AI-powered
+
+**Try it now**: https://www.investaycapital.com/static/live-meeting-studio.html
+
+**Quick Test** (30 seconds):
+```javascript
+// Open browser console (F12) and run:
+fetch('https://www.investaycapital.com/meetings/api/demo/create', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' }
+})
+.then(r => r.json())
+.then(data => window.location.href = data.url);
+```
+
+📚 Documentation: `QUICK_START.md`, `TESTING_GUIDE.md`, `LIVE_AI_MEETING_STUDIO_COMPLETE.md`
+
+---
+
 ## ⚠️ IMPORTANT: Current Status
 **Encryption is DISABLED** to restore email functionality.
 - Emails stored as **plaintext** (not encrypted at rest)
