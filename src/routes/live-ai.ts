@@ -4,6 +4,203 @@ import type { CloudflareBindings } from '../types/cloudflare'
 
 const liveAI = new Hono<{ Bindings: CloudflareBindings }>()
 
+// ===== DEMO / TESTING ENDPOINTS =====
+
+// Create demo meeting with sample transcript data
+liveAI.post('/demo/create', async (c) => {
+  const { DB } = c.env
+  
+  try {
+    const meetingId = `demo_${Date.now()}`
+    
+    // Create demo meeting session
+    await DB.prepare(`
+      INSERT INTO zoom_meeting_sessions (
+        id, zoom_meeting_id, topic, host_id, start_time, status, created_at
+      ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, 'started', CURRENT_TIMESTAMP)
+    `).bind(
+      meetingId,
+      meetingId,
+      'Demo: AI-Powered Team Standup',
+      'demo_host'
+    ).run()
+    
+    // Sample speakers
+    const speakers = [
+      { name: 'Alice Chen', id: 'alice_123' },
+      { name: 'Bob Martinez', id: 'bob_456' },
+      { name: 'Carol Zhang', id: 'carol_789' }
+    ]
+    
+    // Sample transcript chunks with variety
+    const sampleChunks = [
+      { speaker: speakers[0], text: "Good morning everyone! Let's start our daily standup.", sentiment: 'positive' },
+      { speaker: speakers[1], text: "Yesterday I finished the user authentication module.", sentiment: 'positive' },
+      { speaker: speakers[0], text: "That's great! Any blockers?", sentiment: 'positive' },
+      { speaker: speakers[1], text: "No blockers. Today I'll work on the dashboard.", sentiment: 'neutral' },
+      { speaker: speakers[2], text: "I'm struggling with the API integration. Getting timeout errors.", sentiment: 'negative' },
+      { speaker: speakers[0], text: "Let me help you debug that after the standup.", sentiment: 'positive' },
+      { speaker: speakers[2], text: "Thanks! According to the documentation, the timeout is 30 seconds.", sentiment: 'neutral' },
+      { speaker: speakers[1], text: "We had 85% test coverage last sprint. Should we aim for 90% this sprint?", sentiment: 'positive' },
+      { speaker: speakers[0], text: "Yes! Our goal is to reach 95% coverage by Q2.", sentiment: 'positive' },
+      { speaker: speakers[2], text: "That sounds challenging but achievable.", sentiment: 'neutral' },
+    ]
+    
+    let timestamp = Date.now()
+    
+    for (let i = 0; i < sampleChunks.length; i++) {
+      const chunk = sampleChunks[i]
+      const chunkId = `${meetingId}_chunk_${i}`
+      
+      timestamp += Math.floor(Math.random() * 5000) + 2000 // 2-7 seconds between chunks
+      
+      // Insert transcript chunk
+      await DB.prepare(`
+        INSERT INTO zoom_transcript_chunks (
+          id, session_id, speaker_name, speaker_id, text, 
+          timestamp_ms, confidence, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `).bind(
+        chunkId,
+        meetingId,
+        chunk.speaker.name,
+        chunk.speaker.id,
+        chunk.text,
+        timestamp,
+        0.95
+      ).run()
+      
+      // Insert sentiment
+      await DB.prepare(`
+        INSERT INTO meeting_sentiment_analysis (
+          id, session_id, chunk_id, timestamp_ms, sentiment, confidence
+        ) VALUES (?, ?, ?, ?, ?, ?)
+      `).bind(
+        `sentiment_${chunkId}`,
+        meetingId,
+        chunkId,
+        timestamp,
+        chunk.sentiment,
+        0.92
+      ).run()
+      
+      // Update speaker analytics
+      const wordCount = chunk.text.split(/\s+/).length
+      await DB.prepare(`
+        INSERT INTO speaker_analytics (
+          id, session_id, speaker_name, speaker_id, 
+          total_talk_time_ms, word_count, sentiment_score, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(id) DO UPDATE SET
+          total_talk_time_ms = total_talk_time_ms + excluded.total_talk_time_ms,
+          word_count = word_count + excluded.word_count,
+          sentiment_score = (sentiment_score + excluded.sentiment_score) / 2,
+          updated_at = CURRENT_TIMESTAMP
+      `).bind(
+        `speaker_${meetingId}_${chunk.speaker.name}`,
+        meetingId,
+        chunk.speaker.name,
+        chunk.speaker.id,
+        3500, // ~3.5 seconds per chunk
+        wordCount,
+        chunk.sentiment === 'positive' ? 0.8 : chunk.sentiment === 'negative' ? 0.2 : 0.5
+      ).run()
+    }
+    
+    // Add a fact-check example
+    await DB.prepare(`
+      INSERT INTO meeting_fact_checks (
+        id, session_id, chunk_id, claim, verification_status, 
+        sources, summary, confidence, checked_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `).bind(
+      `fact_${meetingId}_1`,
+      meetingId,
+      `${meetingId}_chunk_7`,
+      'We had 85% test coverage last sprint',
+      'verified',
+      JSON.stringify(['https://github.com/your-org/test-reports', 'https://codecov.io/reports']),
+      'Verified: Test coverage reports confirm 85% code coverage for Sprint 23.',
+      0.95
+    ).run()
+    
+    return c.json({
+      success: true,
+      meeting_id: meetingId,
+      message: 'Demo meeting created with 10 transcript chunks',
+      url: `/static/live-meeting-studio.html?meeting=${meetingId}`
+    })
+  } catch (error: any) {
+    console.error('Demo creation error:', error)
+    return c.json({ error: error.message }, 500)
+  }
+})
+
+// Simulate live transcript (add chunks gradually)
+liveAI.post('/demo/simulate-live', async (c) => {
+  const { DB } = c.env
+  
+  try {
+    const { meeting_id } = await c.req.json()
+    
+    const speakers = [
+      { name: 'Alice Chen', id: 'alice_123' },
+      { name: 'Bob Martinez', id: 'bob_456' }
+    ]
+    
+    const newChunks = [
+      { speaker: speakers[0], text: "Moving on to sprint planning...", sentiment: 'neutral' },
+      { speaker: speakers[1], text: "I think we should focus on performance optimization.", sentiment: 'positive' },
+      { speaker: speakers[0], text: "Agreed. Let's make that a priority.", sentiment: 'positive' }
+    ]
+    
+    let timestamp = Date.now()
+    
+    for (let i = 0; i < newChunks.length; i++) {
+      const chunk = newChunks[i]
+      const chunkId = `${meeting_id}_live_${timestamp}_${i}`
+      
+      await DB.prepare(`
+        INSERT INTO zoom_transcript_chunks (
+          id, session_id, speaker_name, speaker_id, text, 
+          timestamp_ms, confidence, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `).bind(
+        chunkId,
+        meeting_id,
+        chunk.speaker.name,
+        chunk.speaker.id,
+        chunk.text,
+        timestamp,
+        0.95
+      ).run()
+      
+      await DB.prepare(`
+        INSERT INTO meeting_sentiment_analysis (
+          id, session_id, chunk_id, timestamp_ms, sentiment, confidence
+        ) VALUES (?, ?, ?, ?, ?, ?)
+      `).bind(
+        `sentiment_${chunkId}`,
+        meeting_id,
+        chunkId,
+        timestamp,
+        chunk.sentiment,
+        0.92
+      ).run()
+      
+      timestamp += 3000
+    }
+    
+    return c.json({
+      success: true,
+      chunks_added: newChunks.length
+    })
+  } catch (error: any) {
+    console.error('Live simulation error:', error)
+    return c.json({ error: error.message }, 500)
+  }
+})
+
 // ===== LIVE TRANSCRIPT & AI INSIGHTS =====
 
 // Get live updates for a meeting (polling endpoint)
