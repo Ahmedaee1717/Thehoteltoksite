@@ -393,4 +393,180 @@ meetingRoutes.get('/api/meetings/:meetingId/recording', async (c) => {
   }
 })
 
+// 🚀 NEW: Fetch transcript from Zoom and process through Live AI
+meetingRoutes.post('/api/meetings/:meetingId/process-transcript', async (c) => {
+  const { DB } = c.env
+  const meetingId = c.req.param('meetingId')
+  
+  console.log('🔄 Processing transcript for meeting:', meetingId)
+  
+  try {
+    // Step 1: Get OAuth token
+    const tokenRecord = await DB.prepare(`
+      SELECT * FROM zoom_oauth_tokens
+      WHERE expires_at > datetime('now')
+      ORDER BY created_at DESC
+      LIMIT 1
+    `).first() as any
+    
+    if (!tokenRecord) {
+      return c.json({
+        success: false,
+        error: 'No authorized user found. Please authorize first.'
+      }, 401)
+    }
+    
+    // Step 2: Get recording data (includes transcript download URL)
+    const recordingResponse = await fetch(
+      `https://api.zoom.us/v2/meetings/${meetingId}/recordings`,
+      {
+        headers: {
+          'Authorization': `Bearer ${tokenRecord.access_token}`
+        }
+      }
+    )
+    
+    if (!recordingResponse.ok) {
+      throw new Error('Failed to fetch recording from Zoom')
+    }
+    
+    const recordingData = await recordingResponse.json()
+    
+    // Step 3: Find transcript file
+    const transcriptFile = recordingData.recording_files?.find((f: any) => 
+      f.file_type === 'TRANSCRIPT' || f.file_extension === 'VTT'
+    )
+    
+    if (!transcriptFile) {
+      return c.json({
+        success: false,
+        error: 'No transcript file found for this meeting'
+      }, 404)
+    }
+    
+    console.log('📥 Downloading transcript from:', transcriptFile.download_url)
+    
+    // Step 4: Download transcript content
+    const transcriptResponse = await fetch(transcriptFile.download_url, {
+      headers: {
+        'Authorization': `Bearer ${tokenRecord.access_token}`
+      }
+    })
+    
+    if (!transcriptResponse.ok) {
+      throw new Error('Failed to download transcript file')
+    }
+    
+    const vttContent = await transcriptResponse.text()
+    console.log('📝 Transcript downloaded, size:', vttContent.length, 'bytes')
+    
+    // Step 5: Parse VTT format
+    const chunks = parseVTTTranscript(vttContent)
+    console.log('✂️ Parsed', chunks.length, 'transcript chunks')
+    
+    // Step 6: Process each chunk through /process-audio endpoint
+    let processedCount = 0
+    for (const chunk of chunks) {
+      try {
+        // Call the process-audio endpoint directly (internal call)
+        const response = await fetch('https://www.investaycapital.com/meetings/api/process-audio', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            meeting_id: meetingId,
+            audio_data: null, // No audio, already transcribed
+            text_override: chunk.text, // Use Zoom's transcript
+            timestamp_ms: chunk.timestamp,
+            speaker_id: chunk.speaker
+          })
+        })
+        
+        if (response.ok) {
+          processedCount++
+        } else {
+          console.error('⚠️ Failed to process chunk:', await response.text())
+        }
+      } catch (error: any) {
+        console.error('❌ Error processing chunk:', error.message)
+      }
+    }
+    
+    console.log('✅ Processed', processedCount, '/', chunks.length, 'chunks')
+    
+    return c.json({
+      success: true,
+      meeting_id: meetingId,
+      chunks_found: chunks.length,
+      chunks_processed: processedCount,
+      message: 'Transcript processing complete'
+    })
+    
+  } catch (error: any) {
+    console.error('❌ Transcript processing error:', error)
+    return c.json({
+      success: false,
+      error: error.message
+    }, 500)
+  }
+})
+
+// Helper function to parse VTT transcript format
+function parseVTTTranscript(vtt: string): Array<{ timestamp: number, text: string, speaker: string }> {
+  const lines = vtt.split('\n')
+  const chunks: Array<{ timestamp: number, text: string, speaker: string }> = []
+  
+  let currentTimestamp = 0
+  let currentSpeaker = 'Unknown'
+  let currentText = ''
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim()
+    
+    // Skip WEBVTT header and empty lines
+    if (line.startsWith('WEBVTT') || line === '') {
+      continue
+    }
+    
+    // Parse timestamp line: 00:00:05.000 --> 00:00:10.000
+    const timeMatch = line.match(/(\d{2}):(\d{2}):(\d{2})\.(\d{3})\s*-->\s*/)
+    if (timeMatch) {
+      // Save previous chunk if exists
+      if (currentText.trim()) {
+        chunks.push({
+          timestamp: currentTimestamp,
+          text: currentText.trim(),
+          speaker: currentSpeaker
+        })
+        currentText = ''
+      }
+      
+      // Parse new timestamp
+      const [_, h, m, s, ms] = timeMatch
+      currentTimestamp = (parseInt(h) * 3600 + parseInt(m) * 60 + parseInt(s)) * 1000 + parseInt(ms)
+      continue
+    }
+    
+    // Parse speaker and text: "Speaker Name: Text content"
+    const speakerMatch = line.match(/^(.+?):\s*(.+)$/)
+    if (speakerMatch) {
+      currentSpeaker = speakerMatch[1]
+      currentText = speakerMatch[2]
+    } else if (line.length > 0) {
+      // Continuation of text
+      currentText += ' ' + line
+    }
+  }
+  
+  // Add last chunk
+  if (currentText.trim()) {
+    chunks.push({
+      timestamp: currentTimestamp,
+      text: currentText.trim(),
+      speaker: currentSpeaker
+    })
+  }
+  
+  return chunks
+}
+
 export default meetingRoutes

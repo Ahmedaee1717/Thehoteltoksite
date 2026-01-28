@@ -257,15 +257,28 @@ liveAI.post('/process-audio', async (c) => {
   const { DB, AI, PERPLEXITY_API_KEY } = c.env
   
   try {
-    const { meeting_id, audio_data, timestamp_ms, speaker_id } = await c.req.json()
+    const { meeting_id, audio_data, text_override, timestamp_ms, speaker_id } = await c.req.json()
     
-    // Step 1: Transcribe with Cloudflare Whisper
-    const transcription = await AI.run('@cf/openai/whisper', {
-      audio: audio_data
-    }) as any
+    let text = ''
+    let speakerName = 'Unknown'
     
-    const text = transcription.text || ''
-    const speakerName = transcription.speaker || 'Unknown'
+    // Check if we have pre-transcribed text (from Zoom)
+    if (text_override) {
+      text = text_override
+      speakerName = speaker_id || 'Unknown'
+      console.log('📝 Using pre-transcribed text from Zoom')
+    } else if (audio_data) {
+      // Step 1: Transcribe with Cloudflare Whisper
+      const transcription = await AI.run('@cf/openai/whisper', {
+        audio: audio_data
+      }) as any
+      
+      text = transcription.text || ''
+      speakerName = transcription.speaker || 'Unknown'
+      console.log('🎤 Transcribed audio with Whisper')
+    } else {
+      throw new Error('Either audio_data or text_override is required')
+    }
     
     // Step 2: Analyze sentiment with Cloudflare AI
     const sentimentResult = await AI.run('@cf/huggingface/distilbert-sst-2-english', {
@@ -276,7 +289,7 @@ liveAI.post('/process-audio', async (c) => {
     const sentimentScore = sentimentResult[0]?.score || 0.5
     
     // Step 3: Store transcript chunk
-    const chunkId = `chunk_${meeting_id}_${timestamp_ms}`
+    const chunkId = `chunk_${meeting_id}_${timestamp_ms}_${Date.now()}`
     await DB.prepare(`
       INSERT INTO zoom_transcript_chunks (
         id, session_id, speaker_name, speaker_id, text, 

@@ -343,17 +343,41 @@ async function handleTranscriptCompleted(DB: D1Database, payload: any) {
   const transcript = payload.payload?.object
   const meetingId = transcript.meeting_id || transcript.id
   
-  // Store transcript info
+  // Find transcript file
+  const transcriptFile = transcript.recording_files?.find((f: any) => 
+    f.file_type === 'TRANSCRIPT' || f.file_extension === 'VTT'
+  )
+  
+  if (!transcriptFile) {
+    console.log('⚠️ No transcript file found in recording')
+    return
+  }
+  
+  const transcriptUrl = transcriptFile.download_url
+  
+  // Store transcript URL in database
   await DB.prepare(`
     UPDATE zoom_meeting_sessions 
     SET transcript_url = ?, transcript_completed_at = CURRENT_TIMESTAMP
     WHERE zoom_meeting_id = ?
-  `).bind(
-    transcript.recording_files?.[0]?.download_url || null,
-    meetingId
-  ).run()
+  `).bind(transcriptUrl, meetingId).run()
   
-  console.log('✅ Transcript info stored')
+  console.log('✅ Transcript URL stored:', transcriptUrl)
+  
+  // 🚀 NEW: Fetch and process transcript through Live AI pipeline
+  try {
+    console.log('🔄 Fetching transcript from Zoom...')
+    
+    // TODO: Get Zoom OAuth access token to download transcript
+    // For now, we'll handle this in a separate process
+    // The transcript URL requires authentication
+    
+    console.log('⚠️ Transcript processing requires OAuth token - will be handled by authorized API call')
+    console.log('💡 Use /meetings/api/meetings/:meetingId/transcript to fetch and process')
+    
+  } catch (error: any) {
+    console.error('❌ Transcript processing error:', error.message)
+  }
 }
 
 export default zoomRoutes
