@@ -24,7 +24,7 @@ meetingRoutes.get('/oauth/authorize', async (c) => {
     return c.json({ error: 'OAuth not configured' }, 500)
   }
   
-  const redirectUri = 'https://www.investaycapital.com/oauth/redirect'
+  const redirectUri = 'https://www.investaycapital.com/meetings/oauth/redirect'
   const state = Math.random().toString(36).substring(7)
   
   // Store state in session (for CSRF protection)
@@ -78,7 +78,7 @@ meetingRoutes.get('/oauth/redirect', async (c) => {
   try {
     // Exchange code for access token
     const tokenUrl = 'https://zoom.us/oauth/token'
-    const redirectUri = 'https://www.investaycapital.com/oauth/redirect'
+    const redirectUri = 'https://www.investaycapital.com/meetings/oauth/redirect'
     
     const basicAuth = btoa(`${ZOOM_OAUTH_CLIENT_ID}:${ZOOM_OAUTH_CLIENT_SECRET}`)
     
