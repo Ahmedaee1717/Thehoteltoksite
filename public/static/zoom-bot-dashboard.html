@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zoom Meeting Bot - Investay Capital</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <i class="fas fa-video text-blue-600 text-2xl"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Zoom Meeting Bot</h1>
+                        <p class="text-sm text-gray-600">AI-powered meeting transcription & analysis</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div id="oauthStatus" class="flex items-center space-x-2">
+                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                        <span class="text-sm text-gray-600">Checking status...</span>
+                    </div>
+                    <button id="connectBtn" class="hidden bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                        <i class="fas fa-link mr-2"></i>
+                        Connect Zoom Account
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Status Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Total Meetings</p>
+                        <p id="totalMeetings" class="text-2xl font-bold text-gray-900">0</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-lg">
+                        <i class="fas fa-calendar-alt text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Live Now</p>
+                        <p id="liveMeetings" class="text-2xl font-bold text-green-600">0</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-lg">
+                        <i class="fas fa-circle text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Upcoming</p>
+                        <p id="upcomingMeetings" class="text-2xl font-bold text-orange-600">0</p>
+                    </div>
+                    <div class="bg-orange-100 p-3 rounded-lg">
+                        <i class="fas fa-clock text-orange-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">With Transcripts</p>
+                        <p id="transcribedMeetings" class="text-2xl font-bold text-purple-600">0</p>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-lg">
+                        <i class="fas fa-file-alt text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meetings List -->
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-gray-900">Recent Meetings</h2>
+                    <div class="flex items-center space-x-2">
+                        <select id="meetingFilter" class="text-sm border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                            <option value="all">All Meetings</option>
+                            <option value="live">Live Now</option>
+                            <option value="upcoming">Upcoming</option>
+                            <option value="previous">Previous</option>
+                        </select>
+                        <button id="refreshBtn" class="text-blue-600 hover:text-blue-700 p-2">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="p-12 text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p class="text-gray-600">Loading meetings...</p>
+            </div>
+
+            <!-- Meetings Table -->
+            <div id="meetingsTable" class="hidden overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Meeting</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Participants</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="meetingsBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Meetings will be dynamically inserted here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden p-12 text-center">
+                <i class="fas fa-video text-gray-400 text-5xl mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No meetings found</h3>
+                <p class="text-gray-600 mb-6">Connect your Zoom account to see your meetings</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Meeting Detail Modal -->
+    <div id="meetingModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 id="modalTitle" class="text-lg font-semibold text-gray-900">Meeting Details</h3>
+                <button id="closeModal" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="modalContent" class="p-6">
+                <!-- Content will be dynamically inserted -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        let meetings = [];
+        let isAuthorized = false;
+
+        // Check OAuth status
+        async function checkOAuthStatus() {
+            try {
+                const response = await axios.get('/meetings/oauth/status');
+                const data = response.data;
+
+                if (data.authorized) {
+                    isAuthorized = true;
+                    document.getElementById('oauthStatus').innerHTML = `
+                        <div class="flex items-center space-x-2">
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span class="text-sm text-gray-700">${data.email}</span>
+                            <button id="disconnectBtn" class="text-xs text-red-600 hover:text-red-700">Disconnect</button>
+                        </div>
+                    `;
+                    
+                    // Add disconnect handler
+                    document.getElementById('disconnectBtn').addEventListener('click', () => {
+                        if (confirm('Are you sure you want to disconnect your Zoom account?')) {
+                            revokeOAuth();
+                        }
+                    });
+
+                    await loadMeetings();
+                } else {
+                    isAuthorized = false;
+                    document.getElementById('oauthStatus').classList.add('hidden');
+                    document.getElementById('connectBtn').classList.remove('hidden');
+                    showEmptyState();
+                }
+            } catch (error) {
+                console.error('Status check failed:', error);
+                document.getElementById('oauthStatus').classList.add('hidden');
+                document.getElementById('connectBtn').classList.remove('hidden');
+                showEmptyState();
+            }
+        }
+
+        // Connect Zoom account
+        document.getElementById('connectBtn').addEventListener('click', () => {
+            window.location.href = '/meetings/oauth/authorize';
+        });
+
+        // Revoke OAuth
+        async function revokeOAuth() {
+            try {
+                await axios.post('/meetings/oauth/revoke');
+                window.location.reload();
+            } catch (error) {
+                alert('Failed to disconnect Zoom account');
+            }
+        }
+
+        // Load meetings from API
+        async function loadMeetings() {
+            try {
+                const response = await axios.get('/meetings/api/meetings');
+                meetings = response.data.meetings || [];
+
+                // Update stats
+                const live = meetings.filter(m => m.status === 'started' || m.status === 'live').length;
+                const upcoming = meetings.filter(m => m.status === 'scheduled' && new Date(m.start_time) > new Date()).length;
+                const transcribed = meetings.filter(m => m.has_transcript).length;
+
+                document.getElementById('totalMeetings').textContent = meetings.length;
+                document.getElementById('liveMeetings').textContent = live;
+                document.getElementById('upcomingMeetings').textContent = upcoming;
+                document.getElementById('transcribedMeetings').textContent = transcribed;
+
+                // Render meetings table
+                renderMeetings(meetings);
+            } catch (error) {
+                console.error('Failed to load meetings:', error);
+                showEmptyState();
+            }
+        }
+
+        // Render meetings table
+        function renderMeetings(meetingsData) {
+            const tbody = document.getElementById('meetingsBody');
+            
+            if (meetingsData.length === 0) {
+                showEmptyState();
+                return;
+            }
+
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('meetingsTable').classList.remove('hidden');
+            document.getElementById('emptyState').classList.add('hidden');
+
+            tbody.innerHTML = meetingsData.map(meeting => {
+                const status = getStatusBadge(meeting.status);
+                const duration = meeting.duration_minutes || 'N/A';
+                const participants = meeting.participant_count || 0;
+                const startTime = new Date(meeting.start_time).toLocaleString();
+
+                return `
+                    <tr class="hover:bg-gray-50 cursor-pointer" onclick="showMeetingDetails('${meeting.meeting_id}')">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-video text-blue-600"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">${meeting.topic}</div>
+                                    <div class="text-sm text-gray-500">ID: ${meeting.meeting_id}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">${status}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${startTime}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${duration} min</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${participants}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="event.stopPropagation(); viewTranscript('${meeting.meeting_id}')">
+                                <i class="fas fa-file-alt mr-1"></i> Transcript
+                            </button>
+                            <button class="text-green-600 hover:text-green-900" onclick="event.stopPropagation(); viewRecording('${meeting.meeting_id}')">
+                                <i class="fas fa-play-circle mr-1"></i> Recording
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Get status badge HTML
+        function getStatusBadge(status) {
+            const badges = {
+                'started': '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800"><i class="fas fa-circle text-green-500 mr-1"></i> Live</span>',
+                'ended': '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Ended</span>',
+                'scheduled': '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">Scheduled</span>',
+                'live': '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800"><i class="fas fa-circle text-green-500 mr-1"></i> Live</span>'
+            };
+            return badges[status] || '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Unknown</span>';
+        }
+
+        // Show meeting details
+        async function showMeetingDetails(meetingId) {
+            const meeting = meetings.find(m => m.meeting_id === meetingId);
+            if (!meeting) return;
+
+            document.getElementById('modalTitle').textContent = meeting.topic;
+            document.getElementById('modalContent').innerHTML = `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Meeting ID</p>
+                            <p class="mt-1 text-sm text-gray-900">${meeting.meeting_id}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Status</p>
+                            <p class="mt-1">${getStatusBadge(meeting.status)}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Start Time</p>
+                            <p class="mt-1 text-sm text-gray-900">${new Date(meeting.start_time).toLocaleString()}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Duration</p>
+                            <p class="mt-1 text-sm text-gray-900">${meeting.duration_minutes || 'N/A'} minutes</p>
+                        </div>
+                    </div>
+                    <div class="pt-4 border-t border-gray-200">
+                        <p class="text-sm font-medium text-gray-500 mb-2">Actions</p>
+                        <div class="flex space-x-2">
+                            <button onclick="viewTranscript('${meeting.meeting_id}')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                                <i class="fas fa-file-alt mr-2"></i> View Transcript
+                            </button>
+                            <button onclick="viewRecording('${meeting.meeting_id}')" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                                <i class="fas fa-play-circle mr-2"></i> View Recording
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('meetingModal').classList.remove('hidden');
+        }
+
+        // Close modal
+        document.getElementById('closeModal').addEventListener('click', () => {
+            document.getElementById('meetingModal').classList.add('hidden');
+        });
+
+        // View transcript
+        async function viewTranscript(meetingId) {
+            try {
+                const response = await axios.get(`/meetings/api/meetings/${meetingId}/transcript`);
+                const transcript = response.data.transcript || 'No transcript available yet.';
+                
+                document.getElementById('modalContent').innerHTML = `
+                    <div class="prose max-w-none">
+                        <h4 class="text-lg font-medium mb-4">Meeting Transcript</h4>
+                        <pre class="whitespace-pre-wrap bg-gray-50 p-4 rounded-lg text-sm">${transcript}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                alert('Failed to load transcript');
+            }
+        }
+
+        // View recording
+        async function viewRecording(meetingId) {
+            try {
+                const response = await axios.get(`/meetings/api/meetings/${meetingId}/recordings`);
+                const recordings = response.data.recording_files || [];
+                
+                if (recordings.length === 0) {
+                    alert('No recordings available for this meeting');
+                    return;
+                }
+
+                document.getElementById('modalContent').innerHTML = `
+                    <div>
+                        <h4 class="text-lg font-medium mb-4">Meeting Recordings</h4>
+                        <div class="space-y-2">
+                            ${recordings.map(rec => `
+                                <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="font-medium">${rec.recording_type}</p>
+                                            <p class="text-sm text-gray-600">${rec.file_size ? (rec.file_size / 1024 / 1024).toFixed(2) + ' MB' : 'Unknown size'}</p>
+                                        </div>
+                                        <a href="${rec.play_url}" target="_blank" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                                            <i class="fas fa-play mr-2"></i> Play
+                                        </a>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                alert('Failed to load recordings');
+            }
+        }
+
+        // Show empty state
+        function showEmptyState() {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('meetingsTable').classList.add('hidden');
+            document.getElementById('emptyState').classList.remove('hidden');
+        }
+
+        // Filter meetings
+        document.getElementById('meetingFilter').addEventListener('change', (e) => {
+            const filter = e.target.value;
+            let filteredMeetings = meetings;
+
+            if (filter === 'live') {
+                filteredMeetings = meetings.filter(m => m.status === 'started' || m.status === 'live');
+            } else if (filter === 'upcoming') {
+                filteredMeetings = meetings.filter(m => m.status === 'scheduled' && new Date(m.start_time) > new Date());
+            } else if (filter === 'previous') {
+                filteredMeetings = meetings.filter(m => m.status === 'ended');
+            }
+
+            renderMeetings(filteredMeetings);
+        });
+
+        // Refresh meetings
+        document.getElementById('refreshBtn').addEventListener('click', () => {
+            if (isAuthorized) {
+                loadMeetings();
+            }
+        });
+
+        // Initialize
+        checkOAuthStatus();
+    </script>
+</body>
+</html>
