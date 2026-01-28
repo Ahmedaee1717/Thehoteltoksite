@@ -41,6 +41,17 @@ zoomRoutes.post('/webhook', async (c) => {
   try {
     console.log('📥 Zoom webhook received')
     
+    // Check for custom header authentication (if provided)
+    const customHeaderSecret = c.req.header('zoom-webhook-secret')
+    if (customHeaderSecret) {
+      const expectedSecret = ZOOM_WEBHOOK_VERIFICATION_SECRET || 'md4m8ttp8hnoj846ew2e0zb5gstw46ut'
+      if (customHeaderSecret !== expectedSecret) {
+        console.error('❌ Invalid custom header secret')
+        return c.json({ error: 'Invalid authentication' }, 401)
+      }
+      console.log('✅ Custom header authentication verified')
+    }
+    
     // Get request body
     const body = await c.req.text()
     const payload = JSON.parse(body)
