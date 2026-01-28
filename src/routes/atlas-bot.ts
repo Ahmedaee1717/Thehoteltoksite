@@ -53,8 +53,9 @@ atlasBot.post('/start', async (c) => {
           },
           realtime_endpoints: [
             {
-              type: 'http',
-              url: 'https://www.investaycapital.com/meetings/api/bot/webhook'
+              type: 'webhook',
+              url: 'https://www.investaycapital.com/meetings/api/bot/webhook',
+              events: ['transcript.data', 'transcript.partial_data']
             }
           ]
         },
