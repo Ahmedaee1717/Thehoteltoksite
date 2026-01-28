@@ -160,7 +160,7 @@ zoomRoutes.get('/meetings', async (c) => {
   try {
     const meetings = await DB.prepare(`
       SELECT * FROM zoom_meeting_sessions 
-      ORDER BY started_at DESC 
+      ORDER BY start_time DESC 
       LIMIT 50
     `).all()
     

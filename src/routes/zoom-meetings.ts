@@ -401,7 +401,24 @@ meetingRoutes.post('/api/meetings/:meetingId/process-transcript', async (c) => {
   console.log('🔄 Processing transcript for meeting:', meetingId)
   
   try {
-    // Step 1: Get OAuth token
+    // Step 1: Get the actual database ID for this meeting
+    const meeting = await DB.prepare(`
+      SELECT id, zoom_meeting_id FROM zoom_meeting_sessions
+      WHERE zoom_meeting_id = ?
+      LIMIT 1
+    `).bind(meetingId).first() as any
+    
+    if (!meeting) {
+      return c.json({
+        success: false,
+        error: 'Meeting not found in database'
+      }, 404)
+    }
+    
+    const sessionId = meeting.id
+    console.log('📝 Found meeting in DB with session_id:', sessionId)
+    
+    // Step 2: Get OAuth token
     const tokenRecord = await DB.prepare(`
       SELECT * FROM zoom_oauth_tokens
       WHERE expires_at > datetime('now')
@@ -476,7 +493,7 @@ meetingRoutes.post('/api/meetings/:meetingId/process-transcript', async (c) => {
         // Note: We can't access AI binding here, so skip sentiment for now
         // Just store the transcript chunks
         
-        const chunkId = `chunk_${meetingId}_${timestamp}_${Date.now()}`
+        const chunkId = `chunk_${sessionId}_${timestamp}_${Date.now()}`
         
         // Store transcript chunk
         await DB.prepare(`
@@ -486,7 +503,7 @@ meetingRoutes.post('/api/meetings/:meetingId/process-transcript', async (c) => {
           ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         `).bind(
           chunkId,
-          meetingId,
+          sessionId,
           speakerName,
           chunk.speaker,
           text,
@@ -502,7 +519,7 @@ meetingRoutes.post('/api/meetings/:meetingId/process-transcript', async (c) => {
           ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         `).bind(
           `sentiment_${chunkId}`,
-          meetingId,
+          sessionId,
           chunkId,
           timestamp,
           'neutral',
@@ -521,8 +538,8 @@ meetingRoutes.post('/api/meetings/:meetingId/process-transcript', async (c) => {
             word_count = word_count + excluded.word_count,
             updated_at = CURRENT_TIMESTAMP
         `).bind(
-          `speaker_${meetingId}_${speakerName}`,
-          meetingId,
+          `speaker_${sessionId}_${speakerName}`,
+          sessionId,
           speakerName,
           chunk.speaker,
           3000, // Estimate 3 seconds per chunk
